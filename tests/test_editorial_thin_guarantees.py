@@ -6,8 +6,8 @@ one run, and a seat chose a non-favourite over the favourite of the same moment.
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-from immich_memories.analysis.editorial_thin_layer import ThinPolish
+from immich_memories.analysis.polish.layer import ThinPolish
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
 from immich_memories.db import open_store
 from tests.test_editorial_thin_vote_relations import STORY, Audience, FitJudge, Standing
 

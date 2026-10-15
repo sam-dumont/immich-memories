@@ -335,12 +335,12 @@ class ProbeCache:
         data["complete_presentation"] = proof
 
     def _certify_presentation(self, source, probe, data) -> dict:
-        from immich_memories.processing.live_audio_tail import _complete_video
+        from immich_memories.processing.live_audio_tail import complete_video
 
         tail = data["packets"][-1]
         self._assert_source_key(source, data["key"])
         try:
-            proof = _complete_video(
+            proof = complete_video(
                 source, probe,
                 {"pts": tail["pts"], "duration_ticks": tail.get("duration", 0),
                  "time_base": str(data["clock"])}, packets=data,

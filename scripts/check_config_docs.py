@@ -18,8 +18,8 @@ from typing import NamedTuple, get_args
 
 from pydantic import BaseModel
 
-from immich_memories.config_loader import Config
-from immich_memories.config_unsupported import UNDOCUMENTED
+from immich_memories.config.loader import Config
+from immich_memories.config.unsupported import UNDOCUMENTED
 
 PAGE = "docs-site/docs/reference/config-reference.md"
 
@@ -67,7 +67,7 @@ class SectionSchema(NamedTuple):
 
     model: str
     fields: frozenset[str]
-    # Still read but out of the documented config (`config_unsupported`): must not be shown.
+    # Still read but out of the documented config (`config.unsupported`): must not be shown.
     hidden: frozenset[str] = frozenset()
 
 

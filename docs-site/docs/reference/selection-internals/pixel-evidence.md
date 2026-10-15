@@ -27,7 +27,7 @@ inside its still), anything tagged `immich-memories/generated` or listed in this
 is not footage), and pictures that look forwarded rather than shot on your camera.
 
 Forwarded copies and saved images can come back with `advanced.analysis.forwarded_copies_when_short`, off
-by default (`forwarded_fallback.py`). With it on, a copy may fill a gap in the film's camera
+by default (`corpus/forwarded_fallback.py`). With it on, a copy may fill a gap in the film's camera
 timeline, and only there: an occurrence (a holiday's year, an earlier birthday), else a week, month
 or year with no camera picture, taking about as many days as a stretch with camera pictures gets.
 A collage, or a copy of a picture the library already holds, stays out, and every later check reads

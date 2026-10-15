@@ -20,7 +20,7 @@ from immich_memories.processing.editorial_owner_edits import (
 from immich_memories.processing.render_inputs import read_render_inputs
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
     from immich_memories.api.models import VideoClipInfo
     from immich_memories.processing.editorial_timing import EditorialTimingPolicy
 

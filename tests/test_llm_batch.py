@@ -11,17 +11,19 @@ import json
 import httpx
 import pytest
 
-from immich_memories.analysis import editorial_text_gateway as gateway
-from immich_memories.analysis import llm_batch, llm_metrics, llm_wire
-from immich_memories.analysis.editorial_text_gateway import SyncTextPromptRequester
-from immich_memories.analysis.llm_batch import (
+from immich_memories.analysis.judgments import text_gateway as gateway
+from immich_memories.analysis.judgments.text_gateway import SyncTextPromptRequester
+from immich_memories.analysis.llm import batch as llm_batch
+from immich_memories.analysis.llm import metrics as llm_metrics
+from immich_memories.analysis.llm import wire as llm_wire
+from immich_memories.analysis.llm.batch import (
     BatchCoordinator,
     BatchPolicy,
     BatchPrompt,
     batch_prompt_key,
 )
-from immich_memories.analysis.llm_providers import batch_route_for
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.providers import batch_route_for
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cancellation import PipelineCancelled, cancellation_scope
 
 
@@ -351,7 +353,7 @@ def test_queued_reasoning_requests_keep_room_for_the_answer(provider, declared):
 @pytest.mark.parametrize("nested_usage", [False, True])
 def test_batch_reply_billing_reaches_each_private_call_record(tmp_path, nested_usage, monkeypatch):
     """What a queued line billed, in either shape the hosts report reasoning in."""
-    from immich_memories.analysis.editorial_text_artifacts import TextPromptArtifacts
+    from immich_memories.analysis.judgments.text_artifacts import TextPromptArtifacts
 
     def _usage(completion: int, reasoning: int) -> dict:
         billed = {"prompt_tokens": 10, "completion_tokens": completion}
@@ -495,7 +497,7 @@ def test_a_queued_line_that_stopped_with_nothing_written_is_asked_live_instead(m
 
 def test_an_abandoned_queued_line_and_its_live_re_ask_are_both_on_the_record(tmp_path, monkeypatch):
     """Cost and cause: what the queued line billed, and that the question was asked again."""
-    from immich_memories.analysis.editorial_text_artifacts import TextPromptArtifacts
+    from immich_memories.analysis.judgments.text_artifacts import TextPromptArtifacts
 
     config = _config(base_url="https://recorded-batch.example.test/v1")
     key = batch_prompt_key(config, "ask 0", max_tokens=100)

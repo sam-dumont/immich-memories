@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from immich_memories import generate_render as generate_render_module
-from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
-from immich_memories.analysis.editorial_source_route import EditorialSourcePlan
+from immich_memories.analysis.runtime.duration_advisory import editorial_duration_warning
+from immich_memories.analysis.runtime.source_route import EditorialSourcePlan
 from immich_memories.operations.editorial_attempt import EditorialAttempt, read_editorial_attempt
 from tests.output_tools_fake import output_tools
 from tests.test_editorial_source_route_surfaces import (
@@ -53,7 +53,7 @@ def test_shortfall_attempt_remains_complete_and_retains_original_duration_record
     assert saved["outcome"] == "selected"
     assert saved["selected_carriers"] == 8
     assert saved["duration_realization"] == SHORTFALL
-    from immich_memories.analysis.editorial_planner import EditorialPlan
+    from immich_memories.analysis.runtime.plan import EditorialPlan
 
     assert EditorialSourcePlan((), EditorialPlan()).duration_realization is None
 
@@ -76,7 +76,8 @@ def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, 
     with (
         # WHY: the selection pipeline is a stand-in returning the pre-built shortfall result.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
+            return_value=pipeline,
         ),
         patch("immich_memories.generate.generate_memory", return_value=output) as generate,
         patch("immich_memories.cli._pipeline_runner.print_warning") as warning,

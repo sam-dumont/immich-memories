@@ -4,7 +4,7 @@
 #
 # A ConfigMap volume's files belong to root, so the app's uid can read one
 # only through its group or world bits (the default mode is 0644), and
-# config_loader.py warns ("Config file ... is readable by other users") on
+# config/loader.py warns ("Config file ... is readable by other users") on
 # either. The fix
 # copies the file, as the app's own uid, onto the writable cache PVC and
 # chmods it there, rather than mounting the ConfigMap at

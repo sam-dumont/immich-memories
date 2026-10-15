@@ -16,7 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from immich_memories.cli._run_inputs import ResolvedRunInputs
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def _resolve(**overrides) -> ResolvedRunInputs:

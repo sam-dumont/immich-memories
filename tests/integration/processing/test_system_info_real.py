@@ -70,9 +70,9 @@ def test_get_cpu_brand_returns_nonempty():
 
 
 def test_get_ram_gb_positive():
-    from immich_memories.tracking.system_info import _get_ram_gb
+    from immich_memories.tracking.system_info import get_ram_gb
 
-    ram = _get_ram_gb()
+    ram = get_ram_gb()
     assert ram > 0.5
 
 

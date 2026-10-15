@@ -6,7 +6,7 @@ from http.server import ThreadingHTTPServer
 import pytest
 from starlette.testclient import TestClient
 
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from tests.e2e.fake_immich import FakeImmichServer, _handler_type
 
 

@@ -10,7 +10,7 @@ on a request naming none.
 
 This reads each chosen account's own library fresh from Immich, over the span the store's
 pictures cover, and keeps the ownership the household fetch already enforces for a dated
-run (`analysis/household_source.py`): partner sharing shows one account another's
+run (`analysis/sources/household.py`): partner sharing shows one account another's
 pictures, but only pictures an account owns travel under its name.
 """
 
@@ -21,13 +21,13 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from types import MappingProxyType
 
-from immich_memories.analysis.household_source import HouseholdWindows
-from immich_memories.analysis.person_resolution import store_people
-from immich_memories.analysis.source_filter import asset_of
+from immich_memories.analysis.sources.household import HouseholdWindows
+from immich_memories.analysis.sources.person_resolution import store_people
 from immich_memories.api.access_clients import AccessBoundClient
+from immich_memories.api.models import asset_of
 from immich_memories.api.native_sharing import NativePeople
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import Store
 from immich_memories.free_text.library import LibraryPicture
 from immich_memories.people.companion import load_document
@@ -140,7 +140,7 @@ def _face_accounts(
 
     `translate()` reads a picture's faces already canonicalised to one id per person
     (`library.read_library`), so unlike the run's own face-by-face resolution
-    (`person_resolution.resolve_people`, keyed by the raw Immich id a picture actually
+    (`sources.person_resolution.resolve_people`, keyed by the raw Immich id a picture actually
     carries) this has to fold every one of a person's accounts under that single id, or a
     partner-owned picture recognised only through the partner's own cluster would look
     like nobody is in it. `native`, when the config turns on native sharing, verifies a

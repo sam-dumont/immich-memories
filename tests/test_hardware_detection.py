@@ -117,7 +117,7 @@ class TestDetectAppleVram:
 class TestDetectNvidia:
     def test_no_cuda_returns_none(self):
         with patch(
-            "immich_memories.processing.hardware_detection._check_ffmpeg_hwaccel",
+            "immich_memories.processing.hardware_detection.check_ffmpeg_hwaccel",
             return_value=False,
         ):
             assert _detect_nvidia() is None
@@ -134,7 +134,7 @@ class TestDetectNvidia:
 
         with (
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_hwaccel",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_hwaccel",
                 side_effect=fake_hwaccel,
             ),
             patch(
@@ -143,7 +143,7 @@ class TestDetectNvidia:
                 side_effect=fake_encoder,
             ),
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_decoder",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_decoder",
                 side_effect=fake_decoder,
             ),
             patch(
@@ -164,7 +164,7 @@ class TestDetectNvidia:
         """Debian's ffmpeg lists cuda + h264_nvenc on every box; only a probe encode proves a GPU (#343)."""
         with (
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_hwaccel",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_hwaccel",
                 return_value=True,
             ),
             patch(
@@ -185,12 +185,12 @@ class TestEncoderWorks:
         with (
             # WHY: what `ffmpeg -encoders` prints is build-dependent, not hardware-dependent
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_encoder",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_encoder",
                 return_value=True,
             ),
             # WHY: the probe is the real device check; both outcomes must be exercised
             patch(
-                "immich_memories.processing.hardware_detection._probe_ffmpeg_encode",
+                "immich_memories.processing.hardware_detection.probe_ffmpeg_encode",
                 side_effect=[True, False],
             ) as probe,
         ):
@@ -203,10 +203,10 @@ class TestEncoderWorks:
 
         with (
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_encoder",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_encoder",
                 return_value=False,
             ),
-            patch("immich_memories.processing.hardware_detection._probe_ffmpeg_encode") as probe,
+            patch("immich_memories.processing.hardware_detection.probe_ffmpeg_encode") as probe,
         ):
             assert _encoder_works("h264_qsv", upload="qsv") is False
         probe.assert_not_called()
@@ -216,14 +216,14 @@ class TestEncoderProbe:
     def test_software_encoder_probe_succeeds_and_absent_hardware_encoder_fails(self):
         import shutil
 
-        from immich_memories.processing.hardware import _probe_ffmpeg_encode
+        from immich_memories.processing.hardware import probe_ffmpeg_encode
 
         if not shutil.which("ffmpeg"):
             pytest.skip("ffmpeg not installed")
 
-        assert _probe_ffmpeg_encode(["-c:v", "libx264"]) is True
+        assert probe_ffmpeg_encode(["-c:v", "libx264"]) is True
         # No NVIDIA driver on this machine: the probe must fail even if ffmpeg lists the encoder.
-        assert _probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is False
+        assert probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is False
 
     def test_probe_frame_is_a_yuv_source_at_a_size_every_encoder_takes(self):
         """A 64x64 RGB testsrc frame failed NVENC on a working RTX 5060 Ti (#772)."""
@@ -231,7 +231,7 @@ class TestEncoderProbe:
 
         # WHY: the ffmpeg process boundary; what matters is the source we hand it
         with patch.object(hardware, "_run_ffmpeg_check", return_value=(True, "")) as run:
-            assert hardware._probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is True
+            assert hardware.probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is True
 
         args = run.call_args.args[0]
         source = args[args.index("-i") + 1]
@@ -262,7 +262,7 @@ class TestNvencProbeAdvice:
             patch.dict(os.environ, {"NVIDIA_VISIBLE_DEVICES": "all"}),
             caplog.at_level(logging.WARNING),
         ):
-            assert hardware._probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is False
+            assert hardware.probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is False
 
         warning = "\n".join(record.getMessage() for record in caplog.records)
         assert "NVIDIA_DRIVER_CAPABILITIES=compute,video,utility" in warning
@@ -281,7 +281,7 @@ class TestNvencProbeAdvice:
             patch.object(hardware, "_dri_present", return_value=True),
             caplog.at_level(logging.WARNING),
         ):
-            assert hardware._probe_ffmpeg_encode(["-c:v", "h264_vaapi"], upload="vaapi") is False
+            assert hardware.probe_ffmpeg_encode(["-c:v", "h264_vaapi"], upload="vaapi") is False
 
         warning = "\n".join(record.getMessage() for record in caplog.records)
         assert "/dev/dri" in warning
@@ -298,7 +298,7 @@ class TestNvencProbeAdvice:
             patch.object(hardware.subprocess, "run", side_effect=FileNotFoundError),
             caplog.at_level(logging.WARNING),
         ):
-            assert hardware._probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is False
+            assert hardware.probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is False
 
         assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
 
@@ -317,7 +317,7 @@ class TestDetectVaapi:
             ),
             # WHY: ffmpeg lists vaapi + h264_vaapi on Debian regardless of /dev/dri
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_hwaccel",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_hwaccel",
                 return_value=True,
             ),
             patch(
@@ -342,7 +342,7 @@ class TestDetectVaapi:
                 return_value="Linux",
             ),
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_hwaccel",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_hwaccel",
                 return_value=False,
             ),
         ):
@@ -358,7 +358,7 @@ class TestDetectQsv:
     def test_qsv_listed_but_probe_fails_yields_no_encoding(self):
         with (
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_hwaccel",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_hwaccel",
                 return_value=True,
             ),
             # WHY: models an Intel-less host whose ffmpeg build lists h264_qsv
@@ -367,7 +367,7 @@ class TestDetectQsv:
                 return_value=False,
             ),
             patch(
-                "immich_memories.processing.hardware_detection._check_ffmpeg_decoder",
+                "immich_memories.processing.hardware_detection.check_ffmpeg_decoder",
                 return_value=False,
             ),
         ):
@@ -377,7 +377,7 @@ class TestDetectQsv:
 
     def test_no_qsv_returns_none(self):
         with patch(
-            "immich_memories.processing.hardware_detection._check_ffmpeg_hwaccel",
+            "immich_memories.processing.hardware_detection.check_ffmpeg_hwaccel",
             return_value=False,
         ):
             assert _detect_qsv() is None

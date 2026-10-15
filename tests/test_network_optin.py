@@ -65,14 +65,14 @@ class TestTripNamingStaysOffline:
     """A default run names its trips from EXIF and asks nobody."""
 
     def test_no_geocoder_means_the_name_comes_from_exif(self) -> None:
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         trips = detect_trips(_ROME, *_PARIS)
 
         assert [trip.location_name for trip in trips] == ["Rome, Italy"]
 
     def test_an_injected_geocoder_names_the_trip(self) -> None:
-        from immich_memories.analysis.trip_detection import detect_trips
+        from immich_memories.analysis.places.trip_detection import detect_trips
 
         trips = detect_trips(_ROME, *_PARIS, geocoder=lambda *_a, **_k: "Lazio, Italy")
 
@@ -81,7 +81,7 @@ class TestTripNamingStaysOffline:
     def test_the_switch_decides_whether_a_geocoder_exists(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from immich_memories.analysis.trip_detection import geocoder_for
+        from immich_memories.analysis.places.trip_detection import geocoder_for
 
         assert geocoder_for(_config(tmp_path, monkeypatch)) is None
         allowed = _config(tmp_path, monkeypatch, "network:\n  geocoding: true\n")
@@ -99,10 +99,10 @@ class TestTripNamingStaysOffline:
 
         # WHY: Nominatim is the outside host; this answers for it and counts the requests.
         monkeypatch.setattr(
-            "immich_memories.analysis.place_geocoder.nominatim_fetch",
+            "immich_memories.analysis.places.geocoder.nominatim_fetch",
             lambda *_a, **_k: nominatim,
         )
-        from immich_memories.analysis.trip_detection import detect_trips, geocoder_for
+        from immich_memories.analysis.places.trip_detection import detect_trips, geocoder_for
 
         config = _config(tmp_path, monkeypatch, "network:\n  geocoding: true\n")
         config.database.url = f"sqlite:///{tmp_path / 'store.db'}"
@@ -123,9 +123,9 @@ class TestTripNamingStaysOffline:
     ) -> None:
         # WHY: Nominatim is the outside host under test; this stands in for it so
         # a regression that reaches the network fails loudly instead of quietly.
-        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", _refuse)
-        from immich_memories.analysis.trip_discovery import discover_year_trips
-        from immich_memories.config_models_automation import TripsConfig
+        monkeypatch.setattr("immich_memories.analysis.places.geocoder.nominatim_fetch", _refuse)
+        from immich_memories.analysis.sources.trip_discovery import discover_year_trips
+        from immich_memories.config.models.automation import TripsConfig
 
         class _Client:
             def get_assets_for_date_range(self, _range: object) -> list[Asset]:
@@ -198,9 +198,9 @@ class TestTitleFontsComeFromTheWheel:
         # proves the bundled file is found without any host.
         monkeypatch.setattr("httpx.Client", _refuse)
         monkeypatch.setenv("HOME", str(tmp_path))
-        from immich_memories.titles.kernels import _get_system_font
+        from immich_memories.titles.kernels import get_system_font
 
-        path = Path(_get_system_font("Montserrat"))
+        path = Path(get_system_font("Montserrat"))
 
         assert path.exists()
         assert path.parent.parent.name == "bundled_fonts"
@@ -309,18 +309,18 @@ class TestFontFallbacksWithoutTheCdn:
         family = tmp_path / ".immich-memories" / "fonts" / "Inter"
         family.mkdir(parents=True)
         (family / "Inter-Medium.ttf").write_bytes(b"\x00\x01\x00\x00")
-        from immich_memories.titles.kernels import _get_system_font
+        from immich_memories.titles.kernels import get_system_font
 
-        assert _get_system_font("Inter") == str(family / "Inter-Medium.ttf")
+        assert get_system_font("Inter") == str(family / "Inter-Medium.ttf")
 
     def test_nothing_anywhere_still_returns_a_name(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setattr("immich_memories.titles.kernels._SYSTEM_FONTS", [])
-        from immich_memories.titles.kernels import _get_system_font
+        from immich_memories.titles.kernels import get_system_font
 
-        assert _get_system_font("Nonesuch") == "Arial"
+        assert get_system_font("Nonesuch") == "Arial"
 
     def test_the_sdf_renderer_takes_the_bundled_family_first(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from immich_memories.analysis.trip_detection import DetectedTrip
+from immich_memories.analysis.places.trip_detection import DetectedTrip
 from immich_memories.cli._trip_display import format_trips_table
 
 

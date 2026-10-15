@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.editorial_obstruction import CLEAR_LABEL, OBSTRUCTED_LABEL
-from immich_memories.analysis.editorial_preparation_obstruction import (
+from immich_memories.analysis.facts.obstruction import CLEAR_LABEL, OBSTRUCTED_LABEL
+from immich_memories.analysis.facts.subject_framing import FaceBox
+from immich_memories.analysis.preparation.obstruction_bank import (
     OBSTRUCTION_FRAME_PRODUCER,
     prepare_obstruction_frames,
     prepare_obstruction_heads,
 )
-from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.store.cut_measurements import banked_motion_residuals
 from immich_memories.triage.heads import PatchHeadBundle
 from tests.annotation_rows import annotation_store, read_rows
@@ -177,7 +177,7 @@ def test_a_videos_flagged_frames_bank_as_seconds_on_its_own_producer(tmp_path):
     assert failures == {}
     assert progress == [("obstruction_frames", 0, 1), ("obstruction_frames", 1, 1)]
     store = annotation_store()
-    from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
+    from immich_memories.analysis.clips.bound_sample import source_metadata_digest
 
     banked = banked_motion_residuals(
         store,
@@ -205,7 +205,7 @@ def test_a_video_with_no_flagged_frames_banks_an_empty_list(tmp_path):
 
     assert failures == {}
     store = annotation_store()
-    from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
+    from immich_memories.analysis.clips.bound_sample import source_metadata_digest
 
     banked = banked_motion_residuals(
         store, {"vid": source_metadata_digest(_video("vid"))}, OBSTRUCTION_FRAME_PRODUCER

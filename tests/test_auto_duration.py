@@ -8,7 +8,7 @@ import pytest
 
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.cli.film_length import decide_duration
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.planning.auto_duration import (
     DURATION_FROM_DURATION_FLAG,
     DURATION_FROM_MATERIAL,

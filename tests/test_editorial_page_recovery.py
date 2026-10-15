@@ -18,9 +18,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_page_recovery import PAGE_READ_SCHEMA, PageReadFailure
-from immich_memories.analysis.editorial_story_reading import read_period_story
-from immich_memories.analysis.editorial_story_replies import read_episode_page
+from immich_memories.analysis.judgments.page_recovery import PAGE_READ_SCHEMA, PageReadFailure
+from immich_memories.analysis.stories.period_account import read_period_story
+from immich_memories.analysis.stories.replies import read_episode_page
 from tests.annotation_rows import annotation_store
 
 RECORDED_PAGE = (Path(__file__).parent / "fixtures" / "story_episodes_unquoted_key.txt").read_text()
@@ -139,7 +139,7 @@ def test_a_retry_that_answers_readably_costs_no_repair_round():
 
 
 def test_a_transport_truncation_reaches_the_page_repair_without_another_identical_retry():
-    from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+    from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
 
     evidence = [fragment(i) for i in range(9)]
     readings = [f"r{number}" for number in range(1, 10)]
@@ -210,7 +210,7 @@ def test_a_transport_truncation_reaches_the_page_repair_without_another_identica
 
 
 def test_an_exhausted_transport_repair_stops_and_keeps_the_truncated_evidence():
-    from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+    from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
 
     raw = '{"fragments":['
 
@@ -278,7 +278,7 @@ def test_regrouping_keeps_its_own_bounded_envelope_recovery(recovery):
                 }
             )
         if stage == "story-understanding-1-try2" and recovery == "truncated":
-            from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+            from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
 
             raise TextCompletionFailure(
                 [
@@ -342,9 +342,9 @@ def test_regrouping_keeps_its_own_bounded_envelope_recovery(recovery):
 
 def test_the_production_judge_leaves_the_failure_beside_the_calls(tmp_path, monkeypatch):
     """What a matrix cell reads: which stage, which parse error, how many calls it cost."""
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     asked: list[int] = []
 
@@ -391,10 +391,10 @@ def test_a_connection_that_dies_mid_call_is_named_and_recorded(tmp_path, monkeyp
     """The server restart case: an exception whose own message is empty must still say what."""
     import httpx
 
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.analysis.editorial_text_failures import StageCallFailure
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_failures import StageCallFailure
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     # WHY: replaces the only external boundary, the text provider's HTTP transport.
     async def dead_connection(_prompt, _config, **_kwargs):
@@ -440,10 +440,10 @@ def test_a_refused_text_call_names_the_provider_and_what_had_already_answered(
 
     import httpx
 
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.analysis.editorial_text_failures import StageCallFailure
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_failures import StageCallFailure
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     request = httpx.Request("POST", "http://text.test/v1/chat/completions")
     answered = 0
@@ -492,7 +492,7 @@ def test_a_refused_text_call_names_the_provider_and_what_had_already_answered(
 
 
 def test_a_call_duration_reads_the_way_a_run_log_does():
-    from immich_memories.analysis.editorial_text_failures import elapsed_label
+    from immich_memories.analysis.judgments.text_failures import elapsed_label
 
     assert elapsed_label(45.2) == "45s"
     assert elapsed_label(542.0) == "9m2s"
@@ -504,9 +504,9 @@ def test_a_throttled_text_reader_waits_instead_of_ending_the_run(tmp_path, monke
 
     import httpx
 
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     request = httpx.Request("POST", "http://text.test/v1/chat/completions")
     waits: list[float] = []
@@ -557,9 +557,9 @@ def test_one_503_does_not_end_a_run_that_has_answered_187_calls(tmp_path, monkey
 
     import httpx
 
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     request = httpx.Request("POST", "http://text.test/v1/chat/completions")
     waits: list[float] = []
@@ -609,10 +609,10 @@ def test_a_provider_that_stays_down_names_itself_on_the_text_leg(tmp_path, monke
 
     import httpx
 
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_structure_io import StructureTextJudge
-    from immich_memories.analysis.editorial_text_failures import StageCallFailure
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.text_failures import StageCallFailure
+    from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+    from immich_memories.config.models.llm import LLMConfig
 
     request = httpx.Request("POST", "http://text.test/v1/chat/completions")
 

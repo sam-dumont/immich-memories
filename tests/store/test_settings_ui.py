@@ -13,8 +13,8 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import load_config, set_config
-from immich_memories.config_sources import describe_settings
+from immich_memories.config.loader import load_config, set_config
+from immich_memories.config.sources import describe_settings
 from immich_memories.db import StoreLocation, open_store
 from immich_memories.settings_store import SECRET_KEY_ENV, SettingsStore
 from immich_memories.web.connection import connection_changes

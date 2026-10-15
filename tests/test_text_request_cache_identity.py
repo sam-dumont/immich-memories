@@ -8,10 +8,10 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.editorial_case import TextRequest
-from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
-from immich_memories.analysis.llm_query import query_llm
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.judgments.text_gateway import QueryTextRequester
+from immich_memories.analysis.judgments.text_request import TextRequest
+from immich_memories.analysis.llm.query import query_llm
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 
 
@@ -45,7 +45,7 @@ async def test_answer_changing_request_settings_miss_the_transport_cache(changed
         "judgments": annotation_store(),
     }
     # WHY: the HTTP dispatch is the external boundary; replies are scripted so cache identity is what varies
-    with patch("immich_memories.analysis.llm_query._dispatch", dispatch):
+    with patch("immich_memories.analysis.llm.query._dispatch", dispatch):
         first = await query_llm(**request)
         second = await query_llm(**(request | changed))
         repeated = await query_llm(**(request | changed))
@@ -67,7 +67,7 @@ async def test_recovered_gateway_answer_replays_without_repeating_the_failed_bud
 
     request = TextRequest("same evidence", _config(), annotation_store(), 100, 30)
     # WHY: the HTTP dispatch is the external boundary; replies are scripted so cache identity is what varies
-    with patch("immich_memories.analysis.llm_query._dispatch", dispatch):
+    with patch("immich_memories.analysis.llm.query._dispatch", dispatch):
         first = await QueryTextRequester().request(request)
         second = await QueryTextRequester().request(request)
         operational_change = replace(request, timeout_seconds=60)

@@ -36,10 +36,10 @@ from . import kernels
 from .gpu_kernel_backend import ti
 from .kernels import (
     SDF_AVAILABLE,
-    _get_system_font,
-    _hex_to_rgb,
     find_font,
     get_cached_atlas,
+    get_system_font,
+    hex_to_rgb,
     layout_text,
 )
 
@@ -155,7 +155,7 @@ class TitleTextRenderer:
         text_color = config.text_color
         if config.hdr:
             text_color = ceil_white_for_hdr(text_color)
-        self.text_rgb = _hex_to_rgb(text_color)
+        self.text_rgb = hex_to_rgb(text_color)
 
         # WHY: GPU-cached text layers avoid re-uploading each frame.
         # PIL renders text once → upload to ti.ndarray → reuse across frames.
@@ -326,7 +326,7 @@ class TitleTextRenderer:
             )
 
     def _composite(self, layer: Any, opacity: float, y_offset: float, x_offset: float) -> None:
-        kernels._composite_text_with_offset(
+        kernels.compiled_composite_text_with_offset(
             self.gpu.frame, layer, self.gpu.frame, opacity, y_offset, x_offset
         )
 
@@ -366,7 +366,7 @@ class TitleTextRenderer:
         is_shadow: bool = False,
     ):
         """Render text directly onto frame buffer using SDF GPU kernel."""
-        if not self.use_sdf or self._sdf_atlas is None or kernels._render_sdf_text is None:
+        if not self.use_sdf or self._sdf_atlas is None or kernels.compiled_render_sdf_text is None:
             return
 
         scale = font_size / self._sdf_atlas.font_size
@@ -390,7 +390,7 @@ class TitleTextRenderer:
         # WHY: glyph_data is small (~8 floats × num_glyphs) and generated
         # per-call from layout_text(). Implicit transfer is negligible.
         atlas = self._sdf_atlas_gpu if self._sdf_atlas_gpu is not None else self._sdf_atlas_float
-        kernels._render_sdf_text(
+        kernels.compiled_render_sdf_text(
             self.gpu.frame,
             atlas,
             glyph_data,
@@ -413,9 +413,9 @@ class TitleTextRenderer:
         where the stack expects it. A letter the face lacks is drawn by the
         next font of the Noto chain that has it (#1101).
         """
-        # WHY bold: _get_system_font takes the heaviest weight the family has.
+        # WHY bold: get_system_font takes the heaviest weight the family has.
         try:
-            return title_font(_get_system_font(self.config.font_family), font_size, bold=True)
+            return title_font(get_system_font(self.config.font_family), font_size, bold=True)
         except (OSError, ValueError):
             return ImageFont.load_default(size=font_size)
 

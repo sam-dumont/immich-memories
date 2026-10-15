@@ -99,7 +99,7 @@ class TestOidcRedirectUri:
 
 class TestPublicUrlConfig:
     def test_a_trailing_slash_is_normalised_away(self):
-        from immich_memories.config_models_auth import AuthConfig
+        from immich_memories.config.models.auth import AuthConfig
 
         assert AuthConfig(public_url="https://host/").public_url == "https://host"
 
@@ -108,7 +108,7 @@ class TestPublicUrlConfig:
         """A relative or schemeless value would silently disable the check."""
         from pydantic import ValidationError
 
-        from immich_memories.config_models_auth import AuthConfig
+        from immich_memories.config.models.auth import AuthConfig
 
         with pytest.raises(ValidationError, match="absolute http"):
             AuthConfig(public_url=value)

@@ -9,7 +9,7 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 _QUIET = frozenset({"calm", "peaceful", "tender", "sad", "melancholic", "nostalgic"})
 

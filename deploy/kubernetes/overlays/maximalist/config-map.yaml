@@ -5,8 +5,8 @@
 # docs-site/docs/run/reference/cluster-example.md walks through it.
 # Everything that is a credential stays out of this file and comes from
 # maximalist-secret.yaml instead: ${VAR} below expands against the pod's
-# environment (config_models_auth.py, config_models_llm.py and
-# config_models_soundtrack.py all call expand_env_vars on these fields).
+# environment (config/models/auth.py, config/models/llm.py and
+# config/models/soundtrack.py all call expand_env_vars on these fields).
 #
 # Placeholders to replace before applying:
 #   - advanced.auth.public_url: the hostname your reverse proxy terminates TLS for
@@ -25,7 +25,7 @@ data:
   config.yaml: |
     tier: full
 
-    # Third-party hosts this install is allowed to reach (config_models_network.py).
+    # Third-party hosts this install is allowed to reach (config/models/network.py).
     network:
       geocoding: true    # nominatim.openstreetmap.org: place names, trip names
       map_tiles: true    # server.arcgisonline.com: the trip fly-over, location cards
@@ -42,7 +42,7 @@ data:
       # public_url the redirect_uri handed to the IdP is built from the
       # in-cluster Host header and comes out http://, which every IdP refuses.
       # Without trusted_proxies the callback comes back "Invalid callback
-      # origin" (config_models_auth.py, web/auth_oidc.py): X-Forwarded-Proto
+      # origin" (config/models/auth.py, web/auth_oidc.py): X-Forwarded-Proto
       # is only trusted from these addresses.
       auth:
         enabled: true

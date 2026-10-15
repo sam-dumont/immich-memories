@@ -71,7 +71,7 @@ def render_photo_as_clip(
     downloads from Immich, prepares the source (HEIC decode, gain map),
     then streams Ken Burns frames to FFmpeg.
     """
-    from immich_memories.config_models_render import normalize_scale_mode
+    from immich_memories.config.models.render import normalize_scale_mode
     from immich_memories.photos.photo_pipeline import render_single_photo
     from immich_memories.processing.ffmpeg_prober import FILM_WITHOUT_VIDEO_FPS
     from immich_memories.processing.hardware import (
@@ -115,7 +115,7 @@ def render_photo_as_clip(
     return result
 
 
-def _render_video_frame_as_clip(
+def render_video_frame_as_clip(
     clip: VideoClipInfo,
     params: GenerationParams,
     output_dir: Path,

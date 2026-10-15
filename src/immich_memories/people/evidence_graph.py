@@ -27,7 +27,7 @@ def default_evidence_graph_path(location: StoreLocation | None = None) -> Path:
     local file (PostgreSQL, in-memory) falls back to the loaded config's own directory,
     matching how the store itself picks a default location (`_default_store_url`).
     """
-    from immich_memories.config_loader import config_state_dir
+    from immich_memories.config.loader import config_state_dir
     from immich_memories.db.bootstrap import resolve_location
 
     location = location or resolve_location()

@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from immich_memories.analysis.editorial_description_contract import API_MODEL
+from immich_memories.analysis.captions.contract import API_MODEL
 from immich_memories.config import Config
 from immich_memories.preflight import CheckStatus, check_caption_endpoint
 

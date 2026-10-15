@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_rule_story_names import StoryFacts, name_stories
+from immich_memories.analysis.stories.rule_names import StoryFacts, name_stories
 
 _RULE = (50.0, 2)
 

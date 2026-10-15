@@ -11,9 +11,9 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date
 
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+from immich_memories.analysis.structure.planner import plan_structure
 from immich_memories.api.models import Person
 from tests.editorial_film_fixtures import SEASIDE, Day, film_source
 

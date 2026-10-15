@@ -10,7 +10,7 @@ import itsdangerous
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 SESSION_SECRET = "test-session-key-0f3a9c2e7b41d856e0"  # noqa: S105 -- throwaway test key
 

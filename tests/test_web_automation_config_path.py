@@ -13,7 +13,7 @@ from starlette.testclient import TestClient
 
 from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config, load_config
+from immich_memories.config.loader import Config, load_config
 from immich_memories.db import open_store
 from tests.auto_library_fake import FakeGenerateChild, immich_serving, library_with_last_month
 

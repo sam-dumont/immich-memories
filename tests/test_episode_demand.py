@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.editorial_rule_episodes import RuleEpisodeReader
-from immich_memories.analysis.episode_demand import DemandEpisodeReadings
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import project_episode_groups
-from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+from immich_memories.analysis.corpus.groups import project_episode_groups
+from immich_memories.analysis.reading.demand import DemandEpisodeReadings
+from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
+from immich_memories.analysis.stories.rule_episodes import RuleEpisodeReader
 from immich_memories.db import open_store
 from immich_memories.store.episode_readings import EpisodeReadingProducer, EpisodeReadingStore
 from tests.annotation_rows import annotation_store
@@ -26,7 +26,7 @@ class Lines(_AnnotationLines):
 
     @property
     def contract(self):
-        from immich_memories.analysis.annotation_lines import AnnotationContract
+        from immich_memories.analysis.reading.annotation_lines import AnnotationContract
 
         return AnnotationContract("annotation-line-v1", self.producer_versions)
 
@@ -134,7 +134,7 @@ def test_a_second_demand_for_the_same_story_is_free(tmp_path):
 
 
 def test_a_failed_demand_preserves_its_fallback_and_identity(tmp_path):
-    from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+    from immich_memories.analysis.llm.wire import LLMIncompleteResponse
 
     # WHY: replace the model HTTP boundary with a provider-confirmed truncated reply.
     def incomplete(_prompt):
@@ -160,7 +160,7 @@ def test_a_failed_demand_preserves_its_fallback_and_identity(tmp_path):
 
 
 def test_a_recovered_demand_keeps_its_history_without_remaining_degraded(tmp_path):
-    from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+    from immich_memories.analysis.llm.wire import LLMIncompleteResponse
 
     asked = []
 
@@ -221,7 +221,7 @@ def one_story_over_three_days():
 
 
 def polish_reading_through(demand, tmp_path):
-    from immich_memories.analysis.editorial_thin_layer import ThinPolish
+    from immich_memories.analysis.polish.layer import ThinPolish
 
     def read_period(chosen):
         demand.readings_for([asset for assets in chosen.values() for asset in assets])
@@ -273,7 +273,7 @@ def test_a_cut_with_no_draft_reads_nothing(tmp_path):
 
 
 def test_only_a_model_run_with_a_catalogued_period_reads_on_demand():
-    from immich_memories.analysis.episode_demand import demand_reader_factory
+    from immich_memories.analysis.reading.demand import demand_reader_factory
 
     rules, text = object(), object()
 

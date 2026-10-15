@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckStatus
 from immich_memories.preflight_music import check_music
 

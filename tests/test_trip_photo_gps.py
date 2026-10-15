@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 def _trip_config():
     """Return a real config so strict encoding fields cannot become MagicMocks."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config()
     config.trips.homebase_latitude = 50.85
@@ -113,7 +113,7 @@ class TestTripGenerationPhotoFetch:
 
     def test_photo_only_trip_not_skipped(self):
         """handle_trip_generation continues when trip has photos but no videos."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
 
         mock_trip = DetectedTrip(
             location_name="Aosta Valley",
@@ -206,7 +206,7 @@ class TestTripGenerationPhotoFetch:
 
     def test_empty_trip_skipped_gracefully(self):
         """Trip with no videos, no live photos, and no photos → skipped with error."""
-        from immich_memories.analysis.trip_detection import DetectedTrip
+        from immich_memories.analysis.places.trip_detection import DetectedTrip
 
         mock_trip = DetectedTrip(
             location_name="Ghost Town",

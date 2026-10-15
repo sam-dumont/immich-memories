@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
 def test_kubernetes_base_requests_basic_without_changing_its_cpu_contract(tmp_path, monkeypatch):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     deployment = next(
         doc

@@ -45,7 +45,7 @@ from immich_memories.store.batches import bank_rows
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 

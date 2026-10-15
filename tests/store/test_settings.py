@@ -13,8 +13,8 @@ from pathlib import Path
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.config_loader import get_config, load_config, set_config
-from immich_memories.config_sources import describe_settings
+from immich_memories.config.loader import get_config, load_config, set_config
+from immich_memories.config.sources import describe_settings
 from immich_memories.db import StoreLocation, close_stores, open_store
 from immich_memories.db.tables import settings
 from immich_memories.logging_config import SecretRedactionFilter
@@ -382,7 +382,7 @@ def test_an_extra_immich_account_is_sealed_as_one_secret(config_path, location):
 
 
 def test_removed_title_settings_have_an_explicit_cleanup_path(config_path, location):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.settings_store import settings_store
 
     saved = SettingsStore(open_store(location=location), SECRET_KEY)

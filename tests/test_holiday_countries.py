@@ -91,7 +91,7 @@ def test_a_country_immich_names_is_read_as_its_code(name, code):
 def test_the_home_base_decides_the_country(monkeypatch):
     import httpx
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.home_country import home_country
 
     seen = []
@@ -116,7 +116,7 @@ def test_the_home_base_decides_the_country(monkeypatch):
 
 
 def test_without_a_home_base_the_country_is_the_one_it_always_was():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.home_country import home_country
 
     assert home_country(Config()) == "US"

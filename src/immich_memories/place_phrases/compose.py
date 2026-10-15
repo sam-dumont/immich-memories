@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from immich_memories.i18n_places import _codes_by_english_name, localise_country
+from immich_memories.i18n_places import codes_by_english_name, localise_country
 from immich_memories.place_phrases.place import Place
 
 
@@ -30,7 +30,7 @@ def compose(place: Place, rules: Rules) -> str | None:
     if place.kind == "countries":
         return None
     if not place.heads:
-        code = _codes_by_english_name().get(place.english.casefold())
+        code = codes_by_english_name().get(place.english.casefold())
         return rules.country(localise_country(place.english, rules.locale), code)
     if place.kind == "city":
         parts = [rules.city(place.heads[0])]

@@ -79,7 +79,7 @@ def test_finished_sampling_moves_to_live_photo_checks_with_a_fresh_stage_bar(
 
     from immich_memories.operations.cut_progress import StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt
-    from immich_memories.web.job_routes import _view
+    from immich_memories.web.job_routes import job_view
     from immich_memories.web.schemas import Job
     from tests.test_editorial_preparation import asset
     from tests.test_playback_keyframes import encode
@@ -117,7 +117,7 @@ def test_finished_sampling_moves_to_live_photo_checks_with_a_fresh_stage_bar(
             attempt.complete(selected=1)
 
     def saved():
-        return _view(config, job).model_dump(mode="json")
+        return job_view(config, job).model_dump(mode="json")
 
     page.route("**/api/v1/jobs/active", lambda route: route.fulfill(json=saved()))
     page.route(f"**/api/v1/jobs/{job.id}", lambda route: route.fulfill(json=saved()))

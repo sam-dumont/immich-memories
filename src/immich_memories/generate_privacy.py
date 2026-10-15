@@ -202,7 +202,7 @@ def clip_location_name(exif, locale: str = "en") -> str | None:
     """
     if not exif:
         return None
-    from immich_memories.analysis.place_names import shown_city
+    from immich_memories.analysis.places.names import shown_city
 
     return place_label(shown_city(exif), exif.country, locale)
 

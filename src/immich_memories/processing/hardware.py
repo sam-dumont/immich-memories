@@ -85,7 +85,7 @@ def _run_ffmpeg_check(args: list[str]) -> tuple[bool, str]:
         return False, str(e)
 
 
-def _check_ffmpeg_encoder(encoder: str) -> bool:
+def check_ffmpeg_encoder(encoder: str) -> bool:
     success, output = _run_ffmpeg_check(["-hide_banner", "-encoders"])
     return success and encoder in output
 
@@ -105,7 +105,7 @@ _PROBE_UPLOAD_ARGS: dict[str, list[str]] = {
 _PROBE_SOURCE = "testsrc2=size=256x256:rate=1"
 
 
-def _probe_ffmpeg_encode(encoder_args: list[str], *, upload: str | None = None) -> bool:
+def probe_ffmpeg_encode(encoder_args: list[str], *, upload: str | None = None) -> bool:
     """Encode one synthetic frame; the only proof a hardware encoder actually has a device.
 
     `ffmpeg -encoders` lists NVENC/QSV/VAAPI on any build compiled with them (Debian's is),
@@ -143,7 +143,7 @@ def _dri_present() -> bool:
 
 
 def _libva_backend_requested() -> bool:
-    from immich_memories.config_loader import get_config
+    from immich_memories.config.loader import get_config
 
     return get_config().hardware.backend in {"vaapi", "qsv"}
 
@@ -259,12 +259,12 @@ def _nvidia_smi_lists_a_gpu() -> bool:
     return result.returncode == 0 and bool(result.stdout.strip())
 
 
-def _check_ffmpeg_decoder(decoder: str) -> bool:
+def check_ffmpeg_decoder(decoder: str) -> bool:
     success, output = _run_ffmpeg_check(["-hide_banner", "-decoders"])
     return success and decoder in output
 
 
-def _check_ffmpeg_hwaccel(hwaccel: str) -> bool:
+def check_ffmpeg_hwaccel(hwaccel: str) -> bool:
     success, output = _run_ffmpeg_check(["-hide_banner", "-hwaccels"])
     return success and hwaccel in output
 

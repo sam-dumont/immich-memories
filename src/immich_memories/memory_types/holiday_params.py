@@ -10,7 +10,7 @@ from immich_memories.home_country import home_country
 from immich_memories.memory_types.date_builders import holiday_of_window
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 def holiday_params_for(memory_type: str | None, holiday: str | None, config: Config) -> dict:

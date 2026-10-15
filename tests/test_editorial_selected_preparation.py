@@ -7,15 +7,18 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from immich_memories.analysis.editorial_description_contract import validate_envelope
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_preparation_captions import _remember_captions
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.smart_pipeline import SmartPipeline
+from immich_memories.analysis.captions.contract import validate_envelope
+from immich_memories.analysis.captions.requests import _remember_captions
+from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
+from immich_memories.analysis.sources.pool import EditorialSourcePool
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.test_editorial_detector_frames import requires_ffmpeg
 from tests.test_editorial_preparation import successful_ports
@@ -24,9 +27,9 @@ from tests.test_editorial_source_route import photo
 
 
 def _model_effects(source, calls):
-    from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_thin_layer import ThinPolish
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.polish.layer import ThinPolish
+    from immich_memories.analysis.stories.rule_reader import RuleStructureReader
     from tests.test_editorial_thin_polish_end_to_end import PolishJudge
 
     calls.append(("effects-tier", (source.config.tier,)))
@@ -188,9 +191,9 @@ def test_banked_captions_do_not_change_the_initial_nas_draft(tmp_path, tier):
 
 
 def test_an_empty_nas_draft_does_not_request_refinement(tmp_path):
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
     from tests.test_editorial_duration_planner_integration import source
 
     captured = source(tmp_path, seconds=60, pictures=3)
@@ -296,7 +299,7 @@ def test_live_clip_detector_reads_follow_the_tier_and_draft_scope(tmp_path, tier
 
 @requires_ffmpeg
 def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
-    from immich_memories.analysis.editorial_clip_frames import clip_frames_fact
+    from immich_memories.analysis.facts.clip_frames import clip_frames_fact
     from immich_memories.cache.embedding_cache import HeadFactStore
     from tests.conftest import make_clip
     from tests.test_playback_keyframes import encode

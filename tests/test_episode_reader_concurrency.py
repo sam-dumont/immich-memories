@@ -8,19 +8,19 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from immich_memories.analysis import editorial_text_gateway as gateway
-from immich_memories.analysis import llm_metrics
-from immich_memories.analysis.editorial_text_artifacts import TextPromptArtifacts
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import project_episode_groups
-from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
-from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.corpus.groups import project_episode_groups
+from immich_memories.analysis.judgments import text_gateway as gateway
+from immich_memories.analysis.judgments.text_artifacts import TextPromptArtifacts
+from immich_memories.analysis.llm import metrics as llm_metrics
+from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
+from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.db import open_store
 from immich_memories.db.bootstrap import StoreLocation
 from immich_memories.store.episode_readings import EpisodeReadingProducer, EpisodeReadingStore

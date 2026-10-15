@@ -13,7 +13,7 @@ from immich_memories.api.compatibility import ApiVersionPolicy
 from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.models import AutoAction, AutoOutcome, ProcessResult
 from immich_memories.automation.runner import AutoRunner
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.tracking import DeliveryStatus, RunMetadata
 
 

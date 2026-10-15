@@ -22,7 +22,7 @@ from PIL import Image
 from immich_memories import generate_clips, generate_downloads
 from immich_memories.api.models import AssetType
 from immich_memories.cache.prepared_source_bank import PreparedSourceBank
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_clips import extract_clips
 from immich_memories.generate_downloads import _try_merge_burst, download_clip

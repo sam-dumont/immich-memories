@@ -13,7 +13,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, NoReturn
 
 from immich_memories.delivery_timestamp import film_capture_instant
-from immich_memories.generate_progress import _report
+from immich_memories.generate_progress import report_progress
 from immich_memories.generate_settings import upload_to_immich
 from immich_memories.operations.film_labelling import label_for_params
 from immich_memories.operations.local_output_cleanup import remove_after_confirmed_upload
@@ -24,9 +24,9 @@ from immich_memories.security import configured_secret_values, sanitize_error_me
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import DeliveryError, GenerationParams
-    from immich_memories.generate_progress import _OperationalProgress
+    from immich_memories.generate_progress import OperationalProgress
     from immich_memories.tracking import RunTracker
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def _delivery_error(message: str) -> DeliveryError:
     return DeliveryError(message)
 
 
-def _safe_delivery_message(exc: Exception | str, config: Config) -> str:
+def safe_delivery_message(exc: Exception | str, config: Config) -> str:
     """Sanitize one delivery error, including unlabelled configured secrets."""
     safe_message = sanitize_error_message(str(exc))
     for secret in configured_secret_values(config):
@@ -97,10 +97,10 @@ def deliver_completed_artifact(
             recheck()
         except InvalidOutputArtifact as exc:
             _raise_delivery_error(
-                run_tracker, _safe_delivery_message(exc, params.config), attempted=False
+                run_tracker, safe_delivery_message(exc, params.config), attempted=False
             )
 
-    _report(params, "upload", 0.95, "Uploading to Immich...")
+    report_progress(params, "upload", 0.95, "Uploading to Immich...")
     delivery_error: DeliveryError | None = None
     asset_id: str | None = None
     try:
@@ -113,18 +113,16 @@ def deliver_completed_artifact(
         )
         asset_id = result.get("asset_id")
         if result.get("delivery_complete") is False:
-            warnings = [
-                _safe_delivery_message(w, params.config) for w in result.get("warnings", [])
-            ]
+            warnings = [safe_delivery_message(w, params.config) for w in result.get("warnings", [])]
             reason = "; ".join(warnings) or "Immich delivery incomplete; local film kept"
             _record_incomplete_delivery(run_tracker, result, reason, warnings)
             logger.warning("%s; local film kept at %s", reason, result_path)
-            _report(params, "upload", 1.0, f"{reason}; local film kept")
+            report_progress(params, "upload", 1.0, f"{reason}; local film kept")
             return result
         if not isinstance(asset_id, str) or not asset_id.strip():
             raise ValueError("Immich upload returned no asset ID")
     except Exception as exc:
-        safe_message = _safe_delivery_message(exc, params.config)
+        safe_message = safe_delivery_message(exc, params.config)
         logger.warning("Immich delivery failed: %s", safe_message)
         delivery_error = _pending_delivery_error(
             run_tracker,
@@ -162,7 +160,7 @@ def _record_delivered_asset(
     delivery_error: DeliveryError | None = None
     normalized_asset_id = asset_id.strip()
     try:
-        warnings = [_safe_delivery_message(w, params.config) for w in result.get("warnings", [])]
+        warnings = [safe_delivery_message(w, params.config) for w in result.get("warnings", [])]
         delivered_run = (
             run_tracker.mark_delivered(asset_id, warnings=warnings)
             if warnings
@@ -181,7 +179,7 @@ def _record_delivered_asset(
         ):
             remove_after_confirmed_upload(persisted)
             return
-        safe_message = _safe_delivery_message(exc, params.config)
+        safe_message = safe_delivery_message(exc, params.config)
         logger.error("Could not persist successful Immich delivery: %s", safe_message)
         delivery_error = _delivery_error(f"Immich delivery state update failed: {safe_message}")
     else:
@@ -200,11 +198,11 @@ def _deliver_completed_artifact(
     return deliver_completed_artifact(params, result_path, run_tracker, recheck)
 
 
-def _deliver_with_operational_progress(
+def deliver_with_operational_progress(
     params: GenerationParams,
     result_path: Path,
     run_tracker: RunTracker,
-    operational: _OperationalProgress,
+    operational: OperationalProgress,
     recheck: Callable[[], object] | None = None,
 ) -> None:
     """Expose optional delivery while preserving its existing error boundary."""

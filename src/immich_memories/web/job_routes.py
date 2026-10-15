@@ -22,8 +22,8 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from immich_memories.config import get_config_path
-from immich_memories.config_loader import Config
-from immich_memories.config_models_render import TitleStyleMode
+from immich_memories.config.loader import Config
+from immich_memories.config.models.render import TitleStyleMode
 from immich_memories.db import open_store
 from immich_memories.operations.cut_progress import (
     StageUpdate,
@@ -64,7 +64,7 @@ def cli_executable() -> str:
     return str(beside) if beside.is_file() else shutil.which("immich-memories") or "immich-memories"
 
 
-def _config_flag() -> Path | None:
+def config_flag_path() -> Path | None:
     path = get_config_path()
     return path if path.is_file() else None
 
@@ -237,7 +237,7 @@ def _render_progress(job: Job) -> JobProgress:
     )
 
 
-def _view(config: Config, job: Job) -> JobView:
+def job_view(config: Config, job: Job) -> JobView:
     if job.kind == "cut":
         progress = _cut_progress(config, job)
     elif job.kind in {"render", "music"}:
@@ -269,9 +269,9 @@ def _view(config: Config, job: Job) -> JobView:
     return JobView(**job.model_dump(), command=shown, progress=progress)
 
 
-def _busy(busy: JobBusy, config: Config) -> JSONResponse:
+def busy_response(busy: JobBusy, config: Config) -> JSONResponse:
     return JSONResponse(
-        {"detail": str(busy), "job": _view(config, busy.job).model_dump(mode="json")},
+        {"detail": str(busy), "job": job_view(config, busy.job).model_dump(mode="json")},
         status_code=409,
     )
 
@@ -307,7 +307,7 @@ def _start_cut(
     try:
         job = runner.start(
             "cut",
-            brief.argv(executable=executable, config=_config_flag(), output=output),
+            brief.argv(executable=executable, config=config_flag_path(), output=output),
             meta={
                 "shown": brief.shown_command(),
                 "brief": brief.model_dump_json(),
@@ -317,8 +317,8 @@ def _start_cut(
             job_id=job_id,
         )
     except JobBusy as busy:
-        return _busy(busy, config)
-    return _view(config, job)
+        return busy_response(busy, config)
+    return job_view(config, job)
 
 
 @router.post("/cuts", response_model=JobView, status_code=202, responses={409: {}})
@@ -377,7 +377,7 @@ def start_ask_preview(
         raise HTTPException(422, "Describe the film you want.")
     job_id = uuid4().hex
     trace_file = runner.progress_path(job_id)
-    config_flag = _config_flag()
+    config_flag = config_flag_path()
     # The same `CutBrief` flags a film from this sentence would get (`accounts` included),
     # so the preview's pool is scoped exactly as the eventual render will be.
     flags = [*CutBrief(ask=sentence, accounts=request.accounts).flags(), "--dry-run"]
@@ -395,8 +395,8 @@ def start_ask_preview(
             "ask", argv, meta={"shown": shown, "trace_file": str(trace_file)}, job_id=job_id
         )
     except JobBusy as busy:
-        return _busy(busy, config)
-    return _view(config, job)
+        return busy_response(busy, config)
+    return job_view(config, job)
 
 
 @router.get("/ask/preview/{job_id}", response_model=AskPreview)
@@ -425,7 +425,7 @@ def start_render(
 
     job_id = uuid4().hex
     progress_file = runner.progress_path(job_id)
-    config_flag = _config_flag()
+    config_flag = config_flag_path()
     track = None if options.music in {"none", "auto"} else music_file(config, options.music)
     if options.music not in {"none", "auto"} and track is None:
         raise HTTPException(404, "That music track is gone; preview or upload it again.")
@@ -453,8 +453,8 @@ def start_render(
             job_id=job_id,
         )
     except JobBusy as busy:
-        return _busy(busy, config)
-    return _view(config, job)
+        return busy_response(busy, config)
+    return job_view(config, job)
 
 
 @router.post("/roster/scan", response_model=JobView, status_code=202, responses={409: {}})
@@ -464,13 +464,13 @@ def scan_people(
     executable: Annotated[str, Depends(cli_executable)],
 ) -> JobView | JSONResponse:
     """Read the library's people again with `people scan`, keeping every answer given."""
-    config_flag = _config_flag()
+    config_flag = config_flag_path()
     argv = [executable, *(["--config", str(config_flag)] if config_flag else []), "people", "scan"]
     try:
         job = runner.start("scan", argv, meta={"shown": "immich-memories people scan"})
     except JobBusy as busy:
-        return _busy(busy, config)
-    return _view(config, job)
+        return busy_response(busy, config)
+    return job_view(config, job)
 
 
 @router.get("/jobs/active", response_model=JobView | None)
@@ -480,7 +480,7 @@ def active_job(
 ) -> JobView | None:
     """The job running now, for a page that opens mid-cut to join it."""
     job = runner.active()
-    return _view(config, job) if job else None
+    return job_view(config, job) if job else None
 
 
 def _job(runner: JobRunner, job_id: str) -> Job:
@@ -500,7 +500,7 @@ def read_job(
     runner: Annotated[JobRunner, Depends(job_runner)],
 ) -> JobView:
     """Where the job is, from its record and the files its child writes."""
-    return _view(config, _job(runner, job_id))
+    return job_view(config, _job(runner, job_id))
 
 
 @router.get("/jobs/{job_id}/events")
@@ -515,7 +515,7 @@ async def job_events(
     async def stream() -> AsyncIterator[str]:
         previous = ""
         while True:
-            view = _view(config, _job(runner, job_id)).model_dump_json()
+            view = job_view(config, _job(runner, job_id)).model_dump_json()
             if view != previous:
                 previous = view
                 yield f"data: {view}\n\n"
@@ -536,7 +536,7 @@ def cancel_job(
 ) -> JobView:
     """Stop the job's child, from this tab or any other."""
     job = _job(runner, job_id)
-    return _view(config, runner.cancel(job_id) or job)
+    return job_view(config, runner.cancel(job_id) or job)
 
 
 @router.get("/jobs/{job_id}/output", response_class=JSONResponse)
@@ -616,7 +616,7 @@ def start_music_preview(
     job_id = uuid4().hex
     out = config.cache.cache_path / "web-jobs" / f"{job_id}-music"
     progress_file = runner.progress_path(job_id)
-    config_flag = _config_flag()
+    config_flag = config_flag_path()
     argv = [
         executable,
         *(["--config", str(config_flag)] if config_flag else []),
@@ -651,8 +651,8 @@ def start_music_preview(
             job_id=job_id,
         )
     except JobBusy as busy:
-        return _busy(busy, config)
-    return _view(config, job)
+        return busy_response(busy, config)
+    return job_view(config, job)
 
 
 class MusicTrack(BaseModel):

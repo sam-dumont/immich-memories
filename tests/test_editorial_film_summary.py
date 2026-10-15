@@ -11,15 +11,15 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_film_summary import (
+from immich_memories.analysis.stories.names import home_name
+from immich_memories.analysis.stories.period_account import PeriodStory
+from immich_memories.analysis.structure.film_summary import (
     plain_summary,
     read_summary,
     summarise_the_film,
     what_the_shots_show,
 )
-from immich_memories.analysis.editorial_story_names import home_name
-from immich_memories.analysis.editorial_story_reading import PeriodStory
-from immich_memories.analysis.editorial_thin_step import polish_the_draft
+from immich_memories.analysis.structure.thin_step import polish_the_draft
 from tests.e2e.fake_library import STORY_BY_KEY, TRIP_DAYS
 
 BIRTHDAY = STORY_BY_KEY["S0001"]
@@ -545,8 +545,8 @@ def test_a_refined_film_asks_the_model_for_its_summary_not_the_drafts_basic_line
     refinement took the draft's selection over with that line on it, so the model summary
     never ran and a Full film showed the Basic line (rc.10, a birthday film: 33 model
     calls, no summary call)."""
-    from immich_memories.analysis.editorial_story_planner import StorySelection
-    from immich_memories.analysis.editorial_structure_planner import _story_selection
+    from immich_memories.analysis.selection.story_planner import StorySelection
+    from immich_memories.analysis.structure.planner import _story_selection
 
     stories = demo_stories()
     drafted = StorySelection(
@@ -626,7 +626,7 @@ def test_a_kept_synthesis_thesis_claims_no_language():
 
 
 def test_the_plan_keeps_the_summarys_language_for_a_later_render():
-    from immich_memories.analysis.editorial_story_planner import StorySelection
+    from immich_memories.analysis.selection.story_planner import StorySelection
 
     stories = demo_stories()
     selection = StorySelection(

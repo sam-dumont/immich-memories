@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis import editorial_product_brief as product_brief
+from immich_memories.analysis.film import product_brief
 from immich_memories.timeperiod import DateRange
 
 

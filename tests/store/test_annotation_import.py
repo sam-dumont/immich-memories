@@ -147,7 +147,7 @@ def test_legacy_discovery_keeps_relocated_paths_without_probing_runtime_hardware
     monkeypatch.setenv("IMMICH_MEMORIES_TIER", "auto")
     # WHY: hardware detection is a machine boundary unrelated to locating legacy files.
     with patch(
-        "immich_memories.config_tiers.inference_acceleration",
+        "immich_memories.config.tiers.inference_acceleration",
         side_effect=AssertionError("legacy discovery must not probe the runtime GPU"),
     ) as probe:
         found = legacy_sources(home)

@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.security import configured_secret_values
 
 

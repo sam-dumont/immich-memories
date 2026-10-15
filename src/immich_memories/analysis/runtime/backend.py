@@ -1,0 +1,659 @@
+"""Production structure-planning seam shared by the product route and sealed replays."""
+
+from __future__ import annotations
+
+import calendar
+import json
+import logging
+from collections.abc import Callable, Mapping, Sequence
+from contextlib import ExitStack
+from dataclasses import replace
+from datetime import date
+from hashlib import sha256
+from itertools import chain
+from operator import itemgetter
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+from immich_memories.analysis.clips.motion_facts import production_motion_resolver
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import (
+    StructurePlannerPorts,
+    StructurePlanningInput,
+    StructurePlanningResult,
+)
+from immich_memories.analysis.film.product_brief import build_editorial_brief
+from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+from immich_memories.analysis.polish.layer import (
+    PeriodUnread,
+    ThinPolish,
+    film_periods,
+)
+from immich_memories.analysis.polish.short import ShortReads
+from immich_memories.analysis.preparation.demanded_previews import DemandedPreviewReader
+from immich_memories.analysis.preparation.scene_prints import CachedScenePrints, pinned_encoder
+from immich_memories.analysis.preparation.thumbnail_hashes import CachedThumbnailHasher
+from immich_memories.analysis.reading.case import Case
+from immich_memories.analysis.reading.demand import DemandEpisodeReadings
+from immich_memories.analysis.reading.people_identities import EditorialPeople
+from immich_memories.analysis.runtime.film_preparation import CandidateEvidence
+from immich_memories.analysis.runtime.live_source_integrity import (
+    OriginalSourceIntegrity,
+    production_live_source_integrity,
+)
+from immich_memories.analysis.runtime.orchestration import TextEditorialWorkprint
+from immich_memories.analysis.runtime.plan import EditorialPlan, EditorialSelection
+from immich_memories.analysis.runtime.ports import (
+    EditorialRuntimePorts,
+    production_cut_resolvers,
+    production_live_clock_offsets,
+    production_story_motion,
+)
+from immich_memories.analysis.sources.thumbnail_prefetch import cached_preview_bytes
+from immich_memories.analysis.stories.event_story import PrintedNear
+from immich_memories.analysis.structure.people_condition import (
+    exclude_people_condition_violators,
+)
+from immich_memories.analysis.structure.planning_input import capture_structure_input
+from immich_memories.api.models import Asset, VideoClipInfo
+from immich_memories.config.tiers import nas_draft_config
+from immich_memories.security import write_secret_file
+from immich_memories.store.library_catalogue import LibraryAccount
+from immich_memories.store.library_overviews import library_period_account
+
+if TYPE_CHECKING:
+    from immich_memories.analysis.runtime.composition import EditorialRunContext
+    from immich_memories.cache.thumbnail_cache import ThumbnailCache
+    from immich_memories.config.loader import Config
+    from immich_memories.db import Store
+
+logger = logging.getLogger(__name__)
+
+
+class ProductionPostCardBackend:
+    """Run the shared structure planner behind one synchronous production seam."""
+
+    def __init__(
+        self,
+        *,
+        config: Config,
+        context: EditorialRunContext,
+        people: EditorialPeople,
+        thumbnail_cache: ThumbnailCache,
+        store: Store,
+        bank_root: Path,
+        ports: EditorialRuntimePorts,
+        fetch_preview: Callable[[str], bytes | None] | None = None,
+        attached_sources: Callable[[], Sequence[Asset | VideoClipInfo]] | None = None,
+        episode_demand: DemandEpisodeReadings | None = None,
+        prepare_refinement: Callable[
+            [StructurePlanningInput, Sequence[Mapping[str, Any]]], StructurePlanningInput
+        ]
+        | None = None,
+        printed_near: PrintedNear | None = None,
+        document_ocr_text: Callable[[str, bool], str | None] | None = None,
+        album_names: Callable[[Sequence[str]], tuple[str, ...]] | None = None,
+    ) -> None:
+        self._prepare_refinement = prepare_refinement
+        self._printed_near = printed_near
+        # What the owner's albums call a set of pictures: a trip is named after its album.
+        self._album_names = album_names
+        self._document_ocr_text = document_ocr_text
+        self._episode_demand = episode_demand
+        self._fetch_preview = fetch_preview
+        self._attached_sources = attached_sources
+        self._config = config
+        self._context = context
+        self._people = people
+        self._thumbnail_cache = thumbnail_cache
+        self._store = store
+        self._bank_root = bank_root
+        self._ports = ports
+        self.last_structure_result: StructurePlanningResult | None = None
+        self.last_companion_assets: dict[str, Asset] = {}
+        self.allow_live_motion: bool | None = None
+        # One measurement engine per run: planning and the render projection
+        # must re-derive the same Live stitch material (#1012).
+        self._clock_offsets_provider = None
+        self._source_integrity_provider: OriginalSourceIntegrity | None = None
+
+    def source_integrity(self, source: StructurePlanningInput, resources):
+        """One original-byte verifier for retained carriers across refinement passes."""
+        if self._source_integrity_provider is None:
+            self._source_integrity_provider = production_live_source_integrity(
+                source, resources=resources
+            )
+            resources.callback(setattr, self, "_source_integrity_provider", None)
+        return self._source_integrity_provider
+
+    def clock_offsets(self, source: StructurePlanningInput, resources):
+        """The run's Live companion clock measurements, built once and memoised."""
+        if self._clock_offsets_provider is None:
+            self._clock_offsets_provider = production_live_clock_offsets(
+                source, resources=resources
+            )
+        return self._clock_offsets_provider
+
+    @property
+    def clock_offsets_provider(self):
+        """The engine planning used, for the render projection that must agree with it."""
+        return self._clock_offsets_provider
+
+    def edit(
+        self, workprint: TextEditorialWorkprint | StructurePlanningInput, *, trace: Trace
+    ) -> EditorialPlan:
+        """Run one structure algorithm for product workprints and sealed matrix evidence."""
+        source, allowed_ids = self._structure_source(workprint)
+        source = self._apply_runtime_policy(source)
+        rules = self._config.editorial.resolve_reader(self._config.llm.model) == "rules"
+        if rules:
+            # The rules reader keeps the run's Live Photo policy: motion is first class on
+            # every tier, and whether a clip plays is measured (its residual and whether its
+            # frames hold the subject), never asked of a model.
+            source = replace(source, lineage={**source.lineage, "reader": "rules-v1"})
+        request_start = len(trace.requests)
+        self.last_companion_assets = dict(source.companion_assets)
+        resources = ExitStack()
+        try:
+            initial = (
+                replace(
+                    source,
+                    config=nas_draft_config(source.config),
+                    artifact_dir=source.artifact_dir / "nas-draft",
+                )
+                if self._prepare_refinement is not None
+                else source
+            )
+            effects = self._effects(initial, resources)
+            if self._prepare_refinement is not None:
+                effects = replace(
+                    effects, refine=lambda captured, draft: self._refine(captured, draft, resources)
+                )
+            result = self._ports.structure_planner(source, effects)
+        finally:
+            try:
+                resources.close()
+            finally:
+                _write_visual_requests(source.artifact_dir, trace, request_start)
+        if rules:
+            result.plan["reader"] = "rules-v1"
+            result.plan.setdefault("lineage", {})["reader"] = "rules-v1"
+            result.plan["semantic_reuse"] = "none; rules are recomputed from captured facts"
+        if self._episode_demand is not None:
+            health = self._episode_demand.reading_health()
+            result.plan["episode_reading_health"] = health
+            if health["unavailable_episodes"]:
+                warning = (
+                    f"!! {health['unavailable_episodes']} demanded episode(s) unread; "
+                    "using factual fallback"
+                )
+                trace.warnings.append(warning)
+                logger.warning(warning)
+        _warn_of_people_condition_exclusion(result, trace)
+        return self._adopt(result, source.artifact_dir, allowed_ids)
+
+    def _effects(self, source, resources):
+        effects = (
+            self._ports.structure_ports_factory(source)
+            if self._ports.structure_ports_factory
+            else self._production_effects(source, resources=resources)
+        )
+        # Refinement builds its own effects too; each loaded scorer belongs to this edit.
+        if laya := getattr(effects, "laya", None):
+            resources.callback(laya.close)
+        return effects
+
+    def _refine(self, source, draft, resources):
+        assert self._prepare_refinement is not None
+        evidence = CandidateEvidence(source, self._prepare_refinement)
+        evidence.ensure(draft.carriers)
+        effects = replace(
+            self._effects(evidence.source, resources),
+            draft=draft,
+            prepare_candidates=evidence.ensure,
+        )
+        return evidence.source, effects
+
+    def _structure_source(
+        self, workprint: TextEditorialWorkprint | StructurePlanningInput
+    ) -> tuple[StructurePlanningInput, set[str]]:
+        if isinstance(workprint, StructurePlanningInput):
+            return workprint, _moment_members(workprint)
+        context = self._context
+        case = Case(
+            key=context.key,
+            label=context.label,
+            product=context.product,
+            ranges=context.case_ranges,
+            target_seconds=context.target_seconds,
+            brief=build_editorial_brief(
+                context.product,
+                context.case_ranges,
+                base=context.base_brief,
+                hemisphere=context.hemisphere,
+            ),
+            target_source=context.target_source,
+            people=context.people,
+            person_match=context.person_match,
+            person_expression=context.person_expression,
+            accept_any_provenance=context.accept_any_provenance,
+            trip=context.trip,
+            album_ref=context.album_ref,
+            special_event_id=context.special_event_id,
+            event_asset_ids=context.event_asset_ids,
+            event_admission=context.event_admission,
+            pool_subject=context.pool_subject,
+            excluded=context.excluded,
+            excluded_person_ids=context.excluded_person_ids,
+            resolved_person_condition=context.resolved_person_condition,
+            face_accounts=context.face_accounts,
+            celebrated_birthday=context.celebrated_birthday,
+            occasion=context.occasion,
+        )
+        source = capture_structure_input(
+            workprint,
+            case=case,
+            config=self._config,
+            people=self._people,
+            store=self._store,
+            bank_root=self._bank_root,
+            artifact_dir=context.artifact_dir,
+            motion_outcome_replay=context.motion_outcome_replay,
+            attached_sources=self._attached_sources() if self._attached_sources else (),
+        )
+        return source, {candidate.clip.asset.id for candidate in workprint.input_candidates}
+
+    def _apply_runtime_policy(self, source: StructurePlanningInput) -> StructurePlanningInput:
+        source = replace(source, audience=self._context.audience)
+        if self._context.render_timing is not None:
+            if (
+                source.render_timing is not None
+                and source.render_timing != self._context.render_timing
+            ):
+                raise ValueError("Editorial source and runtime timing disagree")
+            source = replace(source, render_timing=self._context.render_timing)
+        if self.allow_live_motion is not None:
+            source = replace(
+                source,
+                allow_live_motion=self.allow_live_motion,
+                lineage={
+                    **source.lineage,
+                    "render_policy": {"allow_live_motion": self.allow_live_motion},
+                },
+            )
+        return source
+
+    def _production_effects(
+        self, source: StructurePlanningInput, *, resources: ExitStack
+    ) -> StructurePlannerPorts:
+        config = source.config
+        rules = config.editorial.resolve_reader(config.llm.model) == "rules"
+        resolve_windows, resolve_speech = production_cut_resolvers(source, resources=resources)
+        demanded_previews = (
+            DemandedPreviewReader(
+                self._thumbnail_cache, self._fetch_preview, allowed_ids=_moment_members(source)
+            )
+            if self.allow_live_motion is not None and self._fetch_preview is not None
+            else None
+        )
+        read_preview = demanded_previews or (
+            lambda asset_id: cached_preview_bytes(self._thumbnail_cache, asset_id)
+        )
+        thumbnail_hasher = CachedThumbnailHasher(
+            source.bank_dir.parent / "thumbnail-hashes.sqlite", read_preview
+        )
+        resources.callback(thumbnail_hasher.close)
+        scene_prints = CachedScenePrints(
+            source.bank_dir.parent / "scene-prints.sqlite",
+            read_preview,
+            open_encoder=pinned_encoder(config.triage.encoder_path, config.triage.provider),
+        )
+        resources.callback(scene_prints.close)
+
+        def thumbnail_metrics():
+            metrics = thumbnail_hasher.metrics()
+            if demanded_previews is not None:
+                metrics["preview_acquisition"] = demanded_previews.metrics()
+            return metrics
+
+        if rules:
+            from immich_memories.analysis.audience.laya_reader import laya_reader_for
+            from immich_memories.analysis.stories.rule_reader import (
+                NoModelJudge,
+                RuleStructureReader,
+            )
+
+            return StructurePlannerPorts(
+                judge=NoModelJudge(),
+                # Laya reads the captions, so only a tier that writes them can use it.
+                laya=laya_reader_for(config.editorial)
+                if config.editorial.preparation.demands_captions
+                else None,
+                thumbnail_hash=thumbnail_hasher,
+                scene_print=scene_prints,
+                thumbnail_metrics=thumbnail_metrics,
+                # Narrowed so a violator never names a story or episode title (#1954);
+                # `_plan_structure` narrows the same way, idempotently, before planning.
+                rules=RuleStructureReader(
+                    exclude_people_condition_violators(source).source,
+                    printed=self._printed_near,
+                    album_names=self._album_names,
+                ),
+                printed_near=self._printed_near,
+                document_ocr_text=self._document_ocr_text,
+                resolve_windows=resolve_windows,
+                resolve_speech=resolve_speech,
+                resolve_motion=production_motion_resolver(source),
+                clock_offsets=self.clock_offsets(source, resources),
+                live_source_integrity=self.source_integrity(source, resources),
+            )
+        # The model reads text only. Pictures were read once, at ingest, by the caption model
+        # and the heads; nothing below sends a picture to it.
+        story_motion = production_story_motion(source, store=self._store)
+        return StructurePlannerPorts(
+            judge=StructureTextJudge(config, source.artifact_dir, judgments=self._store),
+            thumbnail_hash=thumbnail_hasher,
+            scene_print=scene_prints,
+            thumbnail_metrics=thumbnail_metrics,
+            resolve_motion=production_motion_resolver(source),
+            resolve_windows=resolve_windows,
+            resolve_speech=resolve_speech,
+            observe_story_motion=story_motion.observe,
+            story_motion_metrics=story_motion.metrics,
+            clock_offsets=self.clock_offsets(source, resources),
+            live_source_integrity=self.source_integrity(source, resources),
+            printed_near=self._printed_near,
+            document_ocr_text=self._document_ocr_text,
+            **self._thin_polish(source),
+        )
+
+    def _thin_polish(self, source: StructurePlanningInput) -> dict[str, Any]:
+        """Build the draft with the no-model reader and let the model polish it, when asked.
+
+        Nothing is read here. The draft is built from facts alone, and the period is read when
+        the layer asks for its account -- by then the draft has chosen its stories, and only
+        those stories' episodes are ever read.
+        """
+        if not self._config.editorial.thin_model_layer or source.store is None:
+            return {}
+        periods = film_periods(source.case.ranges)
+        config = self._config
+        if config.editorial.resolve_reader(config.llm.model) == "rules":
+            return {}
+        from immich_memories.analysis.audience.laya_reader import laya_reader_for
+        from immich_memories.analysis.stories.rule_reader import RuleStructureReader
+
+        # Narrowed for the same reason as the rules-only path above (#1954). The owner's
+        # #2048 ruling is BASIC-only: the model tier still polishes this draft, so the
+        # draft itself must never carry the sparse-week quality promotion.
+        rules = RuleStructureReader(
+            exclude_people_condition_violators(source).source,
+            printed=self._printed_near,
+            promote_sparse_quality=False,
+            album_names=self._album_names,
+        )
+        return {
+            "rules": rules,
+            "laya": laya_reader_for(config.editorial),
+            "thin": ThinPolish(
+                store=source.bank_store,
+                bank_scope=source.case.key,
+                read_period=lambda asset_ids_of: self._read_period(source, periods, asset_ids_of),
+                short=self._short_reads(source, rules.standing),
+            ),
+        }
+
+    def _short_reads(
+        self, source: StructurePlanningInput, standing: Callable[[str], int]
+    ) -> ShortReads | None:
+        """What a film the polish left short may still read: the run's unread episodes."""
+        demand = self._episode_demand
+        if demand is None:
+            return None
+        return ShortReads(
+            unread=demand.unread_episodes,
+            records=lambda asset_ids: self._records_for(source, asset_ids),
+            standing=standing,
+        )
+
+    def _records_for(
+        self, source: StructurePlanningInput, asset_ids: Sequence[str]
+    ) -> Mapping[str, str]:
+        """Read and bank these pictures' episodes; what the readings recorded, by picture.
+
+        A failed reading is a film that stays short, never a failed film.
+        """
+        from immich_memories.analysis.runtime.period_accounts import banked_notable_records
+
+        assert source.store is not None and self._episode_demand is not None
+        try:
+            readings = self._episode_demand.readings_for(list(asset_ids))
+            return banked_notable_records(
+                [reading.identity for reading in readings.values()], store=source.store
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            logger.warning("Could not read more of this period for a short film (%s)", exc)
+            return {}
+
+    def _read_period(
+        self,
+        source: StructurePlanningInput,
+        periods: tuple[str, ...],
+        asset_ids_of: Mapping[str, Sequence[str]],
+    ) -> tuple[str, Mapping[str, str]]:
+        """The account of this period and its records, read from the episodes of the draft's shots.
+
+        Asked twice, because one dropped call must not ship the draft without its polish. A
+        second failure is still not a failed film: `PeriodUnread` tells the polish why it did
+        not run, and the rules draft ships with the passes a no-model film gets.
+        """
+        named = periods[0] if len(periods) == 1 else f"{periods[0]} to {periods[-1]}"
+        try:
+            return self._demanded_periods(source, periods, asset_ids_of)
+        except (OSError, ValueError, RuntimeError) as exc:
+            logger.warning("Could not read an account of %s (%s); asking once more", named, exc)
+        try:
+            return self._demanded_periods(source, periods, asset_ids_of)
+        except (OSError, ValueError, RuntimeError) as exc:
+            raise PeriodUnread(f"could not read an account of {named}: {exc}") from exc
+
+    def _demanded_periods(
+        self,
+        source: StructurePlanningInput,
+        periods: tuple[str, ...],
+        asset_ids_of: Mapping[str, Sequence[str]],
+    ) -> tuple[str, Mapping[str, str]]:
+        """One period's account, or a film of several windows told window by window.
+
+        Each window is told from its own shots' episodes only, so nothing outside the film's
+        windows (the rest of a year it touches) reaches its account.
+        """
+        if len(periods) == 1:
+            return self._demanded_period(source, periods[0], asset_ids_of, None)
+        accounts: list[str] = []
+        records: dict[str, str] = {}
+        for period in periods:
+            bounds = _period_bounds(period)
+            inside = {
+                key: [a for a in ids if _taken_within(source, a, bounds)]
+                for key, ids in asset_ids_of.items()
+            }
+            if not any(inside.values()):
+                continue
+            account, found = self._demanded_period(source, period, inside, bounds)
+            if account:
+                accounts.append(f"{period}:\n{account}")
+            records.update(found)
+        return "\n\n".join(accounts), records
+
+    def _demanded_period(
+        self,
+        source: StructurePlanningInput,
+        period: str,
+        asset_ids_of: Mapping[str, Sequence[str]],
+        bounds: tuple[date, date] | None,
+    ) -> tuple[str, Mapping[str, str]]:
+        from immich_memories.analysis.runtime.period_accounts import (
+            banked_notable_records,
+            catalogue_banked_episodes,
+        )
+
+        assert source.store is not None
+        readings = self._demand_readings(asset_ids_of)
+        identities = [reading.identity for reading in readings.values()]
+        account = library_period_account(source.store, period)
+        facts = _unread_facts(source, set(readings), bounds)
+        if not account and (identities or facts):
+            catalogue_banked_episodes(
+                identities,
+                store=source.store,
+                capture_dates={key: asset.local_taken_at for key, asset in source.assets.items()},
+                config=self._config,
+                requester=self._ports.catalogue_requester_factory(self._config),
+                unread_facts=facts,
+                period=period,
+            )
+            account = library_period_account(source.store, period)
+        return account, banked_notable_records(identities, store=source.store)
+
+    def _demand_readings(self, asset_ids_of: Mapping[str, Sequence[str]]) -> dict[str, Any]:
+        """Read the episodes the draft's shots sit in, and nothing else."""
+        if self._episode_demand is None:
+            return {}
+        return self._episode_demand.readings_for(list(chain.from_iterable(asset_ids_of.values())))
+
+    def _adopt(
+        self, result: StructurePlanningResult, artifact_dir: Path, allowed_ids: set[str]
+    ) -> EditorialPlan:
+        if result.plan.get("status") == "planning_incomplete":
+            # Preserve an incomplete attempt only after the ordinary source/order
+            # checks. Conversion below raises; it cannot yield an empty refusal.
+            _validate_structure_carriers(result, allowed_ids=allowed_ids)
+            result.write(artifact_dir)
+            self.last_structure_result = result
+        plan = _plan_from_structure_result(result, allowed_ids=allowed_ids)
+        result.write(artifact_dir)
+        self.last_structure_result = result
+        return plan
+
+
+def _period_bounds(period: str) -> tuple[date, date]:
+    """The first and last day a library node names: a window, a month or a year."""
+    if ".." in period:
+        first, _, last = period.partition("..")
+        return date.fromisoformat(first), date.fromisoformat(last)
+    year = int(period[:4])
+    if len(period) == 4:
+        return date(year, 1, 1), date(year, 12, 31)
+    month = int(period[5:7])
+    return date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1])
+
+
+def _taken_within(source: StructurePlanningInput, asset_id: str, bounds: tuple[date, date]) -> bool:
+    asset = source.assets.get(asset_id)
+    return asset is not None and bounds[0] <= asset.local_taken_at.date() <= bounds[1]
+
+
+def _unread_facts(
+    source: StructurePlanningInput, read: set[str], bounds: tuple[date, date] | None = None
+) -> list[LibraryAccount]:
+    """What the draft's own cards say about each episode this cut did not read.
+
+    The no-model reader wrote them to build the draft, so passing them on costs nothing, and
+    the account then speaks for the whole period rather than for the shots alone. With
+    ``bounds``, only the episodes of that window.
+    """
+    cards = {card.episode_id: card for card in source.episode_readings.values()}
+    facts = []
+    for episode_id, card in sorted(cards.items()):
+        dates = [
+            source.assets[asset].local_taken_at
+            for asset in card.representative_asset_ids
+            if asset in source.assets
+        ]
+        if episode_id in read or not dates or not card.what_happened.strip():
+            continue
+        if bounds is not None and not bounds[0] <= min(dates).date() <= bounds[1]:
+            continue
+        material = f"{episode_id}\n{card.evidence_key}\n{card.what_happened}"
+        facts.append(
+            LibraryAccount(
+                sha256(material.encode()).hexdigest(),
+                "episode-facts",
+                min(dates).strftime("%Y-%m"),
+                card.what_happened,
+                (),
+            )
+        )
+    return facts
+
+
+def _moment_members(source: StructurePlanningInput) -> set[str]:
+    return set(chain.from_iterable(source.moment_asset_ids.values()))
+
+
+def _write_visual_requests(artifact_dir: Path, trace: Trace, request_start: int) -> None:
+    """Record every picture the structure stage sent a model: none, since pictures are read
+    once, at ingest. A non-empty list here is a defect, and the record is how to see one."""
+    write_secret_file(
+        artifact_dir / "visual-requests.private.json",
+        json.dumps(
+            {
+                "scope": "every structure-stage request that carried a picture",
+                "requests": trace.as_dict()["requests"][request_start:],
+            },
+            indent=2,
+        ),
+    )
+
+
+def _warn_of_people_condition_exclusion(result: StructurePlanningResult, trace: Trace) -> None:
+    """Surface what `plan_structure` already excluded before planning (#1954, #1969).
+
+    The owner's ruling is strict: better lose a good picture than bundle in a wrong one.
+    `structure.planner._plan_structure` enforces it on the whole pool before any
+    selection runs, so there is nothing to rewrite here; this only reports what it found.
+    """
+    excluded = result.plan.get("people_condition_excluded")
+    if not excluded:
+        return
+    warning = (
+        f"!! {len(excluded)} picture(s) left out: the requested people are not recognised in them"
+    )
+    trace.warnings.append(warning)
+    logger.warning(warning)
+
+
+def _validate_structure_carriers(result: StructurePlanningResult, *, allowed_ids: set[str]) -> None:
+    carriers = result.plan["carriers"]
+    selected_ids = tuple(row["asset_id"] for row in carriers)
+    if len(selected_ids) != len(set(selected_ids)):
+        raise ValueError("structure planner selected the same source more than once")
+    if not set(selected_ids).issubset(allowed_ids):
+        raise ValueError("structure planner selected outside the conserved input")
+    if carriers != sorted(carriers, key=itemgetter("taken")):
+        raise ValueError("structure planner carriers must be chronological")
+
+
+def _plan_from_structure_result(
+    result: StructurePlanningResult, *, allowed_ids: set[str]
+) -> EditorialPlan:
+    _validate_structure_carriers(result, allowed_ids=allowed_ids)
+    carriers = result.plan["carriers"]
+    if result.plan.get("status") == "planning_incomplete":
+        reason = result.plan.get("intent_report", {}).get("reason") or "bounded planning stopped"
+        raise RuntimeError(f"Editorial planning incomplete: {reason}")
+    if result.plan.get("status") == "insufficient_material":
+        # A deliberate empty cut stops generation. Unavailability would invoke
+        # legacy selection; diagnostic carriers remain in the written result.
+        return EditorialPlan()
+    return EditorialPlan(
+        selections=tuple(
+            EditorialSelection(
+                asset_id=row["asset_id"],
+                render_mode="motion" if row["kind"] in ("live-motion", "video") else "still",
+                has_music=bool(row.get("has_music", False)),
+            )
+            for row in carriers
+        )
+    )

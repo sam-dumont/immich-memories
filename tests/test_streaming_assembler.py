@@ -419,7 +419,7 @@ def test_full_streaming_prores_threads_plan_and_uses_mov_work_video(tmp_path) ->
             "immich_memories.processing.streaming_assembler.assemble_streaming",
             return_value=[],
         ) as assemble,
-        patch("immich_memories.processing.streaming_assembler._probe_duration", return_value=1.0),
+        patch("immich_memories.processing.streaming_assembler.probe_duration", return_value=1.0),
         patch("immich_memories.processing.streaming_assembler.extract_and_mix_audio"),
         patch("immich_memories.processing.streaming_assembler.mux_video_audio"),
     ):
@@ -474,7 +474,7 @@ def _vf_for_scale_mode(mode: str) -> str:
 
 def test_the_configurable_scale_modes_render_differently() -> None:
     """Two accepted modes that build the same chain would mean one is a phantom."""
-    from immich_memories.config_models_render import DefaultsConfig
+    from immich_memories.config.models.render import DefaultsConfig
 
     modes = [mode for mode in ("blur", "fit") if DefaultsConfig(scale_mode=mode).scale_mode == mode]
     chains = {_vf_for_scale_mode(mode) for mode in modes}

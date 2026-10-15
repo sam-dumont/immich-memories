@@ -6,9 +6,9 @@ import cv2
 import numpy as np
 import pytest
 
-from immich_memories.analysis import editorial_thumbnail_hashes as module
-from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash
-from immich_memories.analysis.editorial_thumbnail_hashes import CachedThumbnailHasher
+from immich_memories.analysis.corpus.duplicate_hashing import compute_thumbnail_hash
+from immich_memories.analysis.preparation import thumbnail_hashes as module
+from immich_memories.analysis.preparation.thumbnail_hashes import CachedThumbnailHasher
 
 
 def preview(reverse=False):

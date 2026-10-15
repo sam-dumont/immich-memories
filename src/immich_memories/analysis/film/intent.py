@@ -1,0 +1,556 @@
+"""Typed product obligations the editorial planner must satisfy before it selects anything.
+
+The product brief explains a product in prose; this module states what can be checked: which
+partitions of the scope must be represented, what the film must make visible, what supporting
+texture is admissible, and when to abstain with ``insufficient_material`` instead of inflating
+whatever is at hand. Prompts render the contract; validators enforce the checkable part.
+"""
+
+from __future__ import annotations
+
+import calendar
+import hashlib
+from collections.abc import Callable, Collection, Sequence
+from dataclasses import dataclass, replace
+from datetime import date, datetime, timedelta
+from operator import itemgetter
+
+from immich_memories.analysis.film.product_brief import written_subject
+from immich_memories.analysis.sources.event_scope import SpecialEventAdmission
+from immich_memories.timeperiod import DateRange
+
+__all__ = ["EditorialIntent", "IntentPartition", "build_editorial_intent", "voiced_era_of"]
+
+ERA_THRESHOLD_DAYS = (
+    548  # a person span longer than ~18 months is read as eras, one per calendar year
+)
+
+
+@dataclass(frozen=True)
+class IntentPartition:
+    """A stretch of the scope that must have a voice when it holds evidence."""
+
+    key: str
+    start: date
+    end: date
+    required: bool
+
+    def __post_init__(self) -> None:
+        if self.end < self.start:
+            raise ValueError("intent partition ends before it starts")
+
+    @property
+    def label(self) -> str:
+        return (
+            self.start.isoformat()
+            if self.start == self.end
+            else f"{self.start.isoformat()}..{self.end.isoformat()}"
+        )
+
+    def covers(self, when: date) -> bool:
+        return self.start <= when <= self.end
+
+
+@dataclass(frozen=True)
+class EditorialIntent:
+    product: str
+    scope: str
+    narrative_objective: str
+    partitions: tuple[IntentPartition, ...]
+    coverage_requirements: tuple[str, ...]
+    selection_priorities: tuple[str, ...]
+    allowed_texture: str
+    abstention_policy: str
+    subject: str | None = None
+    max_carriers_per_partition: int | None = None
+    # Every partition that holds material gets one moment before any story deepens: a person's
+    # lifetime or a works period over years is about the span, and a year that holds her is
+    # part of it however few stars it has.
+    voice_per_partition: bool = False
+    # A custom film about what its owner wrote: its material was chosen for that subject, so a
+    # frame of it with nobody in it (a stripped wall, a room under construction) is still one
+    # its story can show.
+    context_without_life: bool = False
+    # The film's material is a pool curated for its written subject (an album of loaves handed
+    # over with "bread making along the years"). Owner ruling 2026-09-28: a pool picture stands
+    # on the subject, so its standing score can't veto it, and every year that holds pool
+    # pictures gets a shot. A plain custom range with a brief is not a curated pool.
+    pool_is_subject: bool = False
+    # The dates are the film's subject (on this day): a year that holds a picture standing on its
+    # own speaks however ordinary its story reads against the busier years, so the film goes
+    # short only when the years run out of distinct shots (#2134). Standing still applies.
+    occurrence_is_subject: bool = False
+    # A film about a person, not about any one day of theirs: no story deepens past a quarter
+    # of the cut (half for the one the plan made dominant). When the other days run out of
+    # pictures the film goes short, as a holiday does across its years (#2441), rather than
+    # pour every free second into the one day that had more (a friend's wedding, 9 of 28).
+    story_shares: bool = False
+    # Phrases a free-text request asked left out ("no humans", "sans les enfants"): hard
+    # rules the brief carries so the planner never selects what the pool already excluded,
+    # and the report can count a violation if one ever slips through (#2061).
+    excluded: tuple[str, ...] = ()
+
+    def partition_for(self, when: date) -> IntentPartition | None:
+        return next((part for part in self.partitions if part.covers(when)), None)
+
+    @property
+    def required_partitions(self) -> tuple[IntentPartition, ...]:
+        return tuple(part for part in self.partitions if part.required)
+
+    def prompt_block(self) -> str:
+        """The contract as every semantic prompt sees it; the binding subject of a custom memory included."""
+        lines = [
+            f"PRODUCT CONTRACT ({self.product}):",
+            f"scope: {self.scope}",
+            f"objective: {self.narrative_objective}",
+        ]
+        if self.subject:
+            lines.append(f"binding subject: {self.subject}")
+        if self.excluded:
+            lines.append("must not show: " + "; ".join(self.excluded))
+        lines.extend(
+            (
+                "must cover: " + "; ".join(self.coverage_requirements),
+                "priorities: " + "; ".join(self.selection_priorities),
+                f"texture allowed: {self.allowed_texture}",
+                f"abstain when: {self.abstention_policy}",
+            )
+        )
+        if self.max_carriers_per_partition is not None:
+            lines.append(
+                f"selection limit: at most {self.max_carriers_per_partition} selected carrier per calendar year"
+            )
+        if len(self.partitions) > 1:
+            lines.append(
+                "partitions: "
+                + "; ".join(
+                    f"{p.label}{' (required)' if p.required else ''}" for p in self.partitions
+                )
+            )
+        return "\n".join(lines)
+
+    def identity(self) -> str:
+        return hashlib.sha256(self.prompt_block().encode("utf-8")).hexdigest()
+
+    def story_prompt_block(self) -> str:
+        """The type part: what an episode is for this memory type, what is central, what more time adds."""
+        # A custom range with no written subject is a period film; its story part names no subject.
+        part = "" if self.product == "custom" and not self.subject else self.product
+        return f"STORY PART ({self.product}): " + _STORY_PARTS.get(part, _STORY_PART_DEFAULT)
+
+    def admission_prompt_block(self, ranges: Sequence[DateRange]) -> str:
+        """Judge the requested occurrences before applying the final per-year cut limit."""
+        if self.product != "on_this_day":
+            return self.prompt_block()
+        if not ranges:
+            raise ValueError("on-this-day admission needs its captured occurrence ranges")
+        spans = sorted(((r.start.date(), r.end.date()) for r in ranges), key=itemgetter(0))
+        return replace(
+            self,
+            partitions=_per_range(spans, "occurrence", required=True),
+            max_carriers_per_partition=None,
+        ).prompt_block()
+
+
+def voiced_era_of(intent: EditorialIntent) -> Callable[[str], str | None] | None:
+    """The partition key of a capture time (ISO text), for a film that gives every partition a
+    voice; None for a film that promises none. A time outside every partition has no key."""
+    if not intent.voice_per_partition:
+        return None
+
+    def era_of(taken: str) -> str | None:
+        part = intent.partition_for(datetime.fromisoformat(taken).date())
+        return part.key if part is not None else None
+
+    return era_of
+
+
+def build_editorial_intent(
+    product: str,
+    ranges: Sequence[DateRange],
+    *,
+    brief: str,
+    people: Sequence[str] = (),
+    event_admission: SpecialEventAdmission | None = None,
+    material: Collection[date] | None = None,
+    pool_subject: str | None = None,
+    excluded: Sequence[str] = (),
+) -> EditorialIntent:
+    """Derive the contract from the product, its date ranges, and (for a custom memory) its brief.
+
+    `material` is the days the film's own pictures were taken. A person film read as eras then
+    names only the years that hold some: a window from a birth date holds many years with no
+    picture of the person, and those are not parts of her film. A curated pool's years are
+    named the same way.
+
+    `pool_subject` is the written subject a curated pool was chosen for: the film then binds that
+    subject, gives every year of the pool a voice, and carries `pool_is_subject`.
+
+    `excluded` is what a free-text request asked left out: carried as a hard rule the brief
+    states, on top of whatever the pool already dropped for it (#2061).
+    """
+    if not product.strip():
+        raise ValueError("editorial intent needs a product")
+    if not ranges:
+        raise ValueError("editorial intent needs at least one date range")
+    spans = sorted(((r.start.date(), r.end.date()) for r in ranges), key=itemgetter(0))
+    whole = (spans[0][0], spans[-1][1])
+    who = ", ".join(p for p in people if p.strip())
+    if event_admission is not None and product != "special_day":
+        raise ValueError("event admission requires the special_day product")
+    if pool_subject is not None and not pool_subject.strip():
+        raise ValueError("a curated pool needs the written subject it was chosen for")
+    builder = (
+        _accepted_special_day
+        if event_admission is not None
+        else _subject_pool
+        if pool_subject is not None
+        else _BUILDERS.get(product, _generic)
+    )
+    intent = _with_excluded(
+        builder(product, spans, whole, brief=pool_subject or brief, who=who), excluded
+    )
+    if material is None or builder not in (_person, _subject_pool):
+        return intent
+    years = {day.year for day in material}
+    kept = tuple(
+        p for p in intent.partitions if not p.key.startswith("year-") or p.start.year in years
+    )
+    return replace(intent, partitions=kept) if kept else intent
+
+
+def _with_excluded(intent: EditorialIntent, excluded: Sequence[str]) -> EditorialIntent:
+    """The intent with a free-text request's left-out phrases carried as a hard rule (#2061).
+
+    `prompt_block()` already renders `excluded` as its own "must not show:" line; stating it
+    a second time inside `coverage_requirements`' "must cover:" line would read as the same
+    rule repeated under two different headings (round 3). When "people" itself is excluded,
+    a selection priority that still asks for "people... visible" would contradict the hard
+    rule, so it is dropped.
+    """
+    cleaned = tuple(phrase.strip() for phrase in excluded if phrase.strip())
+    if not cleaned:
+        return intent
+    priorities = intent.selection_priorities
+    if "people" in (phrase.lower() for phrase in cleaned):
+        priorities = tuple(p for p in priorities if "people" not in p.lower())
+    return replace(intent, excluded=cleaned, selection_priorities=priorities)
+
+
+def _per_range(spans, prefix: str, *, required: bool) -> tuple[IntentPartition, ...]:
+    return tuple(
+        IntentPartition(
+            key=f"{prefix}-{i}-{s[0].isoformat()}", start=s[0], end=s[1], required=required
+        )
+        for i, s in enumerate(spans, start=1)
+    )
+
+
+def _per_year(whole, *, required: bool) -> tuple[IntentPartition, ...]:
+    parts = []
+    for year in range(whole[0].year, whole[1].year + 1):
+        start = max(whole[0], date(year, 1, 1))
+        end = min(whole[1], date(year, 12, 31))
+        parts.append(IntentPartition(key=f"year-{year}", start=start, end=end, required=required))
+    return tuple(parts)
+
+
+def _single(whole) -> tuple[IntentPartition, ...]:
+    return (IntentPartition(key="scope", start=whole[0], end=whole[1], required=True),)
+
+
+def _per_month(whole) -> tuple[IntentPartition, ...]:
+    parts = []
+    start = whole[0]
+    while start <= whole[1]:
+        end = min(
+            whole[1], date(start.year, start.month, calendar.monthrange(start.year, start.month)[1])
+        )
+        parts.append(
+            IntentPartition(key=f"month-{start:%Y-%m}", start=start, end=end, required=True)
+        )
+        if end == whole[1]:
+            break
+        start = end + timedelta(days=1)
+    return tuple(parts)
+
+
+def _recurring(product, spans, whole, *, brief, who):
+    day = "this holiday" if product == "holiday" else "this day of the year"
+    # One partition per occurrence, never per calendar year: the windows of 31 December
+    # and 1 January cross New Year, and a year split there mixes two occurrences (#2357).
+    # A window asked for twice is still one occurrence.
+    partitions = _per_range(list(dict.fromkeys(spans)), "occurrence", required=True)
+    # The dates are the subject of both: every occurrence that holds a standing picture gets
+    # its voice, however ordinary it reads beside the busiest years (#2134). A holiday whose
+    # starred afternoon took half the film and left five of its years out was the same fault.
+    return EditorialIntent(
+        product=product,
+        scope=f"{day} across {len(spans)} occurrences, {whole[0].year}..{whole[1].year}",
+        narrative_objective=f"how {day} recurred and changed: each represented occurrence gets a voice, early, middle and late",
+        partitions=partitions,
+        coverage_requirements=(
+            "early, middle and late occurrences where evidence exists",
+            "no cluster on the latest years",
+            "recurrence or change is expressed, not implied",
+        ),
+        selection_priorities=(
+            "the ritual and its participants",
+            "what differs between occurrences",
+            "the setting that marks the day",
+        ),
+        allowed_texture="the festive or ritual setting of the day itself",
+        abstention_policy=_recurring_abstention(len(partitions)),
+        voice_per_partition=True,
+        occurrence_is_subject=True,
+    )
+
+
+def _recurring_abstention(occurrences: int) -> str:
+    # One occurrence asked for is that occurrence's film, the same rule the validator applies
+    # (`film.intent_validation._occurrences_needed`, #2467); several still need two.
+    if occurrences == 1:
+        return "the one occurrence asked for holds no usable material: insufficient_material"
+    return "fewer than two occurrences hold usable material: insufficient_material rather than a single-year film"
+
+
+def _person(product, spans, whole, *, brief, who):
+    eras = (whole[1] - whole[0]).days > ERA_THRESHOLD_DAYS and len(spans) == 1
+    partitions = (
+        _per_year(whole, required=True)
+        if eras
+        else (_per_range(spans, "window", required=True) if len(spans) > 1 else _single(whole))
+    )
+    subject = who or None
+    return EditorialIntent(
+        product=product,
+        scope=(f"{who}, " if who else "")
+        + f"{whole[0].isoformat()}..{whole[1].isoformat()}"
+        + (f" in {len(spans)} windows" if len(spans) > 1 else ""),
+        narrative_objective="the person through change, relationships, places and occasions; portraits are punctuation, not the story",
+        partitions=partitions,
+        coverage_requirements=(("every era with material has a voice",) if eras else ())
+        + (
+            ("every window with material has a voice; window provenance survives",)
+            if len(spans) > 1
+            else ()
+        )
+        + ("relationships and activities, not only faces",),
+        selection_priorities=(
+            "occasions and firsts",
+            "relationships and shared activity",
+            "visible change over the span",
+            "portraits last",
+        ),
+        allowed_texture="domestic life only when it shows a relationship or a change; presence alone is not merit",
+        abstention_policy="a required era or window has no usable material: say so in the plan; do not fill it with another era",
+        subject=subject,
+        # Every era, and every window of a film with several (a birthdays film's birthdays),
+        # holds its voice when it has material: "every window with material has a voice".
+        voice_per_partition=eras or len(spans) > 1,
+        story_shares=True,
+    )
+
+
+def _trip(product, spans, whole, *, brief, who):
+    return EditorialIntent(
+        product=product,
+        scope=f"trip {whole[0].isoformat()}..{whole[1].isoformat()}",
+        narrative_objective="the trip as a journey: route and progression, the place's fabric, lived activity, atmosphere and the group in it",
+        partitions=_single(whole),
+        coverage_requirements=(
+            "a beginning and an end",
+            "progression through the days, not one day taking the film",
+            "place and activity, not only faces",
+        ),
+        selection_priorities=(
+            "legs and places in order",
+            "lived activity over posed portraits",
+            "the light and food of somewhere else as fabric",
+        ),
+        allowed_texture="landscapes, streets, food and beach life are the trip's fabric and earn their place",
+        abstention_policy="never; a short trip makes a short film",
+    )
+
+
+def _special_day(product, spans, whole, *, brief, who):
+    return EditorialIntent(
+        product=product,
+        scope=f"one day, {whole[0].isoformat()}",
+        narrative_objective="one out-of-the-ordinary event, visibly established; ordinary camp days, family life, cake bursts and normal live concerts do not qualify",
+        partitions=_single(whole),
+        coverage_requirements=(
+            "the defining occasion is visible",
+            "its participants and setting are shown",
+        ),
+        selection_priorities=("the occasion itself", "reactions and participants", "the setting"),
+        allowed_texture="none that does not belong to the occasion",
+        abstention_policy="no qualifying exceptional event: insufficient_material; a coherent ordinary occasion is not enough; never inflate a mundane frame into a memory",
+    )
+
+
+def _accepted_special_day(product, spans, whole, *, brief, who):
+    return EditorialIntent(
+        product=product,
+        scope=f"one selected event, {whole[0].isoformat()}",
+        narrative_objective="edit the already admitted event from its visible action, participants and setting; its admission is settled, not every picture's contribution",
+        partitions=_single(whole),
+        coverage_requirements=(
+            "the selected occasion is visible",
+            "its participants and setting are shown where evidence exists",
+        ),
+        selection_priorities=("the occasion itself", "reactions and participants", "the setting"),
+        allowed_texture="only material that helps show the selected occasion",
+        abstention_policy="the selected event has no usable contributing material: insufficient_material; sparse material makes a short memory, never unrelated padding",
+    )
+
+
+def _subject_pool(product, spans, whole, *, brief, who):
+    return _custom(product, spans, whole, brief=brief, who=who, pool=True)
+
+
+def _custom(product, spans, whole, *, brief, who, pool=False):
+    subject = written_subject(brief)
+    scope = f"{whole[0].isoformat()}..{whole[1].isoformat()}" + (
+        f" in {len(spans)} ranges" if len(spans) > 1 else ""
+    )
+    # owner ruling 2026-09-05: a multi-range custom memory (works periods across years) must give every
+    # year of its span a voice; one year of a ten-year renovation is not the memory that was asked for.
+    # A curated pool gives every year it holds a voice however it arrives (an album is one span).
+    yearly = len(spans) > 1 or pool
+    partitions = _per_year(whole, required=True) if yearly else _single(whole)
+    every_year = ("every year of the span that holds material has a voice",) if yearly else ()
+    if subject is None:
+        period = _generic(product, spans, whole, brief=brief, who=who)
+        return replace(
+            period,
+            scope=scope,
+            partitions=partitions,
+            coverage_requirements=period.coverage_requirements + every_year,
+            voice_per_partition=yearly,
+        )
+    return EditorialIntent(
+        product=product,
+        scope=scope,
+        narrative_objective="exactly what was asked for, chronologically, from beginning to result",
+        partitions=partitions,
+        coverage_requirements=(
+            "every funded beat visibly concerns the requested subject",
+            "beginning and result state where the ask implies progression",
+            *every_year,
+        ),
+        selection_priorities=(
+            "material that shows the subject",
+            "stages of progression",
+            "people only when the subject is visible with them",
+        ),
+        allowed_texture="only what concerns the subject",
+        abstention_policy="the subject is not visible in the material: insufficient_material, not a film about something else",
+        subject=subject,
+        voice_per_partition=yearly,
+        context_without_life=True,
+        pool_is_subject=pool,
+    )
+
+
+def _generic(product, spans, whole, *, brief, who):
+    period = {
+        "year_in_review": "the year's arc through its distinctive occasions, firsts and changes",
+        "season": "the season's own character across its trips and home life",
+        "monthly_highlights": "the month as it was lived, its specific happenings",
+        "album": "the album's own story in order",
+    }.get(product, "the period's remarkable happenings in order")
+    return EditorialIntent(
+        product=product,
+        scope=f"{whole[0].isoformat()}..{whole[1].isoformat()}",
+        narrative_objective=period,
+        partitions=_per_month(whole) if product == "year_in_review" else _single(whole),
+        coverage_requirements=(
+            "remarkable happenings before anything ordinary",
+            "the span's special days are present when they exist",
+        )
+        + (
+            (
+                "months with worthy material each have a voice; a dense period must not erase the rest of the year",
+            )
+            if product == "year_in_review"
+            else ()
+        ),
+        selection_priorities=(
+            "occasions, firsts and changes",
+            "activity over presence",
+            "background last and only in support of a funded story",
+        ),
+        allowed_texture="daily life supports the arc; it never floods it",
+        abstention_policy="a quiet period makes a short film; never fill to the target",
+    )
+
+
+# The story part of the prompt: one paragraph per memory type, generic, shared by the period reader
+# and the selection. It says what an episode is for this type, what counts as central, and what
+# more duration adds. No person, date, place or object is ever named here.
+_STORY_PARTS = {
+    "monthly_highlights": (
+        "An episode is one occasion of the month: an outing, a visit, a celebration, a milestone, a trip day, a project's visible step. A trip or a stay of several days inside the month is one story and usually what the month is about. Central: the occasions this month would be remembered by; a routine at home (a meal, a drink, a selfie, a chore) is texture unless the owner starred it. More time adds the next occasion, then a second distinct moment of a central one; never a second angle of the same moment."
+    ),
+    "year_in_review": (
+        "An episode is one occasion of a day. Central: the year's consequential changes and its occasions "
+        "(trips, celebrations, milestones, firsts); no month is owed equal time. More time adds occasions not yet "
+        "shown across the year, then depth on the central ones."
+    ),
+    "season": (
+        "An episode is one occasion of a day. Central: the season's outings, trips and gatherings; home routine is "
+        "texture. More time adds more outings, then their distinct moments."
+    ),
+    "trip": (
+        "An episode is one place or one activity of the journey, in order. Central: every day's distinct place "
+        "and activity; transit and hotel details are texture. More time adds the next place or activity, never "
+        "another angle of one already shown."
+    ),
+    "album": (
+        "An episode is one step of the album's own story. Central: the steps that change something; repeated "
+        "views of one step are texture. More time adds the next step."
+    ),
+    "person_spotlight": (
+        "An episode is one occasion where the person appears. Central: the person's changes and milestones "
+        "across the range that the facts support, spread over time; the same pose in another room is texture. "
+        "More time adds earlier and later occasions before depth."
+    ),
+    "multi_person": (
+        "An episode is one occasion where the requested people appear together. Central: their shared occasions "
+        "across the range, spread over time. More time adds more shared occasions before depth."
+    ),
+    "on_this_day": (
+        "An episode is one year's occurrence of this day. Central: each year's one distinct moment; a year with "
+        "only background is left out rather than filled. More time adds another year, never a second picture "
+        "of one year."
+    ),
+    "holiday": (
+        "An episode is one year's celebration of this holiday. Central: the celebration itself when it is "
+        "visible; a year without it is left out rather than filled with the days around it. More time adds "
+        "another year."
+    ),
+    "special_day": (
+        "An episode is one stage of the day's occasion. Central: the occasion itself; if the day holds one "
+        "occasion, its distinct moments are the depth. More time adds the next stage of the same occasion."
+    ),
+    "custom": (
+        "An episode is one occasion that concerns the requested subject. The subject's stages across the whole span are one story even with weeks between them. Central: the subject's visible stages and changes; anything not about the subject is texture even when attractive. More time adds the next stage of the subject."
+    ),
+}
+_STORY_PART_DEFAULT = (
+    "An episode is one occasion of a day. Central: the occasions the period would be remembered by; home "
+    "routine is texture unless the owner starred it. More time adds the next occasion, then a second distinct "
+    "moment of a central one; never another angle of the same moment."
+)
+
+
+_BUILDERS: dict[str, Callable[..., EditorialIntent]] = {
+    "on_this_day": _recurring,
+    "holiday": _recurring,
+    "person_spotlight": _person,
+    "multi_person": _person,
+    "trip": _trip,
+    "special_day": _special_day,
+    "custom": _custom,
+}

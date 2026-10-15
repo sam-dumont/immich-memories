@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db.bootstrap import URL_ENV, normalize_url
 
 GATE_DATABASE_ENV = "IMMICH_GATE_DATABASE_URL"

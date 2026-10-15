@@ -7,22 +7,22 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.editorial_contracts import (
-    LivePhotoRenderingFamily,
-    SourceEvidence,
-    live_photo_rendering_family_id,
-)
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     PlaceConstraint,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import (
+from immich_memories.analysis.corpus.groups import (
     build_episode_groups,
 )
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.records import (
+    LivePhotoRenderingFamily,
+    SourceEvidence,
+    live_photo_rendering_family_id,
+)
+from immich_memories.analysis.corpus.trace import Trace
 from immich_memories.api.models import Asset, AssetType, Person, VideoClipInfo
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset
@@ -73,7 +73,7 @@ def test_source_preparation_records_on_the_callers_existing_trace() -> None:
 
 def test_source_observations_survive_without_running_legacy_selectors(monkeypatch) -> None:
     """Eligible source facts survive without invoking the old ranking pipeline."""
-    from immich_memories.analysis import source_filter
+    from immich_memories.analysis.corpus import name_filter as source_filter
     from immich_memories.photos import burst_dedup
 
     def forbidden(*_args, **_kwargs):
@@ -297,7 +297,7 @@ def test_groups_conserve_candidates_in_canonical_order_with_stable_ids() -> None
 
 def test_a_scoped_asset_inherits_its_full_corpus_episode() -> None:
     """A request projects onto canonical episodes instead of regrouping its subset."""
-    from immich_memories.analysis.selection_source_groups import project_episode_groups
+    from immich_memories.analysis.corpus.groups import project_episode_groups
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -331,7 +331,7 @@ def test_a_scoped_asset_inherits_its_full_corpus_episode() -> None:
 
 def test_a_scoped_asset_inherits_its_full_corpus_moment() -> None:
     """Cards keep the complete canonical moment while marking selectable members."""
-    from immich_memories.analysis.selection_source_groups import project_moment_groups
+    from immich_memories.analysis.corpus.groups import project_moment_groups
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -356,7 +356,7 @@ def test_a_scoped_asset_inherits_its_full_corpus_moment() -> None:
 @pytest.mark.parametrize("projection_kind", ("episode", "moment"))
 def test_a_scope_cannot_escape_the_prepared_corpus(projection_kind: str) -> None:
     """A caller bug must not silently disappear as an empty projection."""
-    from immich_memories.analysis.selection_source_groups import (
+    from immich_memories.analysis.corpus.groups import (
         project_episode_groups,
         project_moment_groups,
     )

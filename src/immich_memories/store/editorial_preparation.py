@@ -12,16 +12,16 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
-from immich_memories.analysis.editorial_description_contract import (
+from immich_memories.analysis.captions.contract import (
     DESCRIPTION_MODEL,
     DESCRIPTION_SOURCE,
     validate_envelope,
 )
-from immich_memories.analysis.editorial_description_outcomes import unavailable_for
-from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
-from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.analysis.captions.identity import LLM_CAPTION_PREFIX
+from immich_memories.analysis.captions.outcomes import unavailable_for
+from immich_memories.analysis.facts.subject_framing import FaceBox
 from immich_memories.api.models import Asset
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import Store, now_db, to_db
 from immich_memories.db.tables import (
     annotation_assets,

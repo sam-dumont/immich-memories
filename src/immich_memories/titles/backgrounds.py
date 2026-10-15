@@ -22,7 +22,7 @@ except ImportError:
     HAS_PIL = False
 
 
-def _get_coord_grids(width: int, height: int) -> tuple[np.ndarray, np.ndarray]:
+def get_coord_grids(width: int, height: int) -> tuple[np.ndarray, np.ndarray]:
     # Broadcasting preserves the float32 arithmetic without retaining two full
     # coordinate planes for every resolution (63.3 MiB per 4K orientation).
     return (
@@ -87,7 +87,7 @@ def create_gradient_background(
     sin_a = math.sin(angle_rad)
     diagonal = math.sqrt(width**2 + height**2)
 
-    y_coords, x_coords = _get_coord_grids(width, height)
+    y_coords, x_coords = get_coord_grids(width, height)
 
     # Center the coordinates
     cx = x_coords - width / 2
@@ -150,7 +150,7 @@ def create_radial_gradient(
     center_y = height / 2
     max_radius = math.sqrt(center_x**2 + center_y**2) * radius_ratio
 
-    y_coords, x_coords = _get_coord_grids(width, height)
+    y_coords, x_coords = get_coord_grids(width, height)
 
     # Calculate distance from center (vectorized)
     dist = np.sqrt((x_coords - center_x) ** 2 + (y_coords - center_y) ** 2)
@@ -200,7 +200,7 @@ def create_vignette_background(
     max_dist_x = center_x
     max_dist_y = center_y
 
-    y_coords, x_coords = _get_coord_grids(width, height)
+    y_coords, x_coords = get_coord_grids(width, height)
 
     # Elliptical distance (normalized)
     dx = (x_coords - center_x) / max_dist_x
@@ -255,7 +255,7 @@ def create_soft_gradient(
     return base
 
 
-def _is_dark_palette(colors: list[str]) -> bool:
+def is_dark_palette(colors: list[str]) -> bool:
     """Check if colors are dark (average luminance below 50%)."""
     total = 0.0
     for c in colors:
@@ -302,7 +302,7 @@ def create_background_for_style(
 
     elif background_type in ("vignette", BackgroundType.VIGNETTE.value):
         # WHY: dark backgrounds should vignette to black, light to white
-        edge_color = "#000000" if _is_dark_palette(colors) else "#FFFFFF"
+        edge_color = "#000000" if is_dark_palette(colors) else "#FFFFFF"
         return create_vignette_background(width, height, colors[0], edge_color, strength=0.3)
 
     # Default to soft gradient

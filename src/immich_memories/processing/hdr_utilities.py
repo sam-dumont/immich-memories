@@ -19,12 +19,12 @@ if TYPE_CHECKING:
 
 __all__ = [
     "RequiredColorConversionUnavailable",
-    "_detect_hdr_type",
-    "_detect_color_primaries",
+    "detect_hdr_type",
+    "detect_color_primaries",
     "get_colorspace_filter",
     "get_hdr_conversion_filter",
-    "_get_clip_hdr_types",
-    "_resolve_clip_hdr",
+    "get_clip_hdr_types",
+    "resolve_clip_hdr",
     "detect_dominant_hdr_transfer",
     "quality_encoder_preset",
     "quality_to_crf",
@@ -37,7 +37,7 @@ class RequiredColorConversionUnavailable(RuntimeError):
     """A required transfer conversion cannot be performed by this FFmpeg build."""
 
 
-def _detect_hdr_type(video_path: Path, *, probe_cache: ProbeCache | None = None) -> str | None:
+def detect_hdr_type(video_path: Path, *, probe_cache: ProbeCache | None = None) -> str | None:
     """Detect the HDR type of a video file.
 
     Cross-checks BOTH transfer function AND color primaries to avoid
@@ -100,7 +100,7 @@ def _detect_hdr_type(video_path: Path, *, probe_cache: ProbeCache | None = None)
     return None
 
 
-def _detect_color_primaries(
+def detect_color_primaries(
     video_path: Path | str, *, probe_cache: ProbeCache | None = None
 ) -> str | None:
     """Detect the color primaries of a video file.
@@ -156,9 +156,9 @@ def detect_dominant_hdr_transfer(
     for clip in clips:
         path = clip.path if hasattr(clip, "path") else clip
         hdr_type = (
-            _detect_hdr_type(path, probe_cache=probe_cache)
+            detect_hdr_type(path, probe_cache=probe_cache)
             if probe_cache is not None
-            else _detect_hdr_type(path)
+            else detect_hdr_type(path)
         )
         if hdr_type in {HdrTransfer.HLG.value, HdrTransfer.PQ.value}:
             transfer = HdrTransfer(hdr_type)
@@ -191,9 +191,9 @@ def hdr_source_names(clips: list, *, probe_cache: ProbeCache | None = None) -> l
         else:
             path = clip.path if hasattr(clip, "path") else clip
             is_hdr = (
-                _detect_hdr_type(path, probe_cache=probe_cache)
+                detect_hdr_type(path, probe_cache=probe_cache)
                 if probe_cache is not None
-                else _detect_hdr_type(path)
+                else detect_hdr_type(path)
             ) is not None
         if is_hdr:
             names.append(getattr(clip, "asset_id", "") or Path(str(clip.path)).name)
@@ -425,7 +425,7 @@ def get_hdr_conversion_filter(
     return _get_hdr_to_hdr_filter(normalized_source, target_type, has_zscale)
 
 
-def _get_clip_hdr_types(clips: list, *, probe_cache: ProbeCache | None = None) -> list[str | None]:
+def get_clip_hdr_types(clips: list, *, probe_cache: ProbeCache | None = None) -> list[str | None]:
     """Get HDR type for each clip in the list.
 
     Returns:
@@ -435,9 +435,9 @@ def _get_clip_hdr_types(clips: list, *, probe_cache: ProbeCache | None = None) -
     for clip in clips:
         path = clip.path if hasattr(clip, "path") else clip
         hdr_type = (
-            _detect_hdr_type(path, probe_cache=probe_cache)
+            detect_hdr_type(path, probe_cache=probe_cache)
             if probe_cache is not None
-            else _detect_hdr_type(path)
+            else detect_hdr_type(path)
         )
         hdr_types.append(hdr_type)
     return hdr_types
@@ -498,7 +498,7 @@ def quality_to_crf(quality: str) -> int:
     return _QUALITY_CRF.get(quality, _DEFAULT_QUALITY_CRF)
 
 
-def _resolve_clip_hdr(
+def resolve_clip_hdr(
     clip_idx: int, ctx: Any | None, hdr_type: str | None
 ) -> tuple[str, str, str, str, bool]:
     """Resolve per-clip HDR settings from AssemblyContext.

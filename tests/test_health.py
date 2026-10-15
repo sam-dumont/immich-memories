@@ -14,7 +14,7 @@ import pytest
 from starlette.testclient import TestClient
 
 import immich_memories
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.security import configured_secret_values
 
 

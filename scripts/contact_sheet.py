@@ -19,7 +19,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from immich_memories.analysis.smart_pipeline import SmartPipeline
+from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
 
 logger = logging.getLogger(__name__)
 

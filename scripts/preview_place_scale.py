@@ -17,8 +17,8 @@ from types import SimpleNamespace
 
 from PIL import Image, ImageDraw, ImageFont
 
-from immich_memories.analysis.place_names import PlaceNames
-from immich_memories.analysis.trip_detection import detect_trips
+from immich_memories.analysis.places.names import PlaceNames
+from immich_memories.analysis.places.trip_detection import detect_trips
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.generate_captions import prepare_location_captions
 from immich_memories.generate_privacy import clip_location_name

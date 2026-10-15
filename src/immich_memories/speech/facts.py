@@ -12,7 +12,7 @@ from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
+from immich_memories.analysis.clips.bound_sample import source_metadata_digest
 from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.api.models import Asset
 from immich_memories.db import Store

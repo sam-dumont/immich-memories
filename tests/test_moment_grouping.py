@@ -12,8 +12,8 @@ from types import SimpleNamespace
 
 # The private name on purpose: these test the grouping rules themselves, not
 # the filtered door every reader goes through. moments_to_read is tested below.
-from immich_memories.analysis.moment_grouping import (
-    _group_by_time_and_place as group_by_time_and_place,
+from immich_memories.analysis.corpus.moment_grouping import (
+    group_unfiltered_by_time_and_place as group_by_time_and_place,
 )
 
 MIDDAY = datetime(2024, 6, 4, 12, 0, tzinfo=UTC)

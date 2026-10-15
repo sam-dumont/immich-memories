@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate_music import resolve_music
 
 

@@ -19,7 +19,7 @@ Four public points, no personal data:
 - an Italian point in an Apulian village (Comune di ... wording)
 
 Each point is asked once per supported locale, with the exact `accept-language`
-chain the product itself sends (`place_geocoder.accept_language_chain`: the film's
+chain the product itself sends (`places.geocoder.accept_language_chain`: the film's
 language, then its base language, e.g. "pt-BR,pt" -- never "en"), and once with no
 `accept-language` at all (the native answer), at <=1 request/second with an
 identifying User-Agent, matching `nominatim_fetch`'s own policy.
@@ -33,7 +33,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from immich_memories.analysis.place_geocoder import accept_language_chain
+from immich_memories.analysis.places.geocoder import accept_language_chain
 from immich_memories.i18n import SUPPORTED_LOCALES
 
 OUTPUT_DIR = Path(__file__).parent

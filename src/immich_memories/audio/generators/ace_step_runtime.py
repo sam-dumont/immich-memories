@@ -30,7 +30,7 @@ from immich_memories.audio.generators.ace_step_model_choice import (
     resolve_model_variant,
 )
 from immich_memories.audio.generators.memory_budget import memory_shortfall
-from immich_memories.tracking.system_info import _get_ram_gb as _physical_memory_gb
+from immich_memories.tracking.system_info import get_ram_gb as _physical_memory_gb
 
 logger = logging.getLogger(__name__)
 
@@ -267,14 +267,14 @@ def _initialize_lm_handler(
     return handler
 
 
-def _dit_model_name(variant: str) -> str:
+def dit_model_name(variant: str) -> str:
     """Translate stable app variant names to ACE-Step 1.5 checkpoints."""
     if variant.startswith("acestep-v15-"):
         return variant
     return f"acestep-v15-{variant.replace('_', '-')}"
 
 
-def _lm_model_name(size: str) -> str:
+def lm_model_name(size: str) -> str:
     """Translate stable app LM sizes to ACE-Step 1.5 checkpoints."""
     if size.startswith("acestep-5Hz-lm-"):
         return size
@@ -372,8 +372,8 @@ def _load_v15_runtime(
 
     device, lm_backend, use_mlx_dit = _local_runtime_target()
     mlx_vae_chunk = _bound_mlx_memory() if use_mlx_dit else None
-    dit_model = _dit_model_name(model_variant)
-    lm_model = _lm_model_name(lm_model_size) if use_lm else None
+    dit_model = dit_model_name(model_variant)
+    lm_model = lm_model_name(lm_model_size) if use_lm else None
     offload = cpu_offload and not (device == "mps" or disable_offload)
 
     logger.info(

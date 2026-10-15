@@ -14,8 +14,8 @@ from datetime import UTC, datetime
 import numpy as np
 import pytest
 
-from immich_memories.analysis.framing_target import PictureFaces, picture_faces
-from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.analysis.facts.framing_target import PictureFaces, picture_faces
+from immich_memories.analysis.facts.subject_framing import FaceBox
 from immich_memories.api.models import Asset, AssetFace, AssetType, Person
 from immich_memories.photos.ken_burns_moves import (
     FACE_AIR,

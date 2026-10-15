@@ -7,13 +7,13 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
-from immich_memories.analysis.editorial_description_contract import (
+from immich_memories.analysis.captions.contract import (
     DESCRIPTION_MODEL,
     DESCRIPTION_SOURCE,
     DescriptionEnvelope,
     validate_envelope,
 )
-from immich_memories.analysis.llm_caption_identity import LLM_DESCRIPTION_SOURCE
+from immich_memories.analysis.captions.identity import LLM_DESCRIPTION_SOURCE
 from immich_memories.db import Store
 from immich_memories.db.tables import description_fields, description_unavailable, descriptions
 from immich_memories.store.batches import id_in, in_chunks

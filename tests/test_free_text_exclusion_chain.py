@@ -6,11 +6,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
+from immich_memories.analysis.film.intent import build_editorial_intent
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._editorial_context import build_editorial_context
 from immich_memories.cli._run_inputs import ResolvedRunInputs
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.free_text.handoff import Film
 from immich_memories.free_text.linking import Reason
 from immich_memories.timeperiod import DateRange

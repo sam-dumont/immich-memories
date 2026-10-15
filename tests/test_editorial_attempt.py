@@ -57,8 +57,8 @@ def test_concurrent_attempts_have_separate_artifacts_and_truthful_status(tmp_pat
     "error,status", [(PipelineCancelled("stop"), "cancelled"), (ValueError("bad data"), "failed")]
 )
 def test_cancel_and_failure_are_durable_without_becoming_completed(tmp_path, error, status):
-    from immich_memories.analysis.llm_metrics import active, record_reply
-    from immich_memories.analysis.llm_usage_record import USAGE_FILE
+    from immich_memories.analysis.llm.metrics import active, record_reply
+    from immich_memories.analysis.llm.usage_record import USAGE_FILE
 
     attempt = EditorialAttempt(tmp_path, request={})
     with pytest.raises(type(error)), attempt:
@@ -80,7 +80,7 @@ def test_process_crash_is_interrupted_without_a_time_based_guess(tmp_path):
 import os,sys
 from pathlib import Path
 from immich_memories.operations.editorial_attempt import EditorialAttempt
-from immich_memories.analysis.llm_metrics import record_reply
+from immich_memories.analysis.llm.metrics import record_reply
 with EditorialAttempt(Path(sys.argv[1]), request={}) as attempt:
     record_reply(prompt_tokens=91, completion_tokens=9, model='reader')
     attempt.stage('Reading events')
@@ -158,8 +158,8 @@ def test_a_selection_with_no_special_reason_leaves_the_record_without_one(tmp_pa
 
 
 def test_selection_spend_is_saved_at_progress_and_completion_without_rendering(tmp_path):
-    from immich_memories.analysis.llm_metrics import record_reply
-    from immich_memories.analysis.llm_usage_record import USAGE_FILE
+    from immich_memories.analysis.llm.metrics import record_reply
+    from immich_memories.analysis.llm.usage_record import USAGE_FILE
 
     with EditorialAttempt(tmp_path, request={}) as attempt:
         record_reply(prompt_tokens=120, completion_tokens=14, model="reader")
@@ -178,8 +178,8 @@ def test_selection_spend_is_saved_at_progress_and_completion_without_rendering(t
 
 
 def test_selection_attempts_have_separate_spend_without_erasing_the_run_total(tmp_path):
-    from immich_memories.analysis.llm_metrics import collecting, record_reply
-    from immich_memories.analysis.llm_usage_record import USAGE_FILE
+    from immich_memories.analysis.llm.metrics import collecting, record_reply
+    from immich_memories.analysis.llm.usage_record import USAGE_FILE
 
     with collecting() as run:
         record_reply(prompt_tokens=100, model="before-selection")

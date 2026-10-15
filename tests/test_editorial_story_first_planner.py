@@ -8,24 +8,24 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_case import Case, _adapt_production_cards
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_moment_wall import (
+from immich_memories.analysis.corpus.groups import EditorialGroup
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.film.contract import (
+    EpisodeReadingCard,
+    StructurePlanningInput,
+)
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.reading.case import Case, adapt_production_cards
+from immich_memories.analysis.reading.moment_cards import MomentCard
+from immich_memories.analysis.reading.moment_wall import (
     MomentCardEvidence,
     ProductionMomentWallRenderer,
     RepresentativeEvidence,
 )
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_structure_contract import (
-    EpisodeReadingCard,
-    StructurePlanningInput,
-)
-from immich_memories.analysis.moment_cards import MomentCard
-from immich_memories.analysis.selection_source_groups import EditorialGroup
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset
 from tests.test_editorial_duration_planner_integration import run
@@ -95,7 +95,7 @@ def make_source(tmp_path, *, seconds=60, occasions=4, pictures=3):
     prepared = SimpleNamespace(
         moment_groups=tuple(groups), episode_groups=tuple(episodes), candidates=tuple(candidates)
     )
-    adapted, _ = _adapt_production_cards(prepared, tuple(cards))
+    adapted, _ = adapt_production_cards(prepared, tuple(cards))
     wall = ProductionMomentWallRenderer(prepared, tuple(cards), adapt_editorial_people({})).render(
         adapted
     )
@@ -332,7 +332,7 @@ def test_default_is_story_first_and_old_switch_cannot_restore_legacy(
 
 def test_weights_fund_stories_not_days():
     """A dominant ten-day holiday competes as one corpus; minors get one or two; none is never funded."""
-    from immich_memories.analysis.editorial_story_slots import allocate_slots
+    from immich_memories.analysis.stories.slots import allocate_slots
 
     stories = [
         {"key": "holiday", "weight": "dominant"},
@@ -356,7 +356,7 @@ def test_weights_fund_stories_not_days():
 
 
 def test_a_thin_story_cannot_take_more_than_it_holds():
-    from immich_memories.analysis.editorial_story_slots import allocate_slots
+    from immich_memories.analysis.stories.slots import allocate_slots
 
     granted = allocate_slots(
         [{"key": "occasion", "weight": "dominant"}, {"key": "cafe", "weight": "minor"}],
@@ -371,7 +371,7 @@ def test_a_thin_story_cannot_take_more_than_it_holds():
 
 @pytest.mark.parametrize("already", [{}, {"stay": 2, "visit": 1}])
 def test_major_presence_precedes_dominant_depth_in_a_crowded_short_film(already):
-    from immich_memories.analysis.editorial_story_slots import allocate_slots
+    from immich_memories.analysis.stories.slots import allocate_slots
 
     stories = [{"key": "stay", "weight": "dominant"}] + [
         {"key": key, "weight": "major"} for key in ("visit", "outing", "celebration", "discovery")
@@ -383,7 +383,7 @@ def test_major_presence_precedes_dominant_depth_in_a_crowded_short_film(already)
 
 
 def test_covering_majors_still_respects_partition_admission():
-    from immich_memories.analysis.editorial_story_slots import allocate_partition_slots
+    from immich_memories.analysis.stories.slots import allocate_partition_slots
 
     stories = [{"key": "stay", "weight": "dominant"}, {"key": "outing", "weight": "major"}]
     choices = {"stay": {"year-a": [object()] * 5}, "outing": {"year-a": [object()]}}
@@ -393,7 +393,7 @@ def test_covering_majors_still_respects_partition_admission():
 
 
 def test_story_part_names_the_type_and_never_a_case():
-    from immich_memories.analysis.editorial_intent import _STORY_PART_DEFAULT, _STORY_PARTS
+    from immich_memories.analysis.film.intent import _STORY_PART_DEFAULT, _STORY_PARTS
 
     for product, text in _STORY_PARTS.items():
         assert "episode" in text.lower() and "central" in text.lower()
@@ -402,7 +402,7 @@ def test_story_part_names_the_type_and_never_a_case():
 
 
 def test_timing_trim_drops_the_lightest_stories_extra_pictures_first_and_refits_the_budget():
-    from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
+    from immich_memories.analysis.selection.trim import trim_to_timing_budget
 
     carriers = [
         {
@@ -457,7 +457,7 @@ def test_timing_trim_drops_the_lightest_stories_extra_pictures_first_and_refits_
 
 
 def test_timing_trim_cuts_a_picture_nothing_vouches_for_before_a_favourite():
-    from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
+    from immich_memories.analysis.selection.trim import trim_to_timing_budget
 
     def carrier(asset, story, weight, day, **extra):
         return (
@@ -502,7 +502,7 @@ class CompanyReplacementJudge(StoryJudge):
 @pytest.mark.parametrize("weak", [False, True])
 def test_company_improvement_only_takes_a_fresh_relation_that_stands(tmp_path, weak):
     """The real story, caption-choice and standing pipeline; only the standing answer differs."""
-    from immich_memories.analysis.editorial_story_planner import select_story_first
+    from immich_memories.analysis.selection.story_planner import select_story_first
 
     relations = ["parent", "parent", "grandparent", "parent", "parent"]
     source = make_source(tmp_path, seconds=7, occasions=1, pictures=len(relations))
@@ -593,12 +593,12 @@ def test_the_audience_reads_the_finished_cut_not_every_candidate(tmp_path):
 
 def test_each_moment_carries_its_episodes_banked_meaning_and_representatives():
     """The wall truncates the episode reading to 96 characters; planning gets the whole one."""
-    from immich_memories.analysis.editorial_structure_source import episode_reading_cards
-    from immich_memories.analysis.selection_source_groups import EditorialGroupProjection
-    from immich_memories.analysis.text_episode_reader import (
+    from immich_memories.analysis.corpus.groups import EditorialGroupProjection
+    from immich_memories.analysis.reading.episode_reader import (
         EpisodeEditorialEvidence,
         TextEpisodeReadResult,
     )
+    from immich_memories.analysis.structure.planning_input import episode_reading_cards
     from immich_memories.store.episode_readings import (
         BankedEpisodeReading,
         EpisodeReadingIdentity,

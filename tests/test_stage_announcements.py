@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import asyncio
 
-from immich_memories.analysis.llm_wire import LLMTransportAttempt
-from immich_memories.analysis.provider_status import watch_provider
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.provider_status import watch_provider
+from immich_memories.analysis.llm.wire import LLMTransportAttempt
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cut_progress import (
     StageUpdate,
     announce_stage,
@@ -25,7 +25,7 @@ def test_an_announcement_reaches_the_attached_sink_and_nothing_else() -> None:
 
 def test_an_announcement_survives_the_sync_bridge_thread() -> None:
     """The text gateway runs its coroutine on a helper thread when a loop is already running."""
-    from immich_memories.analysis.editorial_text_gateway import _run_sync
+    from immich_memories.analysis.judgments.text_gateway import _run_sync
 
     seen: list[StageUpdate] = []
 

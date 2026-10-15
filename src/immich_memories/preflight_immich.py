@@ -8,7 +8,7 @@ from immich_memories.api.permissions import (
     ApiKeyCapabilities,
     MissingReadPermissions,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckResult, CheckStatus
 from immich_memories.security import sanitize_error_message
 

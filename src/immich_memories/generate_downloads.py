@@ -18,11 +18,11 @@ from immich_memories.processing.preparation_fallbacks import note_fallback
 from immich_memories.security import sanitize_client_error, sanitize_error_message
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.api.models import Asset, VideoClipInfo
     from immich_memories.cache.video_cache import CacheBatch
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.download_coordinator import DownloadResult
 
 logger = logging.getLogger(__name__)
@@ -279,11 +279,11 @@ def _download_fallback(
 ) -> Path | None:
     """Download through the persistent batch when enabled, otherwise temporary storage."""
     if video_cache is None:
-        return _download_temporary_asset(client, asset, output_dir)
+        return fetch_temporary_asset(client, asset, output_dir)
     return video_cache.download_or_get(client, asset)
 
 
-def _download_temporary_asset(
+def fetch_temporary_asset(
     client: SyncImmichClient, asset: Asset, output_dir: Path | None
 ) -> Path | None:
     """Download an uncached video under the run-owned temporary directory."""

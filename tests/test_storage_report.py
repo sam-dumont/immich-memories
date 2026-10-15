@@ -10,7 +10,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.operations.storage_report import StorageClass, build_storage_report
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase

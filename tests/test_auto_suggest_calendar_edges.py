@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from tests.auto_library_fake import fake_library, suggest_json
 
 

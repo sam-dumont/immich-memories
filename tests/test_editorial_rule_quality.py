@@ -3,8 +3,8 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_rule_episodes import RuleEpisodeReader
-from immich_memories.analysis.editorial_rule_quality import (
+from immich_memories.analysis.stories.rule_episodes import RuleEpisodeReader
+from immich_memories.analysis.stories.rule_quality import (
     picture_facts,
     promote_quality_choice,
     quality_facts,
@@ -12,9 +12,9 @@ from immich_memories.analysis.editorial_rule_quality import (
     representative_key,
     rule_representative_rank,
 )
-from immich_memories.analysis.editorial_story_shortlist import (
+from immich_memories.analysis.stories.shortlist import (
     DepictedChoice,
-    _capture_group_moments,
+    capture_group_moments,
 )
 from tests.picture_fake import PictureFake
 
@@ -151,7 +151,7 @@ def test_the_capture_group_hands_its_moment_to_the_best_ranked_picture():
         "last": _asset("last", minute=2),
     }
 
-    choices = _capture_group_moments(
+    choices = capture_group_moments(
         _units(["first", "best", "last"]),
         quality=lambda _a: 1.0,
         rank=rule_representative_rank(assets, {}, {}),
@@ -161,7 +161,7 @@ def test_the_capture_group_hands_its_moment_to_the_best_ranked_picture():
 
 
 def test_without_the_rules_rank_the_capture_group_keeps_the_sharpest_picture():
-    choices = _capture_group_moments(
+    choices = capture_group_moments(
         _units(["first", "best", "last"]),
         quality=lambda a: 5.0 if a == "last" else 1.0,
     )

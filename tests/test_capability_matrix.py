@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from matrix_pinned_config import pinned_config  # noqa: E402
 
-from immich_memories.config_loader import _load_yaml_data  # noqa: E402
+from immich_memories.config.loader import load_yaml_data  # noqa: E402
 
 
 def _write(tmp_path: Path, data: dict) -> Path:
@@ -38,7 +38,7 @@ def test_a_pin_reaches_a_section_spelled_at_top_level(tmp_path: Path) -> None:
 
     dest = pinned_config(source, tmp_path / "out.yaml", {"ace_step.enabled": False})
 
-    assert _load_yaml_data(dest)["ace_step"]["enabled"] is False
+    assert load_yaml_data(dest)["ace_step"]["enabled"] is False
 
 
 def test_a_pin_reaches_a_section_spelled_under_advanced(tmp_path: Path) -> None:
@@ -48,7 +48,7 @@ def test_a_pin_reaches_a_section_spelled_under_advanced(tmp_path: Path) -> None:
 
     dest = pinned_config(source, tmp_path / "out.yaml", {"ace_step.enabled": False})
 
-    assert _load_yaml_data(dest)["ace_step"]["enabled"] is False
+    assert load_yaml_data(dest)["ace_step"]["enabled"] is False
 
 
 def test_pinning_keeps_the_credentials_the_run_needs(tmp_path: Path) -> None:
@@ -57,7 +57,7 @@ def test_pinning_keeps_the_credentials_the_run_needs(tmp_path: Path) -> None:
 
     dest = pinned_config(source, tmp_path / "out.yaml", {"output.resolution": "1080p"})
 
-    loaded = _load_yaml_data(dest)
+    loaded = load_yaml_data(dest)
     assert loaded["immich"] == {"url": "http://x", "api_key": "k"}
     assert loaded["output"]["resolution"] == "1080p"
 
@@ -116,7 +116,7 @@ def test_a_top_level_scalar_can_be_pinned(tmp_path: Path) -> None:
 
     dest = pinned_config(source, tmp_path / "out.yaml", {"preset": "fast"})
 
-    assert _load_yaml_data(dest)["preset"] == "fast"
+    assert load_yaml_data(dest)["preset"] == "fast"
 
 
 def test_a_preset_row_lets_the_preset_own_its_keys(tmp_path: Path) -> None:
@@ -137,7 +137,7 @@ def test_a_preset_row_lets_the_preset_own_its_keys(tmp_path: Path) -> None:
 
     dest = pinned_config(source, tmp_path / "out.yaml", {"preset": "fast"})
 
-    loaded = _load_yaml_data(dest)
+    loaded = load_yaml_data(dest)
     assert "codec" not in loaded["output"], "the preset must be free to set codec"
     assert "animated_background" not in loaded.get("title_screens", {})
     assert loaded["output"]["directory"] == "~/Videos", "unrelated keys must survive"
@@ -148,4 +148,4 @@ def test_an_explicit_pin_still_beats_the_preset(tmp_path: Path) -> None:
 
     dest = pinned_config(source, tmp_path / "out.yaml", {"preset": "fast", "output.codec": "av1"})
 
-    assert _load_yaml_data(dest)["output"]["codec"] == "av1"
+    assert load_yaml_data(dest)["output"]["codec"] == "av1"

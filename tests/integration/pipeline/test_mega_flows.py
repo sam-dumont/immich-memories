@@ -465,7 +465,7 @@ class TestMegaFlowLivePhotoBurst:
 
     def test_live_photo_burst_merge_pipeline(self, tmp_path):
         from immich_memories.api.sync_client import SyncImmichClient
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.processing.live_photo_merger import (
             build_merge_command,
             cluster_live_photos,

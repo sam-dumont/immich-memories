@@ -6,7 +6,7 @@ from collections.abc import Mapping
 
 import sqlalchemy as sa
 
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.preparation.detectors import (
     MARQO_HEAD,
     MARQO_ONNX_ID,
     MARQO_STILL_EQUIVALENT,

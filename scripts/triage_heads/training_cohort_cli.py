@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_loader import get_config
+from immich_memories.config.loader import get_config
 
 from .cohorts import TruthReservationLedger, load_inventory_snapshot
 from .memory import acquire_recovery_pipeline_lock

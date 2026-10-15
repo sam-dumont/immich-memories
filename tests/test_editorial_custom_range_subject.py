@@ -2,12 +2,12 @@
 
 from datetime import datetime
 
-from immich_memories.analysis.editorial_block_votes import (
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.film.product_brief import build_editorial_brief
+from immich_memories.analysis.polish.block_votes import (
     WORTH_CRITERION_V44,
     worth_criterion_v44,
 )
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_product_brief import build_editorial_brief
 from immich_memories.timeperiod import DateRange
 
 _WINDOW = (DateRange(datetime(2024, 3, 10), datetime(2024, 5, 20, 23, 59, 59)),)
@@ -47,7 +47,7 @@ def _renovation_spring(tmp_path, brief_of):
     from dataclasses import replace
     from datetime import date, timedelta
 
-    from immich_memories.analysis.annotation_lines import AssetAnnotationLine
+    from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
     from tests.editorial_film_fixtures import HOME, Day, film_source
 
     days = []
@@ -82,9 +82,9 @@ def _renovation_spring(tmp_path, brief_of):
 
 
 def _no_model_cut(source) -> list[str]:
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
 
     plan = plan_structure(
         source,

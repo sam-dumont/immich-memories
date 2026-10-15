@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.special_day import SpecialDay
+from immich_memories.analysis.special_days.detection import SpecialDay
 from immich_memories.automation.catalogue import record_for, scope_window
 from immich_memories.automation.special_day_scan import DiscoveredDay, scan_year
 

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-from immich_memories.analysis.editorial_story_standing import StandingGate
-from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
-from immich_memories.analysis.editorial_structure_finishing import PlanRun, final_duplicate_review
+from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
+from immich_memories.analysis.selection.standing import StandingGate
+from immich_memories.analysis.structure.finishing import PlanRun, final_duplicate_review
 from immich_memories.db import open_store
 from tests.editorial_thin_fixtures import CountingJudge
 

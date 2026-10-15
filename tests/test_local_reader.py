@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.llm_query import query_llm
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.query import query_llm
+from immich_memories.config.models.llm import LLMConfig
 
 
 @pytest.fixture
@@ -116,8 +116,8 @@ async def test_owned_reader_stops_when_its_app_disappears(local_reader, death):
     executable.write_text(body)
     app_code = (
         "import asyncio, json, os, signal, sys\n"
-        "from immich_memories.analysis.llm_query import query_llm\n"
-        "from immich_memories.config_models_llm import LLMConfig\n"
+        "from immich_memories.analysis.llm.query import query_llm\n"
+        "from immich_memories.config.models.llm import LLMConfig\n"
         "config=LLMConfig.model_validate(json.loads(sys.argv[1]))\n"
         "asyncio.run(query_llm('one word', config))\n"
         + (
@@ -179,7 +179,7 @@ def test_enabling_without_a_model_reports_the_default_gemma_installation(tmp_pat
 
 def test_full_accepts_owned_reader_without_external_endpoint(local_reader):
     from immich_memories.config import Config
-    from immich_memories.config_tiers import apply_tier
+    from immich_memories.config.tiers import apply_tier
     from immich_memories.preflight import CheckStatus
     from immich_memories.preflight_llm import check_llm
 
@@ -214,7 +214,7 @@ async def test_warm_reader_keeps_each_requests_schema_policy(local_reader):
 
 @pytest.mark.parametrize("override", [None, True, False])
 async def test_owned_episode_schema_reaches_cold_and_warm_reader(local_reader, override):
-    from immich_memories.analysis.prose_shapes import episode_reading_shape
+    from immich_memories.analysis.reading.prose_shapes import episode_reading_shape
     from immich_memories.local_inference import local_models
 
     config = local_reader.model_copy(update={"structured_output": override})
@@ -233,9 +233,9 @@ async def test_owned_episode_schema_reaches_cold_and_warm_reader(local_reader, o
 
 
 def test_owned_episode_policy_has_distinct_semantic_and_request_cache_keys(local_reader):
-    from immich_memories.analysis.llm_providers import structured_output_enabled
-    from immich_memories.analysis.llm_text_identity import text_judgment_key, text_model_identity
-    from immich_memories.analysis.prose_shapes import episode_reading_shape
+    from immich_memories.analysis.llm.providers import structured_output_enabled
+    from immich_memories.analysis.llm.text_identity import text_judgment_key, text_model_identity
+    from immich_memories.analysis.reading.prose_shapes import episode_reading_shape
 
     constrained = local_reader.model_copy(update={"structured_output": True})
     plain = local_reader.model_copy(update={"structured_output": False})

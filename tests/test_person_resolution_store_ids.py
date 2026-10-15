@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.person_resolution import PersonAlias, StorePerson, resolve_people
+from immich_memories.analysis.sources.person_resolution import (
+    PersonAlias,
+    StorePerson,
+    resolve_people,
+)
 from immich_memories.api.person_expression import PersonExpression
 
 _KIT = StorePerson("kit-face", "Kit", (PersonAlias("kit-face", "primary"),))

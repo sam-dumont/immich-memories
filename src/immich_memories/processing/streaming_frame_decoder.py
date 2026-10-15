@@ -24,10 +24,10 @@ import numpy as np
 from immich_memories.processing.clip_caption import ClipCaption, caption_filters
 from immich_memories.processing.ffmpeg_runner import stop_owned_process
 from immich_memories.processing.hdr_utilities import (
-    _detect_color_primaries,
-    _detect_hdr_type,
-    _resolve_clip_hdr,
+    detect_color_primaries,
+    detect_hdr_type,
     get_colorspace_filter,
+    resolve_clip_hdr,
 )
 from immich_memories.processing.memory_budget import assembly_decoder_threads, available_cpus
 from immich_memories.processing.probe_cache import ProbeCache
@@ -468,8 +468,8 @@ def make_decoder(
         target_type = hdr_type or "sdr"
         source_types: list[str | None] = [None] * (clip_idx + 1)
         source_primaries: list[str | None] = [None] * (clip_idx + 1)
-        source_types[clip_idx] = _detect_hdr_type(clip.path, probe_cache=probe_cache)
-        source_primaries[clip_idx] = _detect_color_primaries(clip.path, probe_cache=probe_cache)
+        source_types[clip_idx] = detect_hdr_type(clip.path, probe_cache=probe_cache)
+        source_primaries[clip_idx] = detect_color_primaries(clip.path, probe_cache=probe_cache)
         ctx = SimpleNamespace(
             hdr_type=target_type,
             pix_fmt="yuv420p10le" if hdr_type else "yuv420p",
@@ -480,7 +480,7 @@ def make_decoder(
 
     # Title videos may be pre-encoded, but only an exact transfer match may
     # bypass conversion. The shared resolver makes the same decision for all clips.
-    hdr_conversion, colorspace_filter, output_pix_fmt, sdr_to_hdr_filter, _ = _resolve_clip_hdr(
+    hdr_conversion, colorspace_filter, output_pix_fmt, sdr_to_hdr_filter, _ = resolve_clip_hdr(
         clip_idx, ctx, hdr_type
     )
     pix_fmt = "yuv420p10le" if hdr_type else "rgb24"

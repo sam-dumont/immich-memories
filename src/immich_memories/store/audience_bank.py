@@ -1,6 +1,6 @@
 """The library's audience bank in the store: model answers by evidence key, holds by slot.
 
-`AudienceBank` (analysis/editorial_structure_audience.py) owns the rules; this module only
+`AudienceBank` (analysis/audience/verdicts.py) owns the rules; this module only
 reads and writes them. Holds change a batch at a time: the batch's pictures are locked, read
 fresh and merged inside one transaction, so two cuts holding one picture at once can't lose the
 stricter hold, and a crash costs at most the batch in hand.

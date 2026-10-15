@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from immich_memories.analysis.source_filter import from_an_excluded_source
+from immich_memories.analysis.corpus.name_filter import from_an_excluded_source
 from immich_memories.api.models import AssetType
-from immich_memories.config_models_analysis import AnalysisConfig
+from immich_memories.config.models.analysis import AnalysisConfig
 from tests.conftest import make_asset
 
 
@@ -47,7 +47,7 @@ def test_a_still_with_no_camera_in_its_exif_was_not_shot_here() -> None:
     different story and are left alone — 25 of 224 make-less videos there are
     genuine phone clips, and the filename rule already catches the rest.
     """
-    from immich_memories.analysis.source_filter import not_shot_here
+    from immich_memories.analysis.corpus.name_filter import not_shot_here
     from immich_memories.api.models import AssetType
 
     received = make_asset("received", original_file_name="IMG_2841.jpg", exif_make=None)
@@ -65,7 +65,7 @@ def test_a_still_with_no_camera_in_its_exif_was_not_shot_here() -> None:
 
 def test_the_camera_rule_can_be_turned_off() -> None:
     """A library of exported or edited originals would lose them to this."""
-    from immich_memories.analysis.source_filter import not_shot_here
+    from immich_memories.analysis.corpus.name_filter import not_shot_here
     from immich_memories.api.models import AssetType
 
     received = make_asset("received", original_file_name="IMG_2841.jpg", exif_make=None)
@@ -76,7 +76,7 @@ def test_the_camera_rule_can_be_turned_off() -> None:
 
 def test_pre_smartphone_media_is_considered_despite_modern_source_signals() -> None:
     """An old scan/export is evidence; the editor can decide whether it belongs."""
-    from immich_memories.analysis.source_filter import not_shot_here
+    from immich_memories.analysis.corpus.name_filter import not_shot_here
 
     historical = make_asset(
         "historical",
@@ -100,7 +100,7 @@ def test_a_starred_photo_passes_whatever_its_filename_says() -> None:
     to keep. Dropping it before the favorites guarantee can see it contradicts
     the rule the rest of selection is built on.
     """
-    from immich_memories.analysis.source_filter import not_shot_here
+    from immich_memories.analysis.corpus.name_filter import not_shot_here
 
     forwarded = make_asset("forwarded", original_file_name="IMG-20190105-WA0006.jpg")
     forwarded.type = AssetType.IMAGE
@@ -120,7 +120,7 @@ def test_the_messaging_glob_does_not_match_a_place_called_wa() -> None:
     '*-WA[0-9]*' matched 'Olympia-WA2019.jpg' — a photograph of Washington,
     dropped for its filename.
     """
-    from immich_memories.analysis.source_filter import from_an_excluded_source
+    from immich_memories.analysis.corpus.name_filter import from_an_excluded_source
 
     patterns = AnalysisConfig().exclude_filename_patterns
 

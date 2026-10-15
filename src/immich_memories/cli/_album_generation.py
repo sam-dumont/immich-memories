@@ -19,11 +19,11 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
-    from immich_memories.analysis.album_source import AlbumMedia
+    from immich_memories.analysis.sources.album import AlbumMedia
     from immich_memories.api.album_service import AlbumRef
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 @dataclass(frozen=True)
@@ -235,7 +235,7 @@ def _read_album(
 ) -> tuple[AlbumRef, AlbumMedia]:
     import click
 
-    from immich_memories.analysis.album_source import fetch_album_media
+    from immich_memories.analysis.sources.album import fetch_album_media
     from immich_memories.api.album_service import AlbumNotFoundError, AmbiguousAlbumError
 
     task = progress.add_task(f"Resolving album: {album_ref}...", total=None)
@@ -296,7 +296,7 @@ def pool_media(
     picture made 7,422 sequential calls for one pool. A picture Immich's timeline does not list (archived, hidden, locked, deleted) is
     not returned, as the source pass would refuse it anyway.
     """
-    from immich_memories.analysis.album_source import split_album_assets
+    from immich_memories.analysis.sources.album import split_album_assets
 
     wanted = set(asset_ids)
     # The store's capture time and Immich's taken filter can sit in different time zones.

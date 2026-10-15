@@ -2,7 +2,7 @@
 
 import json
 
-from immich_memories.analysis.editorial_review_list import (
+from immich_memories.analysis.audience.review_list import (
     FILENAME,
     exposure_probabilities,
     review_count,
@@ -107,7 +107,7 @@ def test_the_summary_says_how_many_even_when_there_are_none():
 
 
 def test_a_finished_cut_writes_its_grey_zone_shots_at_the_version_the_run_reads(tmp_path):
-    from immich_memories.analysis.editorial_review_list import write_for_cut
+    from immich_memories.analysis.audience.review_list import write_for_cut
 
     store = annotation_store()
     add_rows(
@@ -133,7 +133,7 @@ def test_a_finished_cut_writes_its_grey_zone_shots_at_the_version_the_run_reads(
 
     from types import SimpleNamespace
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     source = SimpleNamespace(
         store=store,

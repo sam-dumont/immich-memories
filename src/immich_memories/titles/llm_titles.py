@@ -18,8 +18,8 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from immich_memories.analysis.llm_query import query_llm
-from immich_memories.analysis.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
+from immich_memories.analysis.llm.query import query_llm
+from immich_memories.analysis.reading.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
 from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
 from immich_memories.titles.title_guards import (
@@ -46,7 +46,7 @@ from immich_memories.titles.title_suggestion import TitleSuggestion
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.db import Store
     from immich_memories.titles.film_stories import FilmStories
 

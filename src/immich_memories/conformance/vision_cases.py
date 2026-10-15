@@ -6,12 +6,12 @@ from io import BytesIO
 
 from PIL import Image, ImageDraw
 
-from immich_memories.analysis.editorial_preparation_captions import prepare_captions
-from immich_memories.analysis.editorial_preparation_motion import filmstrip, motion_text, seat_asker
-from immich_memories.analysis.llm_caption_identity import llm_caption_identity
-from immich_memories.analysis.prepared_captions import prepared_captions
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.captions.identity import llm_caption_identity
+from immich_memories.analysis.captions.requests import prepare_captions
+from immich_memories.analysis.preparation.motion_lines import filmstrip, motion_text, seat_asker
+from immich_memories.analysis.preparation.prepared_captions import prepared_captions
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_store
 from immich_memories.conformance.runtime import Case
 
@@ -86,15 +86,15 @@ def vision_cases(llm: LLMConfig) -> tuple[Case, ...]:
         Case(
             "video motion",
             partial(motion, llm),
-            frozenset({"analysis.editorial_preparation_motion:seat_asker.ask"}),
+            frozenset({"analysis.preparation.motion_lines:seat_asker.ask"}),
         ),
         Case(
             "image caption",
             partial(caption, llm),
             frozenset(
                 {
-                    "analysis.editorial_preparation_captions:_ask_llm",
-                    "analysis.editorial_preparation_captions:ask_llm_image",
+                    "analysis.captions.requests:_ask_llm",
+                    "analysis.captions.requests:ask_llm_image",
                 }
             ),
         ),

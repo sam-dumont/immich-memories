@@ -41,7 +41,7 @@ def pinned_font(monkeypatch: pytest.MonkeyPatch) -> None:
     # which is Pillow's bundled scalable face, identical everywhere.
     """
     monkeypatch.setattr(
-        "immich_memories.titles.kernel_text._get_system_font",
+        "immich_memories.titles.kernel_text.get_system_font",
         lambda _family: "/nonexistent/no-such-font.ttf",
     )
 

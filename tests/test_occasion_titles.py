@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_title_settings
 from immich_memories.titles.text_builder import generate_title, infer_selection_type

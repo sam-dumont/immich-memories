@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_cut_invariants import FinishedCut, cut_violations
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-from immich_memories.analysis.favourite_law import favourites_by_moment
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.corpus.favourite_law import favourites_by_moment
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
+from immich_memories.analysis.structure.cut_invariants import FinishedCut, cut_violations
 from tests.test_editorial_thin_gates import Audience, Standing, shot
 
 

@@ -34,12 +34,12 @@ from pathlib import Path
 import pytest
 from scripts import docker_smoke
 
-from immich_memories.analysis.source_filter import not_shot_here
-from immich_memories.analysis.source_quality import is_usable_source
+from immich_memories.analysis.corpus.name_filter import not_shot_here
+from immich_memories.analysis.corpus.quality import is_usable_source
 from immich_memories.api.models import Asset
-from immich_memories.config_loader import Config
-from immich_memories.config_models_analysis import AnalysisConfig
-from immich_memories.config_models_render import TitleScreenConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.analysis import AnalysisConfig
+from immich_memories.config.models.render import TitleScreenConfig
 from immich_memories.generate_clips import MIN_CLIP_DURATION
 from immich_memories.processing.hdr_utilities import quality_encoder_preset
 from tests.e2e.fake_immich import TIMELINE_ASSETS, FakeImmichServer

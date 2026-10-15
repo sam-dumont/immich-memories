@@ -10,7 +10,7 @@ from collections import OrderedDict, deque
 from collections.abc import Mapping, MutableMapping
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.models.auth import AuthConfig
 
 logger = logging.getLogger(__name__)
 

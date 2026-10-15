@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
-from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.config.models.editorial import EditorialConfig
 from immich_memories.free_text.library import read_library
 from tests.annotation_rows import add_rows
 from tests.people_registry_seed import seed_people

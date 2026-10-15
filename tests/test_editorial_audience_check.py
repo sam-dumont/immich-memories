@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
 
 
 class Annotation:

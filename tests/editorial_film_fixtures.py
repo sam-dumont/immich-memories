@@ -13,25 +13,25 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_case import Case, _adapt_production_cards
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_moment_wall import (
+from immich_memories.analysis.corpus.groups import EditorialGroup
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.film.contract import (
+    EpisodeReadingCard,
+    StructurePlanningInput,
+)
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.reading.case import Case, adapt_production_cards
+from immich_memories.analysis.reading.moment_cards import MomentCard
+from immich_memories.analysis.reading.moment_wall import (
     MomentCardEvidence,
     ProductionMomentWallRenderer,
     RepresentativeEvidence,
 )
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_structure_contract import (
-    EpisodeReadingCard,
-    StructurePlanningInput,
-)
-from immich_memories.analysis.moment_cards import MomentCard
-from immich_memories.analysis.selection_source_groups import EditorialGroup
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
 from immich_memories.api.models import Asset, AssetType, ExifInfo, Person
-from immich_memories.config_loader import Config
-from immich_memories.config_models_automation import TripsConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.automation import TripsConfig
 from immich_memories.people.context import PersonPromptContext
 from immich_memories.timeperiod import DateRange
 from tests.test_editorial_story_first_planner import StoryJudge
@@ -195,7 +195,7 @@ def film_source(
         episode_groups=tuple(episodes),
         candidates=tuple(candidates),
     )
-    adapted, _ = _adapt_production_cards(prepared, tuple(cards))
+    adapted, _ = adapt_production_cards(prepared, tuple(cards))
     wall = ProductionMomentWallRenderer(
         prepared,
         tuple(cards),

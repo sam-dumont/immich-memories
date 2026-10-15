@@ -15,7 +15,7 @@ from immich_memories.automation.notification_state import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import set_config
+from immich_memories.config.loader import set_config
 from immich_memories.web.server import create_app
 from tests.web_api_fixtures import config_in, save_run
 

@@ -11,16 +11,19 @@ from datetime import timedelta
 
 import sqlalchemy as sa
 
-from immich_memories.analysis.editorial_planner import EditorialPlan
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.plan import EditorialPlan
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.pool import EditorialSourcePool
 from immich_memories.api.models import Person
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.person_scope import people_in_window, window_condition
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db.tables.annotations import head_facts
 from tests.test_editorial_preparation import preview, successful_ports
 from tests.test_editorial_runtime import _window

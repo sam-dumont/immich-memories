@@ -3,7 +3,7 @@
 import asyncio
 from functools import partial
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.audience_cases import audience_cases
 from immich_memories.conformance.catalogue_cases import catalogue_cases
 from immich_memories.conformance.editorial_cases import editorial_cases

@@ -14,7 +14,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_title_settings
 from immich_memories.processing.assembly_config import AssemblyClip

@@ -131,7 +131,7 @@ def _generate_memory(
     from click.testing import CliRunner
 
     from immich_memories.cli import main
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config.from_yaml(Config.get_default_path())
     config.title_screens.enabled = enable_titles

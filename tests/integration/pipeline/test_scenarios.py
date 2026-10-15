@@ -99,7 +99,7 @@ def _make_test_clip(path: Path, asset_id: str = "test") -> object:
 class TestErrorHandling:
     def test_exception_wraps_in_generation_error(self, short_clip, tmp_path):
         """Non-GenerationError exceptions get wrapped with sanitized message."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationError, GenerationParams, generate_memory
 
         clip = _make_test_clip(short_clip, "err-clip")
@@ -134,7 +134,7 @@ class TestErrorHandling:
 class TestMusicApplication:
     def test_music_mixed_into_video(self, short_clip, short_music, tmp_path):
         """Music file gets mixed into the assembled video."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip = _make_test_clip(short_clip)
@@ -182,7 +182,7 @@ class TestLivePhotoBurst:
         from immich_memories.api.immich import SyncImmichClient
         from immich_memories.api.models import VideoClipInfo
         from immich_memories.cache.video_cache import VideoDownloadCache
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate_downloads import download_clip
         from immich_memories.timeperiod import DateRange
 
@@ -241,7 +241,7 @@ class TestLivePhotoMergeReal:
         from datetime import date
 
         from immich_memories.api.immich import SyncImmichClient
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.processing.live_photo_merger import (
             build_merge_command,
             cluster_live_photos,
@@ -329,7 +329,7 @@ class TestErrorWrapping:
         """A RuntimeError during assembly gets wrapped in GenerationError."""
         from unittest.mock import patch
 
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationError, GenerationParams, generate_memory
 
         clip = _make_test_clip(short_clip, "wrap-err")
@@ -365,7 +365,7 @@ class TestTripTitleSettings:
         """memory_type=trip populates trip-specific title settings."""
         from datetime import date
 
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams
         from immich_memories.generate_settings import build_title_settings
         from immich_memories.processing.assembly_config import AssemblyClip
@@ -416,7 +416,7 @@ class TestTripTitleSettings:
 class TestClipSegmentOverrides:
     def test_custom_segment_trims_clip(self, short_clip, tmp_path):
         """Clip segments from review step trim the extracted clip."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         clip = _make_test_clip(short_clip, "seg-clip")

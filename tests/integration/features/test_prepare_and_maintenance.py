@@ -26,7 +26,7 @@ import httpx
 import pytest
 import yaml
 
-from immich_memories.analysis.editorial_exposure_chains import runs_holding
+from immich_memories.analysis.audience.exposure_chains import runs_holding
 from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import ALL_PICTURES
 from tests.features.cli_harness import OutboundTrap, UserHome, basic_config, films_under

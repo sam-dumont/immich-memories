@@ -1,0 +1,280 @@
+"""Deterministic checks of a plan against its EditorialIntent (tracker D09, D14).
+
+What a validator can decide without a model: whether every required partition that holds worthy
+evidence carries something, whether a two-sided product came back one-sided, whether a recurring
+product collapsed onto its latest years, and whether the material is too thin to call a memory.
+Everything semantic (does a funded beat really concern the requested subject) stays with the
+prompts and the structural review.
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Collection, Sequence
+from dataclasses import dataclass
+from datetime import date
+
+from immich_memories.analysis.film.intent import EditorialIntent
+from immich_memories.free_text import caption_words
+
+_WORD = re.compile(r"[\w']+")
+
+__all__ = ["CarrierView", "IntentReport", "Violation", "validate_intent"]
+
+# One real shot is a film; nothing is not (#1595). The owner's ruling: "if there's something, even
+# if small, we try". A thin film is shorter, not refused; the plan still reports its shortfall.
+MIN_CARRIERS = 1
+# An on-this-day film is about recurrence: one year of several asked for is a single-year film,
+# which its contract refuses rather than inflating. A request for one year (`--years-back 1`)
+# asks for that year's day, and gets it (#2467). A holiday of one year is still that holiday's film.
+_RECURRING = ("on_this_day",)
+MIN_OCCURRENCES = 2
+
+
+@dataclass(frozen=True)
+class CarrierView:
+    asset_id: str
+    taken: date
+    event: str
+    seconds: float
+    # The picture's own caption, read only to count a planted violation of the intent's
+    # exclusions (#2061); None for a caller that never reads captions.
+    caption: str | None = None
+
+
+@dataclass(frozen=True)
+class Violation:
+    code: str
+    severity: str  # "structural" invalidates the plan; "coverage" must be explained in the plan
+    partition: str | None
+    detail: str
+    # Set only for "people_condition_violated" (#1954): the one carrier it names, so the
+    # render stage can drop exactly it without re-parsing free text.
+    asset_id: str | None = None
+
+
+@dataclass(frozen=True)
+class IntentReport:
+    status: str  # ok | insufficient_material | structural_violation | coverage_incomplete
+    violations: tuple[Violation, ...]
+    requested_seconds: float
+    usable_seconds: float
+    shortfall_seconds: float
+    reason: str | None
+    coverage: dict[str, int]
+
+    def as_record(self) -> dict:
+        return {
+            "status": self.status,
+            "requested_seconds": self.requested_seconds,
+            "usable_seconds": round(self.usable_seconds, 2),
+            "shortfall_seconds": round(self.shortfall_seconds, 2),
+            "reason": self.reason,
+            "coverage": self.coverage.copy(),
+            "violations": [vars(v) for v in self.violations],
+        }
+
+
+def _coverage(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> dict[str, int]:
+    counts = {part.key: 0 for part in intent.partitions}
+    for carrier in carriers:
+        part = intent.partition_for(carrier.taken)
+        if part is not None:
+            counts[part.key] += 1
+    return counts
+
+
+def _over_limit(intent: EditorialIntent, coverage: dict[str, int]) -> list[Violation]:
+    limit = intent.max_carriers_per_partition
+    if limit is None:
+        return []
+    return [
+        Violation(
+            "partition_carrier_limit",
+            "structural",
+            part.key,
+            f"{part.label} carries {coverage[part.key]} pictures; the limit is {limit}",
+        )
+        for part in intent.partitions
+        if coverage[part.key] > limit
+    ]
+
+
+def _uncovered(
+    intent: EditorialIntent,
+    coverage: dict[str, int],
+    evidence_partitions: Collection[str],
+) -> list[Violation]:
+    return [
+        Violation(
+            code="uncovered_partition",
+            severity="coverage",
+            partition=part.key,
+            detail=f"{part.label} holds worthy evidence and carries nothing",
+        )
+        for part in intent.required_partitions
+        if part.key in evidence_partitions and coverage[part.key] == 0
+    ]
+
+
+def _latest_year_cluster(
+    intent: EditorialIntent, coverage: dict[str, int], evidence_partitions: Collection[str]
+) -> list[Violation]:
+    with_evidence = [p for p in intent.partitions if p.key in evidence_partitions]
+    if len(with_evidence) < 3:
+        return []
+    covered = [p for p in with_evidence if coverage[p.key] > 0]
+    latest = with_evidence[-2:]
+    if not covered or any(p not in latest for p in covered):
+        return []
+    return [
+        Violation(
+            "latest_year_cluster",
+            "coverage",
+            None,
+            f"only the latest {len(covered)} of {len(with_evidence)} occurrences with evidence are carried",
+        )
+    ]
+
+
+def _people_violations(
+    carriers: Sequence[CarrierView], violating_ids: Collection[str]
+) -> list[Violation]:
+    """Every selected carrier the caller already found outside the people condition.
+
+    This is the fail-safe (#1954): a people condition is decided strictly per picture,
+    by `present_on_assets` at the same fetch seam that built the pool, so this should
+    never fire. The caller does that check (it alone holds the resolved face-id
+    condition, `face_accounts`, and the captured `Asset` objects); this function only
+    turns its answer into a visible violation, never re-derives it from names.
+    """
+    return [
+        Violation(
+            "people_condition_violated",
+            "structural",
+            None,
+            f"{carrier.asset_id} was selected but does not satisfy the requested people "
+            "condition on its own recognised faces",
+            asset_id=carrier.asset_id,
+        )
+        for carrier in carriers
+        if carrier.asset_id in violating_ids
+    ]
+
+
+def _excluded_violations(
+    intent: EditorialIntent, carriers: Sequence[CarrierView]
+) -> list[Violation]:
+    """Every selected carrier whose own caption still shows a word the intent excludes.
+
+    The pool already drops a picture a free-text request asked left out (#2061); this is
+    the same check run again over what a plan actually selected, so a violation stays
+    visible instead of silently passing through if one ever slips in.
+    """
+    if not intent.excluded:
+        return []
+    return [
+        Violation(
+            "excluded_subject_shown",
+            "structural",
+            None,
+            f"{carrier.asset_id} was selected but its caption shows what the request asked "
+            f"left out: {carrier.caption}",
+            asset_id=carrier.asset_id,
+        )
+        for carrier in carriers
+        if carrier.caption and _shows_excluded(intent.excluded, carrier.caption)
+    ]
+
+
+def _shows_excluded(excluded: Sequence[str], caption: str) -> bool:
+    """Whether the caption shows a phrase the intent excludes: a bare company kind
+    (`pool.py`'s `_company_exclusions`, e.g. "people") by the same curated person-noun
+    matcher that built the pool's own "absent company" filter, every other excluded phrase
+    by its own words (proper `\\w+` tokens, not a naive whitespace split that stuck
+    punctuation to a word)."""
+    words = _WORD.findall(caption.lower())
+    for phrase in excluded:
+        kind = phrase.strip().lower()
+        if kind in caption_words.KINDS and any(
+            (found := caption_words.caption_kind_of(word)) is not None and kind in ("people", found)
+            for word in words
+        ):
+            return True
+        phrase_words = set(_WORD.findall(phrase.lower()))
+        if phrase_words and phrase_words <= set(words):
+            return True
+    return False
+
+
+def _occurrences_needed(intent: EditorialIntent) -> int:
+    """How many occurrences must hold a carrier: two of a recurrence, or the one asked for."""
+    if intent.product not in _RECURRING:
+        return 0
+    return min(MIN_OCCURRENCES, len(intent.partitions))
+
+
+def _thin_reason(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> str | None:
+    """Why the material does not make this film, in the words the run prints; None when it does."""
+    if len(carriers) < MIN_CARRIERS:
+        return "no picture in the period could be used"
+    needed = _occurrences_needed(intent)
+    held = sum(count > 0 for count in _coverage(intent, carriers).values())
+    if held >= needed:
+        return None
+    asked = len(intent.partitions)
+    return (
+        f"only {held} of the {asked} years asked for {'holds' if held == 1 else 'hold'} "
+        f"pictures of the day, and a film about the day coming back needs {needed}"
+    )
+
+
+def _verdict(
+    intent: EditorialIntent,
+    violations: Sequence[Violation],
+    *,
+    carriers: Sequence[CarrierView],
+) -> tuple[str, str | None]:
+    structural = [v.detail for v in violations if v.severity == "structural"]
+    if structural:
+        return "structural_violation", "; ".join(structural)
+    if (thin := _thin_reason(intent, carriers)) is not None:
+        return "insufficient_material", thin
+    if violations:
+        return "coverage_incomplete", "; ".join(v.detail for v in violations)
+    return "ok", None
+
+
+def validate_intent(
+    intent: EditorialIntent,
+    *,
+    carriers: Sequence[CarrierView],
+    evidence_partitions: Collection[str],
+    # A captured case counts its seconds as an integer; the report always states a float.
+    requested_seconds: float | int,
+    people_violations: Collection[str] = (),
+) -> IntentReport:
+    """Judge the plan's shape against the contract. Sparse material is reported, never padded."""
+    usable = float(sum(c.seconds for c in carriers))
+    coverage = _coverage(intent, carriers)
+    violations = [
+        *_over_limit(intent, coverage),
+        *_uncovered(intent, coverage, evidence_partitions),
+        *(
+            _latest_year_cluster(intent, coverage, evidence_partitions)
+            if intent.product in ("on_this_day", "holiday") and carriers
+            else []
+        ),
+        *_people_violations(carriers, people_violations),
+        *_excluded_violations(intent, carriers),
+    ]
+    status, reason = _verdict(intent, violations, carriers=carriers)
+    return IntentReport(
+        status=status,
+        violations=tuple(violations),
+        requested_seconds=float(requested_seconds),
+        usable_seconds=usable,
+        shortfall_seconds=max(0.0, requested_seconds - usable),
+        reason=reason,
+        coverage=coverage,
+    )

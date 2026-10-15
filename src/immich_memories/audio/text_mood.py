@@ -7,10 +7,10 @@ import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from immich_memories.analysis.editorial_case import TextRequest
-from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
-from immich_memories.analysis.llm_failures import stop_if_this_is_our_bug
-from immich_memories.analysis.prepared_captions import prepared_captions
+from immich_memories.analysis.judgments.text_gateway import QueryTextRequester
+from immich_memories.analysis.judgments.text_request import TextRequest
+from immich_memories.analysis.llm.failures import stop_if_this_is_our_bug
+from immich_memories.analysis.preparation.prepared_captions import prepared_captions
 from immich_memories.audio.film_mood import (
     FilmFacts,
     fact_lines,
@@ -27,7 +27,7 @@ from immich_memories.audio.mood_analyzer import (
     VideoMood,
 )
 from immich_memories.cache.judgment_cache import judgment_bank
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.security import write_secret_file
 
@@ -159,7 +159,7 @@ def music_hemisphere(config: Config) -> str:
     A generator section that still sets its own `hemisphere` keeps it until 2.0; the
     loader names that key when it is set.
     """
-    from immich_memories.config_unsupported import is_set
+    from immich_memories.config.unsupported import is_set
 
     name = "ace_step" if config.ace_step.enabled else "musicgen"
     if is_set(config, f"{name}.hemisphere"):

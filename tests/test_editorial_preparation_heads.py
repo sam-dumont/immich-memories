@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS, prepare_heads
+from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS, prepare_heads
 from immich_memories.triage.heads import HeadBundle, HeadWeights, PcaWeights
 from tests.annotation_rows import annotation_store
 

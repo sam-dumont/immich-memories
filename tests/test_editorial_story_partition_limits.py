@@ -6,7 +6,7 @@ from dataclasses import replace
 
 import pytest
 
-from immich_memories.analysis import editorial_structure_planner as planner
+from immich_memories.analysis.structure import planner
 from tests.editorial_story_fixtures import AnnualStoryJudge, ControlledStoryJudge
 from tests.editorial_thin_fixtures import caption_laya
 from tests.test_editorial_duration_planner_integration import (

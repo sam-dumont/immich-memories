@@ -7,8 +7,8 @@ import subprocess
 
 import pytest
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.render import PhotoConfig
 from immich_memories.photos.encoding import photo_encoding_plan
 from immich_memories.photos.photo_pipeline import render_single_photo
 from immich_memories.processing.encoding_plan import HdrTransfer

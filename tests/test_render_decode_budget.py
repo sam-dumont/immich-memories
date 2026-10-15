@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 from tests.conftest import make_clip
 from tests.output_tools_fake import decoded_file_of, is_decode_check, output_tools

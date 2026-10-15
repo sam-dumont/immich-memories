@@ -23,7 +23,7 @@ def test_a_short_word_or_a_word_the_facts_never_capitalise_is_left_alone():
 
 
 def test_an_episode_is_asked_for_a_record_on_its_own_lines_whatever_else_is_in_the_request():
-    from immich_memories.analysis.text_episode_prompt import _LEAN_PROMPT, _PROMPT
+    from immich_memories.analysis.reading.episode_prompt import _LEAN_PROMPT, _PROMPT
 
     for prompt in (_PROMPT, _LEAN_PROMPT):
         assert "never against the other episodes" in prompt
@@ -31,6 +31,6 @@ def test_an_episode_is_asked_for_a_record_on_its_own_lines_whatever_else_is_in_t
 
 
 def test_an_account_names_the_period_s_distinctive_events_before_its_pattern():
-    from immich_memories.analysis.library_catalogue import _OVERVIEW_INSTRUCTIONS
+    from immich_memories.analysis.reading.library_catalogue import _OVERVIEW_INSTRUCTIONS
 
     assert "distinctive events first" in _OVERVIEW_INSTRUCTIONS

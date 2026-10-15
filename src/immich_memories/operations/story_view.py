@@ -19,7 +19,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from immich_memories.analysis.editorial_story_replies import WEIGHTS
+from immich_memories.analysis.stories.replies import WEIGHTS
 from immich_memories.operations.storyboard import MOTION_KINDS, PLAN_FILE, carrier_reason
 
 PREPARATION_FILE = "preparation.private.json"

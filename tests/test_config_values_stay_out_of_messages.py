@@ -59,13 +59,13 @@ def test_ace_step_logs_never_name_the_configured_address(caplog, mode, error, st
 
 
 def test_a_refused_caption_credential_does_not_name_the_endpoint():
-    from immich_memories.analysis.editorial_preparation_captions import _model_inventory
+    from immich_memories.analysis.captions.requests import _model_inventory
 
     refusal = urllib.error.HTTPError(PRIVATE, 401, "unauthorized", {}, None)  # type: ignore[arg-type]
     # WHY: the caption server is the network boundary.
     with (
         patch(
-            "immich_memories.analysis.editorial_preparation_captions.open_caption_url",
+            "immich_memories.analysis.captions.requests.open_caption_url",
             side_effect=refusal,
         ),
         pytest.raises(PermissionError) as raised,

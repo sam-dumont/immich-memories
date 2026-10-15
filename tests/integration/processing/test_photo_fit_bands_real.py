@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.models.render import PhotoConfig
 from immich_memories.photos.photo_pipeline import render_single_photo
 from tests.conftest import make_clip
 from tests.integration.conftest import requires_ffmpeg

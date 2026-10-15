@@ -6,10 +6,10 @@ import threading
 
 import pytest
 
-from immich_memories.analysis.editorial_block_votes import judge_worthiness
-from immich_memories.analysis.editorial_structure_io import StructureTextJudge
+from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+from immich_memories.analysis.polish.block_votes import judge_worthiness
 from immich_memories.config import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 
 
@@ -29,8 +29,8 @@ def worthiness(judge, happenings):
 
 
 def test_votes_overlap_blocks_but_keep_order_and_reuse_the_same_bank(tmp_path, monkeypatch):
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.llm import metrics as llm_metrics
 
     active = maximum = 0
     lock = threading.Lock()
@@ -94,7 +94,7 @@ def test_votes_overlap_blocks_but_keep_order_and_reuse_the_same_bank(tmp_path, m
 def test_cancellation_reaches_workers_before_they_send_a_request(tmp_path, monkeypatch):
     import pytest
 
-    from immich_memories.analysis import editorial_text_gateway as gateway
+    from immich_memories.analysis.judgments import text_gateway as gateway
     from immich_memories.operations.cancellation import PipelineCancelled, cancellation_scope
 
     sent = []
@@ -127,7 +127,7 @@ def test_cancellation_reaches_workers_before_they_send_a_request(tmp_path, monke
 
 def test_the_endpoint_decides_how_many_jobs_overlap_when_the_config_names_no_number():
     """A model on this machine serves one request at a time; a hosted one is a fleet."""
-    from immich_memories.analysis.llm_providers import reader_concurrency
+    from immich_memories.analysis.llm.providers import reader_concurrency
 
     assert reader_concurrency(LLMConfig()) == 1
     assert reader_concurrency(LLMConfig(enabled=True, base_url="http://localhost:9999/v1")) == 1
@@ -156,8 +156,8 @@ def test_the_endpoint_decides_how_many_jobs_overlap_when_the_config_names_no_num
 
 def test_one_question_asked_by_two_jobs_at_once_is_paid_for_once(tmp_path, monkeypatch):
     """Serial reading deduplicated through the bank; overlapping reading must too."""
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_reader_concurrency import run_reader_jobs
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.reader_concurrency import run_reader_jobs
 
     paid = []
     lock = threading.Lock()
@@ -193,8 +193,8 @@ def test_one_question_asked_by_two_jobs_at_once_is_paid_for_once(tmp_path, monke
 
 def test_a_failed_job_keeps_its_artifact_and_its_number_among_the_others(tmp_path, monkeypatch):
     """The parent's own earlier calls keep their numbers and the failure lands after them."""
-    from immich_memories.analysis import editorial_text_gateway as gateway
-    from immich_memories.analysis.editorial_reader_concurrency import run_reader_jobs
+    from immich_memories.analysis.judgments import text_gateway as gateway
+    from immich_memories.analysis.judgments.reader_concurrency import run_reader_jobs
 
     async def completion(prompt, _config, **_kwargs):
         return "not an object at all" if "unreadable" in prompt else '{"ok": 1}'
@@ -237,7 +237,7 @@ def test_a_failed_job_keeps_its_artifact_and_its_number_among_the_others(tmp_pat
 
 def test_every_failing_job_names_its_own_cause(tmp_path, caplog):
     """A group that failed for two reasons used to report one and drop the other."""
-    from immich_memories.analysis.editorial_reader_concurrency import run_reader_jobs
+    from immich_memories.analysis.judgments.reader_concurrency import run_reader_jobs
 
     both_running = threading.Barrier(2, timeout=5)
 
@@ -267,7 +267,7 @@ def test_a_rate_limit_pauses_the_group_and_no_two_callers_wake_together():
     """Four throttled calls used to sleep the identical span and retry in lockstep."""
     import httpx
 
-    from immich_memories.analysis.provider_failure import (
+    from immich_memories.analysis.llm.provider_failure import (
         THROTTLE,
         group_wait,
         provider_failure,

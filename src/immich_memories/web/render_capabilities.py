@@ -7,7 +7,7 @@ import httpx
 from fastapi import APIRouter, Depends
 
 from immich_memories.api.immich import ImmichAPIError
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.schemas import RenderCapabilities
 

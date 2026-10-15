@@ -4,7 +4,7 @@ import subprocess
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import StoreLocation, open_store
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import run_music_phase

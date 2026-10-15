@@ -18,7 +18,7 @@ from typing import Protocol
 import numpy as np
 from PIL import Image
 
-from immich_memories.analysis import editorial_preparation_detectors as detectors
+from immich_memories.analysis.preparation import detectors
 from immich_memories.pinned_models import ENCODER, MARQO_ONNX
 from immich_memories.triage.encoder import DinoEncoder
 from immich_memories.triage.engine import TriageEngine

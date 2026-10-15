@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_structure_audience import AudienceBank
-from immich_memories.config_loader import Config
+from immich_memories.analysis.audience.verdicts import AudienceBank
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations import picture_holds as holds
 from tests.annotation_rows import add_rows

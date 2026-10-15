@@ -13,7 +13,7 @@ from functools import wraps
 from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories import process_start
-from immich_memories.analysis import llm_metrics
+from immich_memories.analysis.llm import metrics as llm_metrics
 from immich_memories.db import Store, open_store
 from immich_memories.logging_config import set_current_run_id
 from immich_memories.operations.cancellation import PipelineCancelled

@@ -82,15 +82,15 @@ def cut(
     `context_only` are pictures the window holds that the film's own filter did not choose:
     the unfiltered context read a person film keeps beside its strict pool.
     """
-    from immich_memories.analysis.editorial_pool import EditorialSourcePool
-    from immich_memories.analysis.editorial_runtime import (
+    from immich_memories.analysis.runtime.composition import (
         EditorialRunContext,
         build_editorial_planner,
     )
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-    from immich_memories.analysis.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.sources.pool import EditorialSourcePool
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config(
         cache={"directory": str(tmp_path / "cache")},
@@ -282,9 +282,9 @@ WEST = (40.0, -100.0)
 def _trips_of(year: int, pictures: list[Asset]):
     from unittest.mock import create_autospec
 
-    from immich_memories.analysis.trip_discovery import discover_year_trips
+    from immich_memories.analysis.sources.trip_discovery import discover_year_trips
     from immich_memories.api.sync_client import SyncImmichClient
-    from immich_memories.config_models_automation import TripsConfig
+    from immich_memories.config.models.automation import TripsConfig
 
     # WHY: the Immich read boundary; the autospec refuses any call the real client would.
     client = create_autospec(SyncImmichClient, instance=True)

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.people.account_ids import entry_ids, primary_ids
 from immich_memories.people.graph import ConfirmedOwner
 from immich_memories.people.relationships import owner_role

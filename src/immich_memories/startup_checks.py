@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models import has_unresolved_env_reference
+from immich_memories.config.loader import Config
+from immich_memories.config.models.resources import has_unresolved_env_reference
 
 MIN_SECRET_LENGTH = 32
 MIN_PASSWORD_LENGTH = 12

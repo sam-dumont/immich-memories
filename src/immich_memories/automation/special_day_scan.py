@@ -19,8 +19,10 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
-from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
-from immich_memories.analysis.special_day import (
+from immich_memories.analysis.corpus.picture_copies import picture_copies, starred_keepers
+from immich_memories.analysis.places.trip_detection import detect_trips, haversine_km
+from immich_memories.analysis.sources.event_scope import SpecialEventAdmission
+from immich_memories.analysis.special_days.detection import (
     SpecialDay,
     active_hours,
     ask_if_special,
@@ -32,25 +34,23 @@ from immich_memories.analysis.special_day import (
     run_extent,
     window_that_holds_the_day,
 )
-from immich_memories.analysis.special_day_holiday import was_the_holiday
-from immich_memories.analysis.special_day_sequence import (
+from immich_memories.analysis.special_days.holiday import was_the_holiday
+from immich_memories.analysis.special_days.sequence import (
     MIN_FILM_SECONDS,
     filmable_seconds,
     read_in_sequence,
 )
-from immich_memories.analysis.special_day_title import honest_title
-from immich_memories.analysis.special_day_vocabulary import (
+from immich_memories.analysis.special_days.title import honest_title
+from immich_memories.analysis.special_days.vocabulary import (
     YearWords,
     crowded_out,
     distinctive_days,
     telling,
 )
-from immich_memories.analysis.special_event_scope import SpecialEventAdmission
-from immich_memories.analysis.trip_detection import detect_trips, haversine_km
 from immich_memories.automation.special_day_facts import ranked_occasions
-from immich_memories.config_models_analysis import AnalysisConfig
-from immich_memories.config_models_automation import TripsConfig
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.models.analysis import AnalysisConfig
+from immich_memories.config.models.automation import TripsConfig
+from immich_memories.config.models.render import PhotoConfig
 from immich_memories.memory_types.date_builders import holiday_name, holidays_of, resolve_holiday
 
 if TYPE_CHECKING:
@@ -119,7 +119,7 @@ def _one_file_per_picture(assets: list) -> list:
 
     A shared album stores a curated picture twice, the camera's file and a smaller copy under
     the same name at the same instant, and discovery counted both: a day looked twice its size.
-    The fold is the editor's own (`picture_copies`); a file with no name is never folded.
+    The fold is the editor's own (`corpus.picture_copies`); a file with no name is never folded.
     """
     named = [asset for asset in assets if getattr(asset, "original_file_name", None)]
     copies = picture_copies(named)
@@ -150,7 +150,7 @@ def _shot_here(assets: list, analysis_config: Any) -> tuple[list, list]:
     of their own: their time is when they were saved, and a film cannot use them. Screen
     recordings and the other excluded sources are neither.
     """
-    from immich_memories.analysis.source_filter import from_an_excluded_source, not_shot_here
+    from immich_memories.analysis.corpus.name_filter import from_an_excluded_source, not_shot_here
 
     if analysis_config is None:
         return assets, []
@@ -243,7 +243,7 @@ def scan_year(
     """Find the days in one year's assets that were occasions, and name them.
 
     Every run of activity off a trip is read, a month at a time and in order, and the reader
-    says which were occasions (`special_day_sequence`); no bar decides what it may see. Each
+    says which were occasions (`special_days.sequence`); no bar decides what it may see. Each
     occasion a film could be cut from is then confirmed and named from its own pictures' lines.
     A negative day-level verdict drops it, even when the month proposed it. A month the
     reader could not read raises `YearNotRead` so the year is scanned again, not recorded
@@ -629,7 +629,7 @@ def _day_from(day: date, items: list, verdict: Any, what: str = "") -> Discovere
     title; nothing left after that means nothing truthful to call the day.
     """
     from immich_memories import __version__
-    from immich_memories.analysis.special_day_sequence import SCAN_VERSION
+    from immich_memories.analysis.special_days.sequence import SCAN_VERSION
 
     started, ended = run_extent(items) or (None, None)
     if not verdict.judged:

@@ -12,10 +12,10 @@ import threading
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from immich_memories.analysis import editorial_preparation_detectors as detectors
-from immich_memories.analysis.editorial_description_contract import API_MODEL
+from immich_memories.analysis.captions.contract import API_MODEL
+from immich_memories.analysis.preparation import detectors
 from immich_memories.api.immich import ImmichAPIError
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import (
     CAPTION_SETUP_PAGE,
     CheckResult,

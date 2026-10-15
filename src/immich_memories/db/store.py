@@ -17,7 +17,7 @@ from immich_memories.db.bootstrap import StoreLocation, resolve_location
 from immich_memories.db.engine import SQLITE_BEGIN, create_store_engine, effective_schema
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 

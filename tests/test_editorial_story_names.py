@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_story_names import (
+from immich_memories.analysis.stories.names import (
     day_label,
     home_name,
     leg_name,

@@ -20,7 +20,7 @@ from immich_memories.automation.status import SuggestOutcome, SuggestStatus
 from immich_memories.automation.system_scheduler import SchedulerStatus
 from immich_memories.automation.variety import RejectedCandidate, VarietyDecision
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase

@@ -15,32 +15,32 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge
-from immich_memories.analysis.editorial_runtime import (
-    EditorialRunContext,
-    build_editorial_planner,
-)
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_source import fetch_full_window_source
-from immich_memories.analysis.editorial_structure_contract import (
-    StructurePlannerPorts,
-    StructurePlanningResult,
-)
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.analysis.smart_pipeline import ClipWithSegment
-from immich_memories.analysis.special_event_scope import (
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import (
+    StructurePlannerPorts,
+    StructurePlanningResult,
+)
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
+from immich_memories.analysis.sources.event_scope import (
     SpecialEventAdmission,
     validate_special_event_scope,
 )
+from immich_memories.analysis.sources.pool import EditorialSourcePool
+from immich_memories.analysis.sources.window_context import fetch_full_window_source
+from immich_memories.analysis.stories.rule_reader import NoModelJudge
 from immich_memories.automation.catalogue import entries_from
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset, make_clip
 from tests.test_editorial_runtime import _seed_descriptions
@@ -251,9 +251,9 @@ def test_an_events_live_photo_with_real_motion_plays_as_its_clip(tmp_path):
     from dataclasses import replace as with_facts
     from datetime import timedelta
 
-    from immich_memories.analysis.editorial_cut_invariants import broken_promises
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
-    from immich_memories.analysis.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.structure.cut_invariants import broken_promises
+    from immich_memories.analysis.structure.planner import plan_structure
     from immich_memories.api.models import AssetType
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from tests.editorial_story_fixtures import ControlledStoryJudge

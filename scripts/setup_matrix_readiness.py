@@ -44,8 +44,8 @@ from pathlib import Path
 import httpx
 from PIL import Image
 
-from immich_memories.analysis.editorial_description_contract import API_MODEL, validate_envelope
-from immich_memories.analysis.editorial_description_wire import request_payload, tile_preview
+from immich_memories.analysis.captions.contract import API_MODEL, validate_envelope
+from immich_memories.analysis.captions.wire import request_payload, tile_preview
 
 POD_POLL_S = 3.0
 # Creating the pod is the controller's first act on a Job it has just been given,
@@ -79,7 +79,7 @@ WARMUP_LISTENER_TIMEOUT_S = 20.0
 # will ask for. The service is given the picture, not a synthetic square.
 WARMUP_IMAGE_PX = 200
 # The caption control is the opposite case: a flat square is what
-# `editorial_preparation_captions.check_provider` sends, because what it tests is
+# `captions.requests.check_provider` sends, because what it tests is
 # the schema rather than the subject.
 CAPTION_CONTROL_PX = 400
 CAPTION_CONTROL_RGB = (128, 128, 128)

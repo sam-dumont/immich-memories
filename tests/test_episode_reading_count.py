@@ -12,17 +12,17 @@ from __future__ import annotations
 
 import json
 
-from immich_memories.analysis.text_episode_answers import (
+from immich_memories.analysis.reading.episode_answers import (
     TEXT_EPISODE_SCHEMA_VERSION,
-    _EpisodeRequestScope,
-    _read_response_result,
+    EpisodeRequestScope,
+    read_response_result,
 )
-from immich_memories.analysis.text_episode_prompt import EpisodePromptFacts, episode_prompt
+from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 from immich_memories.store.episode_readings import EpisodeReadingIdentity
 
 
-def _scope(key: str, assets: tuple[str, ...]) -> _EpisodeRequestScope:
-    return _EpisodeRequestScope(
+def _scope(key: str, assets: tuple[str, ...]) -> EpisodeRequestScope:
+    return EpisodeRequestScope(
         identity=EpisodeReadingIdentity(group_id=key, producer_key="p", evidence_key="e"),
         full_asset_ids=assets,
         page_asset_ids=assets,
@@ -62,7 +62,7 @@ def test_a_reply_with_an_entry_per_picture_reads_no_episode() -> None:
         {"schema_version": TEXT_EPISODE_SCHEMA_VERSION, "episodes": [_row(i) for i in range(1, 6)]}
     )
 
-    result = _read_response_result(reply, (_scope("e1", pictures),))
+    result = read_response_result(reply, (_scope("e1", pictures),))
 
     assert result.readings == ()
     assert result.diagnostic is not None
@@ -74,6 +74,6 @@ def test_a_reply_with_one_entry_per_episode_still_reads() -> None:
         {"schema_version": TEXT_EPISODE_SCHEMA_VERSION, "episodes": [_row(1), _row(2)]}
     )
 
-    result = _read_response_result(reply, (_scope("e1", ("a1",)), _scope("e2", ("a2",))))
+    result = read_response_result(reply, (_scope("e1", ("a1",)), _scope("e2", ("a2",))))
 
     assert len(result.readings) == 2

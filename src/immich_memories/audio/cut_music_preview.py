@@ -19,7 +19,7 @@ from immich_memories.processing.render_inputs import read_render_inputs
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 class PreviewUnavailable(RuntimeError):

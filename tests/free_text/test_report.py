@@ -14,8 +14,8 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.editorial import EditorialConfig
 from immich_memories.db import open_store
 from immich_memories.free_text.handoff import film_for
 from immich_memories.free_text.lexicon import Lexicon

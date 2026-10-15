@@ -13,8 +13,8 @@ the trace showed a clean funnel above it and the kill was in the dark.
 
 from __future__ import annotations
 
-from immich_memories.analysis import selection_trace as trace
-from immich_memories.analysis.smart_pipeline import ClipWithSegment
+from immich_memories.analysis.corpus import trace
+from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
 from immich_memories.api.models import VideoClipInfo
 from tests.conftest import make_asset
 

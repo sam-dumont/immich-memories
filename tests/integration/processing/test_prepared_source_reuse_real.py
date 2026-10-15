@@ -19,10 +19,10 @@ from PIL import Image
 
 from immich_memories.api.models import AssetType
 from immich_memories.cache.prepared_source_bank import PreparedSourceBank
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_clips import extract_clips
-from immich_memories.generate_downloads import _download_temporary_asset
+from immich_memories.generate_downloads import fetch_temporary_asset
 from immich_memories.processing.download_coordinator import DownloadCoordinator
 from immich_memories.processing.output_canvas import OutputCanvas
 from immich_memories.processing.probe_cache import ProbeCache
@@ -136,7 +136,7 @@ def _render(run_dir: Path, bank_dir: Path, clips=None) -> tuple[list, PreparedSo
         _Immich,
         None,
         max_workers=2,
-        download_operation=lambda client, asset: _download_temporary_asset(client, asset, run_dir),
+        download_operation=lambda client, asset: fetch_temporary_asset(client, asset, run_dir),
     )
     started = time.perf_counter()
     clips = extract_clips(

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from immich_memories.config_loader import load_config
+from immich_memories.config.loader import load_config
 from immich_memories.preflight_network import outside_call_checks
 
 ROOT = Path(__file__).resolve().parents[1]

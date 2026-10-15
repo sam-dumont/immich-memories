@@ -21,7 +21,7 @@ from immich_memories.automation.candidate_discovery import (
     CandidateDiscovery,
     ImmichDiscoveryError,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.people.companion import add_confirmed_person, bind_alias
 

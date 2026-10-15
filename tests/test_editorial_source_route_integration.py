@@ -7,20 +7,20 @@ from pathlib import Path
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_preparation import PreparationResult
-from immich_memories.analysis.editorial_runtime import (
+from immich_memories.analysis.corpus.admission import SourceScope
+from immich_memories.analysis.corpus.duplicate_hashing import compute_thumbnail_hash
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.preparation.acquire import PreparationResult
+from immich_memories.analysis.runtime.composition import (
     EditorialRunContext,
     build_editorial_planner,
 )
-from immich_memories.analysis.editorial_runtime_evidence import EditorialInputsRequired
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.selection_source import SourceScope
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.analysis.smart_pipeline import PipelineConfig, SmartPipeline
-from immich_memories.config_loader import Config
+from immich_memories.analysis.runtime.evidence import EditorialInputsRequired
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.runtime.smart_pipeline import PipelineConfig, SmartPipeline
+from immich_memories.analysis.sources.pool import EditorialSourcePool
+from immich_memories.config.loader import Config
 from tests.annotation_rows import annotation_store
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.no_pictures import refuse_pictures
@@ -195,7 +195,7 @@ def test_requested_subset_uses_full_canonical_context_without_widening_selection
 
 
 def test_empty_native_cut_does_not_claim_the_library_was_exhausted(tmp_path, monkeypatch):
-    from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
+    from immich_memories.analysis.film.contract import StructurePlanningResult
     from immich_memories.operations.editorial_attempt import read_editorial_attempt
     from tests.test_editorial_duration_advisory import SHORTFALL
 
@@ -228,7 +228,7 @@ def test_empty_native_cut_does_not_claim_the_library_was_exhausted(tmp_path, mon
 
 def test_a_declined_cut_carries_the_contracts_reason_to_the_run(tmp_path, monkeypatch):
     """The editor picked pictures and the contract declined them: the run names why (#2467)."""
-    from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
+    from immich_memories.analysis.film.contract import StructurePlanningResult
     from immich_memories.operations.editorial_attempt import read_editorial_attempt
 
     reason = "only 1 of the 2 years asked for holds pictures of the day"
@@ -273,8 +273,8 @@ def test_the_picture_guard_refuses_a_request_that_carries_one(monkeypatch):
     """The guard the film tests stand on trips on a picture, so their silence means something."""
     import asyncio
 
-    from immich_memories.analysis.llm_query import query_llm
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.llm.query import query_llm
+    from immich_memories.config.models.llm import LLMConfig
 
     sent = refuse_pictures(monkeypatch)
     config = LLMConfig(enabled=True, model="reader", base_url="http://127.0.0.1:9/v1")

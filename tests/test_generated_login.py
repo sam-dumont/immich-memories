@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.generated_login import LOGIN_FILE
 from tests.web_server_fixtures import server_client
 
@@ -21,7 +21,7 @@ def state_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_dir = tmp_path / ".immich-memories"
     config_dir.mkdir()
     # WHY: the login file sits beside the config file; this run's config is a temp one.
-    monkeypatch.setattr("immich_memories.config_loader._config_path", config_dir / "config.yaml")
+    monkeypatch.setattr("immich_memories.config.loader._config_path", config_dir / "config.yaml")
     return config_dir
 
 

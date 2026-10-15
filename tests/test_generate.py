@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from immich_memories import generate_render as generate_render_module
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import (
     GenerationError,
     GenerationParams,
@@ -869,11 +869,11 @@ class TestClipLocationName:
 
 
 class TestPhaseAllocation:
-    """_PipelineProgress scales phase progress into the overall range."""
+    """PipelineProgress scales phase progress into the overall range."""
 
     def test_pipeline_progress_scales_assembly(self):
         """Assembly callback should map 0.0-1.0 into the assembly phase range."""
-        from immich_memories.generate_progress import _PipelineProgress
+        from immich_memories.generate_progress import PipelineProgress
 
         calls: list[tuple[str, float, str]] = []
 
@@ -886,7 +886,7 @@ class TestPhaseAllocation:
             config=Config(),
             progress_callback=on_progress,
         )
-        pp = _PipelineProgress(params, clip_count=10)
+        pp = PipelineProgress(params, clip_count=10)
         cb = pp.assembly_callback()
         assert cb is not None
 
@@ -902,7 +902,7 @@ class TestPhaseAllocation:
 
     def test_pipeline_progress_phases_are_monotonic(self):
         """Reporting across phases produces monotonically increasing values."""
-        from immich_memories.generate_progress import _PipelineProgress
+        from immich_memories.generate_progress import PipelineProgress
 
         calls: list[float] = []
 
@@ -915,7 +915,7 @@ class TestPhaseAllocation:
             config=Config(),
             progress_callback=on_progress,
         )
-        pp = _PipelineProgress(params, clip_count=10)
+        pp = PipelineProgress(params, clip_count=10)
 
         pp.report("download", 0.0, "start")
         pp.report("download", 1.0, "done")
@@ -931,14 +931,14 @@ class TestPhaseAllocation:
 
     def test_assembly_callback_none_without_progress(self):
         """If no progress_callback on params, assembly callback should be None."""
-        from immich_memories.generate_progress import _PipelineProgress
+        from immich_memories.generate_progress import PipelineProgress
 
         params = GenerationParams(
             clips=[],
             output_path=Path("/tmp/out.mp4"),
             config=Config(),
         )
-        pp = _PipelineProgress(params, clip_count=5)
+        pp = PipelineProgress(params, clip_count=5)
         assert pp.assembly_callback() is None
 
 

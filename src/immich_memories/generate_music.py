@@ -30,7 +30,7 @@ from immich_memories.security import configured_secret_values, sanitize_error_me
 if TYPE_CHECKING:
     from immich_memories.audio.mood_analyzer import VideoMood
     from immich_memories.audio.music_generator_models import GeneratedMusic, MusicStems
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 

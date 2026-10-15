@@ -7,8 +7,8 @@ from pathlib import Path
 
 import yaml
 
-from immich_memories.config_models import expand_file_references
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
+from immich_memories.config.models.resources import expand_file_references
 from immich_memories.conformance.cases import cases
 from immich_memories.conformance.inventory import discover_sites
 from immich_memories.conformance.runtime import run_case, table

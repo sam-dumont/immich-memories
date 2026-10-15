@@ -5,7 +5,7 @@ import string
 
 import pytest
 
-from immich_memories.analysis.private_token_matcher import private_token_matcher
+from immich_memories.analysis.reading.private_tokens import private_token_matcher
 
 
 @pytest.mark.parametrize(

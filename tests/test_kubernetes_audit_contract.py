@@ -94,7 +94,7 @@ def test_readonly_app_and_batch_pods_have_persistent_model_runtime_caches(manife
 
 
 def test_uncommenting_the_reader_recipe_produces_an_enabled_32k_endpoint():
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
 
     text = (ROOT / "base" / "deployment.yaml").read_text()
     block = text.split("# Optional: ", 1)[1].split("# Optional: daily", 1)[0]

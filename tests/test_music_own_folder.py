@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories.audio.bundled_music import music_library_for_mood
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate_music import resolve_music
 
 

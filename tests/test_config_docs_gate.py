@@ -15,7 +15,7 @@ from check_config_docs import (  # noqa: E402
     schema_sections,
 )
 
-from immich_memories.config_loader import Config  # noqa: E402
+from immich_memories.config.loader import Config  # noqa: E402
 
 
 def test_yaml_block_keys_are_read_as_section_and_field_names() -> None:

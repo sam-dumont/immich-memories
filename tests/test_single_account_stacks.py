@@ -12,11 +12,14 @@ from dataclasses import replace
 import httpx
 import pytest
 
-from immich_memories.analysis.editorial_pool import discover_source_context, resolve_source_pool
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_source import library_source_scope
-from immich_memories.analysis.selection_source import prepare_editorial_source
+from immich_memories.analysis.corpus.admission import prepare_editorial_source
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.pool import discover_source_context, resolve_source_pool
+from immich_memories.analysis.sources.window_context import library_source_scope
 from immich_memories.api.sync_client import SyncImmichClient
 from tests.test_access_bound_reads import (
     PRIMARY_KEY,

@@ -7,14 +7,14 @@ from datetime import date, timedelta
 
 import pytest
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
 from tests.editorial_film_fixtures import Day, film_source
 
 
 def _basic_plan(source) -> dict:
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
 
     return plan_structure(
         source,

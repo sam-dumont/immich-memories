@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from immich_memories.api.models import AssetType
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.models.render import PhotoConfig
 from immich_memories.photos import photo_pipeline, renderer
 from immich_memories.processing import hdr_utilities
 from tests.conftest import make_asset

@@ -5,13 +5,13 @@ still, which is still decided on its preview by the same export. So a store writ
 det-v2 owes the exposure head its videos again, and never its stills.
 """
 
-from immich_memories.analysis.editorial_preparation import PreparationPorts
-from immich_memories.analysis.editorial_preparation_detectors import (
+from immich_memories.analysis.preparation.acquire import PreparationPorts
+from immich_memories.analysis.preparation.detectors import (
     MARQO_HEAD,
     MARQO_ONNX_ID,
     MARQO_VERSION,
 )
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 from immich_memories.store.editorial_preparation import remember_head_rows
 from tests.annotation_rows import annotation_store, read_rows
 from tests.test_editorial_preparation import asset, preview, run

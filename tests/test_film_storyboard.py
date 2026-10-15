@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, source_payload
+from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, source_payload
 from immich_memories.api.models import AssetType
 from immich_memories.operations.film_storyboard import ADDED_REASON, film_storyboard
 from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE

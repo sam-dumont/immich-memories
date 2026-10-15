@@ -87,7 +87,7 @@ class TestTheRunnerGivesUpAndMovesOn:
         from unittest.mock import MagicMock
 
         from immich_memories.automation.runner import AutoRunner
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.tracking.models import RunMetadata
 
         config = Config(

@@ -42,9 +42,9 @@ async def generate_track(mood_name: str, prompt: str) -> Path | None:
     # WHY: Read ace_step config from user's config.yaml so it picks up
     # the correct mode (lib/api) and api_url.
     app_config = get_config()
-    from immich_memories.audio.generators.factory import _app_config_to_ace_step
+    from immich_memories.audio.generators.factory import app_config_to_ace_step
 
-    ace_config = _app_config_to_ace_step(app_config.ace_step)
+    ace_config = app_config_to_ace_step(app_config.ace_step)
     backend = ACEStepBackend(ace_config)
 
     if not await backend.is_available():

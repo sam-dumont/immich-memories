@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from immich_memories.analysis.editorial_occasions import find_occasions, spoken_list
+from immich_memories.analysis.stories.occasions import find_occasions, spoken_list
 
 _RELATION = {
     "Robin": "library owner",

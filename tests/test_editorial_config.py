@@ -8,9 +8,9 @@ import pytest
 from pydantic import ValidationError
 
 from immich_memories.config import EditorialConfig as PublicEditorialConfig
-from immich_memories.config_loader import Config, _apply_env_overrides
-from immich_memories.config_models_editorial import EditorialConfig
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.loader import Config, _apply_env_overrides
+from immich_memories.config.models.editorial import EditorialConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 
 
 def test_editorial_store_defaults_without_a_selection_switch(tmp_path) -> None:
@@ -192,7 +192,7 @@ def test_captions_are_asked_for_one_at_a_time_by_default() -> None:
     recover it. A GPU captioner is the setup that wants more, and the caption
     server page says to raise it there.
     """
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 
     assert EditorialPreparationConfig().caption_concurrency == 1
 

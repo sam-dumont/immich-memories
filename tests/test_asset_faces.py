@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.analysis.subject_framing import FaceBox, face_boxes_of
+from immich_memories.analysis.facts.subject_framing import FaceBox, face_boxes_of
 from immich_memories.api.asset_service import AssetService
 
 # The shape Immich answers /api/faces?id= with, trimmed to the fields read here.

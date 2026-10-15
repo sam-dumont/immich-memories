@@ -15,7 +15,7 @@
     "ClipEncoder::encode_single_clip": [18]
   },
   "src/immich_memories/processing/hdr_utilities.py": {
-    "_detect_hdr_type": [17]
+    "detect_hdr_type": [17]
   },
   "src/immich_memories/processing/streaming_assembler.py": {
     "assemble_streaming": [24]

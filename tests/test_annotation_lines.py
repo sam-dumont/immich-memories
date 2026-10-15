@@ -1,5 +1,5 @@
 """Annotation lines combine live source truth with one stored fact surface.
-The source-preparation variants arrive with the slice that ports `selection_source`.
+The source-preparation variants arrive with the slice that ports `corpus.admission`.
 """
 
 from dataclasses import dataclass
@@ -8,8 +8,8 @@ from datetime import UTC, date, datetime
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.reading.annotation_lines import StoredAnnotationLineReader
 from immich_memories.api.models import ExifInfo, Person
 from immich_memories.db import Store
 from immich_memories.store.asset_annotations import (
@@ -403,7 +403,7 @@ def test_a_box_banked_before_identities_is_nobody_in_particular_to_a_memory_abou
 
 def test_a_clip_whose_frames_often_miss_its_subject_says_so_on_its_line() -> None:
     """Whatever head versions a caller asks for, the clip's own frame reading is read too."""
-    from immich_memories.analysis.editorial_clip_frames import (
+    from immich_memories.analysis.facts.clip_frames import (
         CLIP_FRAMES_HEAD,
         CLIP_FRAMES_VERSION,
         SHOWS_ITS_MOMENT,

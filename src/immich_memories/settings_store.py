@@ -39,7 +39,7 @@ from immich_memories.db.tables import settings
 from immich_memories.security import CREDENTIAL_FIELD_NAMES
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 

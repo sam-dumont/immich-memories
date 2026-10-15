@@ -93,10 +93,11 @@ IMMICH = (
     "scripts/with_throwaway_postgres.sh",
 )
 # The worker imports titles and processing, and through them the package's core.
-# The modules at the top of src/immich_memories (config, preflight, generate, ...)
-# feed every part of the app, so they count here and for the extras too.
+# The modules at the top of src/immich_memories (preflight, generate, ...) and the
+# config package feed every part of the app, so they count here and for the extras too.
 RENDER_WORKER = (
     "services/render-worker/*",
+    "src/immich_memories/config/*",
     "src/immich_memories/processing/*",
     "src/immich_memories/titles/*",
     "src/immich_memories/photos/*",
@@ -115,6 +116,7 @@ EXTRAS_TESTS = (
 )
 EXTRAS = (
     *EXTRAS_TESTS,
+    "src/immich_memories/config/*",
     "src/immich_memories/audio/*",
     "src/immich_memories/analysis/*",
     "src/immich_memories/processing/*",
@@ -198,8 +200,8 @@ INTEGRATION_SUITES = (
     ("src/immich_memories/generate", ("assembly",)),
     # The production cut hears each kept clip through the real speech detector (#2549).
     ("src/immich_memories/speech/", ("assembly",)),
-    ("src/immich_memories/analysis/editorial_runtime_ports.py", ("assembly",)),
-    ("src/immich_memories/analysis/editorial_speech", ("assembly",)),
+    ("src/immich_memories/analysis/runtime/ports.py", ("assembly",)),
+    ("src/immich_memories/analysis/clips/speech", ("assembly",)),
     ("src/immich_memories/processing/remote_render", ("render-worker",)),
     ("services/render-worker/", ("render-worker",)),
 )

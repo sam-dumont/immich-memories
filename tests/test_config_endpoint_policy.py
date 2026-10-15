@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.settings_store import nest_dotted
 
 

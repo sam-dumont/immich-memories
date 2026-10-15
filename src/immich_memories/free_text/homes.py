@@ -14,8 +14,8 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from immich_memories.analysis.familiar_places import valid_coordinates
-from immich_memories.analysis.trip_detection import haversine_km
+from immich_memories.analysis.places.familiar import valid_coordinates
+from immich_memories.analysis.places.trip_detection import haversine_km
 from immich_memories.free_text.library import LibraryPicture
 
 _CELL_DEGREES = 0.002

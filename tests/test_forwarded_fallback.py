@@ -13,15 +13,15 @@ import json
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from immich_memories.analysis.forwarded_fallback import CopyChecks, stand_in_copies
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
+from immich_memories.analysis.corpus.forwarded_fallback import CopyChecks, stand_in_copies
 from immich_memories.api.models import Person
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.test_editorial_source_route import photo
 
@@ -249,13 +249,13 @@ def test_admission_takes_only_the_copies_named_to_stand_in():
 
 def _cut(tmp_path, library, *, on: bool):
     """The rules route's cut of an on-this-day film over the three years, and its plan."""
-    from immich_memories.analysis.editorial_pool import EditorialSourcePool
-    from immich_memories.analysis.editorial_runtime import (
+    from immich_memories.analysis.runtime.composition import (
         EditorialRunContext,
         build_editorial_planner,
     )
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-    from immich_memories.analysis.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.sources.pool import EditorialSourcePool
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from tests.test_editorial_rule_reader import _distinct_preview
 
@@ -316,7 +316,7 @@ def test_on_a_year_with_camera_pictures_uses_none_of_its_forwarded_copies(tmp_pa
 def test_a_copy_whose_caption_says_it_was_made_is_refused_and_a_camera_picture_is_not(tmp_path):
     """A composite (a child cut out onto a glitter background) has no gutters to see; where the
     run has captions, the caption names it."""
-    from immich_memories.analysis.editorial_structure_material import source_exclusions
+    from immich_memories.analysis.film.material import source_exclusions
 
     copy = _forwarded("fwd", _window(2024).start + timedelta(hours=9))
     camera = _camera("cam", _window(2024).start + timedelta(hours=10), starred=False)

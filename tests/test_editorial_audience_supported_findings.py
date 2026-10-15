@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
+from immich_memories.analysis.audience import shareability as share
 from tests.test_editorial_audience_evidence import Judge, activity, evidence, exposure
 
 BIB = "A runner wears a race bib with a large printed number and a sponsor logo."

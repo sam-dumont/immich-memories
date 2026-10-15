@@ -10,13 +10,13 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from immich_memories.analysis.editorial_contracts import (
+from immich_memories.analysis.corpus.records import (
     DecisionProvenance,
     PassTrace,
     TraceDecision,
 )
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.config_loader import Config
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE, TRACE_FILE

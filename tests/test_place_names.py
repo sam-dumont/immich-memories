@@ -9,10 +9,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.place_geocoder import PlaceGeocoder
-from immich_memories.analysis.place_names import PlaceNames, shown_city
+from immich_memories.analysis.places.geocoder import PlaceGeocoder
+from immich_memories.analysis.places.names import PlaceNames, shown_city
 from immich_memories.api.models import ExifInfo
-from immich_memories.config_models_automation import TripsConfig
+from immich_memories.config.models.automation import TripsConfig
 from immich_memories.db import open_store
 from immich_memories.i18n import SUPPORTED_LOCALES
 from tests.conftest import make_asset
@@ -75,7 +75,7 @@ def test_home_uses_its_containing_district_instead_of_immichs_nearest_town():
     ],
 )
 def test_clip_places_use_the_trip_stops_shared_geographic_scope(districts, expected):
-    from immich_memories.analysis.place_geocoder import cell_of
+    from immich_memories.analysis.places.geocoder import cell_of
 
     points = [(48.85, 2.35), (48.86, 2.34), (48.87, 2.36)]
     answers = {
@@ -435,8 +435,8 @@ def test_the_report_keeps_the_resolved_city_as_private_as_the_source_city():
 
 
 def test_a_rules_story_is_titled_after_the_city():
-    from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-    from immich_memories.config_models_editorial import EditorialPeopleConfig
+    from immich_memories.analysis.stories.rule_reader import RuleStructureReader
+    from immich_memories.config.models.editorial import EditorialPeopleConfig
 
     assets, moments, annotations = {}, {}, {}
     names = _names()

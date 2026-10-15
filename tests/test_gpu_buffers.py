@@ -22,11 +22,11 @@ class TestCopyField3:
         _init()
 
     def test_copies_3channel_array(self):
-        from immich_memories.titles.kernels import _copy_field_3
+        from immich_memories.titles.kernels import compiled_copy_field_3
 
         src = np.random.default_rng(42).random((4, 6, 3)).astype(np.float32)
         dst = np.zeros_like(src)
-        _copy_field_3(src, dst)
+        compiled_copy_field_3(src, dst)
         np.testing.assert_array_equal(dst, src)
 
 
@@ -36,19 +36,19 @@ class TestBlendFields:
         _init()
 
     def test_blend_50_50(self):
-        from immich_memories.titles.kernels import _blend_fields
+        from immich_memories.titles.kernels import compiled_blend_fields
 
         a = np.full((4, 6, 3), 0.0, dtype=np.float32)
         b = np.full((4, 6, 3), 1.0, dtype=np.float32)
-        _blend_fields(a, b, 0.5)
+        compiled_blend_fields(a, b, 0.5)
         np.testing.assert_allclose(a, 0.5, atol=1e-6)
 
     def test_blend_fully_a(self):
-        from immich_memories.titles.kernels import _blend_fields
+        from immich_memories.titles.kernels import compiled_blend_fields
 
         a = np.full((4, 6, 3), 0.2, dtype=np.float32)
         b = np.full((4, 6, 3), 0.8, dtype=np.float32)
-        _blend_fields(a, b, 0.0)
+        compiled_blend_fields(a, b, 0.0)
         np.testing.assert_allclose(a, 0.2, atol=1e-6)
 
 
@@ -58,21 +58,21 @@ class TestFinalizeToOutput:
         _init()
 
     def test_clips_and_scales_to_uint8(self):
-        from immich_memories.titles.kernels import _finalize_to_output
+        from immich_memories.titles.kernels import finalize_to_output
 
         frame = np.array([[[0.0, 0.5, 1.0], [-0.1, 1.2, 0.75]]], dtype=np.float32)
         output = np.zeros_like(frame, dtype=np.uint8)
-        _finalize_to_output(frame, output, 255.0)
+        finalize_to_output(frame, output, 255.0)
         # WHY: atol=1 for cross-backend floating point rounding differences
         expected = np.array([[[0, 128, 255], [0, 255, 191]]], dtype=np.uint8)
         np.testing.assert_allclose(output, expected, atol=1)
 
     def test_scales_to_uint16_hdr(self):
-        from immich_memories.titles.kernels import _finalize_to_output
+        from immich_memories.titles.kernels import finalize_to_output
 
         frame = np.array([[[0.0, 0.5, 1.0]]], dtype=np.float32)
         output = np.zeros_like(frame, dtype=np.uint16)
-        _finalize_to_output(frame, output, 65535.0)
+        finalize_to_output(frame, output, 65535.0)
         expected = np.array([[[0, 32768, 65535]]], dtype=np.uint16)
         np.testing.assert_allclose(output, expected, atol=1)
 
@@ -87,7 +87,7 @@ class TestFusedVignetteNoise:
         from immich_memories.titles.kernels import (
             _apply_noise_grain,
             _apply_vignette,
-            _apply_vignette_and_noise,
+            compiled_apply_vignette_and_noise,
         )
 
         rng = np.random.default_rng(42)
@@ -98,7 +98,7 @@ class TestFusedVignetteNoise:
         _apply_noise_grain(seq, 0.025, 12345, 64, 64)
 
         fused = frame.copy()
-        _apply_vignette_and_noise(fused, 0.3, 0.025, 12345, 64, 64)
+        compiled_apply_vignette_and_noise(fused, 0.3, 0.025, 12345, 64, 64)
 
         np.testing.assert_allclose(fused, seq, atol=1e-5)
 
@@ -106,7 +106,7 @@ class TestFusedVignetteNoise:
         """When noise_intensity=0, result matches vignette-only."""
         from immich_memories.titles.kernels import (
             _apply_vignette,
-            _apply_vignette_and_noise,
+            compiled_apply_vignette_and_noise,
         )
 
         frame = np.full((16, 16, 3), 0.5, dtype=np.float32)
@@ -115,7 +115,7 @@ class TestFusedVignetteNoise:
         _apply_vignette(vig_only, 0.3, 16, 16)
 
         fused = frame.copy()
-        _apply_vignette_and_noise(fused, 0.3, 0.0, 0, 16, 16)
+        compiled_apply_vignette_and_noise(fused, 0.3, 0.0, 0, 16, 16)
 
         np.testing.assert_allclose(fused, vig_only, atol=1e-6)
 

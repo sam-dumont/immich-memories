@@ -1,13 +1,11 @@
 """Selection keeps its sealed bytes and picture order when indexes are reused."""
 
-from immich_memories.analysis import (
-    editorial_moment_wall,
-    editorial_story_planner,
-    editorial_structure_material,
-    moment_cards,
-)
-from immich_memories.analysis.editorial_person_period_facts import person_period_facts
-from immich_memories.analysis.selection_source_groups import EditorialGroup
+from immich_memories.analysis.corpus.groups import EditorialGroup
+from immich_memories.analysis.film import material as editorial_structure_material
+from immich_memories.analysis.reading import moment_cards
+from immich_memories.analysis.reading import moment_wall as editorial_moment_wall
+from immich_memories.analysis.reading.person_period_facts import PersonPeriodProjection
+from immich_memories.analysis.selection import story_planner as editorial_story_planner
 from tests.test_editorial_duration_planner_integration import run
 from tests.test_editorial_story_arrivals import _film, _PromptJudge
 
@@ -32,7 +30,7 @@ class _RepeatedPeople:
         self.tables = tables
 
     def facts(self, moment_ids):
-        return person_period_facts(self.tables, moment_ids)
+        return PersonPeriodProjection(self.tables).facts(moment_ids)
 
 
 def test_sealed_wall_prompts_contract_and_selected_picture_order_match_previous_scans(

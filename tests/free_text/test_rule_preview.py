@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.editorial_runtime_evidence import AnnotationReadings
-from immich_memories.analysis.editorial_source import library_source_scope
+from immich_memories.analysis.runtime.evidence import AnnotationReadings
+from immich_memories.analysis.sources.window_context import library_source_scope
 from immich_memories.api.models import Asset
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.free_text.rule_preview import preview_rules
 from immich_memories.timeperiod import DateRange

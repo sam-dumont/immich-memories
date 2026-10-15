@@ -12,12 +12,12 @@ import httpx
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
-from immich_memories.analysis.editorial_preparation_remote import prepare_remote_facts
-from immich_memories.analysis.remote_facts import RemoteFactsClient, RemoteFactsError
-from immich_memories.config_models_editorial import EditorialConfig
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
-from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
+from immich_memories.analysis.preparation.remote import prepare_remote_facts
+from immich_memories.analysis.preparation.remote_facts import RemoteFactsClient, RemoteFactsError
+from immich_memories.config.models.editorial import EditorialConfig
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.models.inference import InferenceConfig
 from immich_memories.operations.cancellation import PipelineCancelled
 from tests.annotation_rows import annotation_store, read_rows
 from tests.test_editorial_preparation import (

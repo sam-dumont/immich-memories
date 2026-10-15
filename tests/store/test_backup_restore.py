@@ -12,7 +12,7 @@ from click.testing import CliRunner
 from sqlalchemy.engine import make_url
 
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config, set_config
+from immich_memories.config.loader import Config, set_config
 from immich_memories.db import StoreLocation, close_stores, heads, open_store
 from immich_memories.db.backup import BackupError, backup_store, manifest_path, restore_store
 from immich_memories.db.inventory import digests

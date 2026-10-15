@@ -9,7 +9,7 @@ async def verify_reader(config: Config) -> None:
 
     from PIL import Image
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
     from immich_memories.local_inference import local_reader_paths
 
     if len(local_reader_paths(config.llm)) < 2:

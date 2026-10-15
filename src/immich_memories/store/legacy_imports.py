@@ -37,7 +37,7 @@ from immich_memories.db.store import on_first_open
 from immich_memories.security import private_temp_dir
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ IMPORTERS: tuple[LegacyImporter, ...] = (
 def legacy_home() -> Path:
     """Where the legacy files are: `IMMICH_MEMORIES_IMPORT_FROM`, then `database.import_from`,
     then `~/.immich-memories`."""
-    from immich_memories.config_loader import get_config
+    from immich_memories.config.loader import get_config
 
     configured = os.environ.get(IMPORT_FROM_ENV) or get_config().database.import_from
     return Path(configured).expanduser() if configured else Path.home() / ".immich-memories"
@@ -175,7 +175,7 @@ def legacy_import_skip_warning(config: Config) -> str | None:
     """
     if os.environ.get(IMPORT_FROM_ENV) or config.database.import_from:
         return None
-    from immich_memories.config_loader import config_state_dir
+    from immich_memories.config.loader import config_state_dir
 
     config_dir = config_state_dir()
     home_dir = Path.home() / ".immich-memories"

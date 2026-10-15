@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.processing.clip_probing import (
     get_video_codec,
     get_video_duration,
@@ -26,7 +26,7 @@ from immich_memories.processing.hardware import (
 )
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.hdr_utilities import (
-    _detect_hdr_type,
+    detect_hdr_type,
     get_colorspace_filter,
     get_hdr_conversion_filter,
 )
@@ -278,7 +278,7 @@ class ClipExtractor:
                 "h='if(gte(iw,ih),min(ih,1080),min(ih,1920))':"
                 "force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1"
                 + get_hdr_conversion_filter(
-                    _detect_hdr_type(segment.source_path), "sdr", required=True
+                    detect_hdr_type(segment.source_path), "sdr", required=True
                 )
                 + get_colorspace_filter("sdr")
             )

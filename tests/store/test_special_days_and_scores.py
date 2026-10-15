@@ -9,7 +9,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.automation.catalogue import entries_from, load_catalogue, save_catalogue
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db.bootstrap import SCHEMA_ENV, URL_ENV
 
 # Every shape a catalogue holds: a judged day, an unjudged one, a year marker, and a

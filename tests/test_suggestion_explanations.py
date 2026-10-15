@@ -16,7 +16,7 @@ from immich_memories.automation.candidate_discovery import CandidateDiscovery
 from immich_memories.automation.candidates import make_memory_key
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.cli import auto_cmd
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.tracking import RunDatabase
 

@@ -134,7 +134,7 @@ def print_generation_preview(preview: GenerationPreview) -> None:
 
 def print_cut_ending(attempt_dir: Path | None, run_id: str | None) -> None:
     """End the plan the way a rendered run ends: the CHECK line, then the cut in order."""
-    from immich_memories.analysis.editorial_review_list import review_count
+    from immich_memories.analysis.audience.review_list import review_count
     from immich_memories.cli._run_summary import render_cut_ending
     from immich_memories.operations.storyboard import read_storyboard
 
@@ -162,7 +162,7 @@ def print_dry_run_preparation(
     canvas_provisional=False,
 ) -> tuple[Path, bool, str | None]:
     """Describe discovered inputs and the preparation they still owe, without selecting."""
-    from immich_memories.analysis.prepare_scope import unprepared_pictures
+    from immich_memories.analysis.preparation.scope import unprepared_pictures
     from immich_memories.api.models import VideoClipInfo
     from immich_memories.db import open_store
 

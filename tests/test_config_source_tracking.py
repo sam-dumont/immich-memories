@@ -15,7 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import (
+from immich_memories.config.loader import (
     Config,
     get_config,
     get_config_path,

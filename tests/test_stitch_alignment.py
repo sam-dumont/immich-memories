@@ -145,8 +145,8 @@ def _francorchamps_burst():
 
 
 def test_motion_renderings_consumes_measured_clock_offsets() -> None:
-    from immich_memories.analysis.motion_rendering import motion_renderings
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.clips.motion_rendering import motion_renderings
+    from immich_memories.config.loader import Config
 
     stills, companions = _francorchamps_burst()
 
@@ -165,8 +165,8 @@ def test_motion_renderings_consumes_measured_clock_offsets() -> None:
 
 def test_an_unmeasurable_join_refuses_the_burst_a_motion_offer() -> None:
     """The midpoint estimate is not good enough to stitch with: no guess, no jump."""
-    from immich_memories.analysis.motion_rendering import motion_renderings
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.clips.motion_rendering import motion_renderings
+    from immich_memories.config.loader import Config
 
     stills, companions = _francorchamps_burst()
 
@@ -190,8 +190,8 @@ def test_members_of_a_burst_must_share_a_frame() -> None:
 
 
 def test_an_unstitchable_orientation_mix_refuses_the_motion_offer() -> None:
-    from immich_memories.analysis.motion_rendering import motion_renderings
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.clips.motion_rendering import motion_renderings
+    from immich_memories.config.loader import Config
 
     stills, companions = _francorchamps_burst()
 

@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.analysis.source_filter import owned_by
+from immich_memories.analysis.corpus.name_filter import owned_by
 from immich_memories.api.models import Asset, TimeBucket
 from immich_memories.security import credential_fingerprint
 from immich_memories.timeperiod import DateRange

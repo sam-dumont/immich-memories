@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_structure_finishing import counted_verdicts
+from immich_memories.analysis.structure.finishing import counted_verdicts
 from immich_memories.operations.cut_progress import StageUpdate, announcing_stages
 
 

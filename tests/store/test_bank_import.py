@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_structure_audience import AudienceBank
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.audience.verdicts import AudienceBank
 from immich_memories.db.tables import owner_edits
 from immich_memories.store.legacy_banks import import_legacy
 from immich_memories.store.vote_banks import VoteBank
@@ -178,7 +178,7 @@ def test_bank_discovery_locates_files_without_resolving_a_runtime_tier(tmp_path,
     monkeypatch.setenv("IMMICH_MEMORIES_TIER", "auto")
     # WHY: locating old files must not invoke the machine's GPU detection boundary.
     with patch(
-        "immich_memories.config_tiers.inference_acceleration",
+        "immich_memories.config.tiers.inference_acceleration",
         side_effect=AssertionError("legacy discovery must not probe the runtime GPU"),
     ) as probe:
         found_banks, found_outputs = bank_roots(home)

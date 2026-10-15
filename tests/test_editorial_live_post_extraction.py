@@ -9,7 +9,7 @@ import pytest
 from immich_memories import generate
 from immich_memories import generate_render as generate_render_module
 from immich_memories.api.models import AssetType, VideoClipInfo
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationError, GenerationParams
 from immich_memories.generate_timeline import apply_final_content_budget, validate_certified_content
 from immich_memories.processing.assembly_config import AssemblyClip

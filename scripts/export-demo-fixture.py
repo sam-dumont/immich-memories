@@ -47,7 +47,7 @@ from tests.e2e.fake_library import (  # noqa: E402
 )
 
 from immich_memories.api.models import Asset  # noqa: E402
-from immich_memories.config_loader import Config  # noqa: E402
+from immich_memories.config.loader import Config  # noqa: E402
 from immich_memories.operations.reader_words import stage_words  # noqa: E402
 from immich_memories.operations.storyboard import Storyboard, storyboard_from_plan  # noqa: E402
 from immich_memories.processing.editorial_timing import (  # noqa: E402

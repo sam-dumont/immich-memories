@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_intent_validation import CarrierView, validate_intent
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.film.intent_validation import CarrierView, validate_intent
 from immich_memories.timeperiod import DateRange
 
 DAY = date(2031, 4, 4)

@@ -15,7 +15,7 @@ from unittest.mock import create_autospec
 import pytest
 
 from immich_memories.api.immich import ImmichNotFoundError
-from immich_memories.config_models import ImmichConnection
+from immich_memories.config.models.resources import ImmichConnection
 from tests.web_server_fixtures import basic_auth_config, server_client, signed_session
 
 _ASSET = "asset-partner-owned"

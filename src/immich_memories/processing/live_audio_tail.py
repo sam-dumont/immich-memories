@@ -30,7 +30,7 @@ def _decoded(path, selector: str) -> tuple[dict, list[dict]]:
     return stream, frames
 
 
-def _complete_video(path, probe, tail, *, packets: dict | None = None) -> dict:
+def complete_video(path, probe, tail, *, packets: dict | None = None) -> dict:
     stream, frames = _decoded(path, str(probe.video_stream_index))
     clock = Fraction(stream["time_base"])
     declared = int(stream["nb_frames"])
@@ -132,7 +132,7 @@ def certify_audio_tail(path, entry, probe, tail, *, video_proof: dict | None = N
     try:
         if not probe.has_audio:
             raise ProbeError("Audio-tail source has no audio")
-        video = video_proof if video_proof is not None else _complete_video(path, probe, tail)
+        video = video_proof if video_proof is not None else complete_video(path, probe, tail)
         if not entry.start < video["video_end_seconds"] < entry.end:
             raise ProbeError("Audio-tail interval must retain real visible video")
         audio = _complete_audio(path, probe.container_start_seconds, entry.start, entry.end)

@@ -5,9 +5,9 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.special_day import ask_if_special
+from immich_memories.analysis.special_days.detection import ask_if_special
 from immich_memories.automation.special_day_scan import scan_year
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 from tests.test_special_day_captions import _a_real_day, _verdict_response
 

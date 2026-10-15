@@ -7,13 +7,13 @@ import json
 import stat
 from pathlib import Path
 
-from immich_memories.analysis.editorial_evidence_provenance import (
+from immich_memories.analysis.reading.evidence_provenance import (
     EVIDENCE_HASHES_NAME,
     EVIDENCE_LINES_NAME,
     AttemptEvidenceProvenance,
     EpisodeEvidenceLines,
 )
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
+from immich_memories.analysis.sources.pool import EditorialSourcePool
 
 
 def _episode(group_id: str, lines: dict[str, str]) -> EpisodeEvidenceLines:
@@ -55,14 +55,14 @@ def test_the_private_sibling_keeps_the_rendered_lines_owner_only(tmp_path: Path)
 def test_the_reader_records_the_evidence_behind_every_keyed_episode(tmp_path: Path) -> None:
     from datetime import UTC, datetime, timedelta
 
-    from immich_memories.analysis.selection_source import (
+    from immich_memories.analysis.corpus.admission import (
         EditorialDependencies,
         EditorialSelectionRequest,
         SourceScope,
         prepare_editorial_source,
     )
-    from immich_memories.analysis.selection_source_groups import project_episode_groups
-    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.corpus.groups import project_episode_groups
+    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
     from immich_memories.store.episode_readings import (
         EpisodeReadingIdentity,
         EpisodeReadingProducer,
@@ -119,10 +119,10 @@ def test_the_runtime_records_evidence_into_the_attempt_that_is_running(
 ) -> None:
     from types import SimpleNamespace
 
-    import immich_memories.analysis.editorial_runtime as runtime
-    from immich_memories.analysis.editorial_planner import EditorialPlan
-    from immich_memories.analysis.selection_trace import Trace
-    from immich_memories.config_loader import Config
+    import immich_memories.analysis.runtime.composition as runtime
+    from immich_memories.analysis.corpus.trace import Trace
+    from immich_memories.analysis.runtime.plan import EditorialPlan
+    from immich_memories.config.loader import Config
     from tests.test_editorial_runtime import _window
 
     context = runtime.EditorialRunContext(

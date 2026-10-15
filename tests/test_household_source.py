@@ -16,15 +16,18 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from immich_memories.analysis.editorial_pool import discover_source_context, resolve_source_pool
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_source import library_source_scope
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     prepare_editorial_source,
 )
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.pool import discover_source_context, resolve_source_pool
+from immich_memories.analysis.sources.window_context import library_source_scope
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.accounts import AccountUnavailable
 from immich_memories.api.models import Asset
@@ -313,7 +316,7 @@ def test_what_the_store_banked_never_unstars_a_later_run(tmp_path, immich_server
 def test_cli_discovery_keeps_the_owners_star_when_partner_timeline_read_arrives_first(
     tmp_path, immich_server
 ):
-    from immich_memories.analysis.household_source import HouseholdWindows
+    from immich_memories.analysis.sources.household import HouseholdWindows
     from immich_memories.cli._asset_fetch import fetch_media
     from immich_memories.cli._live_display import QuietDisplay
 
@@ -330,7 +333,7 @@ def test_cli_discovery_keeps_the_owners_star_when_partner_timeline_read_arrives_
 
 
 def test_cli_photo_failure_refuses_a_partial_household(tmp_path, immich_server):
-    from immich_memories.analysis.household_source import HouseholdWindows
+    from immich_memories.analysis.sources.household import HouseholdWindows
     from immich_memories.api.accounts import AccountUnavailable
     from immich_memories.cli._asset_fetch import fetch_photos
 

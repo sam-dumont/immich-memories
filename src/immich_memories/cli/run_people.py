@@ -2,7 +2,7 @@
 
 `--accounts` names the Immich accounts a film reads; without it the primary reads alone,
 as it always has. `--person` and `--people-expression` resolve through the people store
-first (`analysis/person_resolution.py`) and fall back to the Immich roster for anybody
+first (`analysis/sources/person_resolution.py`) and fall back to the Immich roster for anybody
 the store does not hold, so a run without a people store matches exactly as before.
 """
 
@@ -17,10 +17,9 @@ from typing import TYPE_CHECKING, Literal
 
 import click
 
-from immich_memories.analysis.editorial_source import resolve_named_expression
-from immich_memories.analysis.household_source import HouseholdWindows, source_accounts
-from immich_memories.analysis.person_presence import people_condition as flat_condition
-from immich_memories.analysis.person_resolution import (
+from immich_memories.analysis.sources.household import HouseholdWindows, source_accounts
+from immich_memories.analysis.sources.person_presence import people_condition as flat_condition
+from immich_memories.analysis.sources.person_resolution import (
     ResolvedPeople,
     StorePerson,
     UnknownPersonId,
@@ -28,13 +27,14 @@ from immich_memories.analysis.person_resolution import (
     resolve_people,
     store_people,
 )
+from immich_memories.analysis.sources.window_context import resolve_named_expression
 from immich_memories.api import immich as immich_api
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.accounts import AccountUnavailable, check_account_names
 from immich_memories.api.native_sharing import NativePeople
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cli._helpers import print_error, print_success, print_warning
-from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT, ImmichConfig
 from immich_memories.people.companion import load_document
 
 if TYPE_CHECKING:

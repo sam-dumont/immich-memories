@@ -12,7 +12,7 @@ from immich_memories.api.asset_service import (
 )
 from immich_memories.api.immich import SyncImmichClient
 from immich_memories.cache.video_cache import VideoDownloadCache
-from immich_memories.generate_downloads import _download_temporary_asset
+from immich_memories.generate_downloads import fetch_temporary_asset
 
 
 class RecordingStream(httpx.AsyncByteStream):
@@ -145,7 +145,7 @@ def test_production_download_paths_use_only_the_originals_own_size(tmp_path, cac
             assert path.read_bytes() == b"complete"
             assert not list(path.parent.glob("*.part"))
     else:
-        path = _download_temporary_asset(client, asset, tmp_path)
+        path = fetch_temporary_asset(client, asset, tmp_path)
         assert path.read_bytes() == b"complete"
     assert calls == [
         (companion or asset.id, {} if companion else {"expected_size_bytes": expected})

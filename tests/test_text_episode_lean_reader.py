@@ -11,18 +11,18 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import project_episode_groups
-from immich_memories.analysis.text_episode_prompt import (
+from immich_memories.analysis.corpus.groups import project_episode_groups
+from immich_memories.analysis.reading.episode_prompt import (
     TEXT_EPISODE_LEAN_PROMPT_VERSION,
     TEXT_EPISODE_PROMPT_VERSION,
 )
-from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 from immich_memories.store.episode_readings import (
     BankedEpisodeReading,
     EpisodeReadingIdentity,
@@ -133,7 +133,7 @@ def test_a_lean_reader_answers_from_a_full_reading_already_banked(tmp_path: Path
 
 
 def test_only_the_on_demand_reader_is_lean() -> None:
-    from immich_memories.analysis.episode_demand import demand_reader_factory
+    from immich_memories.analysis.reading.demand import demand_reader_factory
 
     def rules(_prepared):
         return "rules"

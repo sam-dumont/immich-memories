@@ -163,7 +163,7 @@ def test_trip_map_timeline_survives_the_http_worker_handoff(tmp_path):
 
 
 def test_an_editorial_directive_keeps_its_cut_without_a_manual_segment_map(tmp_path):
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
 
     params = manual_params(tmp_path)
     asset_id = params.clips[0].asset.id
@@ -174,7 +174,7 @@ def test_an_editorial_directive_keeps_its_cut_without_a_manual_segment_map(tmp_p
 
 
 def test_a_directive_with_omitted_bounds_uses_the_full_source(tmp_path):
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
 
     params = manual_params(tmp_path)
     asset_id = params.clips[0].asset.id
@@ -203,7 +203,7 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     params.privacy_mode = True
     params.person_name = "Example Person"
     params.memory_preset_params = {"birthday_age": 10}
-    from immich_memories.analysis.editorial_planner import EditorialSelection
+    from immich_memories.analysis.runtime.plan import EditorialSelection
 
     clip = params.clips[0]
     clip.llm_emotion = "happy"
@@ -402,7 +402,7 @@ def test_privacy_trip_validation_uses_the_same_relocated_home_as_the_renderer(tm
 
     from immich_memories.generate import GenerationError
     from immich_memories.generate_privacy import anonymize_clips_for_privacy
-    from immich_memories.generate_render import _anonymized_params
+    from immich_memories.generate_render import anonymized_params
     from immich_memories.generate_settings import build_title_settings
     from immich_memories.processing.assembly_config import AssemblyClip
     from immich_memories.processing.editorial_timing import read_editorial_timeline
@@ -430,7 +430,7 @@ def test_privacy_trip_validation_uses_the_same_relocated_home_as_the_renderer(tm
         ]
     )
     timeline = read_editorial_timeline(body["timing"])
-    worker_params = _anonymized_params(replace(received, timeline_plan=timeline))
+    worker_params = anonymized_params(replace(received, timeline_plan=timeline))
     titles = build_title_settings(worker_params, worker_params.config, content)
     _, duration = preview_timeline(
         content, timeline, titles, params.transition, params.transition_duration

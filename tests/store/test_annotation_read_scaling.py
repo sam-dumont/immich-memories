@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis.editorial_description_contract import (
+from immich_memories.analysis.captions.contract import (
     DESCRIPTION_MODEL,
     DESCRIPTION_SOURCE,
 )

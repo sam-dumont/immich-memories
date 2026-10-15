@@ -8,15 +8,15 @@ import re
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_laya_reader import LayaReader
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
-from immich_memories.analysis.editorial_standing_facts import carries_nothing
-from immich_memories.analysis.editorial_story_standing import StandingGate
-from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
-from immich_memories.analysis.editorial_thin_catalogue import BankedCatalogue, ThinStory
-from immich_memories.analysis.editorial_thin_layer import ThinPolish
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.audience.laya_reader import LayaReader
+from immich_memories.analysis.audience.tiers import audience_check_for
+from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
+from immich_memories.analysis.facts.standing_facts import carries_nothing
+from immich_memories.analysis.polish.catalogue import BankedCatalogue, ThinStory
+from immich_memories.analysis.polish.layer import ThinPolish
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
+from immich_memories.analysis.selection.standing import StandingGate
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.db import open_store
 
 JUNK = "an empty worktop"

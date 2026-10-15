@@ -17,7 +17,7 @@ from immich_memories.config import (
     OutputConfig,
     expand_env_vars,
 )
-from immich_memories.config_models_server import ServerConfig
+from immich_memories.config.models.server import ServerConfig
 from immich_memories.processing.encoding_plan import HdrMode
 
 
@@ -366,7 +366,7 @@ class TestConfig:
 class TestRemovedSections:
     def test_old_scoring_priority_section_is_ignored_with_a_warning(self, tmp_path, caplog):
         """Config files written before 0.41 keep loading after a section is removed."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         config_path = tmp_path / "config.yaml"
         config_path.write_text(

@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from immich_memories.analysis.llm_metrics import LLMCounters, collecting
-from immich_memories.analysis.llm_usage_record import write_llm_usage
+from immich_memories.analysis.llm.metrics import LLMCounters, collecting
+from immich_memories.analysis.llm.usage_record import write_llm_usage
 from immich_memories.db.leases import Lease
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageClock, StageUpdate

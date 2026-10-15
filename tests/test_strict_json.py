@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.strict_json import (
+from immich_memories.analysis.judgments.strict_json import (
     bounded_model_text,
     final_json_object,
     is_safe_model_text,

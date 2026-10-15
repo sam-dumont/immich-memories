@@ -22,8 +22,8 @@ from urllib.parse import urlsplit
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_server import WILDCARD_HOST
+from immich_memories.config.loader import Config
+from immich_memories.config.models.server import WILDCARD_HOST
 from immich_memories.web.job_routes import MAX_MUSIC_UPLOAD_BYTES
 from immich_memories.web.request_origin import cross_site_write
 

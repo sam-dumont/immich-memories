@@ -17,7 +17,7 @@ from collections.abc import Mapping, MutableMapping
 from itertools import chain
 from typing import Any
 
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 
 PERSON_ID = "person_id"
 

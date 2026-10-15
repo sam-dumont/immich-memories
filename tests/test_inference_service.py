@@ -14,7 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from immich_memories.analysis import editorial_preparation_detectors as detectors
+from immich_memories.analysis.preparation import detectors
 from immich_memories.pinned_models import ENCODER, MARQO_ONNX, PinnedModel
 from immich_memories_inference import __main__ as entrypoint
 from immich_memories_inference import seeding

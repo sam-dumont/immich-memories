@@ -21,7 +21,7 @@ from tests.people_registry_seed import seed_people
 
 
 def _llm_config() -> Any:
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
 
     return LLMConfig(enabled=True, base_url="http://llm.test/v1", model="some-model")
 

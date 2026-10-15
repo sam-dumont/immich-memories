@@ -13,11 +13,11 @@ from datetime import date, datetime
 
 import pytest
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_product_brief import build_editorial_brief
-from immich_memories.analysis.editorial_shareability import FlagRow
-from immich_memories.analysis.editorial_story_standing import StandingGate
+from immich_memories.analysis.audience.shareability import FlagRow
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.film.product_brief import build_editorial_brief
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.selection.standing import StandingGate
 from immich_memories.timeperiod import DateRange
 from tests.editorial_film_fixtures import HOME, Day, film_source
 
@@ -91,9 +91,9 @@ def _bread_pool(tmp_path, *, pool_is_subject: bool, held_year: int | None = None
 
 
 def _no_model_plan(source) -> dict:
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
 
     return plan_structure(
         source,
@@ -211,12 +211,12 @@ class _Captured(RuntimeError):
 def _captured_case(tmp_path, **pool):
     from unittest.mock import patch
 
-    from immich_memories.analysis.editorial_people import adapt_editorial_people
-    from immich_memories.analysis.editorial_runtime import EditorialRunContext
-    from immich_memories.analysis.editorial_runtime_backend import ProductionPostCardBackend
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-    from immich_memories.analysis.selection_trace import Trace
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.corpus.trace import Trace
+    from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+    from immich_memories.analysis.runtime.backend import ProductionPostCardBackend
+    from immich_memories.analysis.runtime.composition import EditorialRunContext
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+    from immich_memories.config.loader import Config
     from tests.annotation_rows import annotation_store
 
     source = film_source(
@@ -254,7 +254,7 @@ def _captured_case(tmp_path, **pool):
     with (
         # WHY: side_effect records the case the backend built, then stops before any evidence read
         patch(
-            "immich_memories.analysis.editorial_runtime_backend.capture_structure_input",
+            "immich_memories.analysis.runtime.backend.capture_structure_input",
             side_effect=capture,
         ),
         pytest.raises(_Captured),
@@ -274,7 +274,7 @@ def test_an_album_with_no_pool_subject_reaches_the_editor_as_an_album(tmp_path):
 
 
 def test_a_subject_pool_is_only_an_album_with_its_written_subject(tmp_path):
-    from immich_memories.analysis.editorial_runtime import EditorialRunContext
+    from immich_memories.analysis.runtime.composition import EditorialRunContext
 
     window = (DateRange(datetime(2024, 3, 10), datetime(2024, 5, 20)),)
     with pytest.raises(ValueError, match="subject pool"):
@@ -300,7 +300,7 @@ def test_a_captured_pool_must_carry_the_pool_contract(tmp_path):
 def test_the_cli_hands_an_album_and_its_subject_over_as_a_subject_pool(tmp_path):
     from immich_memories.cli._editorial_context import build_editorial_context
     from immich_memories.cli._run_inputs import ResolvedRunInputs
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     source = film_source(
         tmp_path,
@@ -341,7 +341,7 @@ def test_the_cli_hands_an_album_and_its_subject_over_as_a_subject_pool(tmp_path)
 
 
 def _configured():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     config = Config()
     config.immich.url = "http://immich:2283"

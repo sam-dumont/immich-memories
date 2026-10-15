@@ -261,7 +261,7 @@ def _scan_one_year(
     config: Config,
 ) -> None:
     """Ask about one year's standout days, appending each answer to the catalogue."""
-    from immich_memories.analysis.prepared_captions import prepared_captions
+    from immich_memories.analysis.preparation.prepared_captions import prepared_captions
     from immich_memories.automation.special_day_scan import scan_year
     from immich_memories.cache.judgment_cache import judgment_bank
     from immich_memories.home_country import home_country
@@ -300,7 +300,7 @@ def _scan_one_year(
 
 def _close_family() -> dict[str, str]:
     """The owner's close family by Immich person id, as the people registry confirms it."""
-    from immich_memories.analysis.special_day_sequence import close_family_roles
+    from immich_memories.analysis.special_days.sequence import close_family_roles
     from immich_memories.people.context import load_people_prompt_context
 
     return close_family_roles(load_people_prompt_context())
@@ -319,7 +319,7 @@ def _scan_library(
     Carries the existing catalogue forward so an interrupted scan resumes
     where it stopped rather than starting the twenty years again.
     """
-    from immich_memories.analysis.source_filter import owned_by
+    from immich_memories.analysis.corpus.name_filter import owned_by
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.automation.special_day_scan import YearNotRead
     from immich_memories.config import get_config

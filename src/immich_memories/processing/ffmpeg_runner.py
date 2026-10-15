@@ -22,7 +22,7 @@ __all__ = [
     "AssemblyContext",
     "_parse_ffmpeg_time",
     "_parse_ffmpeg_progress",
-    "_run_ffmpeg_with_progress",
+    "run_ffmpeg_with_progress",
     "drain_stderr_tail",
     "ffmpeg_error_excerpt",
     "ffmpeg_exit_reason",
@@ -465,7 +465,7 @@ def _add_streamlit_ctx(thread: Thread) -> None:
             add_script_run_ctx(thread, ctx)
 
 
-def _run_ffmpeg_with_progress(
+def run_ffmpeg_with_progress(
     cmd: list[str],
     total_duration: float,
     progress_callback: Callable[[float, str], None] | None = None,

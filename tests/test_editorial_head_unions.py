@@ -11,14 +11,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_carrier_eligibility import (
+from immich_memories.analysis.audience.questions import exposure_flagged
+from immich_memories.analysis.facts.carrier_eligibility import (
     excluded_carrier_sources,
     screen_flagged,
 )
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_shareability_audience import exposure_flagged
-from immich_memories.analysis.editorial_source_gate import screen_document_rejections
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.reading.source_gate import screen_document_rejections
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
 
 
 def reader(*, favourite=False, faces=(), product="month", line="", audience="shareable", **heads):

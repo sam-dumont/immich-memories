@@ -37,7 +37,7 @@ from immich_memories.processing.hdr_utilities import (
 
 def _make_config(**overrides):
     """Build a Config with defaults — avoids loading YAML."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     return Config(**overrides)
 
@@ -534,7 +534,7 @@ class TestRenderSinglePhoto:
     """Single photo render pipeline."""
 
     def test_returns_none_on_download_failure(self, tmp_path):
-        from immich_memories.config_models_render import PhotoConfig
+        from immich_memories.config.models.render import PhotoConfig
         from immich_memories.photos.photo_pipeline import render_single_photo
 
         asset = _make_asset(id="render-fail-001")
@@ -564,7 +564,7 @@ class TestPhotoPlaceCaption:
         import numpy as np
 
         from immich_memories.api.models import ExifInfo
-        from immich_memories.config_models_render import PhotoConfig
+        from immich_memories.config.models.render import PhotoConfig
         from immich_memories.generate_privacy import clip_location_name
         from immich_memories.photos.photo_pipeline import render_single_photo
 
@@ -760,7 +760,7 @@ class TestDetectDominantHdrTransfer:
         clips = [AssemblyClip(path=tmp_path / f"{i}.mp4", duration=1.0) for i in range(3)]
 
         # WHY: _detect_hdr_type shells out to ffprobe
-        with patch("immich_memories.processing.hdr_utilities._detect_hdr_type", side_effect=probed):
+        with patch("immich_memories.processing.hdr_utilities.detect_hdr_type", side_effect=probed):
             assert detect_dominant_hdr_transfer(clips) is expected
 
 
@@ -774,7 +774,7 @@ def test_the_hdr_line_counts_video_clips_and_not_photo_animations(tmp_path, capl
 
     with (
         # WHY: _detect_hdr_type shells out to ffprobe
-        patch("immich_memories.processing.hdr_utilities._detect_hdr_type", return_value="pq"),
+        patch("immich_memories.processing.hdr_utilities.detect_hdr_type", return_value="pq"),
         caplog.at_level(logging.INFO, logger="immich_memories.processing.hdr_utilities"),
     ):
         assert detect_dominant_hdr_transfer(clips) is HdrTransfer.PQ

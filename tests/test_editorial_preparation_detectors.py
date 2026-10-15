@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from immich_memories.analysis import editorial_preparation_detectors as detectors
+from immich_memories.analysis.preparation import detectors
 from immich_memories.operations.cancellation import PipelineCancelled
 from tests.annotation_rows import annotation_store
 
@@ -208,7 +208,7 @@ def test_cancellation_terminates_detector_process_group(monkeypatch, tmp_path):
         )
     assert killed == [(12345, signal.SIGTERM)]
     assert captured[0][0][0] == "/configured/python"
-    assert captured[0][0][1].endswith("editorial_preparation_detectors.py")
+    assert captured[0][0][1].endswith("analysis/preparation/detectors.py")
     assert captured[0][1]["env"]["HF_HUB_OFFLINE"] == "1"
     assert captured[0][1]["env"]["HF_HUB_CACHE"] == "/configured/cache"
 

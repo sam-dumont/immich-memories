@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import pytest
 
-from immich_memories.analysis.editorial_intent import IntentPartition, build_editorial_intent
+from immich_memories.analysis.film.intent import IntentPartition, build_editorial_intent
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import run
 from tests.test_editorial_on_this_day_year_limit import make_source, ranges

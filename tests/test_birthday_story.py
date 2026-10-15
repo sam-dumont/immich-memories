@@ -8,7 +8,7 @@ import pytest
 
 from immich_memories.cli._editorial_context import build_editorial_context
 from immich_memories.cli._run_inputs import ResolvedRunInputs
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 
 _YEAR = DateRange(datetime(2025, 8, 31), datetime(2026, 8, 30, 23, 59, 59))

@@ -5,8 +5,8 @@ refill must not make it one, whether the slot is freed inside the planner's own 
 by the final duplicate review afterwards.
 """
 
-from immich_memories.analysis.editorial_story_replacement_pool import unfunded_pool
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
+from immich_memories.analysis.selection.replacement_pool import unfunded_pool
+from immich_memories.analysis.stories.shortlist import DepictedChoice
 
 
 def _choice(key: str, primary: str) -> DepictedChoice:

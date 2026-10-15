@@ -138,7 +138,7 @@ from setup_matrix_summary import (  # noqa: E402
     write_cell_record,
 )
 
-from immich_memories.config_models_inference import SERVED_PRODUCERS  # noqa: E402
+from immich_memories.config.models.inference import SERVED_PRODUCERS  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ENV_FILES = (

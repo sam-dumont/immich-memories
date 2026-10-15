@@ -18,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.security import (
     create_private_directory,
     sanitize_error_message,

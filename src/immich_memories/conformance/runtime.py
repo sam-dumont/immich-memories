@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import httpx
 
-from immich_memories.analysis.llm_metrics import collecting
+from immich_memories.analysis.llm.metrics import collecting
 from immich_memories.security import write_secret_file
 
 

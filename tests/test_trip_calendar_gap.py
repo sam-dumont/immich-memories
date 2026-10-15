@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from immich_memories.analysis.trip_detection import detect_trips
+from immich_memories.analysis.places.trip_detection import detect_trips
 from tests.test_trip_detection import _make_asset
 
 

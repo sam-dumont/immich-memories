@@ -15,7 +15,7 @@ thing; neither pretends to phases that do not exist.
 
 from __future__ import annotations
 
-from immich_memories.analysis.llm_metrics import LLMCounters
+from immich_memories.analysis.llm.metrics import LLMCounters
 from immich_memories.operations.storyboard import Storyboard, storyboard_lines
 
 __all__ = ["render_cut_ending", "render_llm_totals", "render_run_summary"]
@@ -222,7 +222,7 @@ def render_llm_totals(metrics: dict) -> str:
     block computes it live. Both go through the same renderer so the same run
     cannot be described two different ways on two surfaces.
     """
-    from immich_memories.analysis.llm_metrics import LLMCounters
+    from immich_memories.analysis.llm.metrics import LLMCounters
 
     counters = LLMCounters(
         calls=int(metrics.get("llm_calls", 0)),

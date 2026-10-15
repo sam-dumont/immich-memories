@@ -12,12 +12,12 @@ from uuid import uuid4
 import pytest
 from tests.e2e.fake_library import ALL_PICTURES, MONTH, YEAR
 
-from immich_memories.analysis.household_source import HouseholdWindows
+from immich_memories.analysis.sources.household import HouseholdWindows
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.person_scope import people_in_window
 from immich_memories.cli.run_people import resolve_run_people
-from immich_memories.config_models import ImmichConfig
+from immich_memories.config.models.resources import ImmichConfig
 from immich_memories.db import Store, StoreLocation, close_stores, open_store
 from immich_memories.people.transfer import import_document
 from immich_memories.timeperiod import DateRange
@@ -144,7 +144,7 @@ def test_partner_only_run_uses_the_existing_primary_binding(household, tmp_path)
 def test_owner_reads_preserve_duplicates_favourites_and_scope_with_timeline_off(household):
     from tests.integration.immich_gate.seed import Seeder
 
-    from immich_memories.analysis.exact_copies import fold_exact_copies
+    from immich_memories.analysis.corpus.exact_copies import fold_exact_copies
 
     state, _, client = household
     url = state.get("url", "http://127.0.0.1:2303")
@@ -317,9 +317,9 @@ def test_upstream_merge_never_rewrites_a_saved_local_identity(household):
 
 
 def test_shared_person_stays_one_registry_identity_and_cross_account_link(household):
-    from immich_memories.analysis.person_resolution import store_people
+    from immich_memories.analysis.sources.person_resolution import store_people
     from immich_memories.automation.people_merge import canonical_person_map, merge_people
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.people.companion import load_document, people_entries
     from immich_memories.web.people_accounts import account_people, account_reads
 
@@ -346,7 +346,7 @@ def test_shared_person_stays_one_registry_identity_and_cross_account_link(househ
 
 
 def test_shared_person_counts_each_owned_picture_once(household):
-    from immich_memories.analysis.person_resolution import store_people
+    from immich_memories.analysis.sources.person_resolution import store_people
     from immich_memories.automation.people_merge import canonical_person_map, merge_counts
     from immich_memories.people.companion import load_document
 
@@ -369,7 +369,7 @@ def test_native_automation_uses_owned_counts(household):
 
     from immich_memories.automation.candidate_discovery import CandidateDiscovery
     from immich_memories.automation.state_store import AutomationStateStore
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.tracking import RunDatabase
 
     state, store, _ = household
@@ -407,7 +407,7 @@ def test_native_automation_uses_owned_counts(household):
 def test_mobile_edit_stack_plays_the_edit_instead_of_the_original(household):
     from tests.integration.immich_gate.seed import Seeder
 
-    from immich_memories.analysis.stacks import fold_stacks
+    from immich_memories.analysis.corpus.stacks import fold_stacks
     from immich_memories.api.stack_discovery import discover_stack_map
 
     state, _, client = household
@@ -433,8 +433,8 @@ def test_mobile_edit_stack_plays_the_edit_instead_of_the_original(household):
 def test_normalized_multilingual_ocr_reaches_the_personal_document_gate(household):
     from tests.integration.native_sharing.ocr_fixture import OCR_TEXT
 
-    from immich_memories.analysis.editorial_carrier_eligibility import personal_document
-    from immich_memories.analysis.editorial_document_ocr import document_ocr_port
+    from immich_memories.analysis.facts.carrier_eligibility import personal_document
+    from immich_memories.analysis.preparation.document_ocr import document_ocr_port
 
     state, _, client = household
     reader = document_ocr_port(client, accounts=("primary", "partner"))

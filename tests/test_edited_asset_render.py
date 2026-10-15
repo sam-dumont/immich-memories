@@ -11,10 +11,10 @@ import httpx
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.editorial_preparation_previews import ensure_preview
+from immich_memories.analysis.preparation.previews import ensure_preview
 from immich_memories.api.asset_service import AssetService
 from immich_memories.api.models import Asset, AssetType
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.models.render import PhotoConfig
 from immich_memories.photos.photo_pipeline import render_single_photo
 from tests.conftest import make_asset
 
@@ -220,7 +220,7 @@ class _FakeStructurePlannerClient:
 def test_structure_planner_preview_of_an_edited_asset_asks_for_the_edited_render():
     """Selection (faces, documents, look-alike hashes, crops) must judge the same
     picture the film renders (#2114)."""
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 
     client = _FakeStructurePlannerClient(is_edited=True)
 
@@ -230,7 +230,7 @@ def test_structure_planner_preview_of_an_edited_asset_asks_for_the_edited_render
 
 
 def test_structure_planner_preview_of_an_unedited_asset_is_unchanged():
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 
     client = _FakeStructurePlannerClient(is_edited=False)
 
@@ -243,7 +243,7 @@ def test_preparing_known_assets_makes_zero_extra_get_asset_calls():
     """A cold year or a whole library already pays one Immich call per picture for
     its preview; a get_asset per picture on top would double that (#2114). The run's
     own source/pool assets already answer isEdited, so previews() must not ask again."""
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts, edited_by_id
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts, edited_by_id
 
     assets = [make_asset(f"asset-{n}", is_edited=(n % 2 == 0)) for n in range(5)]
     client = _FakeStructurePlannerClient(is_edited=False)  # would answer wrongly if ever asked
@@ -258,7 +258,7 @@ def test_preparing_known_assets_makes_zero_extra_get_asset_calls():
 
 
 def test_an_id_outside_the_known_assets_still_falls_back_to_get_asset():
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 
     client = _FakeStructurePlannerClient(is_edited=True)
     reader = EditorialRuntimePorts().preview_reader(client, {})

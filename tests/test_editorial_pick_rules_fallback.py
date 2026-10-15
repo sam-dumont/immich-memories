@@ -5,10 +5,10 @@ without asking anybody; a model film whose reader gives nothing readable for a s
 exactly those moments for it instead of ending.
 """
 
-from immich_memories.analysis.editorial_story_carriers import CarrierAdmission
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
-from immich_memories.analysis.editorial_story_slots import PartitionedSlots
-from immich_memories.analysis.editorial_story_standing import StandingGate
+from immich_memories.analysis.selection.carriers import CarrierAdmission
+from immich_memories.analysis.selection.standing import StandingGate
+from immich_memories.analysis.stories.shortlist import DepictedChoice
+from immich_memories.analysis.stories.slots import PartitionedSlots
 
 # Three moments of one afternoon, far enough apart to share a film. Only strangers are in
 # the crowd, so the rules take it last.

@@ -5,10 +5,10 @@ import json
 import httpx
 import pytest
 
-from immich_memories.analysis.special_day import ask_if_special
-from immich_memories.analysis.special_day_holiday import was_the_holiday
-from immich_memories.analysis.special_day_sequence import read_in_sequence
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.special_days.detection import ask_if_special
+from immich_memories.analysis.special_days.holiday import was_the_holiday
+from immich_memories.analysis.special_days.sequence import read_in_sequence
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import race_assets
 from immich_memories.conformance.occasion_cases import sequence
 from tests.annotation_rows import annotation_store

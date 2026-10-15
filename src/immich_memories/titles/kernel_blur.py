@@ -35,7 +35,7 @@ kernel signatures need actual type objects, not string annotations.
 
 from . import kernels
 from .gpu_kernel_backend import KERNELS_AVAILABLE, ti
-from .kernels import _create_gaussian_kernel
+from .kernels import create_gaussian_kernel
 
 #: How far the decimated picture may drift before the held blur is thrown away,
 #: on the 0-1 scale the renderer works in. 0.01 is 2.6/255, well under the film
@@ -212,7 +212,7 @@ class AnimatedBlur:
         self._reuse = reuse
 
         self._radius = max(1, round(radius / self.downscale))
-        self._kernel = _create_gaussian_kernel(self._radius, sigma=(radius / 3.0) / self.downscale)
+        self._kernel = create_gaussian_kernel(self._radius, sigma=(radius / 3.0) / self.downscale)
         # The halo only earns its keep once the picture is decimated: at full
         # resolution the separable kernels already clamp against the right edge.
         self._pad = self._radius if self.downscale > 1 else 0
@@ -236,8 +236,10 @@ class AnimatedBlur:
         """
         _box_downsample_3(frame, self._small, self.downscale, self._pad)
         if not (reusable and self._reuse and self._held_blur_stands()):
-            kernels._gaussian_blur_h(self._small, self._scratch, self._kernel, self._radius)
-            kernels._gaussian_blur_v(self._scratch, self._blurred, self._kernel, self._radius)
+            kernels.compiled_gaussian_blur_h(self._small, self._scratch, self._kernel, self._radius)
+            kernels.compiled_gaussian_blur_v(
+                self._scratch, self._blurred, self._kernel, self._radius
+            )
             self._hold(reusable and self._reuse)
         _bilinear_upsample_3(self._blurred, frame, float(self.downscale), self._pad)
 

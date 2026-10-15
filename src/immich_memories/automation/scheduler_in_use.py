@@ -6,11 +6,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from immich_memories.automation.in_process_scheduler import _slot_today
+from immich_memories.automation.in_process_scheduler import slot_today
 
 if TYPE_CHECKING:
     from immich_memories.automation.system_scheduler import SchedulerStatus
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 BUILT_IN_TIMER = "built-in timer"
 EXTERNAL_TRIGGER = "external trigger"
@@ -26,7 +26,7 @@ class SchedulerInUse:
 
 
 def _timer_part(config: Config, now: datetime) -> tuple[str, datetime]:
-    slot = _slot_today(now, config.automation.daily_at)
+    slot = slot_today(now, config.automation.daily_at)
     next_run = slot if now < slot else slot + timedelta(days=1)
     zone = now.tzname() or str(now.tzinfo)
     text = (

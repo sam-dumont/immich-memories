@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from immich_memories.analysis.source_quality import is_usable_source
+from immich_memories.analysis.corpus.quality import is_usable_source
 
 
 def test_a_whatsapp_reencode_is_rejected() -> None:

@@ -6,9 +6,9 @@ preview of the required preparation, the way the `--ask` dry run already gives o
 
 from __future__ import annotations
 
-from immich_memories.analysis.prepare_scope import unprepared_pictures
-from immich_memories.config_loader import Config
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.analysis.preparation.scope import unprepared_pictures
+from immich_memories.config.loader import Config
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 from tests.annotation_rows import add_rows, annotation_store
 
 PRODUCER = Config().editorial.pixel_producer_key

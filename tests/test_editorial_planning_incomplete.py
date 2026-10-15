@@ -11,16 +11,16 @@ import json
 
 import pytest
 
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.editorial_planner import EditorialPlan
-from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_runtime_backend import (
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import StructurePlanningResult
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
+from immich_memories.analysis.runtime.backend import (
     ProductionPostCardBackend,
     _plan_from_structure_result,
 )
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.runtime.composition import EditorialRunContext
+from immich_memories.analysis.runtime.plan import EditorialPlan
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 from tests.annotation_rows import annotation_store
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import run, source
@@ -132,7 +132,7 @@ def test_actual_source_pipeline_rethrows_incomplete_failure_without_projection(
     tmp_path,
     monkeypatch,
 ):
-    from immich_memories.analysis.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
 
     captured = source(tmp_path, seconds=60, pictures=3)
     result = partial_result(captured)

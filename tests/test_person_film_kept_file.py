@@ -76,13 +76,13 @@ def test_a_person_film_keeps_a_recognised_picture_through_its_edited_file(tmp_pa
 @pytest.mark.feature("selection.person-copy-reported")
 def test_a_stack_member_a_person_film_asked_for_is_played_by_the_stack_top():
     """The probe from #2358: the demand for a member names the stack's primary."""
-    from immich_memories.analysis.editorial_source_route import metadata_demand
-    from immich_memories.analysis.selection_source import (
+    from immich_memories.analysis.corpus.admission import (
         EditorialDependencies,
         EditorialSelectionRequest,
         SourceScope,
         prepare_editorial_source,
     )
+    from immich_memories.analysis.runtime.source_route import metadata_demand
 
     shot = datetime(2024, 5, 20, 17, tzinfo=UTC)
     original = _file("original", shot, name="IMG_9001.HEIC", people=[SUBJECT], isFavorite=True)

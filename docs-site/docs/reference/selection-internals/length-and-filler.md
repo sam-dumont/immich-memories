@@ -27,7 +27,7 @@ How the target itself is set (per memory type, per active day, `--duration`) is 
 
 ## How long a shot is held
 
-The constants live in `analysis/editorial_structure_budget.py`.
+The constants live in `analysis/clips/budget.py`.
 
 | Shot | Hold |
 |---|---|
@@ -109,7 +109,7 @@ The draft tries to reach its length before it gives up the seconds:
 
 <Diagram name="decide-length" headline="A film is as long as its distinct shots can carry. It's never padded." />
 - **Depth.** When the film still has content seconds free after every pass, it spends them
-  inside the moments it already shows (`editorial_story_depth_fill.py`): first moments no pick
+  inside the moments it already shows (`selection/depth_fill.py`): first moments no pick
   took, then further frames of each chosen moment, one round at a time, round-robin across
   every funded story so one story never drains a round meant for its neighbours. A 36-minute
   moment of laps on a track can fill a short film this way. A frame only counts once it is its

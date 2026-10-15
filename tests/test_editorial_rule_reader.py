@@ -5,14 +5,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_final_hash_review import (
+from immich_memories.analysis.selection.final_hash_review import (
     POLICY as FINAL_HASH_REVIEW_POLICY,
 )
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_story_slots import allocate_slots
-from immich_memories.config_models_automation import TripsConfig
-from immich_memories.config_models_editorial import EditorialConfig, EditorialPeopleConfig
+from immich_memories.analysis.sources.pool import EditorialSourcePool
+from immich_memories.analysis.stories.rule_reader import RuleStructureReader
+from immich_memories.analysis.stories.slots import allocate_slots
+from immich_memories.config.models.automation import TripsConfig
+from immich_memories.config.models.editorial import EditorialConfig, EditorialPeopleConfig
 from tests.picture_fake import PictureFake
 
 
@@ -46,14 +46,14 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
     import json
     from datetime import timedelta
 
-    from immich_memories.analysis.editorial_runtime import (
+    from immich_memories.analysis.runtime.composition import (
         EditorialRunContext,
         build_editorial_planner,
     )
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-    from immich_memories.analysis.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.timeperiod import DateRange
     from tests.test_editorial_runtime import _window
     from tests.test_editorial_source_route import photo
@@ -174,12 +174,12 @@ def _distinct_preview(key):
 
 
 def test_rules_refuse_free_text_subjects_before_creating_an_annotation_store(tmp_path):
-    from immich_memories.analysis.editorial_runtime import (
+    from immich_memories.analysis.runtime.composition import (
         EditorialRunContext,
         build_editorial_planner,
     )
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from tests.test_editorial_runtime import _window
 
     database = tmp_path / "annotations.sqlite"
@@ -206,8 +206,8 @@ def test_rules_refuse_free_text_subjects_before_creating_an_annotation_store(tmp
 def test_only_happening_in_required_partition_is_maybe_without_an_occasion_flag():
     from types import SimpleNamespace
 
-    from immich_memories.analysis.editorial_intent import build_editorial_intent
-    from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+    from immich_memories.analysis.film.intent import build_editorial_intent
+    from immich_memories.analysis.stories.rule_reader import RuleStructureReader
     from tests.test_editorial_runtime import _window
     from tests.test_editorial_source_route import photo
 
@@ -231,8 +231,8 @@ def test_occasion_threshold_and_away_flag(last_day_mass, near_home, expected):
     from datetime import timedelta
     from types import SimpleNamespace
 
-    from immich_memories.analysis.editorial_intent import build_editorial_intent
-    from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+    from immich_memories.analysis.film.intent import build_editorial_intent
+    from immich_memories.analysis.stories.rule_reader import RuleStructureReader
     from immich_memories.timeperiod import DateRange
     from tests.test_editorial_runtime import _window
     from tests.test_editorial_source_route import photo
@@ -264,15 +264,15 @@ def test_a_rules_film_may_play_a_live_photo_and_can_measure_one(tmp_path):
     subject in frame plays, and a dull one stays its still."""
     from datetime import timedelta
 
-    from immich_memories.analysis.editorial_runtime import (
+    from immich_memories.analysis.runtime.composition import (
         EditorialRunContext,
         build_editorial_planner,
     )
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
-    from immich_memories.analysis.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+    from immich_memories.analysis.runtime.smart_pipeline import SmartPipeline
+    from immich_memories.analysis.structure.planner import plan_structure
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.timeperiod import DateRange
     from tests.test_editorial_runtime import _window
     from tests.test_editorial_source_route import photo

@@ -28,7 +28,7 @@ from immich_memories.db.tables import pipeline_runs, run_attempts
 from immich_memories.operations.editorial_attempt import LATEST_ATTEMPT, read_editorial_attempt
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)

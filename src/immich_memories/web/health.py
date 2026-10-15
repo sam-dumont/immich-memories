@@ -28,7 +28,7 @@ from immich_memories.web.request_checks import host_allowed, host_name
 from immich_memories.web.session_validity import session_current
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 logger = logging.getLogger(__name__)
 

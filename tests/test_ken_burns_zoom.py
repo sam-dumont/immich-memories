@@ -220,7 +220,7 @@ def test_size_and_centre_stay_in_step_under_every_easing(name, t):
 
 
 def test_the_easing_is_chosen_per_still_and_stays_with_it():
-    from immich_memories.analysis.framing_target import PictureFaces
+    from immich_memories.analysis.facts.framing_target import PictureFaces
     from immich_memories.photos.ken_burns_moves import FilmSubject, planned_move
 
     def easing(key: str) -> str:

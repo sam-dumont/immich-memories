@@ -10,29 +10,29 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialSelection
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge
-from immich_memories.analysis.editorial_runtime import (
-    EditorialRunContext,
-    build_editorial_planner,
-    build_smart_pipeline,
-)
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_structure_contract import (
-    StructurePlannerPorts,
-    StructurePlanningResult,
-)
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_trace import Trace
-from immich_memories.analysis.smart_pipeline import ClipWithSegment
-from immich_memories.analysis.text_episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
-from immich_memories.config_loader import Config
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import (
+    StructurePlannerPorts,
+    StructurePlanningResult,
+)
+from immich_memories.analysis.reading.episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+    build_smart_pipeline,
+)
+from immich_memories.analysis.runtime.plan import EditorialPlan, EditorialSelection
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
+from immich_memories.analysis.sources.pool import EditorialSourcePool
+from immich_memories.analysis.stories.rule_reader import NoModelJudge
+from immich_memories.config.loader import Config
 from immich_memories.db import resolve_location
 from immich_memories.memory_types.date_builders import build_birthday_windows
 from immich_memories.timeperiod import DateRange
@@ -195,11 +195,11 @@ def test_smart_pipeline_factory_preserves_the_existing_constructor_seam(tmp_path
     with (
         # WHY: building the real planner opens the model provider and the annotation database.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_editorial_planner",
+            "immich_memories.analysis.runtime.composition.build_editorial_planner",
             return_value=planner,
         ),
         patch(
-            "immich_memories.analysis.smart_pipeline.SmartPipeline",
+            "immich_memories.analysis.runtime.smart_pipeline.SmartPipeline",
             return_value=expected,
         ) as smart_pipeline,
     ):
@@ -328,7 +328,7 @@ def test_episode_completion_ceiling_bounds_a_runaway_pack() -> None:
 def test_default_people_port_reads_the_people_scan_authority_with_derived_edges() -> None:
     # WHY: the people registry lives in the store; this checks only which reader the port asks.
     with patch(
-        "immich_memories.analysis.editorial_runtime_ports.load_people_prompt_context",
+        "immich_memories.analysis.runtime.ports.load_people_prompt_context",
         return_value={},
     ) as load_people:
         context = EditorialRuntimePorts().load_people()
@@ -404,7 +404,7 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
         target_seconds=60,
         artifact_dir=tmp_path / "artifacts",
     )
-    from immich_memories.analysis.editorial_motion_outcomes import MotionOutcomeReplay
+    from immich_memories.analysis.clips.motion_outcomes import MotionOutcomeReplay
 
     reference = MotionOutcomeReplay(tmp_path / "explicit-prior-motion.json", "a" * 64)
     context = replace(context, motion_outcome_replay=reference)
@@ -437,7 +437,7 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
 
     # WHY: forbid extra network calls outside the supplied episode and editor boundaries.
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_text_gateway.query_llm", unexpected_summary
+        "immich_memories.analysis.judgments.text_gateway.query_llm", unexpected_summary
     )
 
     captured = []
@@ -554,7 +554,7 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
     ],
 )
 def test_runtime_rejects_structure_carriers_that_break_source_conservation(carriers, reason):
-    from immich_memories.analysis.editorial_runtime_backend import _plan_from_structure_result
+    from immich_memories.analysis.runtime.backend import _plan_from_structure_result
 
     result = StructurePlanningResult({"carriers": carriers}, "contract", "sheet", {})
     with pytest.raises(ValueError, match=reason):
@@ -564,7 +564,7 @@ def test_runtime_rejects_structure_carriers_that_break_source_conservation(carri
 def test_insufficient_structure_material_preserves_diagnostics_but_has_no_renderable_cut():
     from copy import deepcopy
 
-    from immich_memories.analysis.editorial_runtime_backend import _plan_from_structure_result
+    from immich_memories.analysis.runtime.backend import _plan_from_structure_result
 
     result = StructurePlanningResult(
         {
@@ -586,7 +586,7 @@ def test_insufficient_structure_material_preserves_diagnostics_but_has_no_render
 
 @pytest.mark.parametrize("status", ["mechanically_valid", "coverage_incomplete"])
 def test_non_abstaining_structure_status_preserves_the_selected_cut(status):
-    from immich_memories.analysis.editorial_runtime_backend import _plan_from_structure_result
+    from immich_memories.analysis.runtime.backend import _plan_from_structure_result
 
     result = StructurePlanningResult(
         {

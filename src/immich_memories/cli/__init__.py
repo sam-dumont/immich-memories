@@ -73,7 +73,7 @@ def _load_cli_config(ctx: click.Context, config: str | None, preset: str | None)
             ctx.obj["config"] = get_config()
             ctx.obj["config_path"] = None
         if preset:
-            from immich_memories.config_presets import apply_preset
+            from immich_memories.config.presets import apply_preset
 
             ctx.obj["config"].preset = preset
             apply_preset(ctx.obj["config"])

@@ -10,7 +10,7 @@ import itsdangerous
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.startup_checks import StartupRefused, startup_warnings
 
 _STRONG = "6f1c0e9a4b7d2c58e3a1f0b9d8c7e6a5"
@@ -121,7 +121,7 @@ def test_ui_command_exits_with_the_refusal_instead_of_serving(monkeypatch, capsy
 
 def test_a_password_naming_an_unset_variable_stops_the_server(monkeypatch, tmp_path):
     """`${UI_PASSWORD}` with the variable unset would otherwise sign in with that literal text."""
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
 
     monkeypatch.delenv("IMM_TEST_UNSET_UI_PASSWORD", raising=False)
     path = tmp_path / "config.yaml"

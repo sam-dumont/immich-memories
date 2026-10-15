@@ -117,7 +117,7 @@ class TestMusicLengthIsTheFilmLength:
     def test_auto_generation_plans_from_the_assembled_film(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate_music import resolve_music
         from immich_memories.processing.assembly_config import AssemblyClip
 

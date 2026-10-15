@@ -165,9 +165,9 @@ class FrameBlender:
             self._progress_callback(self._frames_written, self._total_frames)
 
     def _emit_preview(self, frame: np.ndarray) -> None:
-        from immich_memories.processing.frame_preview import _maybe_emit_preview
+        from immich_memories.processing.frame_preview import maybe_emit_preview
 
-        self._last_preview_time = _maybe_emit_preview(
+        self._last_preview_time = maybe_emit_preview(
             frame,
             self._last_preview_time,
             self._frame_preview_callback,

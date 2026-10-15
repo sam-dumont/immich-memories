@@ -16,7 +16,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
-from immich_memories.analysis.editorial_block_votes import ONE_ORDER_ROWS
+from immich_memories.analysis.polish.block_votes import ONE_ORDER_ROWS
 from immich_memories.db import Store
 from immich_memories.db.tables import vote_bank_entries
 from immich_memories.store.batches import bank_rows

@@ -12,7 +12,7 @@ from collections.abc import Iterable
 from datetime import date, datetime, time
 from typing import Any
 
-from immich_memories.analysis.source_filter import owned_by
+from immich_memories.analysis.corpus.name_filter import owned_by
 from immich_memories.timeperiod import DateRange
 
 Window = tuple[date, date]

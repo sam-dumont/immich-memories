@@ -22,9 +22,9 @@ import pytest
 from click.testing import CliRunner
 from rich.console import Console
 
-from immich_memories import config_loader
 from immich_memories.api.models import Asset, AssetType, ExifInfo, VideoClipInfo
-from immich_memories.config_loader import Config
+from immich_memories.config import loader as config_loader
+from immich_memories.config.loader import Config
 
 # CI's unit shards collect only their own files (`--shard-files`, tests/shard_files.py).
 from tests.shard_files import pytest_addoption, pytest_ignore_collect  # noqa: F401
@@ -187,7 +187,7 @@ def _refuse_the_accounts_config() -> None:
     itself, or restores HOME through a CliRunner env. Recorded as well as raised, like the
     store guard: a caller that swallows the error must not hide the read.
     """
-    from immich_memories import config_sources
+    from immich_memories.config import sources as config_sources
 
     def guarded(module: Any, name: str) -> None:
         read = getattr(module, name)
@@ -201,7 +201,7 @@ def _refuse_the_accounts_config() -> None:
 
         _TERMINAL_PATCHES.setattr(module, name, check)
 
-    guarded(config_loader, "_load_yaml_data")
+    guarded(config_loader, "load_yaml_data")
     guarded(config_sources, "_raw_yaml")
 
 
@@ -427,7 +427,7 @@ def pytest_unconfigure(config: pytest.Config) -> None:
 def isolated_inference_compute(monkeypatch) -> None:
     # WHY: optional runtimes on the developer's host must not make unit fixtures demand services.
     monkeypatch.setattr(
-        "immich_memories.config_compute.local_inference_acceleration",
+        "immich_memories.config.compute.local_inference_acceleration",
         lambda: (False, "No GPU runtime in this unit-test fixture"),
     )
 
@@ -782,7 +782,7 @@ def _forget_learned_endpoints():
     "api.anthropic.com/claude reasons anyway" silently rewrites another's expected
     token budget.
     """
-    from immich_memories.analysis import llm_wire
+    from immich_memories.analysis.llm import wire as llm_wire
 
     llm_wire._REASONING_HEADROOM.clear()
     llm_wire.PARAM_ADAPTATIONS.clear()
@@ -799,7 +799,7 @@ def _open_the_throttle_gate():
     named has passed, which is right in a run. Tests fake the clock by replacing
     sleep, so the window never passes on its own and the next test inherits it.
     """
-    from immich_memories.analysis import provider_failure
+    from immich_memories.analysis.llm import provider_failure
 
     provider_failure.THROTTLE._until = 0.0
     yield
@@ -814,7 +814,7 @@ def _finished_cuts_keep_their_promises(monkeypatch):
     failure, so a change that lets a later pass undo an earlier one is caught by whichever
     planner fixture shows it.
     """
-    from immich_memories.analysis import editorial_cut_invariants
+    from immich_memories.analysis.structure import cut_invariants as editorial_cut_invariants
 
     report = editorial_cut_invariants.report_violations
 
@@ -870,7 +870,7 @@ def every_run_an_occasion(monkeypatch):
 
     # WHY: the sequence reader is a text-model call; these tests are about what follows it.
     monkeypatch.setattr(
-        "immich_memories.analysis.special_day_sequence._read",
+        "immich_memories.analysis.special_days.sequence._read",
         lambda prompt, *_a, **_k: json.dumps(
             {
                 "occasions": [

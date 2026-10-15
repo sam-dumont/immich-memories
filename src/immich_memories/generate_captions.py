@@ -11,7 +11,7 @@ from immich_memories.i18n import DEFAULT_LOCALE
 from immich_memories.i18n_places import country_code, is_country, localise_place
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.processing.assembly_config import AssemblyClip, TitleScreenSettings
 
@@ -100,7 +100,7 @@ def locality_place_names(params: GenerationParams, clips: list[AssemblyClip]) ->
     """
     if params.privacy_mode:
         return clips
-    from immich_memories.analysis.place_names import place_names_for
+    from immich_memories.analysis.places.names import place_names_for
 
     resolved = {
         source.asset.id: exif.place_name

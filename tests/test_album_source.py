@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.album_source import fetch_album_media, split_album_assets
+from immich_memories.analysis.sources.album import fetch_album_media, split_album_assets
 from immich_memories.api.album_service import AlbumRef
 from immich_memories.api.models import Asset, AssetType
 from immich_memories.config import Config

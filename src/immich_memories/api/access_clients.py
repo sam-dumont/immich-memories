@@ -23,7 +23,7 @@ from immich_memories.api.compatibility import ApiVersionPolicy
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import Asset, AssetFace
 from immich_memories.api.sync_client import SyncImmichClient
-from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT, ImmichConfig
 from immich_memories.security import sanitize_error_message
 
 _Read = TypeVar("_Read")

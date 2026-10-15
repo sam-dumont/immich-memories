@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 _URL_KEYS = [
     "immich:\n  url: {url}\n",
@@ -48,7 +48,7 @@ def test_a_url_naming_an_unset_variable_does_not_stop_the_config_loading(
 
 
 def test_a_server_url_that_is_not_http_is_refused_when_saved(tmp_path):
-    from immich_memories.config_loader import load_config, set_config
+    from immich_memories.config.loader import load_config, set_config
     from immich_memories.web.dependencies import config_file
     from tests.web_api_fixtures import api_client, config_in
 

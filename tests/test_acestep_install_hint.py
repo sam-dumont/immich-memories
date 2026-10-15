@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.local_capabilities import local_capabilities
 
 

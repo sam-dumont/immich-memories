@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_title_settings
 
@@ -209,7 +209,7 @@ def test_runs_show_says_where_the_title_came_from():
 
     from immich_memories.cli._helpers import console
     from immich_memories.cli.runs import _print_run_details_table
-    from immich_memories.config_models import ImmichConfig
+    from immich_memories.config.models.resources import ImmichConfig
     from immich_memories.tracking.models import RunMetadata
 
     run = RunMetadata(

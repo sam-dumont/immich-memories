@@ -51,8 +51,8 @@ def test_overruns_and_additional_preparation_revise_the_forecast():
 
 
 def test_cut_snapshot_keeps_the_same_phase_forecast_through_disk_and_cli(tmp_path):
-    from immich_memories.analysis.editorial_projection import EditorialStageReporter
-    from immich_memories.analysis.progress import ProgressTracker
+    from immich_memories.analysis.runtime.pipeline_result import EditorialStageReporter
+    from immich_memories.analysis.runtime.progress import ProgressTracker
     from immich_memories.operations.cut_progress import StageClock, StageUpdate
     from immich_memories.tracking.span_progress import SpanPlan
     from immich_memories.tracking.timing import Span
@@ -107,7 +107,7 @@ def test_terminal_shows_whole_eta_and_each_phase_beside_the_actual_stage():
 
 
 def test_full_generate_keeps_render_phases_in_view_while_selecting(tmp_path):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.operations.cut_progress import StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt
     from immich_memories.tracking.report_context import record_config
@@ -131,7 +131,7 @@ def test_full_generate_keeps_render_phases_in_view_while_selecting(tmp_path):
 
 
 def test_eta_history_uses_a_completed_run_with_the_same_execution_profile():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import open_store
     from immich_memories.tracking import RunTracker
     from immich_memories.tracking.span_store import SpanStore

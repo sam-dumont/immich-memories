@@ -15,9 +15,9 @@ import soundfile as sf
 
 from immich_memories.audio.generators.demucs_local import (
     DemucsLocalBackend,
-    _is_demucs_importable,
     _load_audio,
     _save_audio,
+    is_demucs_importable,
 )
 
 # Selected by the Test Extras CI job; these bodies only execute when the
@@ -30,15 +30,15 @@ class TestDemucsImportability:
 
     def test_importable_when_installed(self):
         with patch("importlib.util.find_spec", return_value=MagicMock()):
-            assert _is_demucs_importable() is True
+            assert is_demucs_importable() is True
 
     def test_not_importable_when_missing(self):
         with patch("importlib.util.find_spec", return_value=None):
-            assert _is_demucs_importable() is False
+            assert is_demucs_importable() is False
 
     def test_not_importable_on_import_error(self):
         with patch("importlib.util.find_spec", side_effect=ImportError):
-            assert _is_demucs_importable() is False
+            assert is_demucs_importable() is False
 
 
 class TestDemucsLocalBackendAvailability:
@@ -48,7 +48,7 @@ class TestDemucsLocalBackendAvailability:
     async def test_available_when_demucs_installed(self):
         backend = DemucsLocalBackend()
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=True,
         ):
             assert await backend.is_available() is True
@@ -57,7 +57,7 @@ class TestDemucsLocalBackendAvailability:
     async def test_unavailable_when_demucs_missing(self):
         backend = DemucsLocalBackend()
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=False,
         ):
             assert await backend.is_available() is False
@@ -117,7 +117,7 @@ class TestHealthCheck:
     async def test_health_check_reports_state(self):
         backend = DemucsLocalBackend(model_name="htdemucs", device="cpu")
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=True,
         ):
             health = await backend.health_check()
@@ -132,7 +132,7 @@ class TestHealthCheck:
         backend = DemucsLocalBackend(device="cpu")
         backend._model = MagicMock()  # Simulate loaded model
         with patch(
-            "immich_memories.audio.generators.demucs_local._is_demucs_importable",
+            "immich_memories.audio.generators.demucs_local.is_demucs_importable",
             return_value=True,
         ):
             health = await backend.health_check()

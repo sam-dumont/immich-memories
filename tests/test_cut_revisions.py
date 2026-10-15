@@ -108,7 +108,7 @@ def test_the_owners_edits_are_the_film_even_past_the_titles_budget(tmp_path):
 
 
 def _pool(attempt: Path, *assets) -> None:
-    from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, source_payload
+    from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, source_payload
 
     (attempt / SNAPSHOT_NAME).write_text(json.dumps(source_payload(list(assets))))
 

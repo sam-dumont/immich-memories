@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 import pytest
 
 from immich_memories.api.models import Asset, AssetType
-from immich_memories.config_models_analysis import AnalysisConfig
+from immich_memories.config.models.analysis import AnalysisConfig
 
 
 def _image(asset_id: str, *, live: bool = False) -> Asset:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.config_loader import Config, _apply_env_overrides
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.loader import Config, _apply_env_overrides
+from immich_memories.config.models.auth import AuthConfig
 
 
 class TestAuthConfigDefaults:

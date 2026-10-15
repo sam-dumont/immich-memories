@@ -27,7 +27,7 @@ from typing import Any
 
 from babel.dates import format_skeleton
 
-from immich_memories.analysis.shot_reason import reads_as_telemetry, shot_reason_of_row
+from immich_memories.analysis.facts.shot_reason import reads_as_telemetry, shot_reason_of_row
 from immich_memories.processing.assembly_config import AssemblyClip, TitleScreenSettings
 from immich_memories.processing.timeline_budget import TimelinePlan
 from immich_memories.processing.timeline_preview import preview_timeline

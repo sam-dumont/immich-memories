@@ -31,7 +31,7 @@ def test_every_new_detector_has_its_own_category():
 
 
 def test_every_new_detector_is_on_by_default_and_shared_albums_are_not():
-    from immich_memories.config_models_automation import AutomationConfig
+    from immich_memories.config.models.automation import AutomationConfig
 
     config = AutomationConfig()
 
@@ -44,7 +44,7 @@ def test_every_new_detector_is_on_by_default_and_shared_albums_are_not():
 def test_extra_holidays_are_written_month_day_then_a_name():
     import pytest
 
-    from immich_memories.config_models_automation import AutomationConfig
+    from immich_memories.config.models.automation import AutomationConfig
 
     assert AutomationConfig(extra_holidays=["12-06: Saint Nicholas"]).extra_holidays == [
         "12-06: Saint Nicholas"

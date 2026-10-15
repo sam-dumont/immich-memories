@@ -14,28 +14,28 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from immich_memories.analysis.annotation_lines import AnnotationLineBatch
-from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
-from immich_memories.analysis.editorial_clip_frames import unusable_video
-from immich_memories.analysis.editorial_shareability import (
+from immich_memories.analysis.audience.shareability import (
     load_flags,
     never_auto_ids,
     partition_units,
     unit_members,
 )
-from immich_memories.analysis.editorial_source_gate import screen_document_rejections
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     PreparedEditorialSource,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.source_filter import asset_of
+from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
+from immich_memories.analysis.facts.clip_frames import unusable_video
+from immich_memories.analysis.reading.annotation_lines import AnnotationLineBatch
+from immich_memories.analysis.reading.source_gate import screen_document_rejections
+from immich_memories.api.models import asset_of
 from immich_memories.tracking.report_privacy import ReportPrivacy
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.editorial_runtime_evidence import AnnotationReadings
+    from immich_memories.analysis.runtime.evidence import AnnotationReadings
     from immich_memories.api.models import Asset, VideoClipInfo
 
 # How many pictures a rule shows as its examples.
@@ -173,7 +173,7 @@ def preview_rules(
     drops it, in the run's order: source, screens, holds, carrier rules, then video frames.
     `client`, when given, reads Immich's own OCR for the personal-document check (#2062).
     """
-    from immich_memories.analysis.editorial_document_ocr import document_ocr_port
+    from immich_memories.analysis.preparation.document_ocr import document_ocr_port
 
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=scope),

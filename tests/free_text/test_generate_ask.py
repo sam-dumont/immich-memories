@@ -14,10 +14,10 @@ from typing import Any
 import pytest
 from click.testing import CliRunner, Result
 
-from immich_memories.analysis.editorial_preparation import PreparationResult
+from immich_memories.analysis.preparation.acquire import PreparationResult
 from immich_memories.api.models import Asset, MetadataSearchResult
 from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
-from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.config.models.editorial import EditorialConfig
 from immich_memories.db import open_store
 from immich_memories.free_text.lexicon import WordNetLexicon
 from immich_memories.preflight import CheckResult, CheckStatus
@@ -928,7 +928,7 @@ def test_an_unprepared_window_is_warned_about_prepared_and_then_answered(
         (f"new-cat-{n}", FIRST + timedelta(days=1000 + n)) for n in range(3)
     ]
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations",
         _captioning(store, "A black cat is sleeping"),
     )
     monkeypatch.setattr(
@@ -974,7 +974,7 @@ def test_preflight_runs_before_preparation_but_not_on_a_dry_run_or_a_prepared_wi
 
     ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations",
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations",
         _captioning(open_store(), "A black cat is sleeping"),
     )
     monkeypatch.setattr(
@@ -995,7 +995,7 @@ def test_a_dry_run_on_an_unprepared_window_only_warns_and_prepares_nothing(
         raise AssertionError("a dry run must never call the real preparation pipeline")
 
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations", _never
     )
 
     result = ask("--ask", "our cat along the years", "--dry-run")
@@ -1023,7 +1023,7 @@ def test_the_preview_s_kept_translation_says_needs_preparation_not_not_possible(
         raise AssertionError("a dry run must never call the real preparation pipeline")
 
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _never
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations", _never
     )
     kept = tmp_path / "ask.json"
 
@@ -1044,7 +1044,7 @@ def test_a_preparation_failure_is_reported_and_never_reads_as_not_possible(
     ask.immich.unsynced_camera_shots = [("new-cat-0", FIRST + timedelta(days=1000))]
 
     def _broken(**kwargs):
-        from immich_memories.analysis.editorial_preparation import PreparationResult
+        from immich_memories.analysis.preparation.acquire import PreparationResult
 
         total = len(kwargs["assets"])
         kwargs["progress"]("captions", total, total)
@@ -1053,7 +1053,7 @@ def test_a_preparation_failure_is_reported_and_never_reads_as_not_possible(
         )
 
     monkeypatch.setattr(
-        "immich_memories.analysis.editorial_preparation.prepare_editorial_annotations", _broken
+        "immich_memories.analysis.preparation.acquire.prepare_editorial_annotations", _broken
     )
 
     result = ask("--ask", "our cat along the years", "--no-render")

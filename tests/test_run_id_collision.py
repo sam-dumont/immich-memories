@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.tracking import RunTracker
 from immich_memories.tracking.run_id import generate_run_id, is_valid_run_id

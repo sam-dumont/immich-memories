@@ -594,8 +594,8 @@ class TestProgressParity:
         on_stage(StageUpdate("Editing the memory"))
 
     def test_the_terminal_sees_every_stage_with_its_counts(self) -> None:
-        from immich_memories.analysis.editorial_projection import EditorialStageReporter
-        from immich_memories.analysis.progress import ProgressTracker
+        from immich_memories.analysis.runtime.pipeline_result import EditorialStageReporter
+        from immich_memories.analysis.runtime.progress import ProgressTracker
         from immich_memories.cli.source_progress import SourceProgressReporter
 
         display = CountingDisplay()
@@ -618,8 +618,8 @@ class TestProgressParity:
 
     def test_the_terminal_can_estimate_a_counted_stage(self) -> None:
         """The counted stage carries a total for the estimate."""
-        from immich_memories.analysis.editorial_projection import EditorialStageReporter
-        from immich_memories.analysis.progress import ProgressTracker
+        from immich_memories.analysis.runtime.pipeline_result import EditorialStageReporter
+        from immich_memories.analysis.runtime.progress import ProgressTracker
         from immich_memories.cli.source_progress import SourceProgressReporter
         from immich_memories.operations.cut_progress import StageUpdate
 

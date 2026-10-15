@@ -51,7 +51,7 @@ Immich Memories generates video compilations from an Immich photo library.
 The public lifecycle of one run (`operations/phases.py`, `OperationalPhase`):
 **discovery -> download -> analysis -> selection -> render -> music -> delivery -> complete**.
 Selection is the story-first editorial route, the only one: `generate` (or the Memory page's
-Cut) -> `build_smart_pipeline(editorial_context)` (`analysis/editorial_runtime.py`) ->
+Cut) -> `build_smart_pipeline(editorial_context)` (`analysis/runtime/composition.py`) ->
 `SmartPipeline.run_editorial_source()` -> `RuntimeEditorialPlanner.plan_source()`, which reports
 five stages: **Reading dates, places and people -> Reading event evidence
 -> Building editorial cards -> Editing the memory -> Validating selected source timing**. Every
@@ -60,7 +60,7 @@ attempt is durable under `<cache>/editorial-runs/<key>/attempts/<id>/`
 it reads live in the store (`db/`, repositories in `store/`). The design is summarised in
 `docs/designs/2026-09-10-story-first-selection.md`.
 
-Discovery finishes before constructing the editor. `analysis/editorial_pool.py` resolves an
+Discovery finishes before constructing the editor. `analysis/sources/pool.py` resolves an
 `EditorialSourcePool` with three roles: selectable pictures, context-only pictures, and linked
 companion videos. Window discovery retains surrounding metadata for event grouping and capture-run
 checks; an album supplies its own membership. Both enter `resolve_source_pool`, which reuses known
@@ -72,48 +72,48 @@ Selection carries the exact episode reading identities into its audit lineage. T
 pre-card period-insight pass only supplied audit prose and no selection decisions; it is no
 longer requested. Existing database rows are left untouched; no new period-insight rows are written.
 
-The period account (`analysis/editorial_story_reading.py`) reads the banked 90-minute episode
+The period account (`analysis/stories/period_account.py`) reads the banked 90-minute episode
 readings, one page per calendar month, cut into parts only at a day boundary. No page carries
 anything from the page before it, so a month's prompt is a pure function of that month's rows: the
 months read in parallel through `reader_map`, the judgment bank answers a month it has already read,
 and one changed asset invalidates one month instead of every page after it. The one-day rule is
 applied to the answer (`_split_by_day`), not asked for in the prompt.
 
-Before the weighing, `editorial_story_trips.py` runs the app's trip detection over the film's pool
-and folds every trip's day episodes into one story per leg (`trip_legs.py`: a trip that changes
+Before the weighing, `stories/trips.py` runs the app's trip detection over the film's pool
+and folds every trip's day episodes into one story per leg (`places/trip_legs.py`: a trip that changes
 where it stays, such as a hike then a city, is two legs); each leg reserves
 `round(slots / 2 * sqrt(leg days / film days))` pictures at its turn in the presence pass. After
-the weighing, `editorial_story_threads.py` asks the reader whether stories of one place and era
+the weighing, `stories/threads.py` asks the reader whether stories of one place and era
 that its own words link are one recurring activity, and folds each confirmed group. At
-carrier admission, `editorial_story_lookalike.py` answers the repetition question from the cached
+carrier admission, `selection/lookalike.py` answers the repetition question from the cached
 preview hashes (`hash_pair_relation`, on every tier; no pair's pixels go to a model) before a story
 takes a further picture, bounded at twice the slots; a refusal frees the slot for another moment.
-`editorial_story_places.py` covers the case next to the thread question, one place inside one day
+`selection/places.py` covers the case next to the thread question, one place inside one day
 or one stay: per scope (a journey film, or one story) it gives each place the pictures
 `trip_allowance` would give a trip of the same share of that scope, and a picture over the bound
 joins the look-alike ledger, so it frees its slot first and returns only if nothing else takes it.
 A scope of one place is never bounded. The synthesis card also carries `arrivals`, the
-`editorial_person_period_facts.py` projection of who the library first holds in that episode's own
+`reading/person_period_facts.py` projection of who the library first holds in that episode's own
 month, so the thesis and the weighing can read an arrival that the relation counts flatten away.
 
 The family-viewing gate has two floors under the reader's answer and a list beside it. The exposure
 head `nsfw_marqo` decides a still on its preview and a video on up to eight frames
-across its length (`editorial_preparation_detector_frames.py`, through the motion line's byte-range
+across its length (`preparation/detector_frames.py`, through the motion line's byte-range
 keyframe reader), keeping the strongest frame: that is `det-v3`. A still's banked `det-v2` row is its
-`det-v3` answer and `carry_still_exposure` (`editorial_preparation_model_facts.py`) banks it as one
+`det-v3` answer and `carry_still_exposure` (`preparation/model_facts.py`) banks it as one
 before preparation counts what is owed, so an existing bank re-reads that head for videos only, and
 videos send their sampled frames as well as their preview when inference is configured
-(`editorial_preparation_remote_frames.py`). Completed aggregates retain local producer
+(`preparation/remote_frames.py`). Completed aggregates retain local producer
 identities; partial or mixed-artifact answers are never banked. A Live Photo's
 clip is read the same way: it is no candidate, so `acquire_clip_companions`
-(`editorial_preparation_model_facts.py`) reads it for the exposure head alone and banks it under the
+(`preparation/model_facts.py`) reads it for the exposure head alone and banks it under the
 clip's own id, and `load_detector_heads` puts those rows in the gate's `companion_detectors`, which
 had been empty for every Live Photo. A flagged clip holds its still. In a shareable film a clip no detector read plays as its still (`UnitBuilder._clip_withheld`); family films keep the motion. The same sampled frames of a video
-go through the `frame_kind` head (`prepare_clip_frames` in `editorial_preparation_heads.py`), and
-`editorial_clip_frames.py` banks the clip's `clip_frames` fact: a clip that shows its moment in
+go through the `frame_kind` head (`prepare_clip_frames` in `preparation/heads.py`), and
+`facts/clip_frames.py` banks the clip's `clip_frames` fact: a clip that shows its moment in
 fewer than three frames of four reads `frames=subject_often_missing` on its line, which the rules
 reader scores 0 (a favourite still wins), and `StandingGate` refuses on every tier.
-Before a retained Live carrier is certified, `live_source_integrity.py` checks the complete
+Before a retained Live carrier is certified, `runtime/live_source_integrity.py` checks the complete
 presentation of its original companion bytes through `ProbeCache`. Sampled playback frames
 are still semantic evidence; they do not prove that the original decodes completely. A
 byte-proven decoder or presentation failure uses the existing `live-still` disposition,
@@ -121,16 +121,16 @@ keeping the selected photograph and member IDs. The carrier records the original
 selected stream, decoder identity, presentation policy and refusal reason. Those verdicts
 are cached by original-byte identity; unavailable downloads or tools remain failures.
 This happens before sealing, and certified Live rendering continues to fail closed.
-The same frames give a video its measured motion: `editorial_video_motion.py` runs the Live Photo
-optical-flow residual (`flow_residual` in `editorial_motion_facts.py`) over them and banks it in
+The same frames give a video its measured motion: `clips/video_motion.py` runs the Live Photo
+optical-flow residual (`flow_residual` in `clips/motion_facts.py`) over them and banks it in
 `motion_residuals` under its own producer; `UnitBuilder._video_unit` carries it, and
 `measured_motion` holds a measured video to the 1.5 bar, so `BankedMotionLines` withholds a still
 clip's sentence (never a favourite's) and counts it `unsupported`. No detector hold is ever lifted
-by a later reading (`_head_hold` in `editorial_shareability.py`); only the owner's clearance does.
-`editorial_exposure_chains.py` then holds a whole five-minute capture run that is at least half
+by a later reading (`_head_hold` in `audience/shareability.py`); only the owner's clearance does.
+`audience/exposure_chains.py` then holds a whole five-minute capture run that is at least half
 flagged with at least three flagged captures in it, under the reason `exposure_chain`; a Live
 Photo is one capture there, flagged when its still or its banked clip is. Neither the reduced
-tier's `_hold()` nor the model check can clear it. `editorial_review_list.py` writes
+tier's `_hold()` nor the model check can clear it. `audience/review_list.py` writes
 `review-before-sharing.private.json`: the finished cut's shots between 0.2 and 0.5 that nothing
 else already holds, counted in the run summary and named by `runs why`. It changes no shot.
 
@@ -149,7 +149,7 @@ after transport recovery, it is split between join-compatible groups
 and read again with the same central context. An indivisible group still fails visibly; partial
 weights and edits never carry into the recovered page.
 
-`editorial_rule_banked_facts.py` lets the no-model draft read what a model already answered about
+`stories/banked_facts.py` lets the no-model draft read what a model already answered about
 this library without asking anything: audience
 refusals recorded by earlier cuts of the same film for the same audience, and the representatives
 and culls of any banked episode reading of the same pictures. A withheld picture is not offered to
@@ -169,23 +169,23 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 **Units of a library**
 
 - **Moment**: pictures taken within 10 minutes of each other and close in place
-  (`MOMENT_WINDOW_MINUTES`, `moment_grouping.py`). One moment is what one shot of the film shows.
+  (`MOMENT_WINDOW_MINUTES`, `corpus/moment_grouping.py`). One moment is what one shot of the film shows.
 - **Episode**: the block a moment sits in (an afternoon at a circuit, a party), cut at a
-  90-minute gap (`EPISODE_WINDOW_MINUTES`, `selection_source_groups.py`).
+  90-minute gap (`EPISODE_WINDOW_MINUTES`, `corpus/groups.py`).
 - **Person presence**: in a film about people, a person is present strictly on the pictures
   Immich recognised their face on; `AND` asks for every named person on that one picture, not
   spread across the gathering around it (#1954). Decided once, by the fetch, by face ID over the
   window Immich returns (`api/person_scope.py`, one read per kind per window: `fetch_media` in
   the CLI, `_fetch_media` in the wizard). The pool the owner reviews holds exactly those pictures,
-  and the cut keeps that answer (`person_presence.py`).
+  and the cut keeps that answer (`sources/person_presence.py`).
 - **Episode reading**: a model's answer about one episode: what happened, its representatives,
   its cull decisions and its notable moments, banked by exact membership and producer
-  (`store/episode_readings.py`, `text_episode_reader.py`). The rules reader writes factual
-  episode cards instead and never banks them as answers (`editorial_rule_episodes.py`).
+  (`store/episode_readings.py`, `reading/episode_reader.py`). The rules reader writes factual
+  episode cards instead and never banks them as answers (`stories/rule_episodes.py`).
 - **Story**: day episodes grouped into one thing that happened, then weighed in words and turned
-  into picture slots (`editorial_story_grouping.py`, `editorial_story_weighing.py`,
-  `editorial_story_slots.py`). Trips and recurring threads fold into one story
-  (`editorial_story_trips.py`, `editorial_story_threads.py`).
+  into picture slots (`stories/grouping.py`, `stories/weighing.py`,
+  `stories/slots.py`). Trips and recurring threads fold into one story
+  (`stories/trips.py`, `stories/threads.py`).
 - **Capture run**: captures each taken within five minutes of the one before
   (`MIN_GAP_IN_CAPTURE_GROUP_SECONDS`). It spaces shots, and it is the unit of an exposure chain.
 
@@ -193,16 +193,16 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 
 - **Account**: what the library says happened in a period, written once from banked episode
   readings and read back by every later cut. One per month, one per year, and for a long window
-  one per calendar year it touches plus one over those years (`library_catalogue.py`,
-  `catalogue_runtime.py`, `prepare --overviews`). The rules reader writes none: an account is a
+  one per calendar year it touches plus one over those years (`reading/library_catalogue.py`,
+  `runtime/period_accounts.py`, `prepare --overviews`). The rules reader writes none: an account is a
   reading.
 - **Thesis**: the up-to-150-word statement of what a period was about. The story synthesis writes
-  it (`editorial_story_grouping.py`) and the account carries it to the thin layer
-  (`editorial_thin_catalogue.py`), where it sits above every block the model votes on. The
+  it (`stories/grouping.py`) and the account carries it to the thin layer
+  (`polish/catalogue.py`), where it sits above every block the model votes on. The
   polish keeps the account it read on the run (`PlanRun.period_account`) for the summary.
 - **Summary**: what one film was about, stored as the plan's `story.thesis` (the storyboard, the
   film page, `runs story`, the music mood, the title and the Immich description read it). When
-  no synthesis wrote one, `editorial_film_summary.py` writes it once the cut is settled: on Full
+  no synthesis wrote one, `structure/film_summary.py` writes it once the cut is settled: on Full
   one question fed the period's account (ids taken out) and the stories the cut shows (what
   each was, first names, occasion, trip, and what its shots show people doing from the
   activity heads), with the film's kind, dates and subject in the prompt so the judgment bank
@@ -217,7 +217,7 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   `story.thesis_locale`: the Immich label (`operations/film_labelling.py`) uses the summary
   only when the render is in that language.
 - **Notable record**: a picture an episode reading named as a moment worth a place of its own,
-  with the reason (`banked_notable_records` in `catalogue_runtime.py`). Only a story holding one
+  with the reason (`banked_notable_records` in `runtime/period_accounts.py`). Only a story holding one
   can earn an N seat.
 
 **Preparation**
@@ -225,7 +225,7 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 `store/caption_selection.py` chooses complete description/setting pairs for an explicitly
 selected LLM caption identity, preferring valid banked SmolVLM pairs. Fact reads, missing-fact
 checks and provenance use the same choice. Default SmolVLM reads retain their exact producer.
-`editorial_preparation_motion.py` owns `MotionScope`, motion acquisition and bank reads. Its
+`preparation/motion_lines.py` owns `MotionScope`, motion acquisition and bank reads. Its
 producer-specific reads reuse described SmolVLM motion lines before requesting a new LLM line;
 unchanged sources retain their existing bank entries. Explicit `prepare` acquires descriptions
 and reports missing lines without blocking required-fact completeness. Normal film preparation
@@ -236,16 +236,16 @@ The separate model-planning route can read banked lines or use plain clip facts.
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
   active picture facts before the rules draft, then captions and clip inspection for that draft
-  and actual replacement candidates (`editorial_film_preparation.py`). Bulk `prepare` keeps its
+  and actual replacement candidates (`runtime/film_preparation.py`). Bulk `prepare` keeps its
   explicit whole-source scope. Deferred video exposure is never banked as a completed frame check.
   The first draft and its source gate use a caption-free annotation view, even when descriptions
   are already banked. That view has a distinct evidence contract. Refinement and demanded episode
   context retain the original caption producer; the bank is never erased to build the draft.
 - **Heads**: eight small linear classifiers over one pinned DINOv2 ONNX embedding: location,
   people, children, activity, venue, frame_kind, screen, uncovered_person
-  (`triage/bundled_heads/public-8heads-v4.npz`, `editorial_preparation_heads.py`). Beside them sit
+  (`triage/bundled_heads/public-8heads-v4.npz`, `preparation/heads.py`). Beside them sit
   two detectors, `nsfw_marqo` (exposure) and `doc_docling` (documents)
-  (`editorial_preparation_detectors.py`). `EditorialConfig.active_head_versions` filters both
+  (`preparation/detectors.py`). `EditorialConfig.active_head_versions` filters both
   out when tier-owned `detectors_enabled` is false on NAS. Raw `head_versions`, banked rows and
   producer identities stay unchanged; GPU/Full reuse matching detector facts or fill missing ones.
   Saved review and automatic permanent holds remain, since old exposure holds lack producer attribution.
@@ -257,24 +257,24 @@ The separate model-planning route can read banked lines or use plain clip facts.
   preflight warn about cost; the rules draft defers these requests to selected/candidate refinement.
   CLI and film preparation pass the configured provider; motion provenance records its origin.
   LLM preflight checks configured text services too.
-  Preparation follows that same product tier; legacy overrides no longer win. `config_compute.py`
+  Preparation follows that same product tier; legacy overrides no longer win. `config/compute.py`
   checks inference-service health and local CUDA/MLX capability without loading weights.
   Explicit tiers remain available for comparisons. Sharing never asks the prose
-  LLM (`config_tiers.py`, `config_models_editorial*.py`, `editorial_shareability_tiers.py`).
+  LLM (`config/tiers.py`, `config/models/editorial*.py`, `audience/tiers.py`).
   `laya_checkpoints.py` selects platform-matched archive, path and threshold defaults;
   `pinned_models.py` owns the SHA-256 pins used by `models fetch` (the encoder, the detector
   exports, Laya, and the WordNet corpus free-text requests are read with).
 - **Reach**: the pictures a film can actually select (for a person film, its person presence),
   plus their Live Photo siblings and capture runs. This bounds cheap preparation; captions
   and playback have the narrower selected/candidate scope. The rest of the window is read as
-  Immich metadata (`editorial_film_reach.py`). Each acquisition is recorded under the attempt's
+  Immich metadata (`runtime/film_reach.py`). Each acquisition is recorded under the attempt's
   `refinement/<sequence>/preparation.private.json`, with requested IDs and producer timings.
   Each pass also saves `captions.private.json`; the review reads these immutable descriptions
   across refinement rounds instead of consulting the current annotation bank.
 - **Fill on demand**: a film reads only the episodes its shots sit in, and banks them; reading a
   whole scope ahead is optional (`prepare --overviews`). A model-tier film left short by S seconds
-  reads at most 2 * ceil(S / 3.5) more unread episodes (`episode_demand.py`,
-  `editorial_thin_short.py`).
+  reads at most 2 * ceil(S / 3.5) more unread episodes (`reading/demand.py`,
+  `polish/short.py`).
 - **Bank / banked**: an answer stored under its exact inputs and producer identity, so the next
   run asks nothing and a changed asset invalidates only its own rows. The main ones:
   the store's annotation tables (`store/`), episode readings, accounts, cut measurements
@@ -289,28 +289,28 @@ The separate model-planning route can read banked lines or use plain clip facts.
 
 **Building the cut**
 
-- **Rules draft**: the film the no-model reader cuts (`editorial_rule_reader.py`,
-  `editorial_structure_planner.py`). It may read what a model already banked about the library,
-  which can only tighten it (`editorial_rule_banked_facts.py`). A birthday or a family visit
-  becomes its own story (`editorial_occasions.py`), as does a birthday film's own birthday
+- **Rules draft**: the film the no-model reader cuts (`stories/rule_reader.py`,
+  `structure/planner.py`). It may read what a model already banked about the library,
+  which can only tighten it (`stories/banked_facts.py`). A birthday or a family visit
+  becomes its own story (`stories/occasions.py`), as does a birthday film's own birthday
   (`Case.celebrated_birthday`, from `--birthday`), and every story is named from its facts: an
   occasion, a trip by its album or farthest place, a day out, days at home
-  (`editorial_story_names.py`, `editorial_rule_story_names.py`). Names are in the film's
+  (`stories/names.py`, `stories/rule_names.py`). Names are in the film's
   language (`story.*` in the film-text catalogues, CLDR dates), with the year when the film
   covers several. In a person film no story deepens past a quarter of the cut, half when
   dominant (`EditorialIntent.story_shares`, read by the depth fill).
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
-  in context and spaced from the shots already committed (`editorial_story_carriers.py`,
-  `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed
+  in context and spaced from the shots already committed (`selection/carriers.py`,
+  `facts/carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed
   ID card, passport or personal document is excluded on every tier (`personal_document` in
-  `editorial_carrier_eligibility.py`, shared with the screen/document gate,
-  `screen_document_rejections` in `editorial_source_gate.py`): a caption naming the document
+  `facts/carrier_eligibility.py`, shared with the screen/document gate,
+  `screen_document_rejections` in `reading/source_gate.py`): a caption naming the document
   excludes outright, and Immich's own OCR reading a personal-record field, a document title
   word, an MRZ line, a Luhn/IBAN-checked number or a named gift voucher corroborates the frame
-  head otherwise. `document_ocr_port` (`editorial_document_ocr.py`) reads that OCR: a server
+  head otherwise. `document_ocr_port` (`preparation/document_ocr.py`) reads that OCR: a server
   below 2.2, or a failed read, turns the signal off for the run rather than holding the library.
   Its bulk keyword search is built from the same word tuples the content check reads
-  (`PERSONAL_RECORD_FIELD_WORDS`, `DOCUMENT_TITLE_WORDS` in `editorial_carrier_eligibility.py`)
+  (`PERSONAL_RECORD_FIELD_WORDS`, `DOCUMENT_TITLE_WORDS` in `facts/carrier_eligibility.py`)
   so the two can't drift apart, runs against every configured account (not the primary's
   alone), and narrows which assets pay for the expensive per-asset read; a candidate the frame
   head already calls document-like is read anyway, since an MRZ line or a card number can't be
@@ -320,55 +320,55 @@ The separate model-planning route can read banked lines or use plain clip facts.
   `corroborated_document` turns it into `photograph` when the public `frame_kind` head is all but
   certain the frame is a place (a view from a summit, a plane or a drone), in
   `AssetAnnotationFactRepository` and `load_detector_heads` alike. The memory-worthy tier gate, the near-home test, the written-subject pool, chapter
-  assembly and the per-partition slot/depth caps live in `editorial_structure_framing.py`,
-  split out of `editorial_structure_planner.py`.
-  `CarrierAdmission` composes a `DepthFill` (`editorial_story_depth_fill.py`) for the pass after
+  assembly and the per-partition slot/depth caps live in `structure/framing.py`,
+  split out of `structure/planner.py`.
+  `CarrierAdmission` composes a `DepthFill` (`selection/depth_fill.py`) for the pass after
   pass 1/2: it spends what content-seconds budget is left on further distinct shots of the
   moments a story already shows, round-robin across stories in funding order, and logs one
   line and goes honestly short once distinct shots run out before the budget does. The split
   is a `DepthFillHost` protocol, not a mixin: `DepthFill` reads and mutates the admission's own
   state (carriers, places, lookalike, gate) through that contract.
-- **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
+- **Picture admission**: `PictureAdmission` (`selection/picture_admission.py`) owns the shared
   standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
   audience replacements, duplicate refills and family seats use it. Later candidates acquire
   their bounded facts before standing is refreshed; the private admission record names each
-  result. `editorial_carrier.py` binds every candidate to its own story context, and
-  `shot_reason.py` writes its reason from its own facts (who, what or where, what set it apart).
+  result. `selection/carrier.py` binds every candidate to its own story context, and
+  `facts/shot_reason.py` writes its reason from its own facts (who, what or where, what set it apart).
   Story allocation
   still owns depth and recovery; these are explicit exceptions, never inherited by a refill.
   Batch readmission seats representatives before accepted depth, then restores chronological
   order. An earlier depth picture cannot consume the spacing slot of the representative it
   supplements; standing, audience and duplicate checks still apply to both.
 - **Standing**: does a picture stand by itself, and may it serve as context inside its story.
-  Answered on every tier from the facts, never asked of a model (`editorial_standing_facts.py`: two
+  Answered on every tier from the facts, never asked of a model (`facts/standing_facts.py`: two
   points tables, heads alone or heads plus the ingest caption; a caption naming an animal, or a
   person Immich found a face for, is never refused; `face_evidence` reads the faces), and applied
-  by `StandingGate` (`editorial_story_standing.py`). An album handed over with a written subject
+  by `StandingGate` (`selection/standing.py`). An album handed over with a written subject
   (`generate --from-album --subject`, `EditorialIntent.pool_is_subject`) is a curated pool: its
   pictures stand on the subject whatever their score, every year it holds gets a shot, the filler
   pass skips it, and `stood_on_subject` in the story-selection record lists what got in that way.
 - **Look-alike / scene print**: a story's next picture is kept only if it adds to the ones already
-  kept (`editorial_story_lookalike.py`). The final review drops repeats by perceptual hash and by
+  kept (`selection/lookalike.py`). The final review drops repeats by perceptual hash and by
   scene print, the pooled DINOv2 vector of a preview, which catches the same scene in another
-  framing (`editorial_final_hash_review.py`, `editorial_scene_prints.py`).
+  framing (`selection/final_hash_review.py`, `preparation/scene_prints.py`).
   The rules draft carries its explicit starred-twin collapses into refinement. Final invariant
   checks follow that history only to a keeper still in the film; missing keepers and cycles
   remain violations.
 - **Block vote**: the shape of every model yes/no. At most 12 rows, asked twice, in source order
-  and in a hashed order; picked both times is firm, once is a maybe (`editorial_block_votes.py`).
+  and in a hashed order; picked both times is firm, once is a maybe (`polish/block_votes.py`).
 - **Thin layer / thin polish**: model mode's editing when `thin_model_layer` is on (the default).
   Separate date windows also draft from rules and demand episode context afterwards. The model
   reads the finished rules draft once and proposes replacements through the same gates. A vote-named
   shot stays until a replacement passes its final fit check; gate-refused shots stay excluded. Budget: 4
-  calls per 12 draft shots plus 4 per seat (`editorial_thin_layer.py`, `editorial_thin_*.py`).
+  calls per 12 draft shots plus 4 per seat (`polish/layer.py`, `editorial_thin_*.py`).
 - **Thesis-fit vote**: the thin layer's one question, "which of these shots adds nothing to this
   film?", asked reject-only as a block vote under the period thesis. Named by both orders is bad,
-  by one is weak (`editorial_thin_vote.py`).
-- **Seat**: a slot the polish may fill (`editorial_thin_refill.py`). **N**: a story with a notable
+  by one is weak (`polish/vote.py`).
+- **Seat**: a slot the polish may fill (`polish/refill.py`). **N**: a story with a notable
   record and no shot. **R**: replaces a shot the vote named bad. **T**: replaces a shot the gates
   refused. **D**: a swap for a weak shot, which needs no room. The **family seat** is a separate
   thing: one picture for a close family member the draft left out, on every tier
-  (`editorial_family_seat.py`).
+  (`structure/family_seat.py`).
 - **Audience / shareability**: the family-viewing gate, judged against the film's sharing level
   (`just_us`, `family`, `shareable`: `defaults.sharing`, `generate --sharing`, the brief's **Who will
   watch it**, carried by `EditorialRunContext.audience` into `StructurePlanningInput.audience` and the
@@ -378,7 +378,7 @@ The separate model-planning route can read banked lines or use plain clip facts.
   (`rule_audience_with_clean_share`). Flags hold first (`never_auto`, detector
   holds, exposure chains), then a reader answers `share`, `family_only` or `do_not_show` from the
   caption, heads and flags ingest banked. The strictest answer wins, the gate only ever tightens,
-  and only the owner clears a hold (`editorial_shareability*.py`): per picture, from the pool,
+  and only the owner clears a hold (`audience/`): per picture, from the pool,
   the storyboard or `pictures clear-hold`, written by `store/owner_decisions.py` as `source='owner'`
   flag rows. A cleared unit gets its clearance's level (`cleared` = share, `cleared_family` =
   family_only, `cleared_just_us` = just_us; `owner_verdict`) in `AudienceGate.verdict_of` before any
@@ -387,11 +387,11 @@ The separate model-planning route can read banked lines or use plain clip facts.
   pool. Owner rows stay off the editorial line, so a decision re-asks no reading. In a film shared outside the
   family, anything a detector head or exposure flag marked stays held whatever the text says
   (`editorial.strict_sharing`, on by default; applied per film, never banked). The activity question is answered only by **Laya**, a local 0.4B
-  text classifier over the compact ingest caption (`editorial_laya_reader.py`,
+  text classifier over the compact ingest caption (`audience/laya_reader.py`,
   `editorial.laya_audience`, off by default, Apple Silicon). The rules route runs it too when
   captions are prepared. Sharing never asks a prose LLM: detector/exposure flags hold without
   further review, and an unanswered caption stays with the family. Answer banks distinguish
-  Laya from the rules check. `editorial_shareability_tiers.py` selects this policy independently
+  Laya from the rules check. `audience/tiers.py` selects this policy independently
   of whether the film uses prose or polish.
 - **Picture evidence is banked**: the eight heads prepare facts before the rules draft. GPU and
   Full also prepare Marqo and Docling; their first draft retains that tier's detector policy.
@@ -406,20 +406,20 @@ The separate model-planning route can read banked lines or use plain clip facts.
   route to that, cold and warm, and `tests/test_audio_no_pictures.py` holds the music path to it
   and fails any `images=` argument in `audio/`, `processing/`, `titles/` or the music command.
 - **Exposure chain**: a capture run at least half flagged by the exposure head, with at least three
-  flagged captures, is held whole (`editorial_exposure_chains.py`).
+  flagged captures, is held whole (`audience/exposure_chains.py`).
 
 **Words from the post-card editor, still in the code**
 
 - **Workprint**: the evidence handed to the editor: every surviving moment in chronology with its
-  representative, plus the moment cards (`StructureWorkprint` in `selection_structure.py`,
-  `TextEditorialWorkprint` in `editorial_orchestration.py`).
+  representative, plus the moment cards (`StructureWorkprint` in `runtime/workprint.py`,
+  `TextEditorialWorkprint` in `runtime/orchestration.py`).
 - **Moment wall**: the moment cards rendered as compact TSV rows, at most 256 characters each and
-  no ids, for the text-only editor (`editorial_moment_wall.py`, `editorial_wall_rows.py`).
-  The wall and annotation lines compile exact literal checks through `private_token_matcher.py`;
+  no ids, for the text-only editor (`reading/moment_wall.py`, `reading/wall_rows.py`).
+  The wall and annotation lines compile exact literal checks through `reading/private_tokens.py`;
   each caller retains its own identifier collection policy.
 - **Post-card**: after the moment cards are built ("Building editorial cards -> Editing the
   memory"). The original post-card moment editor is retired; its contracts live in
-  `editorial_case.py`.
+  `reading/case.py`.
 
 ## Two Trees
 
@@ -471,17 +471,17 @@ The four core orchestrators and their composed services:
     clip a title deblurs out of, and builds one `TitleDividerPlanner`
     (title_divider_planner.py) per memory to place month/year/location cards
 
-**SmartPipeline** (analysis/smart_pipeline.py) is the pipeline surface the CLI and the UI
-drive. On the production route `build_smart_pipeline(editorial_context)` (editorial_runtime.py)
+**SmartPipeline** (analysis/runtime/smart_pipeline.py) is the pipeline surface the CLI and the UI
+drive. On the production route `build_smart_pipeline(editorial_context)` (runtime/composition.py)
 hands it a `RuntimeEditorialPlanner`, and `run_editorial_source()` runs preparation, the two
 readings, the structure and story planners and the timing certification, then projects the plan
-into a `PipelineResult` (editorial_projection.py). The route's seams are Protocol-typed ports
-rather than services: `EditorialRuntimePorts` (editorial_runtime_ports.py: providers, people
-loader), `ProductionPostCardBackend` (editorial_runtime_backend.py), `StructurePlannerPorts`
-(editorial_structure_contract.py: judges, banks, audience gate).
+into a `PipelineResult` (runtime/pipeline_result.py). The route's seams are Protocol-typed ports
+rather than services: `EditorialRuntimePorts` (runtime/ports.py: providers, people
+loader), `ProductionPostCardBackend` (runtime/backend.py), `StructurePlannerPorts`
+(film/contract.py: judges, banks, audience gate).
 
 `SmartPipeline` composes nothing else: the only seams it reads are `PipelineConfig.hdr_only`
-and the planner, and `ProgressTracker` (progress.py) is the run clock the stage reporter reads.
+and the planner, and `ProgressTracker` (runtime/progress.py) is the run clock the stage reporter reads.
 
 **ImmichClient** (api/immich.py) composes 5 services:
 - `SearchService` (search_service.py): video search and time bucket queries
@@ -564,6 +564,44 @@ these helper modules:
 - `generate_delivery.py`: Immich upload of a finished artifact + delivered/pending/failed run state
 - `delivery_timestamp.py`: the capture instant a film is filed under, and the container tags carrying it
 
+## Analysis stages
+
+`analysis/` is one package per pipeline stage. Each stage imports only the stages below it, and a
+module outside a stage imports only the modules that stage lists in its `__all__`. Top to bottom:
+
+| Stage | What it does | Entry modules |
+|---|---|---|
+| `runtime` | Composition: `SmartPipeline`, `build_smart_pipeline`, the production ports and backend | `smart_pipeline`, `composition`, `plan` |
+| `structure` | The structure planner and the passes a settled cut goes through | `planner`, `finishing`, `cut_invariants` |
+| `polish` | The thin model layer over a rules draft | `layer`, `block_votes` |
+| `selection` | Funded stories become admitted carriers: votes, standing, look-alikes, depth, trim | `story_planner`, `picture_admission` |
+| `stories` | The period account read into weighed stories, by a model or the rules reader | `period_account`, `rule_reader`, `weighing` |
+| `film` | The brief, the intent and the conserved planning input and wall | `contract`, `material`, `intent` |
+| `audience` | Who may see a picture: holds, exposure chains, the audience reader, Laya | `shareability`, `verdicts` |
+| `special_days` | Which days had something happen, and their names | `detection`, `sequence` |
+| `reading` | Annotation lines, episode readings, moment cards and period catalogues | `annotation_lines`, `episode_reader` |
+| `preparation` | The facts each picture owes, produced and banked before a film is read | `acquire`, `detectors`, `scope` |
+| `captions` | The optional caption producer and its contract | `requests`, `contract`, `identity` |
+| `clips` | What a kept clip plays: timing budget, motion, window, speech | `budget`, `motion_facts`, `video_windows` |
+| `facts` | Rules over a picture's banked facts, read without a model | `clip_frames`, `subject_framing`, `standing_facts` |
+| `sources` | The discovery pool for a window, album or household | `pool`, `household`, `window_context` |
+| `corpus` | The admitted corpus, copies, stacks, moments and the selection trace | `admission`, `groups`, `trace` |
+| `places` | Place names, home and trips | `names`, `trip_detection` |
+| `judgments` | Text requests, the banking gateway and strict JSON envelopes | `text_gateway`, `text_request` |
+| `llm` | The model transport: providers, dialects, batches, spend | `query`, `providers`, `metrics` |
+
+Two gates hold the layout. `make arch-check` runs the import-linter layers contract
+`analysis-stages-are-layered` (pyproject.toml), which follows indirect imports through the rest
+of the app; type-only imports are excluded, and three named edges outside `analysis/` are ignored
+with their reasons beside them. `make private-imports` (`scripts/check_private_imports.py`) fails
+on any module that imports another module's `_private` name or reads one off a module, and on any
+import of a stage module that stage keeps out of `__all__`. Tests are outside that gate: a test may
+read the private names of the module it tests.
+
+Configuration is the `config/` package: `config/loader.py` builds `Config`, the models live one per
+domain in `config/models/`, and `from immich_memories.config import Config` re-exports the names
+most callers need.
+
 ## Package Structure
 
 ```text
@@ -605,169 +643,296 @@ src/immich_memories/
 │   └── factory.py              # Registry + preset factories; Album is handled by cli/_album_generation.py
 │
 ├── analysis/                   # Selection: the story-first editorial route (words: see Editorial glossary)
-│   ├── smart_pipeline.py       # SmartPipeline: run_editorial_source() is the production entry
-│   ├── editorial_runtime.py    # RuntimeEditorialPlanner + build_smart_pipeline(); _ports.py, _backend.py beside it
-│   ├── editorial_runtime_evidence.py # The film-time preparation a cut waits on, and the annotation store it reads
-│   ├── editorial_film_preparation.py # NAS-first acquisition and live fact views for selected/candidate refinement
-│   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
-│   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
-│   ├── person_presence.py      # Who a person film may select: strictly the pictures whose own recognised faces satisfy the condition
-│   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
-│   ├── framing_target.py       # Where a zoomed view sits: on the film's subjects' faces (else the largest),
-│   │                           # keeping every other face that fits; the photo Ken Burns move
-│   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
-│   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
-│   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
-│   ├── editorial_rule_banked_facts.py # What a model already answered, read by the draft that asks nothing
-│   ├── editorial_occasions.py      # Birthdays and family visits, from birth dates and relations
-│   ├── editorial_story_names.py    # A story's name and purpose from its days, places and album
-│   ├── editorial_occurrence_runs.py # A film of several occurrences keeps each one's days in its own stories
-│   ├── editorial_rule_story_names.py # Occasions out of their week; trips by the install's trip rule
-│   ├── editorial_story_standing.py # StandingGate: does a picture stand by itself, and may it serve as context
-│   ├── editorial_standing_facts.py # Standing from facts, no model: heads (+ caption words), faces and animals never refused
-│   ├── editorial_final_hash_review.py # The final duplicate review every cut runs: cached preview hashes, then scene prints across stories
-│   ├── editorial_scene_prints.py   # CachedScenePrints: a preview's pooled DINOv2 pack, banked, for the scene half of that review
-│   ├── editorial_family_seat.py    # A close family member with no shot gets one seat, after the draft, on every tier
-│   ├── editorial_unvouched_filler.py # No-model cut's last pass: filler with no indicator that shows nothing leaves, unreplaced
-│   ├── editorial_clip_facts.py    # A kept video's window facts, measured once and banked: frame sizes off the
-│   │                              # index, loudness and speech over at most a minute of its sound (#1949)
-│   ├── editorial_video_windows.py # Where inside each kept video the hold sits: a clear picture peak, else the
-│   │                              # loudest moment, else the most speech; before speech resolution (#1949)
-│   ├── editorial_cut_invariants.py # One check of the finished cut against every pass's promise (seat, favourite, eras, Live motion, holds, order); changes nothing
-│   ├── editorial_story_candidates.py # Every picture of a story as a carrier row, for a stage that adds a shot
-│   ├── editorial_thin_layer.py     # ThinPolish: the model reads a rules cut once instead of planning the film;
-│   │                               # held to 4 calls per 12 draft shots + 4 per seat (thin_budget)
-│   ├── editorial_thin_step.py      # The planner's polish step; an unpolished draft (unread period) gets the no-model passes
-│   ├── editorial_film_summary.py   # The film's summary: the period's account and the cut's stories on Full, story names on Basic
-│   ├── editorial_thin_catalogue.py # What a polish may read of a catalogued period: account, stories, hints
-│   ├── editorial_picture_admission.py # Shared candidate preparation and standing, audience, spacing and repetition checks
-│   ├── editorial_carrier.py        # A playable picture bound to its own story context
-│   ├── shot_reason.py              # Why a shot plays, in words, from its own facts
-│   ├── editorial_thin_vote.py      # One closed thesis-fit vote over the whole cut, in balanced blocks,
-│   │                               # source order first, the hashed order only where it decides
-│   │                               # rows carry close family relations; a relative's only shot is held
-│   │                               # and so is a year's only shot (voice_per_partition); a year keeps one;
-│   │                               # and a story's only texture shot (editorial_shot_kinds)
-│   ├── editorial_shot_kinds.py     # Portrait or texture, off the frame/people/activity heads; the kind mix
-│   ├── editorial_thin_pages.py     # What a seat is offered: motion first, records first, the refused moment first
-│   ├── editorial_thin_short.py     # A short cut reads ≤2·⌈S/3.5⌉ unread episodes of shot-less stories;
-│   │                               # only a story whose reading records a moment gets a seat
-│   ├── editorial_thin_refill.py    # Which seats open; each picks from 12 rows first, then only the picks
-│   │                               # meet the gates, and a refused pick is picked once more; a removal's
-│   │                               # seat takes its freed seconds, and refill pages lead with the lacking kind;
-│   │                               # a vote-named shot's refill comes from another moment
-│   ├── editorial_laya_onnx.py      # Portable Laya tokenizer and batched ONNX scorer (CUDA or CPU).
-│   ├── editorial_laya_reader.py    # Laya answers the activity question from compact captions;
-│   │                               # cached answers include checkpoint contents, runtime and threshold.
-│   │                               # Enabled for gpu/full tiers by editorial.laya_audience; the sharing
-│   │                               # question never goes to an LLM: what Laya leaves, heads + rules decide
-│   ├── library_catalogue.py    # The account of a month/year (or a multi-year window: one per year
-│   │                           # plus one over them), written over banked episode readings
-│   │                           # (plus the no-model facts of episodes a cut did not read), keyed by
-│   │                           # them plus the model that wrote them
-│   ├── catalogue_runtime.py    # Who writes one: `prepare --overviews` over a window, and a film run
-│   │                           # over a month, year or window the library has no account of yet
-│   ├── episode_demand.py      # The draft reads the period from facts; only the episodes its shots
-│   │                          # sit in are read by the model, when the polish layer asks for the account
-│   │                          # Latest demanded-reading availability reaches the final private plan;
-│   │                          # unresolved readings also warn in the trace, recovered ones stay banked
-│   ├── editorial_home_radius.py    # Where home is, and whether captures sit inside its radius
-│   ├── editorial_shareability_tiers.py  # Audience evidence policy for reduced preparation tiers
-│   ├── editorial_review_list.py    # The finished cut's shots in the detector's 0.2-0.5 grey zone that
-│   │                               # nothing else holds; a list for the owner, never a gate
-│   ├── editorial_exposure_chains.py # A five-minute capture run half flagged, with 3+ flagged in it,
-│   │                                # is held whole: the hold the detector's per-picture answer misses
-│   ├── editorial_preparation*.py   # Annotation preparation: captions, public heads, detectors, pixel facts,
-│   │                               # motion lines (one caption-seat sentence per video, read by
-│   │                               # the pick).
-│   │                               # _previews.py fetches, verifies and caches the preview every
-│   │                               # stage reads. Every broad per-picture handler here lets
-│   │                               # AccountReadFailed through (test_account_read_escapes.py).
-│   │                               # _model_facts.py plans who answers each model producer;
-│   │                               # _detector_frames.py samples a video's eight frames for the
-│   │                               # exposure head, through the motion line's keyframe reader
-│   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
-│   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
-│   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
-│   │                           # and routes the run's AccessBoundClient; `HouseholdWindows` is the same
-│   │                           # read for person presence in discovery; the kept copy of each exact-copy
-│   │                           # group and its account are frozen in the attempt's source snapshot, and
-│   │                           # `runs render` reads that copy through that account
-│   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
-│   │                           # each episode's notable moments, which the polish layer seats and protects
-│   ├── text_episode_prompt.py  # What that reading is asked, and what it may take a name from
-│   │                           # (a film's on-demand reading asks the lean form: no Cull, one representative)
-│   ├── prose_shapes.py         # The JSON shape each prose seat asks for (response_format json_schema)
-│   ├── text_episode_paging.py  # Its request limits: an episode cut into pages, pages packed into prompts
-│   ├── editorial_album_index.py # Album names by asset, one listing + one read per album, once per run
-│   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, vote, carriers: the story planner
-│   │                           # (editorial_story_vote.py: the two-order model vote over a story's shortlisted moments)
-│   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
-│   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
-│   ├── editorial_repeat_exemptions.py # What no repetition check refuses (favourite, close family's only shot), shared with the final review
-│   ├── editorial_unused_reasons.py # The planning rule that left each unused picture of a story out
-│   ├── editorial_story_capacity.py # A story's capacity: capture groups offered, folded to what it can show
-│   │                               # distinctly (the final review's own hash+scene rule), but only for a
-│   │                               # story whose unfolded grant would have exceeded that; a clean story's
-│   │                               # allocation is untouched
-│   ├── editorial_story_replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
-│   │                               # story's unshown moments, then other stories' moments that never took a slot
-│   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
-│   ├── editorial_story_depth_fill.py # CarrierAdmission's depth pass, split out: spends content seconds on
-│   │                               # distinct shots round-robin across stories, goes short and logs when they run out
-│   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
-│   ├── editorial_story_threads.py   # A recurring activity at one place is one story per era, if the reader agrees
-│   ├── editorial_same_kind.py       # No-model: dense same-label stories at one place in one partition share one story's depth
-│   ├── editorial_event_story.py     # No-model: a dense, distinct one-off inside a home story is its own event story
-│   ├── editorial_story_places.py    # One place of a scope holds only the share of it a trip of that length would
-│   ├── editorial_page_recovery.py  # Bounded ask/retry/repair for a stage that reads its own JSON envelope
-│   ├── provider_failure.py     # What a 4xx/5xx means: refused, come back later, down, or a bad credential
-│   ├── llm_single_flight.py    # One paid answer per judgment key, however many readers ask at once
-│   ├── editorial_structure_*.py    # The structure planner: wall, subject/trip admission + standing gates, audience, record
-│   │                               # _finishing.py holds PlanRun and the passes that run over a settled cut
-│   │                               # (motion/timing, audience gate, duplicate review, trim)
-│   │                               # _framing.py: near-home test, subject pool, chapters, worthiness tier, partition budget
-│   ├── editorial_projection.py # Plan -> PipelineResult, and the stage reporter
-│   ├── provider_health.py      # ProviderHealth: what a provider's answer says about its availability (preflight)
-│   ├── selection_trace.py      # Per-stage funnel record: what each filter received and let through
-│   ├── editorial_left_out.py   # Why the final cut left each picture out (gate verdict, pass reason, or unused)
-│   ├── progress.py             # ProgressTracker: the run clock the stage reporter reads
-│   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
-│   ├── trip_legs.py            # Where a trip changes where it stays: areas of stay become legs (#1563)
-│   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
-│   ├── place_geocoder.py       # Opt-in Nominatim: city/village names per ~1 km cell, cached in the store
-│   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips
-│   ├── special_day.py          # Every run of activity, and a found day named from its own lines
-│   ├── special_day_sequence.py # Days read a month at a time in order (close family by role on each line); 30 s film floor
-│   ├── prepared_captions.py    # Exact-producer caption reads for music and special-day text calls
-│   ├── special_day_title.py    # What a day may be called: the grounding guard, the re-ask, the fallback
-│   ├── album_source.py         # Album mode: the album is the candidate pool, nothing is searched for
-│   ├── source_filter.py        # Drop doorbell / dashcam / screen-recorder uploads by filename
-│   ├── source_quality.py       # Drop messaging re-encodes: sub-1080p with no camera EXIF
-│   ├── selection_source_validation.py # Source admission; `film_may_use` lets the CLI size a film and count a birthday's history on what admission keeps
-│   ├── forwarded_fallback.py   # Opt-in: the forwarded copies that fill gaps in a film's camera timeline, a gap's share at most
-│   ├── forwarded_copy_checks.py # A copy that is a collage (flat gutters, or its caption says so) never stands in
-│   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
-│   ├── picture_copies.py       # One picture stored as several files: fold, keep the most pixels
-│   ├── llm_failures.py         # Separate "the model could not answer" from a bug in the calling code
-│   ├── duplicate_hashing.py    # Perceptual hashing for duplicates
-│   ├── thumbnail_prefetch.py   # cached_preview_bytes(): the one preview reader the editorial modules share
-│   ├── llm_query.py            # The live transport: one prompt, one connection, one answer
-│   ├── llm_adaptations.py      # Capability refusals: remembered request changes, schema/object fallback
-│   ├── llm_wire.py             # The two request dialects, what a reply says, and the reasoning budget
-│   ├── llm_batch.py            # A stage's independent prompts as one provider batch (half price, async): the two wire dialects and their transports
-│   ├── llm_providers.py        # Named providers: their URL, their adapter, the way they reason
-│   ├── llm_preparation_usage.py # Caption/control/motion usage, including unmetered failed attempts
-│   ├── llm_usage_record.py     # Atomic usage checkpoints, split per model/stage, with unknown usage
-│   ├── live_photo_pipeline.py  # Keep a Live Photo's video half out of the video pool
-│   ├── added_live_motion.py    # A Live Photo added in review: stitched with its neighbours, motion only at the floor and moving
-│   ├── live_clock_offsets.py   # BankedClockOffsets: a burst's companion clock offsets, measured
-│   │                           # once per pair (each companion fetched and decoded once) and banked
-│   └── motion_rendering.py     # What a photograph could show as motion, if the memory wants it;
-│                               # may_play: a stitch or a lone clip lasting the motion floor
-│                               # (2.5 s); still_reason says why not. The draft plans every burst on
-│                               # metadata (plan_before_measuring); UnitBuilder.measured_stitch
-│                               # measures only the bursts the cut keeps, when motion is resolved
+│   ├── __init__.py             # The stages, top to bottom; each imports only the stages below it,
+│   │                           # and only the modules a stage lists in __all__ (make arch-check, make private-imports)
+│   ├── runtime/                # Composition: from `SmartPipeline` to the planner, with the production ports wired in.
+│   │   ├── backend.py          # Production structure-planning seam shared by the product route and sealed replays.
+│   │   ├── composition.py      # RuntimeEditorialPlanner + build_smart_pipeline(); ports.py and backend.py beside it
+│   │   ├── contact_sheets.py   # One encoded, numbered contact-sheet format for every editorial pass.
+│   │   ├── cull_pass.py        # Reject-only Pass 1 over banked episode scans and retained atlas pixels.
+│   │   ├── duration_advisory.py # Public duration advisories from the planner's recorded outcome.
+│   │   ├── evidence.py         # The film-time preparation a cut waits on, and the annotation store it reads
+│   │   ├── film_preparation.py # NAS-first acquisition and live fact views for selected/candidate refinement
+│   │   ├── film_reach.py       # What a film prepares: its demanded pictures, their Live families and capture runs
+│   │   ├── left_out.py         # Why the final cut left each picture out (gate verdict, pass reason, or unused)
+│   │   ├── live_source_integrity.py # Retained Live originals are playable only under a byte-bound presentation proof.
+│   │   ├── orchestration.py    # TextEditorialPlanner: episodes -> cards -> edit
+│   │   ├── period_accounts.py  # Who writes one: `prepare --overviews` over a window, and a film run
+│   │   │                       # over a month, year or window the library has no account of yet
+│   │   ├── pipeline_result.py  # Plan -> PipelineResult, and the stage reporter
+│   │   ├── plan.py             # Small production seam for an editorial planner to choose the finished cut.
+│   │   ├── ports.py            # Replaceable production edges for the store-backed editorial planner.
+│   │   ├── progress.py         # Elapsed time for one editorial run, as the CLI and UI displays read it.
+│   │   ├── smart_pipeline.py   # SmartPipeline: run_editorial_source() is the production entry
+│   │   ├── source_route.py     # Metadata demand and exact render projection for the production editorial route.
+│   │   └── workprint.py        # Conserved chronological workprint for the production Structure pass.
+│   ├── structure/              # The film's structure, planned and finished: the pass that turns material into a cut.
+│   │   ├── carrier_projection.py # Whether a carrier row can render from its source media, asked before the film finalizes.
+│   │   ├── cut_invariants.py   # One check of the finished cut against every pass's promise (seat, favourite, eras, Live motion, holds, order); changes nothing
+│   │   ├── family_seat.py      # A close family member with no shot gets one seat, after the draft, on every tier
+│   │   ├── film_summary.py     # The film's summary: the period's account and the cut's stories on Full, story names on Basic
+│   │   ├── finishing.py        # The passes a settled cut goes through, and the run they mutate.
+│   │   ├── framing.py          # Decisions the structure planner makes about what the film is of, before and around selection.
+│   │   ├── owner_required.py   # Admit the pictures the owner ticked after seeing a cut.
+│   │   ├── people_condition.py # Apply the fetch's own people-condition rule once, to the whole pool, before planning.
+│   │   ├── picture_ladders.py  # How much picture depth a playable duration can carry.
+│   │   ├── planner.py          # Shared production structure planning over conserved factual inputs.
+│   │   ├── planning_input.py   # Adapt the conserved product workprint into structure-planning evidence.
+│   │   ├── record.py           # What the planner writes down: the plan dict, the selection sheet and the run summary.
+│   │   ├── thin_step.py        # The planner's polish step; an unpolished draft (unread period) gets the no-model passes
+│   │   └── unvouched_filler.py # No-model cut's last pass: filler with no indicator that shows nothing leaves, unreplaced
+│   ├── polish/                 # The thin model layer: one read of a rules draft, polished instead of re-planned.
+│   │   ├── block_votes.py      # Two-order block votes: the judgment shape that held across the matrix.
+│   │   ├── catalogue.py        # What a polish may read of a catalogued period: account, stories, hints
+│   │   ├── layer.py            # ThinPolish: the model reads a rules cut once instead of planning the film;
+│   │   │                       # held to 4 calls per 12 draft shots + 4 per seat (thin_budget)
+│   │   ├── pages.py            # What a seat is offered: motion first, records first, the refused moment first
+│   │   ├── refill.py           # Which seats open; each picks from 12 rows first, then only the picks
+│   │   │                       # meet the gates, and a refused pick is picked once more; a removal's
+│   │   │                       # seat takes its freed seconds, and refill pages lead with the lacking kind;
+│   │   │                       # a vote-named shot's refill comes from another moment
+│   │   ├── short.py            # A short cut reads ≤2·⌈S/3.5⌉ unread episodes of shot-less stories;
+│   │   │                       # only a story whose reading records a moment gets a seat
+│   │   ├── shot_kinds.py       # Portrait or texture, off the frame/people/activity heads; the kind mix
+│   │   └── vote.py             # One closed thesis-fit vote over the whole cut, in balanced blocks,
+│   │                           # source order first, the hashed order only where it decides
+│   │                           # rows carry close family relations; a relative's only shot is held
+│   │                           # and so is a year's only shot (voice_per_partition); a year keeps one;
+│   │                           # and a story's only texture shot (polish/shot_kinds.py)
+│   ├── selection/              # Funded stories become admitted carriers: votes, standing, look-alikes, depth and trim.
+│   │   ├── candidates.py       # Every picture of a story as a carrier row, for a stage that adds a shot
+│   │   ├── capacity.py         # A story's capacity: capture groups offered, folded to what it can show
+│   │   │                       # distinctly (the final review's own hash+scene rule), but only for a
+│   │   │                       # story whose unfolded grant would have exceeded that; a clean story's
+│   │   │                       # allocation is untouched
+│   │   ├── carrier.py          # A playable picture bound to its own story context
+│   │   ├── carriers.py         # From funded stories to admitted carriers.
+│   │   ├── completion.py       # Stop marginal reserve search using the duration of already retained pictures.
+│   │   ├── depth.py            # A short film's free slots as verified-different frames inside shown moments
+│   │   ├── depth_fill.py       # CarrierAdmission's depth pass, split out: spends content seconds on
+│   │   │                       # distinct shots round-robin across stories, goes short and logs when they run out
+│   │   ├── final_hash_review.py # The final duplicate review every cut runs: cached preview hashes, then scene prints across stories
+│   │   ├── lookalike.py        # A story's further picture is refused when it repeats one it holds
+│   │   ├── pick_contract.py    # Complete, bounded moment-pick responses: what a reader is asked and how its pick is read.
+│   │   ├── pick_pages.py       # Cut one story's pick into requests a reader can answer, and split its grant between them.
+│   │   ├── picture_admission.py # Shared candidate preparation and standing, audience, spacing and repetition checks
+│   │   ├── places.py           # One place of a scope holds only the share of it a trip of that length would
+│   │   ├── repeat_exemptions.py # What no repetition check refuses (favourite, close family's only shot), shared with the final review
+│   │   ├── replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
+│   │   │                       # story's unshown moments, then other stories' moments that never took a slot
+│   │   ├── standing.py         # StandingGate: does a picture stand by itself, and may it serve as context
+│   │   ├── story_planner.py    # Story-first selection over reusable episode assessments.
+│   │   ├── trim.py             # The allocation in reverse when the production budget is tighter
+│   │   ├── unused_reasons.py   # The planning rule that left each unused picture of a story out
+│   │   └── vote.py             # The two-order model vote that decides which depicted moments tell a story.
+│   ├── stories/                # The period account read into weighed stories, by a model or by the rules reader.
+│   │   ├── banked_facts.py     # What a model already answered, read by the draft that asks nothing
+│   │   ├── event_story.py      # No-model: a dense, distinct one-off inside a home story is its own event story
+│   │   ├── grouping.py         # Group day episodes into the stories of one memory, then weigh them.
+│   │   ├── names.py            # A story's name and purpose from its days, places and album
+│   │   ├── occasions.py        # Birthdays and family visits, from birth dates and relations
+│   │   ├── occurrence_runs.py  # A film of several occurrences keeps each one's days in its own stories
+│   │   ├── period_account.py   # A duration-independent account of the stories supported by a memory's sources.
+│   │   ├── replies.py          # Read what a small model answered about a period's stories.
+│   │   ├── rule_episodes.py    # Factual episode cards / omitted thesis; no semantic-bank writes
+│   │   ├── rule_names.py       # Occasions out of their week; trips by the install's trip rule
+│   │   ├── rule_quality.py     # Which picture of a capture group is most entitled to carry the moment it shows.
+│   │   ├── rule_reader.py      # Rules for worthiness, grouping and standing; shared allocation
+│   │   ├── same_kind.py        # No-model: dense same-label stories at one place in one partition share one story's depth
+│   │   ├── shortlist.py        # The moments a story can show, and the sample offered to the model.
+│   │   ├── slots.py            # Words to slots: how a story's weight, and the partitions it falls in, become picture slots.
+│   │   ├── threads.py          # A recurring activity at one place is one story per era, if the reader agrees
+│   │   ├── trips.py            # Detected trips become one story per leg, with a reserve for each leg's length
+│   │   ├── weighing.py         # Weigh the stories of one memory over bounded tables with shared period context.
+│   │   ├── weight_audit.py     # Describe missing weighting judgments without changing editorial decisions.
+│   │   └── weight_contract.py  # Validate complete story decisions before any allocation or editorial mutation.
+│   ├── film/                   # The film's brief and working material: what the planner is asked and what it reads.
+│   │   ├── contract.py         # Conserved inputs and replaceable effects of the structure planner.
+│   │   ├── intent.py           # Typed product obligations the editorial planner must satisfy before it selects anything.
+│   │   ├── intent_validation.py # Deterministic checks of a plan against its EditorialIntent (tracker D09, D14).
+│   │   ├── lines.py            # What one picture's annotation line says, and the anchor row the memory-worthy gate reads.
+│   │   ├── material.py         # The captured production wall, read into the happenings and playable units of the period.
+│   │   └── product_brief.py    # Stable product stance shared by production editorial entry points.
+│   ├── audience/               # Who may see a picture: detector holds, exposure chains, the audience reader and Laya.
+│   │   ├── exposure_chains.py  # A five-minute capture run half flagged, with 3+ flagged in it,
+│   │   │                       # is held whole: the hold the detector's per-picture answer misses
+│   │   ├── laya_onnx.py        # Portable Laya tokenizer and batched ONNX scorer (CUDA or CPU).
+│   │   ├── laya_reader.py      # Laya answers the activity question from compact captions;
+│   │   │                       # cached answers include checkpoint contents, runtime and threshold.
+│   │   │                       # Enabled for gpu/full tiers by editorial.laya_audience; the sharing
+│   │   │                       # question never goes to an LLM: what Laya leaves, heads + rules decide
+│   │   ├── questions.py        # What the audience reader is asked, and how its answers are read.
+│   │   ├── review_list.py      # The finished cut's shots in the detector's 0.2-0.5 grey zone that
+│   │   │                       # nothing else holds; a list for the owner, never a gate
+│   │   ├── shareability.py     # Shareability rules shared by the production structure editor and matrix adapter.
+│   │   ├── tiers.py            # Audience evidence policy for reduced preparation tiers
+│   │   └── verdicts.py         # Who may see a picture: the audience verdict per candidate, banked by its evidence key.
+│   ├── special_days/           # Which days had something happen on them, and what each one may be called.
+│   │   ├── detection.py        # Every run of activity, and a found day named from its own lines
+│   │   ├── holiday.py          # Whether a special day was the holiday it fell on, or something else that happened that day.
+│   │   ├── sequence.py         # Days read a month at a time in order (close family by role on each line); 30 s film floor
+│   │   ├── title.py            # What a day may be called: the grounding guard, the re-ask, the fallback
+│   │   └── vocabulary.py       # Days whose own words stand out from their year, proposed to the day check.
+│   ├── reading/                # Banked facts read into text: annotation lines, dated episodes, moments and period accounts.
+│   │   ├── annotation_lines.py # Render one complete, stable text line from live source and stored annotations.
+│   │   ├── case.py             # The editorial case and text-request contracts the story-first planner and runtime share.
+│   │   ├── cull_answer.py      # Strict parsing for the two Cull buckets, asked inside each episode's scope.
+│   │   ├── demand.py           # The draft reads the period from facts; only the episodes its shots
+│   │   │                       # sit in are read by the model, when the polish layer asks for the account
+│   │   │                       # Latest demanded-reading availability reaches the final private plan;
+│   │   │                       # unresolved readings also warn in the trace, recovered ones stay banked
+│   │   ├── episode_answers.py  # Read a text episode answer with page-scoped label normalization.
+│   │   ├── episode_documents.py # Compact factual episode documents for production retrieval.
+│   │   ├── episode_paging.py   # Its request limits: an episode cut into pages, pages packed into prompts
+│   │   ├── episode_prompt.py   # What that reading is asked, and what it may take a name from
+│   │   │                       # (a film's on-demand reading asks the lean form: no Cull, one representative)
+│   │   ├── episode_reader.py   # Reading event evidence (paged, banked); the same reading names
+│   │   │                       # each episode's notable moments, which the polish layer seats and protects
+│   │   ├── event_families.py   # Deterministic event-family grouping over normalized production wall facts.
+│   │   ├── evidence_provenance.py # Per-episode provenance for the evidence an episode reading was keyed from.
+│   │   ├── library_catalogue.py # Build month and year accounts over the editor's existing episode bank.
+│   │   ├── moment_cards.py     # Deterministic full-moment cards over banked annotations and episode meaning.
+│   │   ├── moment_contract.py  # The moment and card shapes the editorial case hands to the moment wall.
+│   │   ├── moment_wall.py      # Compact, privacy-safe wire wall for the text-only production editor.
+│   │   ├── people_identities.py # Privacy-safe people identities for editorial prompts and lifecycle rules.
+│   │   ├── person_period_facts.py # Dated people evidence kept apart from bounded scene descriptions.
+│   │   ├── private_tokens.py   # Exact casefolded literal matching for provider-facing privacy gates.
+│   │   ├── prose_shapes.py     # The JSON shape each prose seat asks for (response_format json_schema)
+│   │   ├── source_gate.py      # The matrix's factual screen/document gate, shared with production acquisition.
+│   │   └── wall_rows.py        # Lossless wall rows shared by the production structure editor and replay tools.
+│   ├── preparation/            # The facts each picture owes, produced and banked before a film is read.
+│   │   ├── acquire.py          # Acquire the accepted annotation producers before any story selection calls.
+│   │   ├── demanded_previews.py # Fetch a missing preview only when native hashing or picture evidence demands its source.
+│   │   ├── detector_frames.py  # The frames a video is decided on: eight across its length, not one early preview.
+│   │   ├── detectors.py        # Portable detector producers, isolated in a cancellable configured Python worker.
+│   │   ├── document_ocr.py     # The run's per-asset OCR text reader, bounded to a cold year under an hour (#2062).
+│   │   ├── edits.py            # What a picture owes again once Immich's own editor has touched it (#2114).
+│   │   ├── heads.py            # Required public context heads, using the existing verified DINO encoder.
+│   │   ├── model_facts.py      # Which model producer still owes a fact, and who is allowed to answer for it.
+│   │   ├── motion_lines.py     # One line of motion per video, asked once of the caption seat and banked like a caption.
+│   │   ├── obstruction_bank.py # Bank the finger-over-the-lens reading for every preview, on the same encoder (#2022).
+│   │   ├── pixels.py           # The accepted pixel-facts-v1 recipe (its JPEG quality is deliberately 85).
+│   │   ├── prepared_captions.py # Read prepared captions for text consumers outside the selection reader.
+│   │   ├── previews.py         # The preview every preparation stage reads: fetched once, verified, and cached.
+│   │   ├── remote.py           # Resume remote classification from the same missing-facts ledger as local work.
+│   │   ├── remote_facts.py     # HTTP transport for the same frozen facts the in-process producers bank.
+│   │   ├── remote_frames.py    # Remote readings of sampled frames, banked only after a complete clip answer.
+│   │   ├── report.py           # What preparation cost, per picture and per producer, in units a person can act on.
+│   │   ├── scene_prints.py     # CachedScenePrints: a preview's pooled DINOv2 pack, banked, for the scene half of that review
+│   │   ├── scope.py            # Prepare a scope's annotations: the pipeline `prepare` and `--ask` share.
+│   │   └── thumbnail_hashes.py # Reuse the exact duplicate hash without decoding unchanged preview bytes again.
+│   ├── captions/               # The optional caption producer: its request wire, the measured contract and banked outcomes.
+│   │   ├── contract.py         # Measured public caption contract used by the store-backed editorial slice.
+│   │   ├── identity.py         # Identity of opt-in image descriptions, independent of the SmolVLM bank.
+│   │   ├── outcomes.py         # Account for bounded invalid caption completions without inventing a description.
+│   │   ├── requests.py         # Portable compact-v3 caption requests, sharing the accepted wire and outcome contract.
+│   │   ├── usage.py            # Caption/control/motion usage, including unmetered failed attempts
+│   │   └── wire.py             # Exact compact-caption image and request bytes shared by acquisition and audit.
+│   ├── clips/                  # What a kept clip plays: its timing budget, motion, window and speech.
+│   │   ├── added_live_motion.py # A Live Photo added in review: stitched with its neighbours, motion only at the floor and moving
+│   │   ├── bound_sample.py     # Content-bound sampled evidence; sample identities are never library asset IDs.
+│   │   ├── budget.py           # The duration and motion constants the production structure editor plans against.
+│   │   ├── clip_facts.py       # A kept video's window facts, measured once and banked: frame sizes off the
+│   │   │                       # index, loudness and speech over at most a minute of its sound (#1949)
+│   │   ├── live_clock_offsets.py # BankedClockOffsets: a burst's companion clock offsets, measured
+│   │   │                       # once per pair (each companion fetched and decoded once) and banked
+│   │   ├── motion_facts.py     # Measure motion only for chosen Live Photo carriers, with exact source reuse.
+│   │   ├── motion_outcomes.py  # Replay one attempt's unavailable motion without poisoning shared measurements.
+│   │   ├── motion_rendering.py # What a photograph could show as motion, if the memory wants it;
+│   │   │                       # may_play: a stitch or a lone clip lasting the motion floor
+│   │   │                       # (2.5 s); still_reason says why not. The draft plans every burst on
+│   │   │                       # metadata (plan_before_measuring); UnitBuilder.measured_stitch
+│   │   │                       # measures only the bursts the cut keeps, when motion is resolved
+│   │   ├── speech.py           # Speech evidence for retained videos, projected onto the actual stitched timeline.
+│   │   ├── unit_motion.py      # Whether a unit plays as motion, and what kind of source the reader is told it is.
+│   │   ├── video_motion.py     # A real video's measured motion, read off the frames the exposure head already sampled.
+│   │   └── video_windows.py    # Where inside each kept video the hold sits: a clear picture peak, else the
+│   │                           # loudest moment, else the most speech; before speech resolution (#1949)
+│   ├── facts/                  # What a picture's banked facts say, read without a model.
+│   │   ├── carrier_eligibility.py # Known screen and document sources remain evidence, never scene carriers.
+│   │   ├── clip_frames.py      # Whether a clip shows its moment across its frames, not only in the frame Immich previews.
+│   │   ├── framing_target.py   # Where a zoomed view sits: on the film's subjects' faces (else the largest),
+│   │   │                       # keeping every other face that fits; the photo Ken Burns move
+│   │   ├── line_fields.py      # Which parts of a picture's line are its content and which we wrote; content rules read only the first
+│   │   ├── obstruction.py      # The finger-over-the-lens check: a rank-only warning, never a drop (#2022).
+│   │   ├── shot_reason.py      # Why a shot plays, in words, from its own facts
+│   │   ├── standing_facts.py   # Standing from facts, no model: heads (+ caption words), faces and animals never refused
+│   │   └── subject_framing.py  # Whether a picture shows the people it names, read off the faces in it.
+│   ├── sources/                # What a film may use: the discovery pool for one window, album or household.
+│   │   ├── album.py            # Album mode: the album is the candidate pool, nothing is searched for
+│   │   ├── album_index.py      # Album names by asset, one listing + one read per album, once per run
+│   │   ├── event_scope.py      # Exact discovered-event membership, shared by product and validation entry points.
+│   │   ├── household.py        # A run naming its accounts (`EditorialRunContext.accounts`) reads the
+│   │   │                       # window per account, keeps chosen owners only, tags `Asset.access_accounts`
+│   │   │                       # and routes the run's AccessBoundClient; `HouseholdWindows` is the same
+│   │   │                       # read for person presence in discovery; the kept copy of each exact-copy
+│   │   │                       # group and its account are frozen in the attempt's source snapshot, and
+│   │   │                       # `runs render` reads that copy through that account
+│   │   ├── live_photos.py      # Keep a Live Photo's video half out of the video pool
+│   │   ├── person_presence.py  # Who a person film may select: strictly the pictures whose own recognised faces satisfy the condition
+│   │   ├── person_resolution.py # A name or UUID -> faces: the store's aliases per read account, else the roster
+│   │   ├── pool.py             # One completed source boundary between discovery and every kind of film.
+│   │   ├── snapshot.py         # Private, typed source metadata for reproducing a planning attempt.
+│   │   ├── thumbnail_prefetch.py # cached_preview_bytes(): the one preview reader the editorial modules share
+│   │   ├── trip_discovery.py   # Shared UI/CLI all-asset discovery, including year-boundary trips
+│   │   └── window_context.py   # Acquire canonical photo and video context for exact editorial windows.
+│   ├── corpus/                 # The admitted corpus every editorial pass reads, and what keeps a source out of it.
+│   │   ├── admission.py        # Acquire and admit the source-eligible corpus every editorial pass reads.
+│   │   ├── asset_merit.py      # How much an asset is worth showing, on one scale for photographs and video.
+│   │   ├── duplicate_hashing.py # Perceptual hashing for duplicates
+│   │   ├── exact_copies.py     # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
+│   │   ├── favourite_law.py    # Within a moment, the favourite wins. Always.
+│   │   ├── forwarded_checks.py # A copy that is a collage (flat gutters, or its caption says so) never stands in
+│   │   ├── forwarded_fallback.py # Opt-in: the forwarded copies that fill gaps in a film's camera timeline, a gap's share at most
+│   │   ├── generated_provenance.py # The films this app made and put back in the library, so it never films them again.
+│   │   ├── groups.py           # Canonical chronological grouping of the admitted corpus, and its projections.
+│   │   ├── moment_grouping.py  # Group assets into moments by time AND place, foreign media already gone.
+│   │   ├── name_filter.py      # Drop doorbell / dashcam / screen-recorder uploads by filename
+│   │   ├── picture_copies.py   # One picture stored as several files: fold, keep the most pixels
+│   │   ├── quality.py          # Drop messaging re-encodes: sub-1080p with no camera EXIF
+│   │   ├── records.py          # Immutable records exchanged between editorial selection passes.
+│   │   ├── rendering.py        # The Live Photo rendering family a burst carries into the admitted corpus.
+│   │   ├── stacks.py           # Stack members folded into their primary before the editor sees them.
+│   │   ├── trace.py            # Per-stage funnel record: what each filter received and let through
+│   │   ├── validation.py       # Source admission; `film_may_use` lets the CLI size a film and count a birthday's history on what admission keeps
+│   │   └── visual_atlas.py     # Local visual evidence that can be reused across editorial contact sheets.
+│   ├── places/                 # Where pictures were taken: place names, home, and the trips away from it.
+│   │   ├── familiar.py         # Coordinate validation shared by place matching and home detection.
+│   │   ├── geocoder.py         # Opt-in Nominatim: city/village names per ~1 km cell, cached in the store
+│   │   ├── home_radius.py      # Where home is, and whether captures sit inside its radius
+│   │   ├── names.py            # One place name for every surface that shows one (#1591).
+│   │   ├── scope.py            # The geographic groups and shared address names used by map stops and clip labels.
+│   │   ├── trip_detection.py   # GPS-based trip detection (clustering, injected geocoder)
+│   │   ├── trip_legs.py        # Where a trip changes where it stays: areas of stay become legs (#1563)
+│   │   └── trip_place.py       # Names a trip at the scale its pictures cover (city → country)
+│   ├── judgments/              # Bounded text judgments over the transport: what a stage asks and how its answer is read.
+│   │   ├── json_completion.py  # Complete decision payloads are distinct from trailing model commentary.
+│   │   ├── json_envelopes.py   # Bounded JSON envelopes shared by the production structure editor.
+│   │   ├── json_numbers.py     # One reading of a literal JSON number, shared by the editorial contracts.
+│   │   ├── page_recovery.py    # Bounded ask/retry/repair for a stage that reads its own JSON envelope
+│   │   ├── prompt_pages.py     # Bound text requests without dropping offered rows.
+│   │   ├── reader_concurrency.py # Bound independent reader jobs while committing their audits in source order.
+│   │   ├── strict_json.py      # Small shared decoder for complete, non-repaired model JSON envelopes.
+│   │   ├── text_artifacts.py   # Private evidence for the pre-planner period request, before semantic validation.
+│   │   ├── text_failures.py    # Typed, replayable exhaustion of a bounded text-completion attempt.
+│   │   ├── text_gateway.py     # Production transport adapter for banked post-card text judgments.
+│   │   ├── text_judge.py       # Production text adapter for the shared structure planner.
+│   │   └── text_request.py     # What a text stage asks the model, and what one answered call records.
+│   └── llm/                    # The model transport every reader asks through.
+│       ├── adaptations.py      # Capability refusals: remembered request changes, schema/object fallback
+│       ├── async_bridge.py     # Resolve editorial async work from synchronous CLI and UI callers.
+│       ├── batch.py            # A stage's independent prompts as one provider batch (half price, async): the two wire dialects and their transports
+│       ├── failures.py         # Separate "the model could not answer" from a bug in the calling code
+│       ├── metrics.py          # What a run spent on the LLM, counted where the answers arrive.
+│       ├── provider_failure.py # What a 4xx/5xx means: refused, come back later, down, or a bad credential
+│       ├── provider_health.py  # ProviderHealth: what a provider's answer says about its availability (preflight)
+│       ├── provider_status.py  # Name the provider that stopped answering, the moment it stops.
+│       ├── providers.py        # Named providers: their URL, their adapter, the way they reason
+│       ├── query.py            # The live transport: one prompt, one connection, one answer
+│       ├── single_flight.py    # One paid answer per judgment key, however many readers ask at once
+│       ├── text_identity.py    # Shared identities for resolved text-model settings and exact text requests.
+│       ├── usage_record.py     # Atomic usage checkpoints, split per model/stage, with unknown usage
+│       └── wire.py             # The two request dialects, what a reply says, and the reasoning budget
 │
 ├── processing/                 # Video processing & assembly
 │   ├── video_assembler.py      # VideoAssembler (composes 5 services)
@@ -1119,7 +1284,7 @@ src/immich_memories/
 │   │                           # request's own n-grams, 3 field orders, 2-of-3 token votes, where+what
 │   │                           # voted as content; choose() (one option, 3 orders), choose_several()
 │   │                           # (a list, 2-of-3 per option); Asker Protocol and WireAsker
-│   │                           # (llm_query.query_llm with the answer's json_schema, through the async
+│   │                           # (llm.query.query_llm with the answer's json_schema, through the async
 │   │                           # bridge so it also answers under a running loop)
 │   ├── translate.py            # translate(): reading -> link_who -> link_when -> build_subject ->
 │   │                           # link_where (Subject.heads) -> link_facts -> build_pool, as an Ask
@@ -1256,29 +1421,38 @@ src/immich_memories/
 │   │                           # its own shot, shared by auto_duration's capacity and the depth fill's admission
 │   └── memory_length.py        # default_duration_for_type(): the length a memory type asks for, one resolver for every surface
 │
-├── config.py                   # YAML configuration management (re-exports)
-├── config_loader.py            # Config loading: env > config.yaml > database > deployment defaults > schema defaults
+├── config/                     # Configuration: the models, how a config loads, and what loading says
+│   ├── __init__.py             # Re-exports Config, get_config and the section models most callers need
+│   ├── loader.py               # Config loading: env > config.yaml > database > deployment defaults > schema defaults
+│   ├── sources.py              # describe_settings(): every leaf key's value (secrets masked), source and exact override
+│   ├── presets.py              # Named presets (`preset: fast`) that fill several knobs at once
+│   ├── tiers.py                # One resolved product tier: reader, preparation producers, Laya
+│   ├── unsupported.py          # Keys out of the documented config (tier-owned, internal, merged, moved, ignored): warned until 2.0
+│   ├── compute.py              # Inference capability discovery, separate from video encoding
+│   ├── endpoint_policy.py      # Local-address policy for operator-configured service endpoints
+│   ├── load_warnings.py        # The warnings a config load gives, collected for the Settings page
+│   ├── unknown.py              # Key-only diagnostics for settings the nested models ignore
+│   └── models/                 # One section model per domain
+│       ├── resources.py        # Resources a run uses: Immich server, cache, hardware (+ config.yaml `${VAR}` expansion)
+│       ├── analysis.py         # Source admission and the expected seconds per clip
+│       ├── auth.py             # Authentication config model (basic, OIDC, header)
+│       ├── automation.py       # Running unattended: trips, automation, notifications, upload
+│       ├── editorial.py        # The store-backed editorial planner's settings
+│       ├── editorial_preparation.py # The annotation producers editorial selection uses
+│       ├── free_text.py        # free_text: where the pinned WordNet corpus lives and comes from
+│       ├── inference.py        # Where image-model facts come from: in process, or the inference service
+│       ├── llm.py              # LLM provider settings (shared by analysis and titles)
+│       ├── network.py          # The three third-party hosts a run may reach; all off by default
+│       ├── render.py           # What the video looks like: defaults, output, title screens, photos
+│       ├── server.py           # UI server bind settings + secure-by-default host rule
+│       ├── soundtrack.py       # Music under a memory: local library, MusicGen, ACE-Step
+│       └── triage.py           # Triage heads: cheap per-picture categorization that nominates, never vetoes
 ├── deployment_config.py        # Editable tier/service defaults supplied by deployment infrastructure
-├── config_sources.py           # describe_settings(): every leaf key's value (secrets masked), source and exact override
 ├── settings_store.py           # SettingsStore: the `settings` table, Fernet secrets under IMMICH_MEMORIES_SECRET_KEY;
 │                               # load_stored_settings (bootstrap-safe, never via get_config)
 ├── settings_edit.py            # save_settings (the UI/CLI write path, database only), move_to_database (`config move-to-db`)
-├── config_presets.py           # Named presets (`preset: fast`) that fill several knobs at once
-├── config_tiers.py             # One resolved product tier: reader, preparation producers, Laya
-├── config_unsupported.py       # Keys out of the documented config (tier-owned, internal, merged, moved, ignored): warned until 2.0
-├── config_compute.py           # Inference capability discovery, separate from video encoding
-├── config_models.py            # Resources a run uses: Immich server, cache, hardware (+ config.yaml `${VAR}` expansion)
-├── config_models_analysis.py   # Source admission and the expected seconds per clip
-├── config_models_auth.py       # Authentication config model (basic, OIDC, header)
-├── config_models_automation.py # Running unattended: trips, automation, notifications, upload
-├── config_models_free_text.py  # free_text: where the pinned WordNet corpus lives and comes from
-├── config_models_llm.py        # LLM provider settings (shared by analysis and titles)
 ├── local_inference.py          # App-owned llama.cpp lifecycle and shared local audio memory lease
 ├── local_reader_process.py     # Lifetime-pipe supervisor reaps the model after app crashes
-├── config_models_network.py    # The three third-party hosts a run may reach; all off by default
-├── config_models_render.py     # What the video looks like: defaults, output, title screens, photos
-├── config_models_server.py     # UI server bind settings + secure-by-default host rule
-├── config_models_soundtrack.py # Music under a memory: local library, MusicGen, ACE-Step
 ├── generate.py                 # End-to-end generation orchestrator
 ├── generate_clips.py           # Clip extraction, probing, cleanup
 ├── generate_delivery.py        # Immich upload + delivered/pending/failed run state
@@ -1329,24 +1503,24 @@ src/immich_memories/
 
 ### Independent reader work
 
-`editorial_reader_concurrency.py` bounds model-reader jobs and copies the run's
+`judgments/reader_concurrency.py` bounds model-reader jobs and copies the run's
 cancellation and metrics context into each worker. Each job owns a text judge
 and audit directory; completed call records are merged in source order.
-`editorial_block_votes.py` commits vote-bank updates on the caller thread.
-`editorial_story_reading.py` overlaps independent monthly readings. The story planner
+`polish/block_votes.py` commits vote-bank updates on the caller thread.
+`stories/period_account.py` overlaps independent monthly readings. The story planner
 uses prepared captions inside each funded story's shortlist without another model
-inventory. `editorial_prompt_pages.py` bounds the remaining text request pages.
+inventory. `judgments/prompt_pages.py` bounds the remaining text request pages.
 Prompts and judgment identities do not include the concurrency setting.
 
-How many jobs overlap comes from `llm_providers.reader_concurrency`, which reads
+How many jobs overlap comes from `llm.providers.reader_concurrency`, which reads
 the endpoint when `llm.reader_concurrency` is unset: one job for a model on this
-machine or this private network, four for a hosted one. `llm_single_flight.py`
+machine or this private network, four for a hosted one. `llm/single_flight.py`
 keeps the bank's deduplication under concurrency, so two jobs carrying the same
-judgment key cannot both pay for it. `provider_failure.THROTTLE` is the shared
+judgment key cannot both pay for it. `llm.provider_failure.THROTTLE` is the shared
 pause a 429 puts on every reader at once, and `retry_wait` spreads each caller's
 own wait so they do not retry in lockstep.
 
-`llm_providers.structured_output_enabled` selects schema enforcement from the named request:
+`llm.providers.structured_output_enabled` selects schema enforcement from the named request:
 local `episode_reading` requests retain prompt-only JSON to avoid the measured decoder stall,
 while free-text, title and account schemas remain enforced. Explicit endpoint settings win.
 OpenAI-compatible and Ollama transports use the same decision; text judgment keys carry the
@@ -1406,12 +1580,12 @@ flowchart TD
 
 ## Configuration
 
-- `Config` (config_loader.py): env > `~/.immich-memories/config.yaml` (tiered YAML, see above) > the
+- `Config` (config/loader.py): env > `~/.immich-memories/config.yaml` (tiered YAML, see above) > the
   store's `settings` table > deployment infrastructure defaults > schema defaults. `config.yaml` is operator-owned: the app writes it only for
   `config move-to-db`. The UI and `immich-memories config` save through `settings_edit.save_settings`,
   which refuses keys env or the file override and bootstrap keys (`database.*`, `auth.*`, `server.*`), values with `${VAR}`, and a new credential URL without its credential. The database source
   is opened from env + the file's `database:` block only, so it never recurses into `get_config()`.
-  `config_sources.describe_settings` is the per-key source report the settings page and
+  `config.sources.describe_settings` is the per-key source report the settings page and
   `config show` render.
 - `deployment_defaults` (deployment_config.py): `IMMICH_MEMORIES_DEPLOYMENT_*` supplies service
   endpoints below the saved settings source, so Compose/Kubernetes wiring stays editable in
@@ -1420,7 +1594,7 @@ flowchart TD
   `tier` it replaces is named in a warning, and Settings shows it as env-set. Explicit reader
   activation is required for Full. Preflight reports inference compute separately from video encoding.
 - `AssemblySettings` (assembly_config.py): video assembly parameters
-- `PipelineConfig` (smart_pipeline.py): the per-run switches the editorial route reads
+- `PipelineConfig` (runtime/smart_pipeline.py): the per-run switches the editorial route reads
 
 ## Data Flow
 
@@ -1434,19 +1608,19 @@ flowchart TD
 
 ## Configuration Tiers
 
-Config is organized in 3 tiers (see `config_loader.py`):
+Config is organized in 3 tiers (see `config/loader.py`):
 
 - **Tier 1** (top-level YAML): `tier`, `preset`, `immich`, `defaults`, `output`, `audio`, `title_screens`, `cache`, `upload`, `trips`, `network`, `photos`
-- **Tier 2** (under `advanced:` in YAML, `_TIER2_SECTIONS`): `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`, `notifications`, `triage`, `editorial`, `inference`
+- **Tier 2** (under `advanced:` in YAML, `TIER2_SECTIONS`): `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`, `notifications`, `triage`, `editorial`, `inference`
 - One `llm` section supplies every model call, including film titles.
 
 At runtime, all sections are flat fields on `Config` (e.g. `config.analysis`).
 Both flat and nested YAML formats are accepted.
 
-These YAML layers are not the product `tier` (`config_tiers.py`): `nas` (inexpensive CPU classifiers), `gpu`
+These YAML layers are not the product `tier` (`config/tiers.py`): `nas` (inexpensive CPU classifiers), `gpu`
 (every light model, no LLM) or `full` (plus an enabled local or server LLM). The product
 tier owns `editorial.reader`, `editorial.preparation.tier`, `editorial.laya_audience` and
-`editorial.detectors_enabled`; none is a setting (`config_unsupported.TIER_OWNED`). Keys that left
+`editorial.detectors_enabled`; none is a setting (`config.unsupported.TIER_OWNED`). Keys that left
 the documented config stay readable until 2.0: `warn_unsupported_keys` names each one a source set,
 before the preset and tier assign fields, `describe_settings` lists them only when set, and
 `scripts/check_config_docs.py` refuses them on the reference page.
@@ -1456,8 +1630,8 @@ config never becomes a machine-specific pin. Internal metadata-only component fi
 available without exposing a fourth product tier. The real-Immich gate uses NAS with pinned CPU models.
 
 The tiers are a YAML layout, not a code layout. The section models are grouped by
-domain across the `config_models*.py` modules (resources, analysis, render,
-soundtrack, automation, llm, auth, server), and `Config` in `config_loader.py`
+domain across the `config/models/` modules (resources, analysis, render,
+soundtrack, automation, llm, auth, server), and `Config` in `config/loader.py`
 assembles them into one flat settings object. A file naming a key of the removed
 clip scorer (`_REMOVED_CONFIG_KEYS`) or a removed section (`_REMOVED_TOP_LEVEL_SECTIONS`) loads:
 the key is dropped with one warning naming it, never a crash.
@@ -1582,14 +1756,14 @@ the payload keys, model pins, bundle, labels and sampling; app versions do not r
 
 The web JSON boundary (`web/request_validation.py`) rejects malformed text and excessive nesting
 before route validation. Revision allocation and publication share the existing cross-process
-file lock. Configuration's endpoint policy (`config_endpoint_policy.py`) applies on load and
+file lock. Configuration's endpoint policy (`config/endpoint_policy.py`) applies on load and
 Settings save, with a process-environment-only link-local override.
 
 ## Native Immich identities
 
 `api/native_sharing.py` discovers actual minor versions, cluster membership and 3.3 people
 access behind `immich.native_sharing` (default off). `cli/run_people.py` combines that fresh
-evidence with saved bindings; `analysis/person_presence.py` accepts explicit sets of selected
+evidence with saved bindings; `analysis/sources/person_presence.py` accepts explicit sets of selected
 owners for a shared face. Owner download routing stays in `AccessBoundClient`.
 `HouseholdWindows` coalesces repeated asset reads before CLI discovery deduplicates IDs,
 preserving unioned favourites and people. Stored canonical identities are not migrated or

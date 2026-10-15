@@ -7,7 +7,9 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from immich_memories.analysis.editorial_preparation_motion import (
+from immich_memories.analysis.captions.identity import LLM_CAPTION_PREFIX
+from immich_memories.analysis.llm.metrics import collecting
+from immich_memories.analysis.preparation.motion_lines import (
     MOTION_PRODUCER,
     BankedMotionLines,
     missing_motion,
@@ -15,11 +17,9 @@ from immich_memories.analysis.editorial_preparation_motion import (
     prepare_motion_lines,
     seat_asker,
 )
-from immich_memories.analysis.editorial_runtime_ports import production_story_motion
-from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
-from immich_memories.analysis.llm_metrics import collecting
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.runtime.ports import production_story_motion
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 from tests.test_editorial_preparation_motion import frame, sampled, video
 

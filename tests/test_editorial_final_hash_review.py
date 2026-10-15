@@ -1,10 +1,7 @@
 """Every cut ends with the same duplicate review, whatever reader made it."""
 
-from immich_memories.analysis.editorial_final_hash_review import (
-    POLICY,
-    STANDALONE_REPEAT_DISTANCE,
-    review_cut_by_cached_hashes,
-)
+from immich_memories.analysis.corpus.duplicate_hashing import STANDALONE_REPEAT_DISTANCE
+from immich_memories.analysis.selection.final_hash_review import POLICY, review_cut_by_cached_hashes
 
 HASHES = {
     "early": "ffffffffffffffff",
@@ -258,7 +255,7 @@ def test_a_cut_whose_previews_are_all_cached_is_a_complete_review():
 
 def test_the_pool_is_offered_as_the_moment_first_and_then_the_story():
     """The audience gate's own pool, labelled: the moment's siblings, then the story's spares."""
-    from immich_memories.analysis.editorial_structure_finishing import replacement_offers
+    from immich_memories.analysis.structure.finishing import replacement_offers
 
     carrier = {"asset_id": "late", "moment_alternatives": ["sibling"]}
     pool = [_unit("sibling", minute=31), _unit("elsewhere", minute=90)]
@@ -272,7 +269,7 @@ def test_the_pool_is_offered_as_the_moment_first_and_then_the_story():
 
 
 def test_a_carrier_the_gate_already_substituted_has_no_moment_to_ask():
-    from immich_memories.analysis.editorial_structure_finishing import replacement_offers
+    from immich_memories.analysis.structure.finishing import replacement_offers
 
     offers = replacement_offers(lambda _c: [_unit("elsewhere", minute=90)])({"asset_id": "swapped"})
 
@@ -282,7 +279,7 @@ def test_a_carrier_the_gate_already_substituted_has_no_moment_to_ask():
 def test_a_unit_from_another_story_is_offered_last_and_labelled_elsewhere():
     """Once the moment and the carrier's own story are offered, a wider pool may still hand
     over a moment that never got a slot anywhere else, and the review says where it came from."""
-    from immich_memories.analysis.editorial_structure_finishing import replacement_offers
+    from immich_memories.analysis.structure.finishing import replacement_offers
 
     carrier = {"asset_id": "late", "story_episode": "story-1", "moment_alternatives": ["sibling"]}
     other_story = _unit("far-story", minute=90) | {"story_episode": "story-2"}

@@ -10,7 +10,7 @@ from pydantic_settings import SettingsError
 
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.free_text.reading import read_request
 from tests.free_text.banked import BankedAsker
 

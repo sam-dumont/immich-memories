@@ -20,12 +20,12 @@ from typing import TYPE_CHECKING
 
 import click
 
-from immich_memories.analysis.editorial_shareability import level_of
+from immich_memories.analysis.audience.shareability import level_of
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._helpers import print_info, refuse_blocked_host
 from immich_memories.cli.progress_file import write_progress
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.free_text.account_scope import (
     AccountScope,
     likely_household,
@@ -56,7 +56,7 @@ from immich_memories.security import write_secret_file
 
 if TYPE_CHECKING:
     from immich_memories.api.sync_client import SyncImmichClient
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import Store
     from immich_memories.free_text.rule_preview import RulePreview
 
@@ -302,9 +302,9 @@ def _rule_preview(
 
     Only a pool is previewed: the special day reads its own day, and no film has no pool.
     """
-    from immich_memories.analysis.editorial_runtime_evidence import AnnotationReadings
-    from immich_memories.analysis.editorial_source import library_source_scope
-    from immich_memories.analysis.thumbnail_prefetch import cached_preview_bytes
+    from immich_memories.analysis.runtime.evidence import AnnotationReadings
+    from immich_memories.analysis.sources.thumbnail_prefetch import cached_preview_bytes
+    from immich_memories.analysis.sources.window_context import library_source_scope
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from immich_memories.cli._album_generation import pool_media
     from immich_memories.free_text.rule_preview import preview_rules

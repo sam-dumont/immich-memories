@@ -1,7 +1,7 @@
 """A stage's measured rate survives the disk handoff to both surfaces."""
 
-from immich_memories.analysis.editorial_projection import EditorialStageReporter
-from immich_memories.analysis.progress import ProgressTracker
+from immich_memories.analysis.runtime.pipeline_result import EditorialStageReporter
+from immich_memories.analysis.runtime.progress import ProgressTracker
 from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.operations.cut_progress import StageUpdate, live_progress_of
 from immich_memories.operations.editorial_attempt import EditorialAttempt, read_editorial_attempt

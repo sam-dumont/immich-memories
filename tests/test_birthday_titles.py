@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_title_settings
 from immich_memories.timeperiod import DateRange

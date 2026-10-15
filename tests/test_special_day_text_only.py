@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from immich_memories.analysis.special_day import PROMPT_VERSION, ask_if_special
+from immich_memories.analysis.special_days.detection import PROMPT_VERSION, ask_if_special
 
 
 def _asset(hour: int, *, described: bool = True, **extra) -> SimpleNamespace:
@@ -49,7 +49,7 @@ def test_a_day_the_captions_do_not_cover_is_still_never_sent_a_picture() -> None
     calls: list = []
 
     # WHY: the LLM server is the external boundary; the request built for it is the subject.
-    with patch("immich_memories.analysis.llm_query.query_llm", new=_recorder(calls, _VERDICT)):
+    with patch("immich_memories.analysis.llm.query.query_llm", new=_recorder(calls, _VERDICT)):
         ask_if_special(_a_day(), llm_config=SimpleNamespace())
 
     assert len(calls) == 1
@@ -76,7 +76,7 @@ def test_a_day_with_nothing_written_about_it_is_left_unjudged() -> None:
     calls: list = []
 
     # WHY: the LLM server is the external boundary; here it must not be reached at all.
-    with patch("immich_memories.analysis.llm_query.query_llm", new=_recorder(calls, _VERDICT)):
+    with patch("immich_memories.analysis.llm.query.query_llm", new=_recorder(calls, _VERDICT)):
         verdict = ask_if_special(bare, llm_config=SimpleNamespace())
 
     assert calls == [], "a day with nothing to read is not worth a live call"
@@ -92,7 +92,7 @@ def test_one_stray_geotag_is_not_a_day_worth_reading() -> None:
     calls: list = []
 
     # WHY: the LLM server is the external boundary; here it must not be reached at all.
-    with patch("immich_memories.analysis.llm_query.query_llm", new=_recorder(calls, _VERDICT)):
+    with patch("immich_memories.analysis.llm.query.query_llm", new=_recorder(calls, _VERDICT)):
         verdict = ask_if_special(day, llm_config=SimpleNamespace())
 
     assert calls == []

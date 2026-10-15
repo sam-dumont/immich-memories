@@ -6,9 +6,9 @@ import json
 import numpy as np
 import pytest
 
-from immich_memories.analysis.editorial_picture_admission import GateRefusal, PictureAdmission
-from immich_memories.analysis.editorial_shareability import partition_units
-from immich_memories.analysis.editorial_story_standing import StandingGate
+from immich_memories.analysis.audience.shareability import partition_units
+from immich_memories.analysis.selection.picture_admission import GateRefusal, PictureAdmission
+from immich_memories.analysis.selection.standing import StandingGate
 from tests.test_editorial_thin_gates import shot
 
 
@@ -44,8 +44,8 @@ def test_all_admission_routes_refuse_excluded_members_before_standing(member, ro
 
 
 def test_late_preparation_records_a_source_refusal_and_refills_with_the_next_candidate(tmp_path):
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.structure.planner import plan_structure
     from tests.editorial_story_fixtures import ControlledStoryJudge
     from tests.test_editorial_duration_planner_integration import source
 
@@ -87,9 +87,9 @@ def test_late_preparation_records_a_source_refusal_and_refills_with_the_next_can
 
 @pytest.mark.parametrize("member", ["companion", "clip"])
 def test_audience_refuses_a_member_without_holding_the_unexcluded_lead(tmp_path, member):
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge
-    from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
-    from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
+    from immich_memories.analysis.audience.tiers import audience_check_for
+    from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge
     from immich_memories.db import open_store
     from tests.test_editorial_shareability_tiers import Annotation
 
@@ -116,9 +116,9 @@ def test_audience_refuses_a_member_without_holding_the_unexcluded_lead(tmp_path,
 
 
 def test_audience_gate_refuses_a_personal_document_through_the_same_ocr_facts(tmp_path):
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge
-    from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
-    from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
+    from immich_memories.analysis.audience.tiers import audience_check_for
+    from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge
     from immich_memories.db import open_store
     from tests.test_editorial_shareability_tiers import Annotation
 
@@ -143,9 +143,9 @@ def test_audience_gate_refuses_a_personal_document_through_the_same_ocr_facts(tm
 
 
 def test_audience_gate_never_holds_an_owner_pinned_document(tmp_path):
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge
-    from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
-    from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
+    from immich_memories.analysis.audience.tiers import audience_check_for
+    from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge
     from immich_memories.db import open_store
     from tests.test_editorial_shareability_tiers import Annotation
 

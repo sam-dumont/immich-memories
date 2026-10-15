@@ -554,14 +554,14 @@ class TestSyncUploadWrappers:
 
 class TestUploadConfig:
     def test_default_config(self):
-        from immich_memories.config_models_automation import UploadConfig
+        from immich_memories.config.models.automation import UploadConfig
 
         cfg = UploadConfig()
         assert not cfg.enabled
         assert cfg.album_name is None
 
     def test_config_in_main_config(self):
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
 
         cfg = Config()
         assert not cfg.upload.enabled

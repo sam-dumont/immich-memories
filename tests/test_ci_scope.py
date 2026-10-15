@@ -48,7 +48,7 @@ def test_a_selection_change_runs_the_app_suites_on_sqlite_only(ci_scope):
     running = _running(
         ci_scope,
         [
-            "src/immich_memories/analysis/editorial_story_slots.py",
+            "src/immich_memories/analysis/stories/slots.py",
             "tests/test_editorial_story_slots.py",
         ],
     )
@@ -124,7 +124,7 @@ def test_the_shard_split_runs_the_suites_it_splits(ci_scope, path):
         "services/render-worker/immich_memories_render_worker/worker.py",
         "src/immich_memories/processing/remote_render.py",
         "src/immich_memories/titles/rendering_service.py",
-        "src/immich_memories/config_loader.py",
+        "src/immich_memories/config/loader.py",
     ],
 )
 def test_the_render_worker_runs_for_itself_and_the_app_code_it_imports(ci_scope, path):
@@ -466,8 +466,8 @@ def test_one_cell_records_the_coverage_in_all_its_shards(ci_scope, event):
         (["src/immich_memories/audio/mixer.py"], ["audio-mixing"]),
         (["src/immich_memories/generate.py"], ["assembly"]),
         (["src/immich_memories/speech/fireredvad.py"], ["assembly"]),
-        (["src/immich_memories/analysis/editorial_runtime_ports.py"], ["assembly"]),
-        (["src/immich_memories/analysis/editorial_speech.py"], ["assembly"]),
+        (["src/immich_memories/analysis/runtime/ports.py"], ["assembly"]),
+        (["src/immich_memories/analysis/clips/speech.py"], ["assembly"]),
         (["services/render-worker/immich_memories_render_worker/worker.py"], ["render-worker"]),
         (["src/immich_memories/cli/__init__.py", "README.md", "tests/test_x.py"], []),
         (["src/immich_memories/titles/fonts/readme.txt"], []),  # not Python

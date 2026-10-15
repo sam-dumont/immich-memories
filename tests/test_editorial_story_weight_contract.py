@@ -4,17 +4,17 @@ import json
 
 import pytest
 
-from immich_memories.analysis import editorial_text_gateway as gateway
-from immich_memories.analysis.editorial_case import TextRequest
-from immich_memories.analysis.editorial_story_weight_contract import (
+from immich_memories.analysis.judgments import text_gateway as gateway
+from immich_memories.analysis.judgments.text_judge import StructureTextJudge
+from immich_memories.analysis.judgments.text_request import TextRequest
+from immich_memories.analysis.stories.weight_contract import (
     WEIGHING_CONTRACT_VERSION,
     StoryWeightDecisionError,
     validate_weight_reply,
 )
-from immich_memories.analysis.editorial_structure_io import StructureTextJudge
 from immich_memories.cache.judgment_cache import JudgmentCache
 from immich_memories.config import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
 from tests.test_editorial_story_reading import ScriptedJudge
 from tests.test_editorial_story_weight_audit import weigh

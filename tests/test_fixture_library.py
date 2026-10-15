@@ -162,7 +162,7 @@ def test_the_library_is_big_enough_to_show_culling() -> None:
 
 
 def test_trip_detection_finds_exactly_the_road_north() -> None:
-    from immich_memories.analysis.trip_detection import detect_trips
+    from immich_memories.analysis.places.trip_detection import detect_trips
     from immich_memories.api.models import Asset
     from tests.e2e.fake_immich import _asset_payload
 

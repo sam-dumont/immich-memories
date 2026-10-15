@@ -13,8 +13,8 @@ from immich_memories.tracking.system_info import (
     _get_ffmpeg_version,
     _get_gpu_name,
     _get_opencv_version,
-    _get_ram_gb,
-    _get_vram_mb,
+    get_ram_gb,
+    get_vram_mb,
 )
 from tests.module_stubs import swapped_modules
 
@@ -47,7 +47,7 @@ class TestCheckKernelLibrary:
         # this module owns is the boundary either way.
         monkeypatch.setattr(
             kernels,
-            "_silent_init",
+            "silent_init",
             _reinitialized,
         )
 
@@ -153,7 +153,7 @@ class TestGetRamGb:
         mock_platform.system.return_value = "Darwin"
         # 16 GB in bytes
         mock_subprocess.run.return_value = MagicMock(returncode=0, stdout=str(16 * 1024**3) + "\n")
-        result = _get_ram_gb()
+        result = get_ram_gb()
         assert result == pytest.approx(16.0)
 
     # WHY: platform.system() returns the real OS — force exception to test error path
@@ -161,7 +161,7 @@ class TestGetRamGb:
     def test_exception_returns_zero(self, mock_platform: MagicMock):
         """Exception during detection returns 0.0."""
         mock_platform.system.side_effect = OSError("boom")
-        assert _get_ram_gb() == 0.0
+        assert get_ram_gb() == 0.0
 
 
 class TestGetFfmpegVersion:
@@ -254,11 +254,11 @@ class TestGetVramMb:
         mock_subprocess.SubprocessError = _subprocess.SubprocessError
         mock_platform.system.return_value = "Linux"
         mock_subprocess.run.return_value = MagicMock(returncode=0, stdout="24576\n")
-        assert _get_vram_mb() == 24576
+        assert get_vram_mb() == 24576
 
     # WHY: platform.system() returns the real OS — force exception to test error path
     @patch("immich_memories.tracking.system_info.platform")
     def test_exception_returns_zero(self, mock_platform: MagicMock):
         """Exception during detection returns 0."""
         mock_platform.system.side_effect = OSError("boom")
-        assert _get_vram_mb() == 0
+        assert get_vram_mb() == 0

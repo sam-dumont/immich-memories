@@ -16,7 +16,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import ArgumentError
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 URL_ENV = "IMMICH_MEMORIES_DATABASE_URL"
 SCHEMA_ENV = "IMMICH_MEMORIES_DATABASE_SCHEMA"
@@ -104,7 +104,7 @@ def _default_store_url() -> str:
     module import, migration tooling). The default config path already resolves to
     `~/.immich-memories`, so a run with no `--config` lands exactly there too (#2076).
     """
-    from immich_memories.config_loader import config_state_dir
+    from immich_memories.config.loader import config_state_dir
 
     return f"sqlite:///{config_state_dir() / 'store.db'}"
 
@@ -152,7 +152,7 @@ def resolve_location(config: Config | None = None) -> StoreLocation:
         # nothing it would log or fail on comes along.
         return StoreLocation(url=normalize_url(env_url), schema=env_schema or DEFAULT_SCHEMA)
     if config is None:
-        from immich_memories.config_loader import get_config
+        from immich_memories.config.loader import get_config
 
         config = get_config()
     configured_url = config.database.url

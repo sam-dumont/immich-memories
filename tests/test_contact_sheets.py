@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.visual_atlas import AtlasTile
+from immich_memories.analysis.corpus.visual_atlas import AtlasTile
 
 
 def _tile(entity_id: str, colour: str) -> AtlasTile:
@@ -22,7 +22,7 @@ def _tile(entity_id: str, colour: str) -> AtlasTile:
 
 def test_contact_sheet_writes_and_exposes_the_same_encoded_jpeg_bytes(tmp_path: Path) -> None:
     """Disk, hash and the encoded bytes cannot drift."""
-    from immich_memories.analysis.contact_sheets import build_contact_sheets
+    from immich_memories.analysis.runtime.contact_sheets import build_contact_sheets
 
     tiles = tuple(
         _tile(f"asset-{number}", colour) for number, colour in enumerate(("red", "green"))
@@ -35,7 +35,7 @@ def test_contact_sheet_writes_and_exposes_the_same_encoded_jpeg_bytes(tmp_path: 
 
 def test_contact_sheets_reject_duplicate_entity_ids(tmp_path: Path) -> None:
     """A numbered tile can point at exactly one stable entity."""
-    from immich_memories.analysis.contact_sheets import build_contact_sheets
+    from immich_memories.analysis.runtime.contact_sheets import build_contact_sheets
 
     with pytest.raises(ValueError, match="unique entity IDs"):
         build_contact_sheets((_tile("same", "red"), _tile("same", "blue")), "scope", tmp_path)
@@ -46,7 +46,7 @@ def test_contact_sheets_reject_per_sheet_outside_the_visual_evidence_limit(
     tmp_path: Path, per_sheet: int
 ) -> None:
     """Every public override keeps pages positive and at most 120 numbered tiles."""
-    from immich_memories.analysis.contact_sheets import build_contact_sheets
+    from immich_memories.analysis.runtime.contact_sheets import build_contact_sheets
 
     with pytest.raises(ValueError, match="between 1 and 120"):
         build_contact_sheets((_tile("asset-1", "red"),), "scope", tmp_path, per_sheet=per_sheet)
@@ -59,7 +59,7 @@ def test_a_pass_gets_the_tile_fidelity_its_own_question_needs(tmp_path: Path) ->
     which is the whole page's compromise across every pass; a pass that has to
     separate frames of the same subject says so and gets its own.
     """
-    from immich_memories.analysis.contact_sheets import build_contact_sheets
+    from immich_memories.analysis.runtime.contact_sheets import build_contact_sheets
 
     tiles = tuple(_tile(f"asset-{number}", "red") for number in range(9))
 

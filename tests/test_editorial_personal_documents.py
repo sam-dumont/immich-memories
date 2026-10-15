@@ -10,7 +10,7 @@ that evidence counts for.
 
 import pytest
 
-from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
+from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
 
 
 def test_a_caption_naming_a_passport_is_refused_on_every_tier():
@@ -174,9 +174,9 @@ def test_planner_material_keeps_a_personal_document_only_when_the_owner_pinned_i
 ):
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_material import build_material, read_wall
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.film.material import build_material, read_wall
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge
     from tests.test_editorial_duration_planner_integration import source
 
     prepared = source(tmp_path, seconds=24, pictures=5)

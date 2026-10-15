@@ -3,7 +3,7 @@
 from collections import UserDict
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.editorial_story_shortlist import (
+from immich_memories.analysis.stories.shortlist import (
     DepictedChoice,
     nearby_picture_alternatives,
 )
@@ -42,7 +42,7 @@ def test_unrelated_capture_groups_do_not_multiply_nomination_work():
 
 def scan_alternatives(primary_choices, choices, units, *, starred):
     """The pre-index scan, retained as an independent ordering oracle."""
-    from immich_memories.analysis.editorial_story_shortlist import capture_space_available
+    from immich_memories.analysis.corpus.moment_grouping import capture_space_available
 
     used, extras = {c.key for c in primary_choices}, []
     for primary in primary_choices:
@@ -94,7 +94,7 @@ def test_index_preserves_boundaries_missing_times_favourites_and_stable_ties():
 
 
 def test_index_preserves_whole_planner_decisions_and_prompts(tmp_path, monkeypatch):
-    from immich_memories.analysis import editorial_story_carriers
+    from immich_memories.analysis.selection import carriers as editorial_story_carriers
     from tests.editorial_story_fixtures import ControlledStoryJudge
     from tests.test_editorial_duration_planner_integration import run, semantic_plan
     from tests.test_editorial_story_nearby_choices import nearby_source
@@ -114,7 +114,7 @@ def test_story_audit_keeps_its_values_with_compact_serialization(tmp_path, monke
     import json
     from types import SimpleNamespace
 
-    from immich_memories.analysis import editorial_structure_planner
+    from immich_memories.analysis.structure import planner as editorial_structure_planner
     from tests.editorial_story_fixtures import ControlledStoryJudge
     from tests.test_editorial_duration_planner_integration import run
     from tests.test_editorial_story_nearby_choices import nearby_source

@@ -15,8 +15,8 @@ from typing import Annotated, Any, Protocol
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.loader import Config
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import Store
 from immich_memories.people.account_ids import entry_ids, ids_by_account
 from immich_memories.people.companion import (

@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from PIL import Image
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.render import PhotoConfig
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_photos import render_photo_as_clip
 from immich_memories.photos.photo_pipeline import render_single_photo

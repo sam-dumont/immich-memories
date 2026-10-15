@@ -10,7 +10,7 @@ import click
 
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cli._helpers import console, print_error, print_success
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import open_store
 from immich_memories.people.account_ids import entry_ids, ids_by_account
 from immich_memories.people.companion import (

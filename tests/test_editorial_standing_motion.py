@@ -2,8 +2,8 @@
 
 import pytest
 
-from immich_memories.analysis.editorial_story_standing import StandingGate
-from immich_memories.analysis.editorial_structure_lines import UnitLines
+from immich_memories.analysis.film.lines import UnitLines
+from immich_memories.analysis.selection.standing import StandingGate
 
 CLIP = {"asset_id": "clip", "kind": "video", "raw_seconds": 7.0, "members": ["clip"]}
 

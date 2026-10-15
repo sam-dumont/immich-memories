@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import yaml
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def test_bench_config_default_construction(benchmark):

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 GEMMA = {"enabled": True, "base_url": "http://gpu-box:8080/v1", "model": "gemma-4-e4b"}
 

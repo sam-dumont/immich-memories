@@ -3,7 +3,7 @@
 import hashlib
 from types import SimpleNamespace
 
-from immich_memories.analysis.live_source_integrity import OriginalSourceIntegrity
+from immich_memories.analysis.runtime.live_source_integrity import OriginalSourceIntegrity
 
 
 class Decoder:
@@ -66,7 +66,7 @@ def test_decoder_version_invalidates_original_byte_proof(tmp_path):
 def test_backend_reuses_original_verifier_for_planning_refinement(monkeypatch):
     from contextlib import ExitStack
 
-    from immich_memories.analysis import editorial_runtime_backend as module
+    from immich_memories.analysis.runtime import backend as module
 
     built = []
 
@@ -210,8 +210,10 @@ def test_decoder_infrastructure_failure_is_not_cached_or_reclassified(tmp_path):
 def test_production_original_acquisition_is_lazy_and_closes_owned_client(tmp_path, monkeypatch):
     from contextlib import ExitStack
 
-    from immich_memories.analysis import editorial_runtime_ports
-    from immich_memories.analysis.live_source_integrity import production_live_source_integrity
+    from immich_memories.analysis.runtime import ports as editorial_runtime_ports
+    from immich_memories.analysis.runtime.live_source_integrity import (
+        production_live_source_integrity,
+    )
     from immich_memories.processing import probe_cache
     from tests.test_editorial_event_motion_material import live_source
 
@@ -234,7 +236,7 @@ def test_production_original_acquisition_is_lazy_and_closes_owned_client(tmp_pat
                 "presentation_policy": probe_cache.PRESENTATION_POLICY
             }
 
-    monkeypatch.setattr(editorial_runtime_ports, "_stage_reads", lambda _: Client())
+    monkeypatch.setattr(editorial_runtime_ports, "stage_reads", lambda _: Client())
     monkeypatch.setattr(probe_cache, "ProbeCache", OwnedDecoder)
     with ExitStack() as resources:
         verifier = production_live_source_integrity(source, resources=resources)
@@ -249,7 +251,7 @@ def test_production_original_acquisition_is_lazy_and_closes_owned_client(tmp_pat
 def test_backend_does_not_reuse_an_original_download_batch_after_its_edit_closes(monkeypatch):
     from contextlib import ExitStack
 
-    from immich_memories.analysis import editorial_runtime_backend as module
+    from immich_memories.analysis.runtime import backend as module
 
     built = []
 

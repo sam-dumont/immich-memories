@@ -14,8 +14,8 @@ from pathlib import Path
 
 import click
 
-from immich_memories.analysis.editorial_review_list import review_note
-from immich_memories.analysis.selection_trace import ClipStory
+from immich_memories.analysis.audience.review_list import review_note
+from immich_memories.analysis.corpus.trace import ClipStory
 from immich_memories.cli._helpers import console, print_error
 from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import read_trace

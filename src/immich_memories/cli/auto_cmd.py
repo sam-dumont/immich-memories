@@ -14,7 +14,7 @@ from immich_memories.automation.candidates import DEFAULT_SUGGESTION_LIMIT
 from immich_memories.automation.failure_backoff import backoff_label
 from immich_memories.automation.models import AutoOutcome, AutoRunResult
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.memory_types.factory import list_memory_types
 
@@ -336,7 +336,7 @@ def status(ctx: click.Context, as_json: bool) -> None:
     }
     payload["runtime"] = provenance.to_dict()
     from immich_memories.automation.local_network_check import interpreter_note
-    from immich_memories.config_loader import config_state_dir
+    from immich_memories.config.loader import config_state_dir
 
     interpreter_changed = interpreter_note(config_state_dir(ctx.obj["config_path"]))
     payload["local_network"] = {"interpreter_changed": interpreter_changed}
@@ -389,7 +389,7 @@ def _check_local_network(config: Config, config_path: Path | None, *, shim: Path
     import os
 
     from immich_memories.automation import local_network_check as check
-    from immich_memories.config_loader import config_state_dir
+    from immich_memories.config.loader import config_state_dir
 
     if not check.immich_is_on_the_local_network(config.immich.url):
         return

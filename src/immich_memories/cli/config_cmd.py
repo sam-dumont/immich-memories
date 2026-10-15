@@ -90,7 +90,7 @@ def _shown(value: object) -> str:
 
 
 def _show(ctx: click.Context, prefixes: tuple[str, ...]) -> None:
-    from immich_memories.config_sources import describe_settings
+    from immich_memories.config.sources import describe_settings
     from immich_memories.settings_store import SECRET_KEY_ENV, secret_key_from_env
 
     config_path = _config_file(ctx)

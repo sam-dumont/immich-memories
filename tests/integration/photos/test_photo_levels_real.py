@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 from immich_memories.processing.hdr_utilities import check_zscale_available
 from tests.integration.conftest import requires_ffmpeg

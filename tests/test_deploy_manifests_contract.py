@@ -149,7 +149,7 @@ def test_the_two_inference_overlays_name_the_same_release() -> None:
 
 
 def test_every_app_pod_starts_without_a_caption_service() -> None:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     for name, pod in _app_pod_specs():
         for container in pod["containers"]:
@@ -681,7 +681,7 @@ def test_the_captioner_overlay_serves_the_alias_the_app_demands() -> None:
     something else: no `--alias` and preflight reads "serves another model", no
     `--mmproj` and every picture is described as if it were blank.
     """
-    from immich_memories.analysis.editorial_description_contract import API_MODEL
+    from immich_memories.analysis.captions.contract import API_MODEL
 
     rendered = _kustomize(K8S_ROOT / "overlays/captioner")
 
@@ -803,7 +803,7 @@ def test_the_render_sidecar_overlay_points_the_app_at_loopback(tmp_path: Path) -
 
     The app refuses a cleartext-HTTP render.worker_base_url to any host but
     loopback, because the request carries the Immich API key
-    (config_models_render.py: require_explicit_cleartext_transport). Sharing
+    (config/models/render.py: require_explicit_cleartext_transport). Sharing
     a pod puts the worker on 127.0.0.1, where that rule already allows plain
     HTTP.
     """
@@ -967,7 +967,7 @@ def test_the_maximalist_overlay_keeps_the_render_worker_exec_probes(tmp_path: Pa
 @pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
 def test_the_maximalist_overlay_installs_config_yaml_at_0600(tmp_path: Path) -> None:
     """A ConfigMap volume mounts every key world-readable with no way to chmod it,
-    which is exactly what config_loader.py warns on. install-config copies the
+    which is exactly what config/loader.py warns on. install-config copies the
     file onto the writable cache PVC, as the app's own uid, and chmods it there."""
     pod = _maximalist_pod(tmp_path)
     init = next(c for c in pod["initContainers"] if c["name"] == "install-config")
@@ -1278,8 +1278,8 @@ def test_the_base_cache_claim_holds_the_app_s_default_caches_and_its_state() -> 
     """The base install keeps the app's own cache defaults, so its claim must hold all
     three (previews, video, prepared sources) plus the store, models and backups, which
     measured about 4 GB on a real install."""
-    from immich_memories.config_models import CacheConfig
-    from immich_memories.config_models_analysis import AnalysisConfig
+    from immich_memories.config.models.analysis import AnalysisConfig
+    from immich_memories.config.models.resources import CacheConfig
 
     cache, analysis = CacheConfig(), AnalysisConfig()
     caps_gb = (

@@ -29,8 +29,8 @@ from .kernels import (
     KERNELS_AVAILABLE as KERNELS_AVAILABLE,
 )
 from .kernels import (
-    _create_gaussian_kernel,
-    _hex_to_rgb,
+    create_gaussian_kernel,
+    hex_to_rgb,
     kernels_available,
 )
 from .kernels import (
@@ -202,11 +202,11 @@ class KernelTitleRenderer:
         if self._sources_resident:
             logger.debug("Slow-mo sources: %d frames, at most four resident on device", len(frames))
 
-        self._blur_kernel_np = _create_gaussian_kernel(self.config.blur_radius)
+        self._blur_kernel_np = create_gaussian_kernel(self.config.blur_radius)
         self._animated_blur = animated_blur
 
-        self.color1 = _hex_to_rgb(self.config.bg_color1)
-        self.color2 = _hex_to_rgb(self.config.bg_color2)
+        self.color1 = hex_to_rgb(self.config.bg_color1)
+        self.color2 = hex_to_rgb(self.config.bg_color2)
 
         self.particles = ParticleField(self.config, seed=self.config._bokeh_seed)
         self.text = TitleTextRenderer(self.config, self.gpu)
@@ -238,10 +238,10 @@ class KernelTitleRenderer:
         if has_animated_bg:
             self._apply_animated_deblur(progress, cfg)
         elif cfg.blur_radius > 0:
-            kernels._gaussian_blur_h(
+            kernels.compiled_gaussian_blur_h(
                 self.gpu.frame, self.gpu.temp, self._blur_kernel_np, cfg.blur_radius
             )
-            kernels._gaussian_blur_v(
+            kernels.compiled_gaussian_blur_v(
                 self.gpu.temp, self.gpu.frame, self._blur_kernel_np, cfg.blur_radius
             )
 
@@ -255,7 +255,7 @@ class KernelTitleRenderer:
         if not has_animated_bg:
             brightness_delta = cfg.color_pulse_amount * math.sin(progress * 2 * math.pi)
             saturation_mult = 1.0 + 0.05 * math.sin(progress * 2 * math.pi + math.pi / 2)
-            kernels._apply_color_pulse(self.gpu.frame, brightness_delta, saturation_mult)
+            kernels.compiled_apply_color_pulse(self.gpu.frame, brightness_delta, saturation_mult)
 
         # 4. Vignette + noise (FUSED — one kernel launch instead of two)
         vignette_strength = look * (
@@ -265,7 +265,7 @@ class KernelTitleRenderer:
             cfg.noise_intensity if (cfg.enable_noise and cfg.noise_intensity > 0) else 0.0
         )
         noise_seed = frame_number * 12345 % 1000000 if noise_intensity > 0 else 0
-        kernels._apply_vignette_and_noise(
+        kernels.compiled_apply_vignette_and_noise(
             self.gpu.frame, vignette_strength, noise_intensity, noise_seed, cfg.width, cfg.height
         )
 
@@ -286,7 +286,7 @@ class KernelTitleRenderer:
             fade_in = 1.0 - (1.0 - frame_number / fade_in_frames) ** 2
         if fade_out_frames > 0 and frame_number >= fade_out_start:
             fade_out = ((frame_number - fade_out_start) / fade_out_frames) ** 2
-        kernels._finalize_to_output(
+        kernels.finalize_to_output(
             self.gpu.frame,
             self.gpu.output,
             max_val,
@@ -333,17 +333,17 @@ class KernelTitleRenderer:
 
         if blur_mix < 1.0:
             self.gpu.ensure_sharp()
-            kernels._copy_field_3(self.gpu.frame, self.gpu.sharp)
+            kernels.compiled_copy_field_3(self.gpu.frame, self.gpu.sharp)
 
         # A frame off the flat tail is blended with the sharp copy above, so it
         # needs its own blur however still the picture is holding.
         self._blur_for(cfg).apply(self.gpu.frame, reusable=blur_mix >= 1.0)
 
         if blur_mix < 1.0:
-            kernels._blend_fields(self.gpu.frame, self.gpu.sharp, 1.0 - blur_mix)
+            kernels.compiled_blend_fields(self.gpu.frame, self.gpu.sharp, 1.0 - blur_mix)
 
         brightness_delta = -0.15 * blur_mix
-        kernels._apply_color_pulse(self.gpu.frame, brightness_delta, 1.0)
+        kernels.compiled_apply_color_pulse(self.gpu.frame, brightness_delta, 1.0)
 
     def _blur_for(self, cfg: KernelTitleConfig) -> AnimatedBlur:
         """The blur for this frame's size and radius, rebuilt when either moves.
@@ -365,7 +365,7 @@ class KernelTitleRenderer:
         if cfg.gradient_type == "aurora":
             if not hasattr(self, "_aurora_blobs"):
                 self._init_aurora_blobs()
-            kernels._generate_aurora_gradient(
+            kernels.compiled_generate_aurora_gradient(
                 self.gpu.frame,
                 self._aurora_blobs,
                 len(self._aurora_blobs),
@@ -374,7 +374,7 @@ class KernelTitleRenderer:
                 t,
             )
         elif cfg.gradient_type == "radial":
-            kernels._generate_radial_gradient(
+            kernels.compiled_generate_radial_gradient(
                 self.gpu.frame,
                 self.color1[0],
                 self.color1[1],
@@ -387,7 +387,7 @@ class KernelTitleRenderer:
                 cfg.height,
             )
         else:
-            kernels._generate_linear_gradient(
+            kernels.compiled_generate_linear_gradient(
                 self.gpu.frame,
                 self.color1[0],
                 self.color1[1],
@@ -406,7 +406,7 @@ class KernelTitleRenderer:
         rng = np.random.RandomState(42)
 
         if cfg.aurora_colors:
-            colors = [_hex_to_rgb(c) for c in cfg.aurora_colors]
+            colors = [hex_to_rgb(c) for c in cfg.aurora_colors]
         else:
             c1 = self.color1
             c2 = self.color2
@@ -440,8 +440,10 @@ class KernelTitleRenderer:
         # updated on CPU each frame. The implicit transfer is negligible vs
         # the ~13MB frame buffers that now stay on GPU.
         self.particles.update(progress)
-        kernels._render_bokeh_particles(
+        kernels.compiled_render_bokeh_particles(
             self.gpu.bokeh, self.particles.buffer, self.particles.count, cfg.width, cfg.height
         )
         # Each pixel reads only its own background, so the composite is safe in place.
-        kernels._composite_rgba_over(self.gpu.frame, self.gpu.bokeh, self.gpu.frame, opacity)
+        kernels.compiled_composite_rgba_over(
+            self.gpu.frame, self.gpu.bokeh, self.gpu.frame, opacity
+        )

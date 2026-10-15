@@ -1,6 +1,6 @@
 """Literal scenes and source-known relationships reach the first importance judgment."""
 
-from immich_memories.analysis.editorial_episode_documents import anchor_observations
+from immich_memories.analysis.reading.episode_documents import anchor_observations
 
 
 def test_baby_relationship_and_age_are_preserved_without_inventing_a_first():

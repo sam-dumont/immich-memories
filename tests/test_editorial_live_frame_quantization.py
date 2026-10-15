@@ -161,7 +161,7 @@ def test_only_certified_merge_opts_into_eof_frame_retention(monkeypatch):
     # None stub is a fiction that fails the moment that pass lands.
     software_plan = merger.burst_encoding_plan(is_hdr=False, hardware_enabled=False)
     monkeypatch.setattr(merger, "burst_encoding_plan", lambda **_kw: software_plan)
-    monkeypatch.setattr(merger, "_append_encoding_args", lambda *_a: None)
+    monkeypatch.setattr(merger, "append_encoding_args", lambda *_a: None)
     plain = merger.build_merge_command(paths, [(0, 1), (0, 1)], Path("out.mp4"))
     certified = merger.build_merge_command(
         paths, [(0, 1), (0, 1)], Path("out.mp4"), quantize_material=True, render_frame_rate="240"
@@ -185,7 +185,7 @@ def test_subframe_hold_preserves_encoded_frames_and_records_ceil_target(tmp_path
     software_plan = merger.burst_encoding_plan(is_hdr=False, hardware_enabled=False)
     monkeypatch.setattr(merger, "burst_encoding_plan", lambda **_kw: software_plan)
     monkeypatch.setattr(
-        merger, "_append_encoding_args", lambda cmd, _p, _a, out: cmd.append(str(out))
+        merger, "append_encoding_args", lambda cmd, _p, _a, out: cmd.append(str(out))
     )
 
     def encode(command, **_kw):

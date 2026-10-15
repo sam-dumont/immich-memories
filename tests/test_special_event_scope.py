@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from immich_memories.analysis.special_event_scope import (
+from immich_memories.analysis.sources.event_scope import (
     SpecialEventAdmission,
     read_special_event_admission,
     select_source_members,

@@ -19,7 +19,7 @@ import numpy as np
 from .backgrounds import (
     HAS_PIL,
     BackgroundType,
-    _get_coord_grids,
+    get_coord_grids,
     hex_to_rgb,
 )
 
@@ -158,7 +158,7 @@ def create_animated_gradient(
     sin_a = math.sin(angle_rad)
     diagonal = math.sqrt(width**2 + height**2)
 
-    y_coords, x_coords = _get_coord_grids(width, height)
+    y_coords, x_coords = get_coord_grids(width, height)
 
     # Center and project (vectorized)
     cx = x_coords - width / 2
@@ -225,7 +225,7 @@ def create_animated_radial(
     center_y = height / 2
     max_radius = math.sqrt(center_x**2 + center_y**2) * radius_factor
 
-    y_coords, x_coords = _get_coord_grids(width, height)
+    y_coords, x_coords = get_coord_grids(width, height)
 
     # Calculate distance (vectorized)
     dist = np.sqrt((x_coords - center_x) ** 2 + (y_coords - center_y) ** 2)
@@ -283,7 +283,7 @@ def create_animated_vignette(
     max_dist_x = center_x
     max_dist_y = center_y
 
-    y_coords, x_coords = _get_coord_grids(width, height)
+    y_coords, x_coords = get_coord_grids(width, height)
 
     # Elliptical distance (vectorized)
     dx = (x_coords - center_x) / max_dist_x
@@ -422,9 +422,9 @@ def create_animated_background(
 
     elif bg_type in ("vignette", BackgroundType.VIGNETTE.value):
         # WHY: dark backgrounds vignette to black, light to white
-        from .backgrounds import _is_dark_palette
+        from .backgrounds import is_dark_palette
 
-        edge_color = "#000000" if _is_dark_palette(colors) else "#FFFFFF"
+        edge_color = "#000000" if is_dark_palette(colors) else "#FFFFFF"
         image = create_animated_vignette(width, height, colors[0], edge_color, progress, config)
 
     else:

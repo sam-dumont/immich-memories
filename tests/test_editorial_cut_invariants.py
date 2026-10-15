@@ -6,13 +6,13 @@ import json
 
 import pytest
 
-from immich_memories.analysis.editorial_cut_invariants import (
+from immich_memories.analysis.structure.cut_invariants import (
     FinishedCut,
     broken_promises,
     cut_violations,
     report_violations,
 )
-from immich_memories.analysis.editorial_family_seat import FamilySeatPolicy
+from immich_memories.analysis.structure.family_seat import FamilySeatPolicy
 
 
 def _shot(asset_id: str, taken: str = "2024-02-01T10:00:00+00:00", **fields) -> dict:

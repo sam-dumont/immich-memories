@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_story_planner import StorySelection
-from immich_memories.analysis.editorial_story_reading import PeriodStory, StoryEpisode
-from immich_memories.analysis.editorial_story_replacement_pool import alternatives_pool
+from immich_memories.analysis.selection.replacement_pool import alternatives_pool
+from immich_memories.analysis.selection.story_planner import StorySelection
+from immich_memories.analysis.stories.period_account import PeriodStory, StoryEpisode
 
 
 def selection(carriers, alternatives_of, unfunded_pool=()):
@@ -150,7 +150,7 @@ def test_the_pool_reaches_another_storys_unfunded_moment_once_its_own_runs_out()
 
 def test_the_audience_gates_own_pool_never_reaches_elsewhere():
     """The audience gate drops a carrier rather than widen its search past the carrier's own
-    moment and story (`editorial_shareability.apply_gate`'s own contract): `include_elsewhere`
+    moment and story (`audience.shareability.apply_gate`'s own contract): `include_elsewhere`
     defaults to off, which is what `apply_audience_gate` asks for."""
     refused = {
         "asset_id": "held",
@@ -234,7 +234,7 @@ def test_elsewhere_months_come_from_the_finished_cut_not_the_pre_review_selectio
 
 def test_elsewhere_respects_the_products_partition_limit():
     """A product that caps carriers per partition never has elsewhere cross partitions: the
-    same rule the carrier's own spares already had to meet (`editorial_story_carriers._spares`).
+    same rule the carrier's own spares already had to meet (`selection.carriers._spares`).
     Both offers are in the month the film already shows, so only the partition rule tells
     them apart."""
     refused = {

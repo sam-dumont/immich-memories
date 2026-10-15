@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def test_inference_defaults_to_the_existing_local_path() -> None:

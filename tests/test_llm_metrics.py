@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from immich_memories.analysis.llm_metrics import collecting
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.metrics import collecting
+from immich_memories.config.models.llm import LLMConfig
 
 
 def _openai_response(content='{"ok": true}', finish_reason="stop", usage=None, model=None):
@@ -59,7 +59,7 @@ def _thinking_config(**overrides) -> LLMConfig:
 @pytest.mark.asyncio
 async def test_a_truncated_thinking_call_is_counted() -> None:
     """#600's regression test: the retry is silent, the count is not."""
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     replies = [_openai_response(finish_reason="length"), _openai_response()]
     # WHY: the LLM server is the external boundary; two replies = truncation then retry.
@@ -72,7 +72,7 @@ async def test_a_truncated_thinking_call_is_counted() -> None:
 
 @pytest.mark.asyncio
 async def test_a_healthy_call_records_one_call_and_no_truncation() -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     # WHY: the LLM server is the external boundary this request reaches.
     with collecting() as counters, patch("httpx.AsyncClient.post", return_value=_openai_response()):
@@ -88,7 +88,7 @@ async def test_a_healthy_call_records_one_call_and_no_truncation() -> None:
     "usage,unmetered", [(None, 1), ({"prompt_tokens": 0, "completion_tokens": 0}, 0)]
 )
 async def test_absent_reader_usage_is_distinct_from_a_reported_zero(usage, unmetered):
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     # WHY: the provider response determines whether the token counts are known.
     with (
@@ -104,7 +104,7 @@ async def test_absent_reader_usage_is_distinct_from_a_reported_zero(usage, unmet
 @pytest.mark.asyncio
 async def test_token_usage_is_recorded_when_the_server_reports_it() -> None:
     """Servers that omit `usage` must not break counting — tokens stay zero."""
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     reply = _openai_response(
         usage={
@@ -124,7 +124,7 @@ async def test_token_usage_is_recorded_when_the_server_reports_it() -> None:
 
 @pytest.mark.asyncio
 async def test_anthropic_cache_tokens_are_in_the_total_and_discount_subset() -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     config = LLMConfig(
         enabled=True,
@@ -153,7 +153,7 @@ async def test_anthropic_cache_tokens_are_in_the_total_and_discount_subset() -> 
 @pytest.mark.asyncio
 async def test_counting_is_off_unless_a_run_asked_for_it() -> None:
     """No collector active means every record call is a no-op, not a crash."""
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     # WHY: the LLM server is the external boundary this request reaches.
     with patch("httpx.AsyncClient.post", return_value=_openai_response()):
@@ -168,7 +168,7 @@ def test_a_phase_records_only_the_llm_spend_that_happened_during_it(tmp_path) ->
     A run-level total says "11 calls". The delta says the review made nine of
     them, which is the sentence that changes what you optimise.
     """
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
     from immich_memories.tracking import RunTracker
 
     tracker = RunTracker("metrics-phases", capture_system=False)
@@ -194,7 +194,7 @@ def test_a_phase_records_only_the_llm_spend_that_happened_during_it(tmp_path) ->
 
 def test_a_phase_with_no_llm_work_carries_no_llm_keys(tmp_path) -> None:
     """ "Did not use the model" must read differently from "used it for free"."""
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
     from immich_memories.tracking import RunTracker
 
     tracker = RunTracker("metrics-quiet", capture_system=False)
@@ -217,7 +217,7 @@ def test_the_run_row_carries_the_whole_runs_llm_spend(tmp_path) -> None:
     exists and spend nearly all of the model budget. So the run-level total is
     not a sum over phases; it has to be recorded in its own right.
     """
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
     from immich_memories.tracking import RunDatabase, RunTracker
 
     tracker = RunTracker("metrics-run-total", capture_system=False)
@@ -262,7 +262,7 @@ def test_a_stage_that_measures_itself_does_not_hide_its_spend_from_the_run() -> 
     selection -- 90 of one measured run's 93 paid calls -- and the three the
     preparation stage made before it opened were the only ones left anywhere.
     """
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
 
     with llm_metrics.collecting() as run_total:
         # The preparation stage: episode reads and the period account.
@@ -289,7 +289,7 @@ async def test_reasoning_tokens_are_counted_and_attributed_to_the_model_that_ser
     prompt. Billed at the completion rate, that is most of what the run cost,
     and `completion_tokens` alone does not say so.
     """
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     reply = _openai_response(
         model="glm-5.3-flash",
@@ -312,7 +312,7 @@ async def test_reasoning_tokens_are_counted_and_attributed_to_the_model_that_ser
 @pytest.mark.asyncio
 async def test_two_models_in_one_run_are_billed_apart() -> None:
     """A run reads with one model and captions with another; the bill is not one price."""
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     reader = _openai_response(model="glm-5.3-flash", usage={"prompt_tokens": 900})
     captioner = _openai_response(model="qwen3-vl-8b", usage={"prompt_tokens": 120})
@@ -327,7 +327,7 @@ async def test_two_models_in_one_run_are_billed_apart() -> None:
 
 
 def test_model_and_stage_keep_rates_and_cache_hits():
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
 
     with llm_metrics.collecting() as counters, llm_metrics.recording_stage("episode"):
         llm_metrics.record_reply(model="fixture-model", completion_tokens=20)
@@ -340,8 +340,8 @@ def test_model_and_stage_keep_rates_and_cache_hits():
 
 @pytest.mark.asyncio
 async def test_a_served_model_is_not_charged_for_work_after_its_request() -> None:
-    from immich_memories.analysis import llm_metrics
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm import metrics as llm_metrics
+    from immich_memories.analysis.llm.query import query_llm
 
     reply = _openai_response(model="glm-5.3-flash")
     # WHY: the LLM server is the external boundary naming the model that served.

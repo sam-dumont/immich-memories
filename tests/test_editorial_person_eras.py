@@ -2,7 +2,7 @@
 
 from datetime import UTC, date, datetime
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
+from immich_memories.analysis.film.intent import build_editorial_intent
 from immich_memories.timeperiod import DateRange
 
 LIFETIME = (
@@ -42,9 +42,9 @@ def _planned_lifetime(tmp_path):
     days; one quiet day two years earlier holds her too, with nothing starred."""
     from dataclasses import replace
 
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
     from tests.editorial_film_fixtures import film_source, home_days
 
     busy = [

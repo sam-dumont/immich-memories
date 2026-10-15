@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
 
 
 class Standing:

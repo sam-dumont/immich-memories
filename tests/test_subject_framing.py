@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.analysis.subject_framing import (
+from immich_memories.analysis.facts.subject_framing import (
     FaceBox,
     face_boxes_of,
     framing_annotation,

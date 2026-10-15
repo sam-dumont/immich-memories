@@ -27,7 +27,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
-from immich_memories.analysis import editorial_shareability as _share
+from immich_memories.analysis.audience import shareability as _share
 from immich_memories.db import Store, to_db
 from immich_memories.db.legacy_import import ImportOutcome
 from immich_memories.db.tables import (

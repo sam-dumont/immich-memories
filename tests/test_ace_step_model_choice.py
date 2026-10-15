@@ -9,7 +9,7 @@ from immich_memories.audio.generators.ace_step_model_choice import (
     choose_model_variant,
     resolve_model_variant,
 )
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 GIB = 1024**3
 

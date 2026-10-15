@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from immich_memories.analysis.favourite_law import moments_that_lost_their_favourite
+from immich_memories.analysis.corpus.favourite_law import moments_that_lost_their_favourite
 from tests.conftest import make_asset
 
 NOON = datetime(2025, 6, 1, 12, 0, tzinfo=UTC)
@@ -77,7 +77,7 @@ class TestTheFavouriteWinsItsMoment:
 
 
 def _item(asset):
-    from immich_memories.analysis.smart_pipeline import ClipWithSegment
+    from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
     from immich_memories.api.models import VideoClipInfo
 
     return ClipWithSegment(

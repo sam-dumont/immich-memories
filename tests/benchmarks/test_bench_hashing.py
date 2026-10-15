@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.duplicate_hashing import hamming_distance
+from immich_memories.analysis.corpus.duplicate_hashing import hamming_distance
 
 
 def test_bench_hamming_distance(benchmark):

@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.photos.encoding import photo_encoding_plan
 from immich_memories.processing.encoding_plan import HdrTransfer, OutputCodec
 

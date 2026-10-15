@@ -152,7 +152,7 @@ def test_a_label_saved_without_its_scale_is_read_from_its_shape():
 def test_a_detected_trip_carries_the_scale_its_title_is_phrased_by():
     from datetime import UTC, datetime, timedelta
 
-    from immich_memories.analysis.trip_detection import detect_trips
+    from immich_memories.analysis.places.trip_detection import detect_trips
     from immich_memories.api.models import Asset, AssetType, ExifInfo
     from immich_memories.generate_privacy import generate_trip_title_text
 
@@ -188,7 +188,7 @@ def test_a_detected_trip_carries_the_scale_its_title_is_phrased_by():
 async def _trip_title_from_model(reply_title: str, place: str, locale: str = "fr"):
     from unittest.mock import AsyncMock, patch
 
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_with_llm
 
     config = LLMConfig(
@@ -229,7 +229,7 @@ async def test_a_model_title_that_names_another_place_gives_way_to_the_template(
 
 
 def test_a_refused_model_title_leaves_the_trip_to_its_place_template(tmp_path):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_title_settings
     from immich_memories.timeperiod import DateRange

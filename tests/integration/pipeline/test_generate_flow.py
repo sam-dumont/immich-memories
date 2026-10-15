@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationError, GenerationParams, generate_memory
 from immich_memories.processing.assembly_config import AssemblyClip
 from tests.conftest import make_clip

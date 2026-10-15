@@ -5,22 +5,25 @@ from unittest.mock import create_autospec
 
 import pytest
 
-from immich_memories.analysis.album_source import fetch_album_media
-from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
-from immich_memories.analysis.editorial_motion_facts import RESIDUAL_PRODUCER
-from immich_memories.analysis.editorial_pool import discover_source_context, resolve_source_pool
-from immich_memories.analysis.editorial_preparation import PreparationResult
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.selection_source import SourceScope
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.clips.bound_sample import source_metadata_digest
+from immich_memories.analysis.clips.motion_facts import RESIDUAL_PRODUCER
+from immich_memories.analysis.corpus.admission import SourceScope
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.preparation.acquire import PreparationResult
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.album import fetch_album_media
+from immich_memories.analysis.sources.pool import discover_source_context, resolve_source_pool
+from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
 from immich_memories.api.album_service import AlbumRef
 from immich_memories.api.models import AssetType, MetadataSearchResult, ServerInfo, UserInfo
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.store.cut_measurements import PendingMeasurements
 from immich_memories.timeperiod import DateRange
 from tests.annotation_rows import annotation_store

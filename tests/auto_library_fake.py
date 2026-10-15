@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, create_autospec, patch
 from immich_memories.api.immich import SyncImmichClient
 from immich_memories.api.models import TimeBucket
 from immich_memories.automation.models import ProcessResult
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
@@ -103,7 +103,7 @@ class FakeGenerateChild:
 
 def load_config_file(tmp_path: Path, extra_yaml: str = "", **automation: object) -> Config:
     """Write a config file and load it as this process's config, as `--config` does."""
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
 
     lines = "".join(f"    {key}: {value!r}\n" for key, value in automation.items())
     path = tmp_path / "config.yaml"

@@ -11,7 +11,7 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from immich_memories.analysis.special_day_sequence import SCAN_VERSION
+from immich_memories.analysis.special_days.sequence import SCAN_VERSION
 from immich_memories.automation.catalogue import (
     entries_from,
     judged_by_this_build,
@@ -57,7 +57,7 @@ def _a_day(day: date = date(2024, 8, 9), **kwargs) -> DiscoveredDay:
 def test_a_day_the_scan_judged_says_which_scan_judged_it(tmp_path, monkeypatch) -> None:
     """Both stamps, written by the scan and read back off the row."""
     from immich_memories import __version__
-    from immich_memories.analysis.special_day import SpecialDay
+    from immich_memories.analysis.special_days.detection import SpecialDay
     from immich_memories.automation.special_day_scan import scan_year
 
     # WHY: ask_if_special is the live model call; the stamp on its result is the subject.

@@ -584,10 +584,10 @@ def _try_local_demucs() -> StemSeparator | None:
     with suppress(ImportError):
         from immich_memories.audio.generators.demucs_local import (
             DemucsLocalBackend,
-            _is_demucs_importable,
+            is_demucs_importable,
         )
 
-        if _is_demucs_importable():
+        if is_demucs_importable():
             logger.info("Pipeline: Local Demucs detected — using for stem separation")
             return DemucsLocalBackend()
 

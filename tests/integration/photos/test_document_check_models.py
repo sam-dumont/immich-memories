@@ -17,10 +17,10 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.editorial_carrier_eligibility import corroborated_document
-from immich_memories.analysis.editorial_preparation_detectors import Docling, decide
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
-from immich_memories.config_models_triage import TriageConfig
+from immich_memories.analysis.facts.carrier_eligibility import corroborated_document
+from immich_memories.analysis.preparation.detectors import Docling, decide
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
+from immich_memories.config.models.triage import TriageConfig
 from immich_memories.triage.encoder import DinoEncoder
 from immich_memories.triage.heads import HeadBundle
 from immich_memories.triage.preprocess import preprocess_image_bytes

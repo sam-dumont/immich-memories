@@ -9,13 +9,13 @@ import json
 import numpy as np
 import pytest
 
-from immich_memories.analysis.editorial_rule_reader import (
+from immich_memories.analysis.stories.rule_reader import (
     OUTDOOR_LOCATION,
     PRIVATE_VENUES,
     PUBLIC_VENUES,
     RuleStructureReader,
 )
-from immich_memories.config_models_editorial_preparation import (
+from immich_memories.config.models.editorial_preparation import (
     EditorialPreparationConfig,
 )
 

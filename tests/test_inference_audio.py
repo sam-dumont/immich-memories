@@ -137,7 +137,7 @@ async def test_app_downloads_the_inference_stems(tmp_path, monkeypatch):
 async def test_pipeline_uses_configured_inference_for_stems(tmp_path, monkeypatch):
     from immich_memories.audio.music_generator_models import VideoTimeline
     from immich_memories.audio.music_pipeline import create_pipeline
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from tests.test_music_pipeline import FakeGenerator
 
     # WHY: generation and separation models are external computation boundaries.

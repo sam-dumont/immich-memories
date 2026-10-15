@@ -186,7 +186,7 @@ def _verify_special_days(conn: Connection, path: Path) -> list[str]:
 
 
 def _legacy_locations(home: Path) -> tuple[Path, Path]:
-    from immich_memories.config_loader import get_config
+    from immich_memories.config.loader import get_config
 
     cache = get_config().cache
     cache_db = home / "cache.db" if cache.database == _DEFAULT_CACHE_DB else cache.database_path

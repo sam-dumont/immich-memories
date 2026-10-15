@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from urllib.parse import urlsplit
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 _UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 _CHECKED_PREFIXES = ("/api/", "/auth/")

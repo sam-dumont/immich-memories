@@ -5,10 +5,10 @@ from __future__ import annotations
 from immich_memories.place_phrases.compose import Rules, compose
 from immich_memories.place_phrases.place import Place
 
-_NO_ARTICLE = frozenset(
+NO_ARTICLE = frozenset(
     {"PT", "AO", "MZ", "CV", "TL", "ST", "IL", "CU", "MT", "SG", "HK", "MO", "MC", "AD", "SM"}
 )
-_NO_ARTICLE_PT = _NO_ARTICLE | {"FR", "ES", "IT", "CY", "MA"}
+_NO_ARTICLE_PT = NO_ARTICLE | {"FR", "ES", "IT", "CY", "MA"}
 _PLURAL = {
     "US": "nos",
     "NL": "nos",
@@ -96,7 +96,7 @@ _HEADS = {
 
 
 _RULES = Rules(
-    "pt-BR", lambda name, code: country_phrase(name, code, _NO_ARTICLE), city_phrase, _HEADS, "e"
+    "pt-BR", lambda name, code: country_phrase(name, code, NO_ARTICLE), city_phrase, _HEADS, "e"
 )
 
 

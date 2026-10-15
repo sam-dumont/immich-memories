@@ -32,8 +32,8 @@ from tests.integration.features.cuts import Shot, story_of
 _REAL_EDITOR = """
 import sys
 
-import immich_memories.analysis.place_geocoder as place_geocoder
-import immich_memories.config_tiers as config_tiers
+import immich_memories.analysis.places.geocoder as place_geocoder
+import immich_memories.config.tiers as config_tiers
 
 # WHY: Basic's classifiers run on the pinned DINOv2 export `models fetch` downloads; a
 # hermetic run has none, so it prepares the period at metadata_only (no ONNX at all).

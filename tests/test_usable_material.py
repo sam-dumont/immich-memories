@@ -11,12 +11,12 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from immich_memories.analysis.selection_source_validation import film_may_use
+from immich_memories.analysis.corpus.validation import film_may_use
 from immich_memories.api.models import AssetType
 from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._helpers import set_active_display
 from immich_memories.cli.film_length import decide_duration
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.memory_types.date_builders import (
     BIRTHDAY_HISTORY_FROM,
     build_birthday_windows,
@@ -102,7 +102,7 @@ def test_earlier_birthdays_holding_only_forwarded_copies_hold_no_history():
 
 def test_forwarded_copies_standing_in_count_toward_the_films_length():
     """With `analysis.forwarded_copies_when_short`, copies filling a gap are material."""
-    from immich_memories.analysis.forwarded_fallback import CopyChecks
+    from immich_memories.analysis.corpus.forwarded_fallback import CopyChecks
     from immich_memories.cli.film_length import sized_film
     from immich_memories.timeperiod import DateRange
 

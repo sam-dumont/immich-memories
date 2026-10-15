@@ -10,7 +10,7 @@ episodes, episodes become stories, stories fund chosen shots, and the chosen sho
 
 ## Units of a library
 
-Where it lives: `moment_grouping.py`, `editorial_rule_reader.py`, `editorial_film_reach.py`.
+Where it lives: `corpus/moment_grouping.py`, `stories/rule_reader.py`, `runtime/film_reach.py`.
 
 | Word | Meaning |
 |---|---|
@@ -24,7 +24,7 @@ Where it lives: `moment_grouping.py`, `editorial_rule_reader.py`, `editorial_fil
 
 ## Preparation
 
-Where it lives: `editorial_preparation_heads.py`, `editorial_preparation_detectors.py`, `editorial_description_contract.py`, `config_tiers.py`.
+Where it lives: `preparation/heads.py`, `preparation/detectors.py`, `captions/contract.py`, `config/tiers.py`.
 
 | Word | Meaning |
 |---|---|
@@ -40,7 +40,7 @@ Where it lives: `editorial_preparation_heads.py`, `editorial_preparation_detecto
 
 ## Building the cut
 
-Where it lives: `editorial_story_carriers.py`, `editorial_story_depth_fill.py`, `editorial_standing_facts.py`, `editorial_story_lookalike.py`.
+Where it lives: `selection/carriers.py`, `selection/depth_fill.py`, `facts/standing_facts.py`, `selection/lookalike.py`.
 
 | Word | Meaning |
 |---|---|
@@ -61,7 +61,7 @@ Where it lives: `editorial_story_carriers.py`, `editorial_story_depth_fill.py`, 
 
 ## The gate and the checks
 
-Where it lives: `editorial_shareability.py`, `editorial_exposure_chains.py`, `editorial_cut_invariants.py`.
+Where it lives: `audience/shareability.py`, `audience/exposure_chains.py`, `structure/cut_invariants.py`.
 
 | Word | Meaning |
 |---|---|
@@ -77,7 +77,7 @@ Where it lives: `editorial_shareability.py`, `editorial_exposure_chains.py`, `ed
 
 ## The model tier
 
-Where it lives: `text_episode_reader.py`, `editorial_thin_layer.py`, `editorial_block_votes.py`, `library_catalogue.py`.
+Where it lives: `reading/episode_reader.py`, `polish/layer.py`, `polish/block_votes.py`, `reading/library_catalogue.py`.
 
 | Word | Meaning |
 |---|---|

@@ -16,7 +16,7 @@ from immich_memories.automation.models import (
 )
 from immich_memories.automation.notifications import send_configured_notification
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.operations.film_labelling import label_for_run
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata

@@ -28,7 +28,7 @@ def format_yaml_error(error: yaml.YAMLError) -> str:
     Returns:
         Human-readable error description with line/column if available.
     """
-    from immich_memories.config_loader import ConfigShapeError
+    from immich_memories.config.loader import ConfigShapeError
 
     if isinstance(error, ConfigShapeError):
         # Valid YAML of the wrong shape: calling it a syntax error sends people hunting for a

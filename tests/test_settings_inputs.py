@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import Config, load_config, set_config
-from immich_memories.config_sources import describe_settings
+from immich_memories.config.loader import Config, load_config, set_config
+from immich_memories.config.sources import describe_settings
 from immich_memories.settings_edit import field_type
 
 
@@ -94,7 +94,7 @@ def test_every_literal_and_enum_setting_comes_with_choices(rows):
 
 
 def test_a_blank_optional_setting_saves_as_not_set(config_path):
-    from immich_memories.config_loader import get_config
+    from immich_memories.config.loader import get_config
     from immich_memories.web.server import create_app
 
     client = TestClient(create_app(), follow_redirects=False)

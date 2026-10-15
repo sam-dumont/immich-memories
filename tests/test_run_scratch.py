@@ -8,7 +8,7 @@ import pytest
 
 from immich_memories import generate
 from immich_memories import generate_render as generate_render_module
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationError, GenerationParams
 from immich_memories.generate_clips import cleanup_temp_clips, keep_temp_clips, new_run_scratch
 from immich_memories.processing.assembly_config import AssemblyClip

@@ -54,7 +54,7 @@ def test_the_season_is_named_in_the_films_language(locale, expected):
 
 
 def _settings(tmp_path, latitude: float, longitude: float):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_title_settings
 

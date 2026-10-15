@@ -47,7 +47,7 @@ def _to_rgb8(frame: np.ndarray, height: int, width: int) -> np.ndarray:
     return np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
 
 
-def _maybe_emit_preview(
+def maybe_emit_preview(
     frame: np.ndarray,
     last_preview_time: float,
     callback: Callable[[bytes], None] | None,

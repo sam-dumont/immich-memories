@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.models.auth import AuthConfig
 from immich_memories.web.auth import verify_credentials
 
 

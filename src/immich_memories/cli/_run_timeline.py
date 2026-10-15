@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.assembly_config import TitleScreenSettings
     from immich_memories.processing.timeline_budget import TimelinePlan
     from immich_memories.timeperiod import DateRange

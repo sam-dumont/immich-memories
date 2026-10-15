@@ -3,7 +3,7 @@ recognised faces, never its caption, which never names anyone (#2061 round 3).""
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_structure_record import _named_exclusion_violations
+from immich_memories.analysis.structure.record import _named_exclusion_violations
 from immich_memories.api.models import Asset
 from tests.household_fake import picture
 

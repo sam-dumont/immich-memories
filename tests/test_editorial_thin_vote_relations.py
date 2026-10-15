@@ -10,10 +10,10 @@ import json
 import re
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-from immich_memories.analysis.editorial_story_replies import film_close_family
-from immich_memories.analysis.editorial_thin_layer import ThinPolish
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.polish.layer import ThinPolish
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
+from immich_memories.analysis.stories.replies import film_close_family
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.db import open_store
 from tests.editorial_subject_family import film_of, subject_people
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from immich_memories.analysis.editorial_completion import RetainedMotion
+from immich_memories.analysis.selection.completion import RetainedMotion
 
 
 def picture(key, seconds, *, moving=False):

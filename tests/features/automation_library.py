@@ -365,7 +365,7 @@ def record_film(
     hours_ago: float = 40 * 24,
 ) -> None:
     """A completed film in the run history, as a finished `generate` leaves it."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import open_store
     from immich_memories.tracking.models import RunMetadata
     from immich_memories.tracking.run_database import RunDatabase

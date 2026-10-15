@@ -3,19 +3,19 @@
 from datetime import date
 from functools import partial
 
-from immich_memories.analysis.editorial_block_votes import judge_worthiness
-from immich_memories.analysis.editorial_film_summary import read_summary
-from immich_memories.analysis.editorial_story_reading import (
+from immich_memories.analysis.polish.block_votes import judge_worthiness
+from immich_memories.analysis.selection.vote import pick_story_moments
+from immich_memories.analysis.stories.period_account import (
     PeriodStory,
     StoryEpisode,
     read_period_story,
 )
-from immich_memories.analysis.editorial_story_replies import WEIGHTS
-from immich_memories.analysis.editorial_story_shortlist import DepictedChoice
-from immich_memories.analysis.editorial_story_threads import fold_threads
-from immich_memories.analysis.editorial_story_vote import pick_story_moments
-from immich_memories.analysis.editorial_story_weighing import _weigh_stories
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.stories.replies import WEIGHTS
+from immich_memories.analysis.stories.shortlist import DepictedChoice
+from immich_memories.analysis.stories.threads import fold_threads
+from immich_memories.analysis.stories.weighing import weigh_stories
+from immich_memories.analysis.structure.film_summary import read_summary
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_judge
 from immich_memories.conformance.runtime import Case
 
@@ -115,7 +115,7 @@ def central_story(llm: LLMConfig) -> str:
     ]
     records: list[dict] = []
     with scratch_judge(llm) as judge:
-        answer = _weigh_stories(
+        answer = weigh_stories(
             judge,
             stories,
             thesis="The owner's cycling race is the central occasion.",
@@ -255,38 +255,38 @@ def editorial_cases(llm: LLMConfig) -> tuple[Case, ...]:
         Case(
             "film summary",
             partial(film_summary, llm),
-            frozenset({"analysis.editorial_film_summary:read_summary"}),
+            frozenset({"analysis.structure.film_summary:read_summary"}),
         ),
         Case(
             "recurring activity",
             partial(recurring_activity, llm),
-            frozenset({"analysis.editorial_story_threads:_ask"}),
+            frozenset({"analysis.stories.threads:_ask"}),
         ),
         Case(
             "story moment selection",
             partial(moment_selection, llm),
             frozenset(
                 {
-                    "analysis.editorial_story_vote:_vote_both_orders",
-                    "analysis.editorial_story_pick_contract:ask_moment_pick",
+                    "analysis.selection.vote:_vote_both_orders",
+                    "analysis.selection.pick_contract:ask_moment_pick",
                 }
             ),
         ),
         Case(
             "central story confirmation",
             partial(central_story, llm),
-            frozenset({"analysis.editorial_story_weighing:_page_context_candidates"}),
+            frozenset({"analysis.stories.weighing:_page_context_candidates"}),
         ),
         Case(
             "period story",
             partial(period_story, llm),
             frozenset(
                 {
-                    "analysis.editorial_story_reading:_read_month_page",
-                    "analysis.editorial_page_recovery:read_page_answer",
-                    "analysis.editorial_story_grouping:_group_stories",
-                    "analysis.editorial_story_weighing:_ask_both_orders",
-                    "analysis.editorial_story_weight_contract:ask_complete_weights",
+                    "analysis.stories.period_account:_read_month_page",
+                    "analysis.judgments.page_recovery:read_page_answer",
+                    "analysis.stories.grouping:_group_stories",
+                    "analysis.stories.weighing:_ask_both_orders",
+                    "analysis.stories.weight_contract:ask_complete_weights",
                 }
             ),
         ),
@@ -295,8 +295,8 @@ def editorial_cases(llm: LLMConfig) -> tuple[Case, ...]:
             partial(worthiness, llm),
             frozenset(
                 {
-                    "analysis.editorial_block_votes:_ask_orders",
-                    "analysis.editorial_structure_io:StructureTextJudge.ask",
+                    "analysis.polish.block_votes:_ask_orders",
+                    "analysis.judgments.text_judge:StructureTextJudge.ask",
                 }
             ),
         ),

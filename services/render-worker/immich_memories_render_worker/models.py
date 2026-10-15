@@ -15,9 +15,9 @@ from pydantic import (
 )
 
 from immich_memories.api.compatibility import ApiVersionPolicy
-from immich_memories.config_models import PRIMARY_ACCOUNT, is_account_name
-from immich_memories.config_models_network import NetworkConfig
-from immich_memories.config_models_render import TitleScreenConfig
+from immich_memories.config.models.network import NetworkConfig
+from immich_memories.config.models.render import TitleScreenConfig
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT, is_account_name
 from immich_memories.processing.encoding_plan import HdrMode
 
 

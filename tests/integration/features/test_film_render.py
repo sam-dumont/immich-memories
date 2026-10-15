@@ -323,7 +323,7 @@ def _still_clip(
     from PIL import Image, ImageDraw
 
     from immich_memories.api.models import AssetFace, AssetType, Person
-    from immich_memories.config_models_render import PhotoConfig
+    from immich_memories.config.models.render import PhotoConfig
     from immich_memories.photos.photo_pipeline import render_single_photo
     from tests.conftest import make_asset
 

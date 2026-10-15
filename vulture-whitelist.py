@@ -7,7 +7,7 @@ _.samp_freq
 _.num_bins
 
 # Read by Asset.model_dump in source_metadata_digest (analysis/
-# editorial_bound_sample.py), which hashes the whole model to bind the source
+# clips/bound_sample.py), which hashes the whole model to bind the source
 # metadata Immich reported. Every field on Asset and on the models it nests is
 # read there, and a field removed is a difference the evidence stops noticing.
 # Nothing names them on the reading side, so vulture cannot see any of it.
@@ -28,18 +28,15 @@ AUDIO  # unused variable (src/immich_memories/api/models.py)
 
 # Rendered into the prompt the editorial model reads.
 # render_person_period_facts does json.dumps(asdict(fact)) and that string is
-# spliced into the judge line at editorial_structure_lines.py:118 via
+# spliced into the judge line at film/lines.py:118 via
 # with_person_context. The model is the reader; no source line names the keys,
 # and dropping one would silently change the cut.
-# The stateless public projection remains available to callers; production
-# reuses PersonPeriodProjection for successive subsets of one sealed wall.
-person_period_facts  # unused function (src/immich_memories/analysis/editorial_person_period_facts.py)
-person_token  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:18)
-grounding_moment_ids  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:25)
+person_token  # unused variable (src/immich_memories/analysis/reading/person_period_facts.py:18)
+grounding_moment_ids  # unused variable (src/immich_memories/analysis/reading/person_period_facts.py:25)
 
 # onnxruntime SessionOptions attributes: set on the options object, then read
 # by the C++ runtime when InferenceSession is constructed a line or two later
-# (triage/encoder.py, analysis/editorial_preparation_detectors.py).
+# (triage/encoder.py, analysis/preparation/detectors.py).
 _.intra_op_num_threads  # unused attribute (src/immich_memories/triage/encoder.py)
 _.inter_op_num_threads  # unused attribute (src/immich_memories/triage/encoder.py)
 _.graph_optimization_level  # unused attribute (src/immich_memories/triage/encoder.py)
@@ -63,8 +60,8 @@ _.lastResort  # unused attribute (src/immich_memories/logging_config.py)
 # get_field_value is abstract on PydanticBaseSettingsSource, so without it the
 # source cannot even be instantiated; settings_customise_sources is the hook
 # BaseSettings.__init__ calls on every Config() to splice the YAML source in.
-_.get_field_value  # unused method (src/immich_memories/config_loader.py)
-_.settings_customise_sources  # unused method (src/immich_memories/config_loader.py)
+_.get_field_value  # unused method (src/immich_memories/config/loader.py)
+_.settings_customise_sources  # unused method (src/immich_memories/config/loader.py)
 
 # Reached only from checked-in developer scripts, which vulture does not scan:
 # scripts/validate_local_audio.py for the stem check, and
@@ -82,8 +79,8 @@ _.run_ffmpeg_assembly  # unused method (src/immich_memories/processing/clip_enco
 #   validate_image_path  its video/audio twins are used in ~14 places while image
 #                    paths are opened unvalidated; a gap, not dead weight
 #   response_sha256, unreadable_or_omitted_pages
-#                    feed episode_diagnostics_sink, an optional callback that
-#                    defaults to None and that only tests ever supply
+#                    the episode reader's per-response diagnostics; only tests
+#                    read them
 #   get_active_display, render_final
 #                    the public reads of state production reaches directly; the
 #                    tests use them as the window onto it
@@ -92,8 +89,8 @@ _.run_ffmpeg_assembly  # unused method (src/immich_memories/processing/clip_enco
 #                    other; production never resets it
 #   PACK_DIM         read by scripts/triage_heads/semantic_refinement.py, which
 #                    vulture does not scan
-response_sha256  # unused variable (src/immich_memories/analysis/text_episode_answers.py)
-unreadable_or_omitted_pages  # unused variable (src/immich_memories/analysis/text_episode_answers.py)
+response_sha256  # unused variable (src/immich_memories/analysis/reading/episode_answers.py)
+unreadable_or_omitted_pages  # unused variable (src/immich_memories/analysis/reading/episode_answers.py)
 get_active_display  # unused function (src/immich_memories/cli/_helpers.py)
 _.render_final  # unused method (src/immich_memories/cli/_live_display.py)
 validate_image_path  # unused function (src/immich_memories/security.py)

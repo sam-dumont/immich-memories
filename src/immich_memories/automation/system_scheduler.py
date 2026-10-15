@@ -146,7 +146,7 @@ def _default_log_dir(config_path: Path | None = None) -> Path:
     install keeps its own logs next to PATH, so launchd (which always runs with the real
     `$HOME`) never mixes a second setup's logs into the main install's `~/.immich-memories`.
     """
-    from immich_memories.config_loader import config_state_dir
+    from immich_memories.config.loader import config_state_dir
 
     return config_state_dir(config_path) / "logs"
 

@@ -1,0 +1,643 @@
+"""Acquire and admit the source-eligible corpus every editorial pass reads.
+
+Split out of the old selection_flow module when that file reached 798 of its 800 lines and
+Tasks 7-11 all needed to modify it. Roughly nine tenths of it was source
+preparation, whose tests already lived in test_selection_source.py, and the
+cycle it created was being papered over by a function-local import of the
+passes. Nothing here knows a pass exists.
+
+The request model and the acquisition itself live here. What each admitted
+source IS goes to `rendering`, whether it may be admitted at all to `validation`, and
+the canonical grouping of what was admitted to `groups`.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from immich_memories.analysis.corpus.exact_copies import CopyGroup, FoldedPool, fold_exact_copies
+from immich_memories.analysis.corpus.groups import (
+    EditorialGroup,
+    build_episode_groups,
+    build_moment_groups_within,
+)
+from immich_memories.analysis.corpus.name_filter import asset_id_of, live_photo_component_ids
+from immich_memories.analysis.corpus.picture_copies import (
+    group_members,
+    kept_ids,
+    merged_people,
+    picture_copies,
+    starred_keepers,
+)
+from immich_memories.analysis.corpus.quality import grounded_source_annotations
+from immich_memories.analysis.corpus.records import (
+    DecisionProvenance,
+    EditorialCandidate,
+    LivePhotoRenderingFamily,
+    PassTrace,
+    SourceEvidence,
+    TraceDecision,
+)
+from immich_memories.analysis.corpus.rendering import (
+    cross_moment_family_ids,
+    rendering_family_material,
+    rendering_manifest_signature,
+    with_favourite,
+    with_people,
+    without_rendering_evidence,
+    without_rendering_family,
+)
+from immich_memories.analysis.corpus.stacks import fold_stacks, starred_primaries
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.corpus.validation import (
+    source_exclusion_reason,
+    validate_prepared_source,
+)
+from immich_memories.analysis.corpus.visual_atlas import AtlasSource
+from immich_memories.api.access_clients import AccountReadFailed
+from immich_memories.api.models import AssetType, VideoClipInfo, asset_of
+from immich_memories.timeperiod import DateRange
+
+if TYPE_CHECKING:
+    from immich_memories.api.models import Asset
+
+
+@dataclass(frozen=True)
+class PlaceConstraint:
+    """Keep only assets provably AT a place: a named city, a GPS radius, or both.
+
+    Either form admits (union), so a home era may state its city and its
+    coordinates. An asset with no place evidence never matches -- for a scoped
+    ask, unknown place is not presence; the human gate downstream owns the
+    recall risk. City names compare case-insensitively against Immich's
+    ingest-time reverse geocoding, the ruled place source (2026-08-31).
+    """
+
+    cities: tuple[str, ...] = ()
+    center: tuple[float, float] | None = None
+    radius_km: float = 0.0
+
+
+@dataclass(frozen=True)
+class SourceScope:
+    """The date and library boundaries used to acquire an editorial source."""
+
+    start_at: datetime | None = None
+    end_at: datetime | None = None
+    date_ranges: tuple[DateRange, ...] = ()
+    library_ids: tuple[str, ...] = ()
+    # None preserves date-only acquisition; an explicit membership never expands.
+    asset_ids: tuple[str, ...] | None = None
+    # Provenance, not quality: whether a file came off this library's camera is
+    # a fact about the file, so it settles scope rather than waiting for a pass
+    # to judge it. Every other pool builder asks the same question here.
+    excluded_filename_patterns: tuple[str, ...] = ()
+    stills_need_a_camera: bool = False
+    # A renamed messaging re-encode can evade the filename patterns, especially
+    # for video. Low resolution plus absent camera metadata is the measured
+    # provenance signal; either fact on its own remains insufficient.
+    min_source_short_side: int = 1080
+    # A conscious per-memory override for sources where received media is the
+    # record (for example, a nephew spotlight assembled from family forwards).
+    # This never relaxes date/person/library scope, privacy, owner exclusions,
+    # or Live Photo component handling.
+    accept_any_provenance: bool = False
+    # The forwarded copies that fill a gap in the film's camera timeline, by asset id
+    # (`corpus.forwarded_fallback`, `analysis.forwarded_copies_when_short`). Empty refuses every
+    # forwarded copy, as the provenance rule always has.
+    forwarded_stand_ins: tuple[str, ...] = ()
+    # Cost, decided on Immich metadata before any download or analysis: one
+    # selected six-second shot once dragged a 37GB hour-long original into
+    # preparation (#1013). 0 disables the cap.
+    max_source_video_seconds: float = 300.0
+    # Visibility, not provenance: whether Immich shows an asset on the timeline
+    # at all. Off by default and hard-coded off at generation, so pointing
+    # analysis at the archive on purpose stays possible without a forgotten
+    # setting reaching a video.
+    include_off_timeline: bool = False
+    # Scope, like the library boundary: where the ask says the memory happened.
+    # None means the ask names no place, which admits everything.
+    place: PlaceConstraint | None = None
+    # The films this app already made and uploaded. Identity, not quality: a finished
+    # memory is not footage of anything, and nothing else in acquisition can tell.
+    # Its duration sits under the source cap and its filename matches no pattern.
+    generated_asset_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.date_ranges and (self.start_at is not None or self.end_at is not None):
+            raise ValueError("source scope uses either exact date ranges or one continuous range")
+        if any(window.start > window.end for window in self.date_ranges):
+            raise ValueError("source date ranges must start before they end")
+
+
+@dataclass(frozen=True)
+class EditorialSelectionRequest:
+    """The source boundary and owner choices for one editorial selection."""
+
+    scope: SourceScope
+    owner_excluded_asset_ids: tuple[str, ...] = ()
+    # Pictures the owner ticked after seeing a cut: admitted after the read, never argued
+    # about again. A post-read signal, so it changes no prompt and no digest input.
+    owner_required_asset_ids: tuple[str, ...] = ()
+    evidence_exclusions: Mapping[str, str] = field(default_factory=dict)
+    # Whose copy stands for a picture two accounts both hold, after any favourite.
+    # None (one account, or the owner not yet known) falls through to stable ids.
+    primary_owner_id: str | None = None
+
+
+@dataclass(frozen=True)
+class EditorialDependencies:
+    """External acquisition required before the pure editorial passes begin."""
+
+    source_fetcher: Callable[[SourceScope], Sequence[Asset | VideoClipInfo]]
+    library_membership: Callable[[Asset, tuple[str, ...]], bool] | None = None
+    source_evidence: Callable[[Asset | VideoClipInfo], SourceEvidence | None] | None = None
+    preview_jpeg: Callable[[Asset], bytes | None] | None = None
+    # Keeps which copy stands for each exact-copy group, so a replay reads that one.
+    record_copies: Callable[[FoldedPool], None] = lambda _folded: None
+    # Member asset id -> stack primary asset id, from `GET /stacks` (Immich 3.3,
+    # immich-app/immich#31082). Empty on a 403 (no `stack.read`) or a pre-stacks server.
+    stack_of: Callable[[], Mapping[str, str]] = dict
+
+
+@dataclass(frozen=True)
+class PreparedEditorialSource:
+    """Chronological candidates and their admission record for subsequent passes."""
+
+    candidates: tuple[EditorialCandidate, ...]
+    visual_sources: tuple[AtlasSource, ...]
+    rendering_families: tuple[LivePhotoRenderingFamily, ...]
+    source_warnings: tuple[str, ...]
+    trace: Trace
+    episode_groups: tuple[EditorialGroup, ...]
+    moment_groups: tuple[EditorialGroup, ...]
+    owner_required_asset_ids: tuple[str, ...] = ()
+    # The exact copies folded into one kept picture (`corpus/exact_copies.py`).
+    copy_groups: tuple[CopyGroup, ...] = ()
+    # Producers bind their facts to captured DTOs, before copy grouping promotes a star.
+    # The candidate still carries that promotion for selection and rendering.
+    preparation_sources: Mapping[str, Asset] = field(default_factory=dict)
+    # A same-picture file (an edit and its original) or a stack member -> the file kept for it.
+    folded_ids: Mapping[str, str] = field(default_factory=dict)
+
+    def kept_ids(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
+        """Each id as the file kept for its picture: a household run asks for every copy, and a
+        person film's strict read may name the original whose edit or stack top plays (#2358)."""
+        exact = FoldedPool((), self.copy_groups).kept_ids(asset_ids)
+        return tuple(dict.fromkeys(self.folded_ids.get(asset_id, asset_id) for asset_id in exact))
+
+    @property
+    def candidate_ids(self) -> tuple[str, ...]:
+        """Return the stable source order without exposing mutable collection state."""
+        return tuple(candidate.asset_id for candidate in self.candidates)
+
+    @property
+    def excluded_ids(self) -> tuple[str, ...]:
+        """Return exclusions from the durable source-eligibility trace."""
+        source_pass = next(
+            pass_trace
+            for pass_trace in self.trace.editorial_passes
+            if pass_trace.name == "source-eligibility"
+        )
+        return tuple(decision.asset_id for decision in source_pass.rejected)
+
+
+@dataclass(frozen=True)
+class _GroupedCorpus:
+    """The corpus after grouping, with any straddling rendering family taken off it."""
+
+    candidates: tuple[EditorialCandidate, ...]
+    rendering_families: tuple[LivePhotoRenderingFamily, ...]
+    episode_groups: tuple[EditorialGroup, ...]
+    moment_groups: tuple[EditorialGroup, ...]
+    warnings: tuple[str, ...]
+
+
+def prepare_editorial_source(
+    request: EditorialSelectionRequest,
+    dependencies: EditorialDependencies,
+    *,
+    trace: Trace | None = None,
+    group: bool = True,
+) -> PreparedEditorialSource:
+    """Acquire, normalize, and admit the complete source-eligible corpus.
+
+    ``group=False`` leaves episodes and moments uncut, for a caller that only needs to
+    know what was admitted.
+    """
+    sources, normalization_warnings = coalesce_sources(
+        tuple(
+            sorted(
+                dependencies.source_fetcher(request.scope),
+                key=lambda source: (asset_of(source).file_created_at, asset_id_of(source)),
+            )
+        )
+    )
+    preparation_sources = _captured_assets(sources)
+    folded = fold_exact_copies(sources, primary_owner_id=request.primary_owner_id)
+    dependencies.record_copies(folded)
+    sources = folded.pool
+    request = replace(
+        request,
+        owner_excluded_asset_ids=folded.kept_ids(request.owner_excluded_asset_ids),
+        owner_required_asset_ids=folded.kept_ids(request.owner_required_asset_ids),
+    )
+    components = live_photo_component_ids(asset_of(source) for source in sources)
+    generated = frozenset(request.scope.generated_asset_ids)
+    request, sources, copies, stacked, excluded, group_ids = _fold_copies_and_stacks(
+        request, sources, dependencies
+    )
+    source_decisions = tuple(
+        (
+            source,
+            source_exclusion_reason(
+                source,
+                request,
+                dependencies,
+                excluded,
+                components,
+                generated,
+                copies,
+                group_ids,
+                stacked,
+            ),
+        )
+        for source in sources
+    )
+    eligible_sources = tuple(
+        source for source, exclusion_reason in source_decisions if exclusion_reason is None
+    )
+    (
+        rendering_families,
+        stitch_memberships,
+        rendering_family_ids,
+        family_warnings,
+    ) = rendering_family_material(eligible_sources)
+    candidates = tuple(
+        sorted(
+            (
+                _candidate_from(
+                    source,
+                    stitch_memberships.get(asset_id_of(source), ()),
+                    rendering_family_ids.get(asset_id_of(source)),
+                    dependencies.source_evidence(source)
+                    if dependencies.source_evidence is not None
+                    else None,
+                )
+                for source in eligible_sources
+            ),
+            key=lambda candidate: (candidate.taken_at, candidate.asset_id),
+        )
+    )
+    visual_sources = tuple(
+        _visual_source_from(source, dependencies.preview_jpeg) for source in eligible_sources
+    )
+    grouped = (
+        _grouped_corpus(candidates, rendering_families)
+        if group
+        else _GroupedCorpus(candidates, rendering_families, (), (), ())
+    )
+    source_warnings = (*normalization_warnings, *family_warnings, *grouped.warnings)
+    trace = Trace() if trace is None else trace
+    trace.warnings.extend(source_warnings)
+    source_ids = tuple(asset_id_of(source) for source in sources)
+    trace.record_editorial_pass(
+        PassTrace(
+            name="source-eligibility",
+            input_ids=source_ids,
+            kept_ids=tuple(candidate.asset_id for candidate in grouped.candidates),
+            rejected=tuple(
+                TraceDecision(asset_id_of(source), reason)
+                for source, reason in source_decisions
+                if reason is not None
+            ),
+            unresolved=(),
+            duration_before=sum(_duration_of(source) for source in sources),
+            duration_after=sum(candidate.shippable_duration for candidate in grouped.candidates),
+            provenance=_source_provenance("source-eligibility", source_ids),
+        )
+    )
+    prepared = PreparedEditorialSource(
+        candidates=grouped.candidates,
+        visual_sources=visual_sources,
+        rendering_families=grouped.rendering_families,
+        source_warnings=source_warnings,
+        trace=trace,
+        episode_groups=grouped.episode_groups,
+        moment_groups=grouped.moment_groups,
+        owner_required_asset_ids=_required_in_pool(request, grouped.candidates, trace),
+        copy_groups=folded.groups,
+        preparation_sources=_candidate_assets(grouped.candidates, preparation_sources),
+        folded_ids={
+            member: keeper.id for member, keeper in _carrying_files(copies, stacked).items()
+        },
+    )
+    validate_prepared_source(prepared)
+    return prepared
+
+
+def _captured_assets(sources: Sequence[Asset | VideoClipInfo]) -> dict[str, Asset]:
+    return {asset_id_of(source): asset_of(source) for source in sources}
+
+
+def _candidate_assets(
+    candidates: Sequence[EditorialCandidate], captured: Mapping[str, Asset]
+) -> dict[str, Asset]:
+    return {candidate.asset_id: captured[candidate.asset_id] for candidate in candidates}
+
+
+def _grouped_corpus(
+    candidates: tuple[EditorialCandidate, ...],
+    rendering_families: tuple[LivePhotoRenderingFamily, ...],
+) -> _GroupedCorpus:
+    """Group the admitted corpus, dropping any family that straddles two moments.
+
+    A family whose stills land in different moments cannot render as one clip
+    without moving a picture out of the moment it belongs to, so the family is
+    withdrawn and its stills regrouped as ordinary photographs.
+    """
+    episode_groups = build_episode_groups(candidates)
+    moment_groups = build_moment_groups_within(candidates, episode_groups)
+    crossing_family_ids = cross_moment_family_ids(rendering_families, moment_groups)
+    if not crossing_family_ids:
+        return _GroupedCorpus(candidates, rendering_families, episode_groups, moment_groups, ())
+    warnings = tuple(
+        f"!! Live Photo rendering family crosses moment groups: {family_id}"
+        for family_id in crossing_family_ids
+    )
+    rendering_families = tuple(
+        family for family in rendering_families if family.family_id not in crossing_family_ids
+    )
+    candidates = tuple(
+        without_rendering_family(candidate)
+        if candidate.rendering_family_id in crossing_family_ids
+        else candidate
+        for candidate in candidates
+    )
+    episode_groups = build_episode_groups(candidates)
+    moment_groups = build_moment_groups_within(candidates, episode_groups)
+    return _GroupedCorpus(candidates, rendering_families, episode_groups, moment_groups, warnings)
+
+
+def _candidate_from(
+    source: Asset | VideoClipInfo,
+    live_photo_stitch_member_ids: tuple[str, ...],
+    rendering_family_id: str | None,
+    evidence: SourceEvidence | None,
+) -> EditorialCandidate:
+    asset = asset_of(source)
+    is_video = asset.type == AssetType.VIDEO
+    grounded_annotations = grounded_source_annotations(
+        asset,
+        source if isinstance(source, VideoClipInfo) else None,
+        evidence,
+    )
+    if rendering_family_id is not None:
+        grounded_annotations = (
+            *grounded_annotations,
+            f"live-photo-rendering-family:{rendering_family_id}",
+            f"live-photo-stitch-members:{','.join(live_photo_stitch_member_ids)}",
+        )
+    return EditorialCandidate(
+        asset_id=asset.id,
+        # The instant, as ever: it is rendered into every annotation line, the identity each
+        # banked episode reading is keyed on. Days and partitions read the picture's own clock
+        # from the asset (`Asset.local_taken_at`, #2355).
+        taken_at=asset.file_created_at,
+        media_kind=("live_photo" if asset.is_live_photo else "video" if is_video else "photo"),
+        live_photo_stitch_member_ids=live_photo_stitch_member_ids,
+        rendering_family_id=rendering_family_id,
+        favourite=asset.is_favorite,
+        source=asset,
+        shippable_duration=(
+            source.duration_seconds
+            if isinstance(source, VideoClipInfo)
+            else (asset.duration_seconds or 0.0)
+        ),
+        grounded_annotations=grounded_annotations,
+    )
+
+
+def _required_in_pool(
+    request: EditorialSelectionRequest,
+    candidates: tuple[EditorialCandidate, ...],
+    trace: Trace,
+) -> tuple[str, ...]:
+    """Keep the required ids the pool can honour; name the ones it cannot."""
+    in_pool = {candidate.asset_id for candidate in candidates}
+    for asset_id in request.owner_required_asset_ids:
+        if asset_id not in in_pool:
+            trace.warnings.append(f"owner required picture is not in the eligible pool: {asset_id}")
+    return tuple(asset_id for asset_id in request.owner_required_asset_ids if asset_id in in_pool)
+
+
+def _preview_hash(
+    preview_jpeg: Callable[[Asset], bytes | None] | None,
+) -> Callable[[Asset], str | None] | None:
+    """A cached preview's perceptual hash; no preview, or one that cannot be read, is no hash."""
+    if preview_jpeg is None:
+        return None
+    from immich_memories.analysis.corpus.duplicate_hashing import compute_thumbnail_hash
+
+    def hash_of(asset: Asset) -> str | None:
+        try:
+            preview = preview_jpeg(asset)
+            return compute_thumbnail_hash(preview) if preview else None
+        except AccountReadFailed:
+            raise
+        except Exception:  # WHY: one unreadable preview only means that file is not folded
+            return None
+
+    return hash_of
+
+
+def _carrying_files(copies: Mapping[str, Asset], stacked: Mapping[str, Asset]) -> dict[str, Asset]:
+    """Each folded file -> the file that plays its picture: a stack member goes to its
+    primary, then the primary's picture to whichever file the copy fold kept."""
+    return {**copies, **{member: copies.get(top.id, top) for member, top in stacked.items()}}
+
+
+def _fold_copies_and_stacks(
+    request: EditorialSelectionRequest,
+    sources: Sequence[Asset | VideoClipInfo],
+    dependencies: EditorialDependencies,
+) -> tuple[
+    EditorialSelectionRequest,
+    tuple[Asset | VideoClipInfo, ...],
+    Mapping[str, Asset],
+    Mapping[str, Asset],
+    set[str],
+    Mapping[str, frozenset[str]],
+]:
+    """Fold same-picture files and Immich stacks into their keeper, carrying pins, star and people.
+
+    An owner pin or exclusion named before an edit was ever uploaded still named the
+    picture, whichever file the fold kept -- `kept_ids` remaps it the way the exact-copy
+    fold already does; one naming a stack member means the stack's primary. A star or a
+    person tagged on any file of a picture or a stack belongs to the kept one.
+    """
+    copies = picture_copies(
+        (asset_of(source) for source in sources),
+        hash_of=_preview_hash(dependencies.preview_jpeg),
+    )
+    stacked = fold_stacks((asset_of(source) for source in sources), dependencies.stack_of())
+    # A pin, an exclusion and a person tagged on any file of a picture or a stack belong to the
+    # file that carries it.
+    carried = _carrying_files(copies, stacked)
+    request = replace(
+        request,
+        owner_excluded_asset_ids=kept_ids(carried, request.owner_excluded_asset_ids),
+        owner_required_asset_ids=kept_ids(carried, request.owner_required_asset_ids),
+    )
+    starred = starred_keepers(copies, (asset_of(source) for source in sources))
+    starred |= starred_primaries(stacked, (asset_of(source) for source in sources))
+    people_by_keeper = merged_people(carried, (asset_of(source) for source in sources))
+    sources = tuple(
+        with_people(
+            with_favourite(source, True) if asset_id_of(source) in starred else source,
+            people_by_keeper.get(asset_id_of(source), asset_of(source).people),
+        )
+        for source in sources
+    )
+    excluded = set(request.owner_excluded_asset_ids)
+    return request, sources, copies, stacked, excluded, group_members(copies)
+
+
+def _visual_source_from(
+    source: Asset | VideoClipInfo,
+    preview_jpeg: Callable[[Asset], bytes | None] | None,
+) -> AtlasSource:
+    asset = asset_of(source)
+    preview: bytes | None = None
+    unavailable_reason: str | None = None
+    if preview_jpeg is not None:
+        try:
+            preview = preview_jpeg(asset)
+        except AccountReadFailed:
+            raise
+        except Exception as exc:  # WHY: one failed external preview read cannot abort the corpus
+            unavailable_reason = (
+                f"preview provider raised {type(exc).__name__} and no usable motion frames"
+            )
+    return AtlasSource(
+        asset=asset,
+        preview_jpeg=preview,
+        unavailable_reason=unavailable_reason,
+    )
+
+
+def coalesce_sources(
+    sources: Sequence[Asset | VideoClipInfo],
+) -> tuple[tuple[Asset | VideoClipInfo, ...], tuple[str, ...]]:
+    """Keep one canonical source per asset ID, preferring richer clip evidence."""
+    coalesced: dict[str, Asset | VideoClipInfo] = {}
+    conflicting_render_manifests: set[str] = set()
+    warnings: list[str] = []
+    for source in sources:
+        asset_id = asset_id_of(source)
+        existing = coalesced.get(asset_id)
+        if existing is None:
+            coalesced[asset_id] = source
+            continue
+        if _asset_signature(existing) != _asset_signature(source):
+            raise ValueError(f"conflicting source representations for asset {asset_id}")
+        preferred = (
+            source if _source_evidence_rank(source) > _source_evidence_rank(existing) else existing
+        )
+        existing_manifest = rendering_manifest_signature(existing)
+        source_manifest = rendering_manifest_signature(source)
+        if (
+            existing_manifest is not None
+            and source_manifest is not None
+            and existing_manifest != source_manifest
+            and asset_id not in conflicting_render_manifests
+        ):
+            conflicting_render_manifests.add(asset_id)
+            warnings.append(
+                f"!! conflicting Live Photo rendering manifests for duplicate asset {asset_id}"
+            )
+        people = {
+            person.id: person for item in (existing, source) for person in asset_of(item).people
+        }
+        merged_asset = asset_of(preferred).model_copy(update={"people": list(people.values())})
+        preferred = (
+            preferred.model_copy(update={"asset": merged_asset})
+            if isinstance(preferred, VideoClipInfo)
+            else merged_asset
+        )
+        coalesced[asset_id] = with_access_accounts(
+            with_favourite(
+                without_rendering_evidence(preferred)
+                if asset_id in conflicting_render_manifests
+                else preferred,
+                asset_of(existing).is_favorite or asset_of(source).is_favorite,
+            ),
+            (*asset_of(existing).access_accounts, *asset_of(source).access_accounts),
+        )
+    return tuple(coalesced.values()), tuple(warnings)
+
+
+def with_access_accounts(
+    source: Asset | VideoClipInfo, accounts: Sequence[str]
+) -> Asset | VideoClipInfo:
+    """Every account any read of the asset came through, in first-seen order."""
+    merged = tuple(dict.fromkeys(accounts))
+    asset = asset_of(source)
+    if asset.access_accounts == merged:
+        return source
+    merged_asset = asset.model_copy(update={"access_accounts": merged})
+    if isinstance(source, VideoClipInfo):
+        return source.model_copy(update={"asset": merged_asset})
+    return merged_asset
+
+
+def _asset_signature(source: Asset | VideoClipInfo) -> tuple[object, ...]:
+    """Identify the immutable asset facts that must agree across representations."""
+    asset = asset_of(source)
+    return (
+        asset.owner_id,
+        asset.device_asset_id,
+        asset.type,
+        asset.file_created_at,
+        asset.original_path,
+        asset.original_file_name,
+        asset.original_mime_type,
+        asset.checksum,
+        asset.live_photo_video_id,
+    )
+
+
+def _source_evidence_rank(source: Asset | VideoClipInfo) -> tuple[float, ...]:
+    if not isinstance(source, VideoClipInfo):
+        return (0.0, 0.0, 0.0, 0.0, 0.0)
+    return (
+        1.0,
+        source.duration_seconds,
+        float(source.width * source.height),
+        float(len(source.live_burst_still_ids or ())),
+        float(sum(value is not None for value in (source.llm_category, source.llm_quality))),
+    )
+
+
+def _duration_of(source: Asset | VideoClipInfo) -> float:
+    return (
+        source.duration_seconds
+        if isinstance(source, VideoClipInfo)
+        else (source.duration_seconds or 0.0)
+    )
+
+
+def _source_provenance(pass_name: str, input_ids: tuple[str, ...]) -> DecisionProvenance:
+    return DecisionProvenance(
+        pass_name=pass_name,  # noqa: S106 - public source pass identity
+        pass_version="1",  # noqa: S106 - public pass version
+        schema_version="1",
+        model_identity="",
+        input_ids=input_ids,
+        sheet_hashes=(),
+        request_key="source-eligibility",
+        cache_hit=False,
+    )

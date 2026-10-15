@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.timeperiod import DateRange
 
 
@@ -20,7 +20,7 @@ def _run(**kwargs):
     with (
         patch("immich_memories.generate_clips.assets_to_clips", return_value=[clip]),
         # WHY: the pipeline is the collaborator under inspection.
-        patch("immich_memories.analysis.editorial_runtime.build_smart_pipeline") as pipeline_type,
+        patch("immich_memories.analysis.runtime.composition.build_smart_pipeline") as pipeline_type,
     ):
         pipeline = pipeline_type.return_value
         pipeline.run_analysis.return_value = []

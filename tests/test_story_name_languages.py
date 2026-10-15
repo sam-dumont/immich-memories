@@ -12,9 +12,7 @@ from collections import Counter
 
 import pytest
 
-from immich_memories.analysis.editorial_film_summary import plain_summary
-from immich_memories.analysis.editorial_occasions import find_occasions, spoken_list
-from immich_memories.analysis.editorial_story_names import (
+from immich_memories.analysis.stories.names import (
     day_label,
     home_name,
     leg_name,
@@ -23,6 +21,8 @@ from immich_memories.analysis.editorial_story_names import (
     trip_name,
     trip_purpose,
 )
+from immich_memories.analysis.stories.occasions import find_occasions, spoken_list
+from immich_memories.analysis.structure.film_summary import plain_summary
 from immich_memories.i18n import SUPPORTED_LOCALES, film_texts
 
 _STORY_KEYS = {

@@ -1,7 +1,7 @@
 """Compare cached selection algorithms on portable synthetic fixtures, without media or models.
 
 Run each variant in a fresh process. A baseline source file can be exported with
-`git show main:src/immich_memories/analysis/editorial_story_shortlist.py`.
+`git show main:src/immich_memories/analysis/stories/shortlist.py`.
 Results are planner timings, not whole-film or real-library measurements.
 """
 
@@ -36,7 +36,8 @@ def samples(work, repeat):
 
 def install_baseline(path):
     """Restore both former hot paths without changing any prompt serializer."""
-    from immich_memories.analysis import editorial_story_carriers, editorial_story_shortlist
+    from immich_memories.analysis.selection import carriers as editorial_story_carriers
+    from immich_memories.analysis.stories import shortlist as editorial_story_shortlist
 
     spec = importlib.util.spec_from_file_location("selection_baseline", path)
     module = importlib.util.module_from_spec(spec)
@@ -44,7 +45,7 @@ def install_baseline(path):
     spec.loader.exec_module(module)
     editorial_story_carriers.nearby_picture_alternatives = module.nearby_picture_alternatives
     editorial_story_shortlist.nearby_picture_alternatives = module.nearby_picture_alternatives
-    from immich_memories.analysis import editorial_structure_planner
+    from immich_memories.analysis.structure import planner as editorial_structure_planner
 
     def pretty(payload, **options):
         options.pop("separators", None)
@@ -80,11 +81,11 @@ def measure(args, root, startup):
     from tests.test_editorial_shortlist_scaling import capture_groups
     from tests.test_editorial_story_first_planner import StoryJudge, make_source
 
-    from immich_memories.analysis.editorial_story_shortlist import nearby_picture_alternatives
+    from immich_memories.analysis.stories.shortlist import nearby_picture_alternatives
 
     if args.baseline_source:
         install_baseline(args.baseline_source)
-        from immich_memories.analysis.editorial_story_shortlist import nearby_picture_alternatives
+        from immich_memories.analysis.stories.shortlist import nearby_picture_alternatives
 
     choices, units = capture_groups(args.groups)
     units = dict(units)  # Counted lookups belong in the regression test, not timings.

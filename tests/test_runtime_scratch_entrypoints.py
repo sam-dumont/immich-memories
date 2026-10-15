@@ -31,7 +31,7 @@ def test_cli_media_probe_uses_the_configured_cache(tmp_path, monkeypatch):
 
 
 def test_direct_web_startup_uses_mounted_scratch(tmp_path, monkeypatch):
-    from immich_memories.config_loader import load_config, set_config
+    from immich_memories.config.loader import load_config, set_config
     from immich_memories.web.server import create_app
 
     mounted = tmp_path / "mounted-cache"

@@ -37,7 +37,7 @@ conventional commit messages and all tests.
 
 - New options ship with a sane default.
 - User-facing options are Tier 1 (top-level YAML); everything else is Tier 2 under `advanced:`
-  (`_TIER2_SECTIONS` in `config_loader.py`). At runtime every section is flat on `Config`.
+  (`TIER2_SECTIONS` in `config/loader.py`). At runtime every section is flat on `Config`.
 - Renaming or removing a key follows the deprecation rule in `AGENTS.md`: keep accepting the old key
   with a warning that names the new one, and remove it at the next major.
 - Config values never appear in errors, logs or reports.

@@ -165,7 +165,7 @@ def _draw_label_at(draw, name: str, px: int, py: int, width: int, height: int, f
     margin = max(10, int(width * 0.02))
     min_size = max(6, int(width * _MIN_PIN_LABEL_PX / 1080))
     base_size = getattr(font, "size", 14)
-    font, text_w = _fit_pin_label_font(name, draw, base_size, width - 2 * margin, min_size=min_size)
+    font, text_w = fit_pin_label_font(name, draw, base_size, width - 2 * margin, min_size=min_size)
 
     lx = px + offset_x
     ly = py + offset_y
@@ -261,7 +261,7 @@ _MIN_PIN_LABEL_PX = 10
 _HYPHEN_BREAK_FACTOR = 0.75
 
 
-def _fit_title_lines(
+def fit_title_lines(
     text: str,
     draw: ImageDraw.ImageDraw,
     base_size: int,
@@ -370,7 +370,7 @@ def _strip_trailing_comma(line: str) -> str:
     return line.removesuffix(",")
 
 
-def _fit_pin_label_font(
+def fit_pin_label_font(
     text: str,
     draw: ImageDraw.ImageDraw,
     base_size: int,
@@ -392,7 +392,7 @@ def _fit_pin_label_font(
         size = max(min_size, int(size * 0.9))
 
 
-def _draw_gradient_band(draw: ImageDraw.ImageDraw, y: int, bh: int, w: int, h: int) -> None:
+def draw_gradient_band(draw: ImageDraw.ImageDraw, y: int, bh: int, w: int, h: int) -> None:
     """Soft dark gradient band for text readability."""
     cy, half = y + bh // 2, bh // 2
     for dy in range(-half, half + 1):
@@ -402,7 +402,7 @@ def _draw_gradient_band(draw: ImageDraw.ImageDraw, y: int, bh: int, w: int, h: i
             draw.line([(0, row), (w, row)], fill=(0, 0, 0, a))
 
 
-def _overlay_composite(frame: Image.Image, ov: Image.Image, alpha: float) -> Image.Image:
+def overlay_composite(frame: Image.Image, ov: Image.Image, alpha: float) -> Image.Image:
     """Composite RGBA overlay onto RGB frame with given opacity."""
     import numpy as np
 

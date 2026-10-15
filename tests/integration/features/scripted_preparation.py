@@ -35,8 +35,8 @@ import os
 import sys
 from functools import partial
 
-import immich_memories.analysis.editorial_preparation as editorial_preparation
-import immich_memories.analysis.place_geocoder as place_geocoder
+import immich_memories.analysis.preparation.acquire as editorial_preparation
+import immich_memories.analysis.places.geocoder as place_geocoder
 
 from tests.e2e.fake_editorial import _stand_in_for_models_fetch
 from tests.integration.features.scripted_producers import scripted_ports

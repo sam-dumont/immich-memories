@@ -577,7 +577,7 @@ def format_duration(seconds: float) -> str:
 
 def _llm_mark():
     """What the run had spent on the model when this phase began."""
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
 
     counters = llm_metrics.active()
     return counters.snapshot() if counters else None
@@ -589,7 +589,7 @@ def _llm_spend_since(mark) -> dict:
     Imported inside the call rather than at module scope: `analysis` is the
     heavier package and tracking is used by callers that never touch it.
     """
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
 
     counters = llm_metrics.active()
     if counters is None or mark is None:
@@ -606,7 +606,7 @@ def _llm_run_total() -> dict | None:
     `None` when nothing was collecting, so an unmeasured run is left alone
     rather than stamped with an empty record.
     """
-    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm import metrics as llm_metrics
 
     counters = llm_metrics.active()
     return counters.as_metrics() if counters is not None else None

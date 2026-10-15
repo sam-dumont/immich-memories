@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.auth import is_rate_limited, record_failed_login, reset_rate_limiter
 
 _PEER = "10.0.0.2"

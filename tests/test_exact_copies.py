@@ -6,13 +6,13 @@ import base64
 import hashlib
 from datetime import UTC, datetime
 
-from immich_memories.analysis.exact_copies import fold_exact_copies
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
+from immich_memories.analysis.corpus.exact_copies import fold_exact_copies
 from immich_memories.api.models import Asset, AssetType, Person
 from immich_memories.api.person_expression import parse_person_expression
 from tests.conftest import make_asset

@@ -7,7 +7,7 @@ from immich_memories.api.accounts import AccountUnavailable
 from immich_memories.api.compatibility import UnsupportedImmichVersion
 from immich_memories.api.models import ServerInfo
 from immich_memories.api.native_sharing import native_mode
-from immich_memories.config_models import ImmichConfig
+from immich_memories.config.models.resources import ImmichConfig
 from tests.household_fake import PARTNER_KEY, PRIMARY_KEY, FakeHousehold, immich_config
 
 
@@ -134,7 +134,7 @@ def test_native_roster_follows_every_page(monkeypatch):
 
 
 def test_preflight_explains_discovery_permission_failures(monkeypatch):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.preflight import CheckStatus
     from immich_memories.preflight_accounts import check_native_sharing
 
@@ -151,7 +151,7 @@ def test_preflight_explains_discovery_permission_failures(monkeypatch):
 
 
 def test_final_33_reports_validated_native_sharing(monkeypatch, caplog):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.preflight import CheckStatus
     from immich_memories.preflight_accounts import check_native_sharing
 

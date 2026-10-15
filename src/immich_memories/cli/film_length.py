@@ -12,13 +12,13 @@ import logging
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.analysis.source_filter import asset_of
+from immich_memories.api.models import asset_of
 from immich_memories.cli._helpers import print_info
 from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
-    from immich_memories.analysis.forwarded_fallback import CopyChecks, StandIns
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.corpus.forwarded_fallback import CopyChecks, StandIns
+    from immich_memories.config.loader import Config
     from immich_memories.planning.auto_duration import DurationDecision
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def decide_duration(
     editor refuses, a birthday film asked for 245 s from material that filled 127. A forwarded
     copy standing in for a gap (`stand_ins`) is material too.
     """
-    from immich_memories.analysis.selection_source_validation import film_may_use
+    from immich_memories.analysis.corpus.validation import film_may_use
     from immich_memories.planning.auto_duration import (
         DURATION_FROM_DURATION_FLAG,
         decide_memory_duration,
@@ -76,9 +76,9 @@ def copy_checks(client: Any, config: Config, pool: Sequence[Any]) -> CopyChecks:
     duplicate groups over the whole library. Each read happens only when a gap asks for it."""
     from functools import cache
 
-    from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-    from immich_memories.analysis.editorial_thumbnail_hashes import CachedThumbnailHasher
-    from immich_memories.analysis.forwarded_fallback import CopyChecks
+    from immich_memories.analysis.corpus.forwarded_fallback import CopyChecks
+    from immich_memories.analysis.preparation.thumbnail_hashes import CachedThumbnailHasher
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
     from immich_memories.api.immich import ImmichAPIError
 
     preview = cache(EditorialRuntimePorts().preview_reader(client))
@@ -121,7 +121,7 @@ def sized_film(
     `windows` are the film's own when it has several; `span` stands for them when it has none.
     `checks` builds a copy's checks from the film's pictures.
     """
-    from immich_memories.analysis.forwarded_fallback import StandIns, stand_in_copies
+    from immich_memories.analysis.corpus.forwarded_fallback import StandIns, stand_in_copies
 
     pool = [*clips, *(photos or [])]
     stand_ins = (

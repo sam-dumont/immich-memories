@@ -3,22 +3,22 @@
 from datetime import UTC, datetime, timedelta
 from functools import partial
 
-from immich_memories.analysis.annotation_lines import (
-    AnnotationContract,
-    AnnotationLineBatch,
-    AssetAnnotationLine,
-)
-from immich_memories.analysis.editorial_text_gateway import SyncTextPromptRequester
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import project_episode_groups
-from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+from immich_memories.analysis.corpus.groups import project_episode_groups
+from immich_memories.analysis.judgments.text_gateway import SyncTextPromptRequester
+from immich_memories.analysis.reading.annotation_lines import (
+    AnnotationContract,
+    AnnotationLineBatch,
+    AssetAnnotationLine,
+)
+from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 from immich_memories.api.models import Asset, AssetType
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_store
 from immich_memories.conformance.runtime import Case
 from immich_memories.store.episode_readings import EpisodeReadingProducer, EpisodeReadingStore
@@ -87,8 +87,8 @@ def episode_cases(llm: LLMConfig) -> tuple[Case, ...]:
             partial(episode, llm, lean=lean),
             frozenset(
                 {
-                    "analysis.text_episode_reader:_read_missing",
-                    "analysis.editorial_text_gateway:SyncTextPromptRequester._query",
+                    "analysis.reading.episode_reader:_read_missing",
+                    "analysis.judgments.text_gateway:SyncTextPromptRequester._query",
                 }
             ),
         )

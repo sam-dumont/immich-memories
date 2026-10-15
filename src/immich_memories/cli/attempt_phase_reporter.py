@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from immich_memories.db import open_store
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
 
 class AttemptPhaseReporter:

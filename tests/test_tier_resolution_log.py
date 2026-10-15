@@ -5,15 +5,15 @@ from __future__ import annotations
 import logging
 from unittest.mock import patch
 
-from immich_memories.config_loader import Config
-from immich_memories.config_tiers import _last_resolution, apply_tier
+from immich_memories.config.loader import Config
+from immich_memories.config.tiers import _last_resolution, apply_tier
 
 
 def _resolve(caplog, reason: str = "No GPU runtime") -> int:
     # WHY: inference_acceleration probes the machine; the answer is the input here.
     with (
-        patch("immich_memories.config_tiers.inference_acceleration", return_value=(False, reason)),
-        caplog.at_level(logging.INFO, logger="immich_memories.config_tiers"),
+        patch("immich_memories.config.tiers.inference_acceleration", return_value=(False, reason)),
+        caplog.at_level(logging.INFO, logger="immich_memories.config.tiers"),
     ):
         apply_tier(Config())
     return sum("Tier auto resolved" in r.getMessage() for r in caplog.records)

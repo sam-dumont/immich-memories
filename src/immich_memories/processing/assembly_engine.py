@@ -21,8 +21,8 @@ from immich_memories.processing.clip_encoder import ClipEncoder
 from immich_memories.processing.ffmpeg_prober import FFmpegProber
 from immich_memories.processing.ffmpeg_runner import AssemblyContext
 from immich_memories.processing.hdr_utilities import (
-    _detect_color_primaries,
-    _get_clip_hdr_types,
+    detect_color_primaries,
+    get_clip_hdr_types,
     get_colorspace_filter,
 )
 from immich_memories.processing.probe_cache import ProbeCache
@@ -93,17 +93,17 @@ def create_assembly_context(
     # actual clips so an HDR source cannot be relabeled SDR without conversion.
     source_probe_cache = getattr(prober, "probe_cache", None)
     clip_hdr_types = (
-        _get_clip_hdr_types(clips, probe_cache=source_probe_cache)
+        get_clip_hdr_types(clips, probe_cache=source_probe_cache)
         if isinstance(source_probe_cache, ProbeCache)
-        else _get_clip_hdr_types(clips)
+        else get_clip_hdr_types(clips)
     )
     clip_primaries: list[str | None] = []
     if plan.hdr:
         for clip in clips:
             clip_primaries.append(
-                _detect_color_primaries(clip.path, probe_cache=source_probe_cache)
+                detect_color_primaries(clip.path, probe_cache=source_probe_cache)
                 if isinstance(source_probe_cache, ProbeCache)
-                else _detect_color_primaries(clip.path)
+                else detect_color_primaries(clip.path)
             )
     else:
         clip_primaries = [None] * len(clips)

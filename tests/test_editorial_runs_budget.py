@@ -125,7 +125,7 @@ def _sparse(path, size: int) -> None:
 
 def test_a_run_start_holds_the_folder_to_the_configured_key(tmp_path, store):
     """The key a user sets is the budget; sparse frames stand in for a real attempt's weight."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.operations.editorial_runs_budget import keep_editorial_runs_in_budget
 
     config = Config()

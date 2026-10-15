@@ -12,7 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import set_config
+from immich_memories.config.loader import set_config
 from immich_memories.db import close_stores
 
 
@@ -58,7 +58,7 @@ def test_verbose_still_shows_request_lines(isolated, chatty):
 
 def test_help_contacts_nothing(isolated):
     # WHY: the tier probe is the one network call a config load can make.
-    with patch("immich_memories.config_tiers.inference_acceleration") as probe:
+    with patch("immich_memories.config.tiers.inference_acceleration") as probe:
         result = CliRunner().invoke(main, ["runs", "--help"])
 
     assert result.exit_code == 0

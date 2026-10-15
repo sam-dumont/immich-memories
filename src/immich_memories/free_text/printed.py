@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Protocol
 
-from immich_memories.analysis.source_filter import not_shot_here
+from immich_memories.analysis.corpus.name_filter import not_shot_here
 from immich_memories.api.models import MetadataSearchResult
 
 _PAGE = 1000

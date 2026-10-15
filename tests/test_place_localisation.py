@@ -448,7 +448,7 @@ class TestTheNominatimRequest:
         # second per call. Both are replaced; the request and the parsing are ours.
         monkeypatch.setattr("geopy.geocoders.Nominatim", _Geolocator)
         monkeypatch.setattr("geopy.extra.rate_limiter.RateLimiter", _limiter)
-        from immich_memories.analysis.place_geocoder import nominatim_fetch
+        from immich_memories.analysis.places.geocoder import nominatim_fetch
 
         return nominatim_fetch("fr", url), asked
 
@@ -546,7 +546,7 @@ class TestGeocodingReachesTheCut:
 
         # WHY: Nominatim is the outside host; a request builder that raises proves the
         # default path never reaches it.
-        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", refuse)
+        monkeypatch.setattr("immich_memories.analysis.places.geocoder.nominatim_fetch", refuse)
 
         clip = self._named(self._params(tmp_path, monkeypatch, False), self._clip())
 
@@ -563,7 +563,7 @@ class TestGeocodingReachesTheCut:
             return lambda *_p: {"suburb": "Wilrijk", "city": "Antwerpen", "country": "Belgique"}
 
         # WHY: same host, answering this time.
-        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", fetch)
+        monkeypatch.setattr("immich_memories.analysis.places.geocoder.nominatim_fetch", fetch)
 
         clip = self._named(self._params(tmp_path, monkeypatch, True), self._clip())
 
@@ -573,7 +573,7 @@ class TestGeocodingReachesTheCut:
 
     @pytest.mark.parametrize("language", ["nl", "ja", "pt-BR"])
     def test_the_user_selected_language_reaches_the_geocoder(self, tmp_path, monkeypatch, language):
-        from immich_memories.analysis.place_geocoder import place_geocoder_for
+        from immich_memories.analysis.places.geocoder import place_geocoder_for
 
         requested = []
 
@@ -581,7 +581,7 @@ class TestGeocodingReachesTheCut:
             requested.append(selected)
             return lambda *_: {"city": "Configured-language name"}
 
-        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", fetch)
+        monkeypatch.setattr("immich_memories.analysis.places.geocoder.nominatim_fetch", fetch)
         params = self._params(tmp_path, monkeypatch, True)
         params.config.title_screens.locale = language
 
@@ -603,7 +603,7 @@ class TestGeocodingReachesTheCut:
         def refuse(*_args, **_kwargs):
             raise AssertionError("The selected clips must not reinterpret the full stay")
 
-        monkeypatch.setattr("immich_memories.analysis.place_names.place_names_for", refuse)
+        monkeypatch.setattr("immich_memories.analysis.places.names.place_names_for", refuse)
         params = self._params(tmp_path, monkeypatch, True)
         asset = make_asset("city-wide-visit")
         asset.exif_info = ExifInfo(city="Mitte", country="Germany", place_name="Berlin")

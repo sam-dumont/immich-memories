@@ -18,10 +18,10 @@ _PASSPORT = "A photo of a passport on the table"
 
 def _nas_cut(prepared, name: str) -> list[str]:
     """The pictures a no-model cut of this period plays, in order."""
-    from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-    from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-    from immich_memories.analysis.editorial_structure_planner import plan_structure
-    from immich_memories.config_loader import Config
+    from immich_memories.analysis.film.contract import StructurePlannerPorts
+    from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+    from immich_memories.analysis.structure.planner import plan_structure
+    from immich_memories.config.loader import Config
 
     nas = replace(
         prepared,

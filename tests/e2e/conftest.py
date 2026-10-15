@@ -163,7 +163,7 @@ import os
 import sys
 from pathlib import Path
 
-import immich_memories.config_loader as config_loader
+import immich_memories.config.loader as config_loader
 
 config_path = Path(sys.argv[1])
 state_dir = Path(sys.argv[2])

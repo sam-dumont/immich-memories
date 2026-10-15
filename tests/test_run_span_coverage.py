@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.trip_detection import DetectedTrip
+from immich_memories.analysis.places.trip_detection import DetectedTrip
 from immich_memories.api.models import Asset
 from immich_memories.cli._live_display import QuietDisplay
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.tracking import timing
 from immich_memories.tracking.span_progress import uncovered_seconds
 

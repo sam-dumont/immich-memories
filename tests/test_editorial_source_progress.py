@@ -8,9 +8,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialSelection
-from immich_memories.analysis.editorial_source_route import EditorialSourcePlan
-from immich_memories.analysis.smart_pipeline import PipelineConfig, SmartPipeline
+from immich_memories.analysis.runtime.plan import EditorialPlan, EditorialSelection
+from immich_memories.analysis.runtime.smart_pipeline import PipelineConfig, SmartPipeline
+from immich_memories.analysis.runtime.source_route import EditorialSourcePlan
 from immich_memories.operations.cut_progress import StageUpdate
 from tests.test_editorial_source_route import demand, photo
 
@@ -22,7 +22,7 @@ def pipeline_for(planner):
 @pytest.mark.parametrize("failure", [False, True])
 def test_source_timer_includes_work_and_finishes_with_truthful_outcome(monkeypatch, failure):
     clock = [100.0]
-    monkeypatch.setattr("immich_memories.analysis.progress.time.time", lambda: clock[0])
+    monkeypatch.setattr("immich_memories.analysis.runtime.progress.time.time", lambda: clock[0])
     sources = [photo("picture")]
     _, rows = demand(sources)
     events = []

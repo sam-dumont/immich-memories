@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Any
 import cv2
 import numpy as np
 
-from immich_memories.analysis.framing_target import picture_faces
+from immich_memories.analysis.facts.framing_target import picture_faces
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import Asset
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.config.models.render import PhotoConfig
 from immich_memories.generate_privacy import clip_location_name
 from immich_memories.photos.animator import prepare_photo_source
 from immich_memories.photos.encoding import photo_encoding_plan
@@ -34,7 +34,7 @@ from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 if TYPE_CHECKING:
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.processing.hardware import HWAccelCapabilities
 
 logger = logging.getLogger(__name__)

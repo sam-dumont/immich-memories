@@ -14,7 +14,7 @@ def _wiring(tmp_path, read_playback, seen=None):
     The tier has no caption seat, so the motion line is not owed and the only producer
     reaching for the playback is the exposure head's frame sampler.
     """
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_editorial_preparation_motion import prepared_video
 
@@ -44,7 +44,7 @@ def _wiring(tmp_path, read_playback, seen=None):
 
 @requires_ffmpeg
 def test_the_pass_samples_a_videos_frames_and_leaves_a_still_its_preview(tmp_path):
-    from immich_memories.analysis.editorial_preparation_detector_frames import FRAMES
+    from immich_memories.analysis.preparation.detector_frames import FRAMES
     from tests.test_playback_keyframes import encode
 
     data = encode(tmp_path / "clip.mp4", gop=30)
@@ -124,7 +124,7 @@ def test_a_clip_whose_playback_cannot_be_read_falls_back_to_its_preview_and_says
 
 
 def test_without_a_playback_reader_no_source_is_owed_frames(tmp_path):
-    from immich_memories.analysis.editorial_preparation_detector_frames import DetectorFrames
+    from immich_memories.analysis.preparation.detector_frames import DetectorFrames
     from tests.test_editorial_preparation_motion import prepared_video
 
     assert DetectorFrames([prepared_video("vv1")], None, tmp_path).video_ids == frozenset()
@@ -140,7 +140,7 @@ def _live_photo(asset_id, clip_id):
 @requires_ffmpeg
 def test_a_live_photos_clip_is_read_on_frames_and_banked_under_its_own_id(tmp_path):
     """The clip is not a candidate, so nothing prepared it and nothing had ever read it."""
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from tests.annotation_rows import annotation_store, read_rows
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_playback_keyframes import encode
@@ -173,7 +173,7 @@ def test_a_live_photos_clip_is_read_on_frames_and_banked_under_its_own_id(tmp_pa
 
 @requires_ffmpeg
 def test_a_warm_pass_does_not_read_the_same_clip_twice(tmp_path):
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_playback_keyframes import encode
 
@@ -203,7 +203,7 @@ def test_a_warm_pass_does_not_read_the_same_clip_twice(tmp_path):
 def test_a_clip_immich_will_not_serve_leaves_its_still_in_the_film(tmp_path):
     import httpx
 
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
 
     def fetch_preview(asset_id):
@@ -236,7 +236,7 @@ def test_a_clip_with_no_preview_is_still_read_on_its_frames(tmp_path):
     """Immich keeps no preview for many Live Photo clips, and plays every one of them."""
     import httpx
 
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from tests.annotation_rows import annotation_store, read_rows
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_playback_keyframes import encode
@@ -274,11 +274,11 @@ def test_a_clip_with_no_preview_is_still_read_on_its_frames(tmp_path):
 
 @requires_ffmpeg
 def test_a_videos_frames_are_sampled_once_for_the_exposure_head_and_its_frame_reading(tmp_path):
-    from immich_memories.analysis.editorial_clip_frames import (
+    from immich_memories.analysis.facts.clip_frames import (
         CLIP_FRAMES_HEAD,
         CLIP_FRAMES_VERSION,
     )
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from immich_memories.store.editorial_preparation import remember_head_rows
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_editorial_preparation_motion import prepared_video
@@ -328,7 +328,7 @@ def test_a_videos_frames_are_sampled_once_for_the_exposure_head_and_its_frame_re
 
 @requires_ffmpeg
 def test_a_frame_reading_that_fails_never_blocks_the_cut(tmp_path):
-    from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_editorial_preparation_motion import prepared_video
     from tests.test_playback_keyframes import encode

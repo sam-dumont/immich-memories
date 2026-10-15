@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from immich_memories.cli._generation_preview import music_policy
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 
 
 def test_plan_says_bundled_when_no_generator_is_configured():

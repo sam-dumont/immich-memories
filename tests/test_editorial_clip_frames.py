@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_clip_frames import (
+from immich_memories.analysis.facts.clip_frames import (
     CLIP_FRAMES_HEAD,
     SUBJECT_OFTEN_MISSING,
     clip_frames_fact,
@@ -42,7 +42,7 @@ def test_a_clip_with_no_readable_frame_decides_nothing():
 
 def _standing(line_of, *, favourite=False, kind="video"):
 
-    from immich_memories.analysis.editorial_story_standing import StandingGate
+    from immich_memories.analysis.selection.standing import StandingGate
 
     scored: list[str] = []
 
@@ -102,7 +102,7 @@ def test_a_clip_that_shows_its_moment_still_stands_on_facts_that_stand():
 
 def _rules(*, favourite=False, **heads):
 
-    from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
+    from immich_memories.analysis.stories.rule_reader import RuleStructureReader
 
     source = SimpleNamespace(
         assets={"a": SimpleNamespace(is_favorite=favourite, people=())},
@@ -132,7 +132,7 @@ def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
     import numpy as np
     from PIL import Image
 
-    from immich_memories.analysis.editorial_preparation_heads import prepare_clip_frames
+    from immich_memories.analysis.preparation.heads import prepare_clip_frames
     from immich_memories.triage.heads import HeadBundle, HeadWeights, PcaWeights
 
     pack_dim = 6 * 384
@@ -204,10 +204,10 @@ def _live_unit(*, rules, favourite, clip_frames, residual=9.0, audience="family"
     """One Live Photo through the unit builder both tiers plan on."""
     from datetime import UTC, datetime
 
-    from immich_memories.analysis.editorial_structure_material import UnitBuilder
-    from immich_memories.analysis.motion_rendering import motion_renderings
+    from immich_memories.analysis.clips.motion_rendering import motion_renderings
+    from immich_memories.analysis.film.material import UnitBuilder
     from immich_memories.api.models import AssetType
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from tests.conftest import make_asset
 
     still = make_asset("still", is_favorite=favourite, duration=None)
@@ -316,7 +316,7 @@ def test_a_live_photo_line_never_refuses_it_on_the_model_tier():
 
 
 def test_a_film_reads_each_live_clips_banked_frames(tmp_path):
-    from immich_memories.analysis.editorial_clip_frames import load_clip_frames
+    from immich_memories.analysis.facts.clip_frames import load_clip_frames
     from immich_memories.cache.embedding_cache import HeadFactStore
 
     store = HeadFactStore(annotation_store())

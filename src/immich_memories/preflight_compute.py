@@ -1,7 +1,7 @@
 """Report inference capability without changing an explicitly requested selection tier."""
 
-from immich_memories.config_compute import inference_acceleration
-from immich_memories.config_loader import Config
+from immich_memories.config.compute import inference_acceleration
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckResult, CheckStatus
 
 

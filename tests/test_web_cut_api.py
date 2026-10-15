@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.tracking.models import DeliveryStatus
 from tests.web_api_fixtures import api_client, config_in, save_run, selection_trace
 

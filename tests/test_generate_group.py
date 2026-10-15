@@ -130,7 +130,7 @@ def test_saved_canonical_people_are_named_in_the_film_title(tmp_path, names):
     assert kwargs["person_names"] == [first, second]
     assert kwargs["memory_preset_params"]["person_names"] == [first, second]
     assert kwargs["memory_preset_params"]["person_expression"] == expression.to_dict()
-    from immich_memories.analysis.editorial_runtime import EditorialRunContext
+    from immich_memories.analysis.runtime.composition import EditorialRunContext
 
     context = EditorialRunContext(
         key="group-title",
@@ -184,7 +184,7 @@ def test_a_person_selected_by_canonical_id_is_named_in_the_title(tmp_path):
 def test_hosted_title_uses_display_names_without_changing_nested_scope(anonymous):
     from datetime import datetime
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate_privacy import anonymize_preset_params
     from immich_memories.timeperiod import DateRange
     from immich_memories.titles.film_title import resolve_film_title
@@ -246,7 +246,7 @@ def test_duplicate_display_names_do_not_borrow_another_persons_birth_date():
 def test_anonymized_template_uses_masked_display_labels(tmp_path):
     from datetime import date
 
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_privacy import anonymize_preset_params
     from immich_memories.generate_settings import build_title_settings

@@ -173,12 +173,12 @@ class TestHdrJpegRoundTrip:
 class TestMaybeEmitPreview:
     def test_fires_on_first_call(self) -> None:
         """Callback should fire on first call when last_time is 0."""
-        from immich_memories.processing.frame_preview import _maybe_emit_preview
+        from immich_memories.processing.frame_preview import maybe_emit_preview
 
         captured: list[bytes] = []
         frame = np.full((100, 100, 3), 128, dtype=np.uint8)
 
-        new_time = _maybe_emit_preview(
+        new_time = maybe_emit_preview(
             frame=frame,
             last_preview_time=0.0,
             callback=captured.append,
@@ -195,14 +195,14 @@ class TestMaybeEmitPreview:
         """Callback should NOT fire if <2s since last call."""
         from unittest.mock import patch
 
-        from immich_memories.processing.frame_preview import _maybe_emit_preview
+        from immich_memories.processing.frame_preview import maybe_emit_preview
 
         captured: list[bytes] = []
         frame = np.full((100, 100, 3), 128, dtype=np.uint8)
 
         with patch("immich_memories.processing.frame_preview.time") as mock_time:
             mock_time.monotonic.return_value = 10.5
-            new_time = _maybe_emit_preview(
+            new_time = maybe_emit_preview(
                 frame=frame,
                 last_preview_time=10.0,
                 callback=captured.append,
@@ -218,14 +218,14 @@ class TestMaybeEmitPreview:
         """Callback should fire if >=2s since last call."""
         from unittest.mock import patch
 
-        from immich_memories.processing.frame_preview import _maybe_emit_preview
+        from immich_memories.processing.frame_preview import maybe_emit_preview
 
         captured: list[bytes] = []
         frame = np.full((100, 100, 3), 128, dtype=np.uint8)
 
         with patch("immich_memories.processing.frame_preview.time") as mock_time:
             mock_time.monotonic.return_value = 12.1
-            new_time = _maybe_emit_preview(
+            new_time = maybe_emit_preview(
                 frame=frame,
                 last_preview_time=10.0,
                 callback=captured.append,
@@ -239,11 +239,11 @@ class TestMaybeEmitPreview:
 
     def test_none_callback_returns_immediately(self) -> None:
         """When callback is None, should return last_time unchanged."""
-        from immich_memories.processing.frame_preview import _maybe_emit_preview
+        from immich_memories.processing.frame_preview import maybe_emit_preview
 
         frame = np.full((100, 100, 3), 128, dtype=np.uint8)
 
-        result = _maybe_emit_preview(
+        result = maybe_emit_preview(
             frame=frame,
             last_preview_time=5.0,
             callback=None,
@@ -256,13 +256,13 @@ class TestMaybeEmitPreview:
 
     def test_hdr_frame_produces_valid_jpeg(self) -> None:
         """HDR frame should go through _to_rgb8 -> JPEG pipeline."""
-        from immich_memories.processing.frame_preview import _maybe_emit_preview
+        from immich_memories.processing.frame_preview import maybe_emit_preview
 
         captured: list[bytes] = []
         width, height = 160, 120
         buf = _make_yuv420p10le_buffer(700, 512, 512, width, height)
 
-        _maybe_emit_preview(
+        maybe_emit_preview(
             frame=buf,
             last_preview_time=0.0,
             callback=captured.append,
@@ -278,13 +278,13 @@ class TestMaybeEmitPreview:
 
     def test_crossfade_blend_buffer_produces_preview(self) -> None:
         """A 50/50 blend of red and blue (= purple) should produce correct JPEG."""
-        from immich_memories.processing.frame_preview import _maybe_emit_preview
+        from immich_memories.processing.frame_preview import maybe_emit_preview
 
         captured: list[bytes] = []
         frame = np.zeros((100, 100, 3), dtype=np.uint8)
         frame[:, :] = [128, 0, 128]
 
-        _maybe_emit_preview(
+        maybe_emit_preview(
             frame=frame,
             last_preview_time=0.0,
             callback=captured.append,

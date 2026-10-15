@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 from datetime import timedelta
 
-from immich_memories.analysis.editorial_thin_short import ShortReads
+from immich_memories.analysis.polish.short import ShortReads
 from tests.editorial_thin_fixtures import START, Film, polish, thin_budget
 
 
@@ -114,8 +114,8 @@ def test_a_person_film_reads_first_the_week_its_subjects_parents_are_in(tmp_path
     """Two unread weeks alike in all but who is in them: the later one shows the subject's
     parents. A person film reads that week first; to a month film they are in-laws, so it reads
     the earlier week first."""
-    from immich_memories.analysis.editorial_story_replies import film_close_family
-    from immich_memories.analysis.editorial_thin_short import episodes_to_read
+    from immich_memories.analysis.polish.short import episodes_to_read
+    from immich_memories.analysis.stories.replies import film_close_family
     from tests.editorial_subject_family import film_of, her_parents, subject_people
 
     _people, relation = subject_people()

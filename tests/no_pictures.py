@@ -10,7 +10,7 @@ def refuse_pictures(monkeypatch) -> list[int]:
     stage sent it (selection, render or music), so the guard sits where every stage's request
     meets the wire. The list holds how many pictures each request carried.
     """
-    from immich_memories.analysis import llm_query
+    from immich_memories.analysis.llm import query as llm_query
 
     sent: list[int] = []
     real = llm_query._dispatch

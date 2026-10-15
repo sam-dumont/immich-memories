@@ -3,8 +3,8 @@
 from datetime import UTC, date, datetime, timedelta
 from functools import partial
 
-from immich_memories.config_models_free_text import FreeTextConfig
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.free_text import FreeTextConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.runtime import Case
 from immich_memories.free_text.lexicon import load_wordnet
 from immich_memories.free_text.library import LibraryPerson, LibraryPicture, LibraryView

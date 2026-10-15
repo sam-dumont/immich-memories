@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from immich_memories.analysis.llm_wire import THINKING_MIN_MAX_TOKENS
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.llm.wire import THINKING_MIN_MAX_TOKENS
+from immich_memories.config.models.llm import LLMConfig
 
 
 class TestQueryLlmOllama:
@@ -16,7 +16,7 @@ class TestQueryLlmOllama:
 
     @pytest.mark.asyncio
     async def test_sends_text_prompt_to_ollama(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True, provider="ollama", base_url="http://localhost:11434", model="llama3"
@@ -39,7 +39,7 @@ class TestQueryLlmOllama:
     @pytest.mark.asyncio
     async def test_extra_params_reach_ollama_without_losing_its_options(self):
         """Ollama keeps num_ctx and friends under `options`, beside temperature."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -69,7 +69,7 @@ class TestQueryLlmOllama:
     @pytest.mark.asyncio
     async def test_max_tokens_reaches_ollama_as_num_predict_beside_existing_options(self):
         """The provider receives the same output ceiling recorded by the editorial request."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -102,7 +102,7 @@ class TestQueryLlmOpenAI:
 
     @pytest.mark.asyncio
     async def test_sends_text_prompt_to_openai(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -131,7 +131,7 @@ class TestQueryLlmOpenAI:
 
     @pytest.mark.asyncio
     async def test_a_200_provider_error_is_reported_before_choices_are_read(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         response = AsyncMock(status_code=200)
         response.json = MagicMock(
@@ -192,7 +192,7 @@ class TestThinkingMode:
 
     @pytest.mark.asyncio
     async def test_thinking_call_carries_the_template_switch(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_openai_response()) as mock_post:
@@ -209,7 +209,7 @@ class TestThinkingMode:
         the server speaks this dialect — they used to be the same field, which
         left a config with reasoning off silently reasoning anyway.
         """
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_openai_response()) as mock_post:
@@ -222,7 +222,7 @@ class TestThinkingMode:
     @pytest.mark.asyncio
     async def test_a_server_that_does_not_speak_the_dialect_stays_clean(self):
         """Servers that reason only when asked want neither switch."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = _thinking_config(thinking=False, no_thinking_params={})
         # WHY: the LLM server is the external boundary this request reaches.
@@ -233,7 +233,7 @@ class TestThinkingMode:
 
     @pytest.mark.asyncio
     async def test_ollama_gets_its_own_thinking_switch_not_a_chat_dialect(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -258,7 +258,7 @@ class TestThinkingMode:
     @pytest.mark.asyncio
     async def test_thinking_floors_the_token_budget(self):
         """Measured: 500 tokens truncates mid-think and reasoning leaks into content."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_openai_response()) as mock_post:
@@ -268,7 +268,7 @@ class TestThinkingMode:
 
     @pytest.mark.asyncio
     async def test_omlx_budget_reserves_room_for_the_final_answer(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = _thinking_config(
             thinking_params={
@@ -286,7 +286,7 @@ class TestThinkingMode:
 
     @pytest.mark.asyncio
     async def test_reasoning_content_is_parsed_away_from_the_final_answer(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         response = _openai_response(
             content='{"keep": ["M131"]}',
@@ -301,7 +301,7 @@ class TestThinkingMode:
 
     @pytest.mark.asyncio
     async def test_inlined_think_tags_are_removed_for_older_compatible_servers(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         response = _openai_response(content='<think>private</think>\n{"keep": []}')
         # WHY: older compatible servers used content for both channels.
@@ -315,7 +315,7 @@ class TestThinkingMode:
         """Measured: finish=length under thinking means the content IS the
         unfinished reasoning — never parseable. The call must retry without
         thinking and return the fast answer instead."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         contaminated = _openai_response(
             content="Here's a thinking process:\n1. Analyze...", finish_reason="length"
@@ -337,7 +337,7 @@ class TestThinkingMode:
     async def test_thinking_params_are_configurable_per_server(self):
         """Not every OpenAI-compatible server speaks Qwen's dialect — the
         payload addition is whatever the config says (e.g. reasoning_effort)."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = _thinking_config(thinking_params={"reasoning_effort": "medium"})
         # WHY: the LLM server is the external boundary this request reaches.
@@ -370,13 +370,13 @@ class TestServerParameterDialects:
     name the offending parameter, so the call adapts and remembers."""
 
     def setup_method(self):
-        from immich_memories.analysis import llm_wire
+        from immich_memories.analysis.llm import wire as llm_wire
 
         llm_wire.PARAM_ADAPTATIONS.clear()
 
     @pytest.mark.asyncio
     async def test_max_tokens_rejection_adapts_and_retries(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         rejected = _openai_400(
             "Unsupported parameter: 'max_tokens' is not supported with this model. "
@@ -394,7 +394,7 @@ class TestServerParameterDialects:
 
     @pytest.mark.asyncio
     async def test_temperature_rejection_drops_it_and_retries(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         rejected = _openai_400(
             "Unsupported value: 'temperature' does not support 0.3 with this model. "
@@ -410,7 +410,7 @@ class TestServerParameterDialects:
 
     @pytest.mark.asyncio
     async def test_adaptation_is_remembered_for_the_next_call(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = _thinking_config(thinking=False)
         rejected = _openai_400(
@@ -428,7 +428,7 @@ class TestServerParameterDialects:
 
     @pytest.mark.asyncio
     async def test_a_sibling_learning_the_dialect_updates_this_inflight_payload(self):
-        from immich_memories.analysis.llm_query import _post_adapted
+        from immich_memories.analysis.llm.query import _post_adapted
 
         adaptations: set[str] = set()
 
@@ -462,7 +462,7 @@ class TestServerParameterDialects:
     async def test_an_unrelated_400_still_raises(self):
         import httpx
 
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         # WHY: the LLM server is the external boundary this request reaches.
         with (
@@ -477,7 +477,7 @@ class TestConfigurableRequestShape:
 
     @pytest.mark.asyncio
     async def test_token_param_name_is_configurable(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = _thinking_config(thinking=False, max_tokens_param="max_completion_tokens")
         # WHY: the LLM server is the external boundary this request reaches.
@@ -490,7 +490,7 @@ class TestConfigurableRequestShape:
 
     @pytest.mark.asyncio
     async def test_drop_params_removes_fields_the_server_rejects(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = _thinking_config(thinking=False, drop_params=["temperature"])
         # WHY: the LLM server is the external boundary this request reaches.
@@ -501,7 +501,7 @@ class TestConfigurableRequestShape:
 
     @pytest.mark.asyncio
     async def test_extra_params_are_merged_into_every_request(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = _thinking_config(thinking=False, extra_params={"do_sample": False})
         # WHY: the LLM server is the external boundary this request reaches.
@@ -521,7 +521,7 @@ class TestTimeoutShape:
     async def test_openai_client_gets_a_per_phase_timeout(self):
         import httpx
 
-        from immich_memories.analysis.llm_query import CONNECT_TIMEOUT_SECONDS, query_llm
+        from immich_memories.analysis.llm.query import CONNECT_TIMEOUT_SECONDS, query_llm
 
         # WHY: httpx is the transport boundary; asserting the timeout shape handed to it.
         with patch("httpx.AsyncClient", autospec=True) as mock_client:
@@ -541,7 +541,7 @@ class TestTimeoutShape:
     async def test_anthropic_client_gets_a_per_phase_timeout(self):
         import httpx
 
-        from immich_memories.analysis.llm_query import CONNECT_TIMEOUT_SECONDS, query_llm
+        from immich_memories.analysis.llm.query import CONNECT_TIMEOUT_SECONDS, query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -572,7 +572,7 @@ class TestTimeoutShape:
         import asyncio
         import time
 
-        from immich_memories.analysis import llm_query
+        from immich_memories.analysis.llm import query as llm_query
 
         async def never_returns(*_args, **_kwargs):
             await asyncio.Event().wait()
@@ -605,7 +605,7 @@ class TestQueryLlmWithImages:
         """
         import base64
 
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True, provider="ollama", base_url="http://localhost:11434/", model="llava"
@@ -627,7 +627,7 @@ class TestQueryLlmWithImages:
     @pytest.mark.asyncio
     async def test_a_trailing_slash_does_not_double_in_the_vision_url(self):
         """The text path strips it; the vision path built the URL by hand."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -654,7 +654,7 @@ class TestQueryLlmWithImages:
     @pytest.mark.asyncio
     async def test_zai_vision_uses_its_strict_image_url_shape_and_disables_thinking(self):
         """Z.AI rejects OpenAI's optional detail property instead of ignoring it."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -687,7 +687,7 @@ class TestBulkCallsDoNotThink:
 
     @pytest.mark.asyncio
     async def test_a_bulk_call_asks_a_thinking_server_not_to_think(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_openai_response()) as mock_post:
@@ -704,7 +704,7 @@ class TestBulkCallsDoNotThink:
         default gets the same truncated bulk calls, so the off-switch hangs
         off the switch itself rather than off the reasoning setting.
         """
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_openai_response()) as mock_post:
@@ -718,7 +718,7 @@ class TestBulkCallsDoNotThink:
         """Sending the kwarg by default is only safe if a refusal adapts."""
         import httpx
 
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         refusal = MagicMock(status_code=400)
         refusal.json = MagicMock(
@@ -751,7 +751,7 @@ _OPENAI = LLMConfig(
 
 @pytest.mark.asyncio
 async def test_a_null_content_reply_is_asked_again_and_the_answer_returned() -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     # WHY: the LLM server is the external boundary; a quantized model answers null once.
     with patch(
@@ -767,7 +767,7 @@ async def test_a_null_content_reply_is_asked_again_and_the_answer_returned() -> 
 
 @pytest.mark.asyncio
 async def test_three_null_content_replies_fail_instead_of_returning_nothing() -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     # WHY: the LLM server is the external boundary; it never answers with content.
     with (
@@ -784,7 +784,7 @@ async def test_three_null_content_replies_fail_instead_of_returning_nothing() ->
 
 @pytest.mark.asyncio
 async def test_transport_observer_records_each_null_content_wire_retry() -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     attempts = []
     responses = [_openai_response(content=None), _openai_response(content=None), _openai_response()]
@@ -808,7 +808,7 @@ async def test_transport_observer_records_each_null_content_wire_retry() -> None
 async def test_transport_observer_records_provider_http_failures(provider: str) -> None:
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     response = MagicMock(status_code=503)
     response.raise_for_status.side_effect = httpx.HTTPStatusError(
@@ -833,7 +833,7 @@ async def test_transport_observer_records_provider_http_failures(provider: str) 
 
 @pytest.mark.asyncio
 async def test_transport_observer_records_openai_adaptation_and_success() -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     rejected = AsyncMock(status_code=400)
     rejected.json = MagicMock(
@@ -844,7 +844,7 @@ async def test_transport_observer_records_openai_adaptation_and_success() -> Non
     # WHY: the compatibility retry posts twice, once rejected and once accepted.
     with (
         patch("httpx.AsyncClient.post", side_effect=[rejected, _openai_response()]),
-        patch("immich_memories.analysis.llm_wire.PARAM_ADAPTATIONS", {}),
+        patch("immich_memories.analysis.llm.wire.PARAM_ADAPTATIONS", {}),
     ):
         await query_llm("look", _thinking_config(), transport_observer=attempts.append)
 
@@ -857,7 +857,7 @@ async def test_transport_observer_records_openai_adaptation_and_success() -> Non
 async def test_transport_observer_records_connection_errors() -> None:
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     attempts = []
     # Transient drops retry with backoff (owner ruling 2026-09-01) before the
@@ -881,7 +881,7 @@ async def test_transport_observer_records_connection_errors() -> None:
 
 @pytest.mark.asyncio
 async def test_transport_observer_survives_thinking_fallback() -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     attempts = []
     # WHY: the fallback owns a new request but must retain the original observer.
@@ -903,7 +903,7 @@ async def test_transport_observer_survives_thinking_fallback() -> None:
 async def test_transport_observers_are_isolated_across_concurrent_queries() -> None:
     import asyncio
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     first: list = []
     second: list = []
@@ -923,7 +923,7 @@ async def test_transport_observers_are_isolated_across_concurrent_queries() -> N
 async def test_each_provider_payload_carries_the_exact_jpeg_bytes(provider: str) -> None:
     import base64
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     image = b"exact-contact-sheet"
     config = LLMConfig(
@@ -966,7 +966,7 @@ async def test_each_provider_payload_carries_the_exact_jpeg_bytes(provider: str)
     ],
 )
 async def test_visual_completion_mode_rejects_known_truncation(provider: str, body: dict) -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     response = AsyncMock(status_code=200)
     response.json = MagicMock(return_value=body)
@@ -991,7 +991,7 @@ async def test_visual_completion_mode_rejects_known_truncation(provider: str, bo
 @pytest.mark.asyncio
 @pytest.mark.parametrize("provider", ["ollama", "anthropic", "openai-compatible"])
 async def test_transport_observer_records_invalid_json_for_each_provider(provider: str) -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     response = MagicMock(status_code=200)
     response.raise_for_status.return_value = None
@@ -1028,7 +1028,7 @@ async def test_transport_observer_records_invalid_json_for_each_provider(provide
 async def test_transport_observer_records_invalid_shape_for_each_provider(
     provider: str, body: dict
 ) -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     response = MagicMock(status_code=200)
     response.raise_for_status.return_value = None
@@ -1076,7 +1076,7 @@ async def test_transport_observer_records_invalid_shape_for_each_provider(
 async def test_parseable_malformed_content_keeps_legacy_reply_metrics(
     provider: str, body: dict, usage: tuple[int, int]
 ) -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     response = MagicMock(status_code=200)
     response.raise_for_status.return_value = None
@@ -1085,7 +1085,7 @@ async def test_parseable_malformed_content_keeps_legacy_reply_metrics(
     # WHY: content may be malformed after the provider has supplied billable usage.
     with (
         patch("httpx.AsyncClient.post", return_value=response),
-        patch("immich_memories.analysis.llm_query.llm_metrics.record_reply") as record_reply,
+        patch("immich_memories.analysis.llm.query.llm_metrics.record_reply") as record_reply,
         pytest.raises((KeyError, TypeError, AttributeError, ValueError)),
     ):
         await query_llm(
@@ -1105,7 +1105,7 @@ async def test_parseable_malformed_content_keeps_legacy_reply_metrics(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("provider", ["ollama", "anthropic", "openai-compatible"])
 async def test_invalid_json_does_not_create_legacy_reply_metrics(provider: str) -> None:
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     response = MagicMock(status_code=200)
     response.raise_for_status.return_value = None
@@ -1114,7 +1114,7 @@ async def test_invalid_json_does_not_create_legacy_reply_metrics(provider: str) 
     # WHY: a body that cannot be decoded has no trustworthy usage to count.
     with (
         patch("httpx.AsyncClient.post", return_value=response),
-        patch("immich_memories.analysis.llm_query.llm_metrics.record_reply") as record_reply,
+        patch("immich_memories.analysis.llm.query.llm_metrics.record_reply") as record_reply,
         pytest.raises(ValueError, match="not json"),
     ):
         await query_llm(
@@ -1133,8 +1133,8 @@ async def test_a_transient_transport_drop_is_retried_not_fatal():
     The transient transport family retries with backoff before anything raises."""
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.llm.query import query_llm
+    from immich_memories.config.models.llm import LLMConfig
 
     calls = {"n": 0}
 
@@ -1189,7 +1189,7 @@ async def test_an_empty_404_from_a_server_that_has_answered_is_retried() -> None
     identical request succeeded a second later. Nothing retried it, so one
     edge blip ended a whole run at "the model call failed at call 1".
     """
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     config = _thinking_config(base_url="https://edge-blip.test/v1")
     attempts = []
@@ -1219,7 +1219,7 @@ async def test_a_404_that_names_what_is_missing_still_fails_at_once() -> None:
     """A wrong model or a wrong path is not transient, whatever the endpoint did before."""
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     config = _thinking_config(base_url="https://named-404.test/v1")
     # WHY: the provider's endpoint is the boundary; the body is the provider's own.
@@ -1239,7 +1239,7 @@ async def test_an_empty_404_from_an_endpoint_that_never_answered_fails_fast() ->
     """A base URL that is not there must say so on the first call, not after three."""
     import httpx
 
-    from immich_memories.analysis.llm_query import query_llm
+    from immich_memories.analysis.llm.query import query_llm
 
     config = _thinking_config(base_url="https://not-a-server.test/v1")
     # WHY: the provider's endpoint is the boundary; a wrong URL is only visible there.

@@ -1,6 +1,6 @@
 """Every picture the final cut leaves out carries the reason the plan had (#2135)."""
 
-from immich_memories.analysis.editorial_left_out import final_cut_notes
+from immich_memories.analysis.runtime.left_out import final_cut_notes
 
 
 def _plan(**fields):

@@ -15,7 +15,7 @@
 #
 #   ${NAME}     written verbatim into the pinned config and expanded by the app
 #               at load time. For credentials only: llm.api_key is one of the
-#               fields config_loader expands, so the key never lands on disk.
+#               fields config/loader.py expands, so the key never lands on disk.
 #               The runner passes the variable through to the process, and
 #               refuses to start a cell whose credential variable is missing.
 #
@@ -186,7 +186,7 @@ cells:
       editorial.reader: model
       llm.provider: openai-compatible
       llm.base_url: $env:MATRIX_OMLX_BASE_URL
-      # oMLX wants a bearer token. OPENAI_API_KEY is the alias config_loader
+      # oMLX wants a bearer token. OPENAI_API_KEY is the alias config/loader.py
       # already maps to llm.api_key, and it is the one the owner's shell exports.
       llm.api_key: ${OPENAI_API_KEY}
       # Tier full demands a caption per picture, and the caption endpoint is

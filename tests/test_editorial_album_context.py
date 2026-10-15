@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
+from immich_memories.analysis.film.intent import build_editorial_intent
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import run
 from tests.test_editorial_story_first_planner import make_source

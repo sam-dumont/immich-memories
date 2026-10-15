@@ -57,7 +57,7 @@ def run_role(role: str, config_path: Path, start: Barrier, release: Event, event
 
 
 def _setup(role: str, config_path: Path, release: Event, events: Any) -> Callable[[], None]:
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
 
     config = load_config(config_path)
     if role in MANUAL_ROLES:

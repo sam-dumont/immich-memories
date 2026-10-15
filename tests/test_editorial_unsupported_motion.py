@@ -10,16 +10,16 @@ import json
 
 import pytest
 
-from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
-from immich_memories.analysis.editorial_motion_facts import measure_motion
-from immich_memories.analysis.editorial_preparation_motion import (
+from immich_memories.analysis.clips.bound_sample import source_metadata_digest
+from immich_memories.analysis.clips.budget import RESIDUAL_MIN
+from immich_memories.analysis.clips.motion_facts import measure_motion
+from immich_memories.analysis.film.lines import UnitLines
+from immich_memories.analysis.preparation.motion_lines import (
     MOTION_PRODUCER,
     BankedMotionLines,
     missing_motion,
     motion_sources,
 )
-from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
-from immich_memories.analysis.editorial_structure_lines import UnitLines
 from immich_memories.store.motion_lines import (
     DESCRIBED,
     MotionLine,
@@ -108,7 +108,7 @@ def test_a_live_photo_whose_measured_action_differs_from_its_still_stays_usable(
 
 
 def test_a_prepared_line_records_the_evidence_that_admitted_it(store):
-    from immich_memories.analysis.editorial_motion_facts import RESIDUAL_PRODUCER
+    from immich_memories.analysis.clips.motion_facts import RESIDUAL_PRODUCER
 
     swing = picture("swing", live="swing-companion")
     sources = motion_sources(

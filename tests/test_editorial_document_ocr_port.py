@@ -6,7 +6,7 @@ that bound that cost: memoising a read per asset id, and narrowing to Immich's o
 search before paying for the expensive per-asset read at all.
 """
 
-from immich_memories.analysis.editorial_document_ocr import document_ocr_port
+from immich_memories.analysis.preparation.document_ocr import document_ocr_port
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import ServerInfo
 
@@ -165,11 +165,11 @@ def test_the_bulk_search_runs_once_even_when_many_assets_are_asked():
 def test_every_content_check_rule_word_is_in_the_bulk_search_vocabulary():
     # #2062 round 4: the 21-B miss happened because the search list and the rule list had
     # drifted apart. They are built from the same tuples now, so this can't happen again.
-    from immich_memories.analysis.editorial_carrier_eligibility import (
+    from immich_memories.analysis.facts.carrier_eligibility import (
         DOCUMENT_TITLE_WORDS,
         PERSONAL_RECORD_FIELD_WORDS,
     )
-    from immich_memories.analysis.editorial_document_ocr import _OCR_PREFILTER_WORDS
+    from immich_memories.analysis.preparation.document_ocr import _OCR_PREFILTER_WORDS
 
     for word in (*PERSONAL_RECORD_FIELD_WORDS, *DOCUMENT_TITLE_WORDS):
         assert word in _OCR_PREFILTER_WORDS, word
@@ -232,7 +232,7 @@ def test_a_secondary_account_s_documents_are_found_too():
 
 
 def test_the_primary_account_is_never_searched_twice():
-    from immich_memories.config_models import PRIMARY_ACCOUNT
+    from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 
     client = _Client(ServerInfo(major=2, minor=2, patch=0), searchable=True, secondary_accounts={})
     port = document_ocr_port(client, accounts=(PRIMARY_ACCOUNT,))

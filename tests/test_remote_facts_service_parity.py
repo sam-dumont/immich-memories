@@ -14,14 +14,14 @@ import numpy as np
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from immich_memories.analysis import editorial_preparation_detectors as detectors
-from immich_memories.analysis.editorial_preparation_detectors import _FACT_COLUMNS, _decided_rows
-from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
-from immich_memories.analysis.editorial_preparation_remote import prepare_remote_facts
-from immich_memories.analysis.remote_facts import RemoteFactsClient
+from immich_memories.analysis.preparation import detectors
+from immich_memories.analysis.preparation.detectors import _FACT_COLUMNS, _decided_rows
+from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
+from immich_memories.analysis.preparation.remote import prepare_remote_facts
+from immich_memories.analysis.preparation.remote_facts import RemoteFactsClient
 from immich_memories.cache.embedding_cache import HeadFactStore
-from immich_memories.config_models_editorial import EditorialConfig
-from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.config.models.editorial import EditorialConfig
+from immich_memories.config.models.inference import InferenceConfig
 from immich_memories.db import Store, StoreLocation, open_store
 from immich_memories.store.editorial_preparation import remember_head_rows
 from immich_memories.triage.heads import HeadFact

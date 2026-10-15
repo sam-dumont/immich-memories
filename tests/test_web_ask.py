@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.job_routes import cli_executable
 from tests.web_api_fixtures import api_client, config_in
 

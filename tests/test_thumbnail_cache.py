@@ -203,7 +203,7 @@ def test_the_default_budget_holds_a_whole_library_s_previews():
     on the next film. The default holds about 90,000 pictures and videos; a bigger
     library gets the warning naming this key.
     """
-    from immich_memories.config_models import CacheConfig
+    from immich_memories.config.models.resources import CacheConfig
 
     measured_preview_bytes = 320_000
     library_items = 90_000

@@ -13,15 +13,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from immich_memories.analysis import llm_wire
-from immich_memories.analysis.llm_query import query_llm
-from immich_memories.analysis.llm_wire import (
+from immich_memories.analysis.llm import wire as llm_wire
+from immich_memories.analysis.llm.query import query_llm
+from immich_memories.analysis.llm.wire import (
     GROWN_REASONING_HEADROOM_TOKENS,
     REASONING_HEADROOM_TOKENS,
     THINKING_MIN_MAX_TOKENS,
     LLMIncompleteResponse,
 )
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 
 
 @pytest.fixture(autouse=True)

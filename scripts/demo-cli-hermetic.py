@@ -54,7 +54,7 @@ import yaml  # noqa: E402
 from tests.e2e.fake_editorial import install_fake_editorial_route  # noqa: E402
 from tests.e2e.fake_immich import FakeImmichServer  # noqa: E402
 
-import immich_memories.config_loader as config_loader  # noqa: E402
+import immich_memories.config.loader as config_loader  # noqa: E402
 
 # Slow enough for the counted stage to last a few seconds, so the bar and the
 # remaining-time estimate are on screen long enough to read.

@@ -30,7 +30,7 @@ class TestPipelineLockWiredInPipeline:
         tmp_path: Path,
     ) -> None:
         """Generation must not lock the real user state during isolated runs."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         config = Config()
@@ -67,7 +67,7 @@ class TestPipelineLockWiredInPipeline:
 
     def test_default_database_keeps_production_lock_path(self, tmp_path: Path) -> None:
         """The default database path must retain the existing production lock location."""
-        from immich_memories.config_loader import Config
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams, generate_memory
 
         config = Config(cache={"database": "~/.immich-memories/cache.db"})

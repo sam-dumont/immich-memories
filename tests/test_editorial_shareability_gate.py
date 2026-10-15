@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
+from immich_memories.analysis.audience import shareability as share
 from tests.annotation_rows import add_rows, annotation_store
 
 

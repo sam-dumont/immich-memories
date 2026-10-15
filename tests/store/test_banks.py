@@ -10,10 +10,10 @@ import httpx
 import pytest
 import sqlalchemy as sa
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_block_votes import vote_blocks
-from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
-from immich_memories.analysis.editorial_structure_audience import AudienceBank
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.audience.verdicts import AudienceBank
+from immich_memories.analysis.polish.block_votes import vote_blocks
+from immich_memories.analysis.stories.banked_facts import open_banked_facts
 from immich_memories.store.owner_edits import keep_owner_edits, owner_edits_of_attempt
 from immich_memories.store.vote_banks import VoteBank
 
@@ -285,7 +285,7 @@ def test_an_owner_edit_comes_back_exactly_as_decided(store, tmp_path):
 @pytest.mark.asyncio
 async def test_a_music_mood_is_asked_once_and_reused(store, tmp_path, monkeypatch):
     from immich_memories.audio.text_mood import mood_for_cut
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", store.location.url)
     if store.location.schema:

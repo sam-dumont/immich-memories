@@ -8,7 +8,7 @@ import pytest
 
 from immich_memories.titles.text_builder import (
     SelectionType,
-    _generate_date_range_title,
+    generate_date_range_title,
     generate_title,
     get_month_name,
     get_ordinal,
@@ -18,44 +18,44 @@ from immich_memories.titles.text_builder import (
 
 
 class TestGenerateDateRangeTitle:
-    """Tests for _generate_date_range_title edge cases."""
+    """Tests for generate_date_range_title edge cases."""
 
     def test_full_calendar_year(self):
         """Jan 1 to Dec 31 same year renders as just the year."""
-        result = _generate_date_range_title(date(2024, 1, 1), date(2024, 12, 31), None, "en")
+        result = generate_date_range_title(date(2024, 1, 1), date(2024, 12, 31), None, "en")
         assert result.main_title == "2024"
         assert result.selection_type == SelectionType.CALENDAR_YEAR
 
     def test_single_month(self):
         """Dates within the same month render as 'Month Year'."""
-        result = _generate_date_range_title(date(2024, 6, 5), date(2024, 6, 28), None, "en")
+        result = generate_date_range_title(date(2024, 6, 5), date(2024, 6, 28), None, "en")
         assert result.main_title == "June 2024"
         assert result.selection_type == SelectionType.SINGLE_MONTH
 
     def test_same_year_multi_month(self):
         """Multi-month range in same year renders as 'Month to Month Year'."""
-        result = _generate_date_range_title(date(2024, 3, 1), date(2024, 8, 15), None, "en")
+        result = generate_date_range_title(date(2024, 3, 1), date(2024, 8, 15), None, "en")
         assert result.main_title == "March to August 2024"
         assert result.selection_type == SelectionType.MONTH_RANGE
 
     def test_cross_year_range(self):
         """Range spanning years renders as 'Month Year to Month Year'."""
-        result = _generate_date_range_title(date(2023, 11, 1), date(2024, 2, 28), None, "en")
+        result = generate_date_range_title(date(2023, 11, 1), date(2024, 2, 28), None, "en")
         assert result.main_title == "November 2023 to February 2024"
         assert result.selection_type == SelectionType.MONTH_RANGE
 
     def test_with_person_name(self):
         """Person name is passed through as subtitle."""
-        result = _generate_date_range_title(date(2024, 1, 1), date(2024, 12, 31), "Ada", "en")
+        result = generate_date_range_title(date(2024, 1, 1), date(2024, 12, 31), "Ada", "en")
         assert result.subtitle == "Ada"
 
     def test_french_writes_a_month_inside_a_title_in_lower_case(self):
         # French capitalises no month mid-sentence: "de mars à août", never "à Août".
-        result = _generate_date_range_title(date(2024, 3, 1), date(2024, 8, 15), None, "fr")
+        result = generate_date_range_title(date(2024, 3, 1), date(2024, 8, 15), None, "fr")
         assert result.main_title == "De mars à août 2024"
 
     def test_french_cross_year(self):
-        result = _generate_date_range_title(date(2023, 11, 1), date(2024, 2, 28), None, "fr")
+        result = generate_date_range_title(date(2023, 11, 1), date(2024, 2, 28), None, "fr")
         assert result.main_title == "De novembre 2023 à février 2024"
 
 

@@ -5,17 +5,14 @@ import re
 
 import pytest
 
-from immich_memories.analysis.editorial_story_pick_contract import (
-    carries_motion,
-    source_kind_marker,
-)
-from immich_memories.analysis.editorial_story_pick_pages import MAX_LABELS_PER_ASK, page_shares
-from immich_memories.analysis.editorial_story_reading import PAGE_CHARS
-from immich_memories.analysis.editorial_story_shortlist import (
+from immich_memories.analysis.clips.unit_motion import carries_motion, source_kind_marker
+from immich_memories.analysis.selection.pick_pages import MAX_LABELS_PER_ASK, page_shares
+from immich_memories.analysis.selection.vote import _pick_prompt, pick_story_moments
+from immich_memories.analysis.stories.period_account import PAGE_CHARS
+from immich_memories.analysis.stories.shortlist import (
     DepictedChoice,
-    _capture_group_moments,
+    capture_group_moments,
 )
-from immich_memories.analysis.editorial_story_vote import _pick_prompt, pick_story_moments
 
 
 class PickJudge:
@@ -104,7 +101,7 @@ def pick_occasion(judge, *, count=1, star="quiet-p1", stars=(), groups=("quiet",
     selected = pick_story_moments(
         judge,
         story={"key": "K09", "title": "The spring race", "seen": {"days": 23}},
-        choices=_capture_group_moments(units, quality=lambda _asset: 1.0),
+        choices=capture_group_moments(units, quality=lambda _asset: 1.0),
         count=count,
         starred=lambda c: any(by_asset[a]["favourite"] for a in c.members),
         contract="Show the spring",

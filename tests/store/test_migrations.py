@@ -103,7 +103,7 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
     dropped tables empty. This is the rollback contract docs/designs/2026-09-27-the-store.md
     states.
     """
-    from immich_memories.config_loader import Config, set_config
+    from immich_memories.config.loader import Config, set_config
     from immich_memories.db import upgrade
     from immich_memories.db.inventory import digests
 

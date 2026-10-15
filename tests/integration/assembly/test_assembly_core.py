@@ -426,16 +426,16 @@ class TestHDRUtilities:
 
     def test_detect_hdr_on_sdr_clip(self, test_clip_720p):
         """SDR test clip should return None for HDR type."""
-        from immich_memories.processing.hdr_utilities import _detect_hdr_type
+        from immich_memories.processing.hdr_utilities import detect_hdr_type
 
-        result = _detect_hdr_type(test_clip_720p)
+        result = detect_hdr_type(test_clip_720p)
         assert result is None
 
     def test_detect_color_primaries(self, test_clip_720p):
         """detect_color_primaries returns a string or None for test clip."""
-        from immich_memories.processing.hdr_utilities import _detect_color_primaries
+        from immich_memories.processing.hdr_utilities import detect_color_primaries
 
-        result = _detect_color_primaries(test_clip_720p)
+        result = detect_color_primaries(test_clip_720p)
         # Synthetic testsrc2 clips may or may not report primaries
         assert result is None or isinstance(result, str)
 
@@ -464,10 +464,10 @@ class TestHDRUtilities:
 
     def test_get_clip_hdr_types(self, test_clip_720p, test_clip_720p_b):
         """SDR clips all return None HDR type."""
-        from immich_memories.processing.hdr_utilities import _get_clip_hdr_types
+        from immich_memories.processing.hdr_utilities import get_clip_hdr_types
 
         clips = [_make_clip(test_clip_720p), _make_clip(test_clip_720p_b)]
-        result = _get_clip_hdr_types(clips)
+        result = get_clip_hdr_types(clips)
         assert len(result) == 2
         assert all(t is None for t in result)
 
@@ -758,7 +758,7 @@ class TestClipHdrResolutionExtra:
     def test_matching_transfer_needs_no_conversion(self, test_clip_720p):
         """A clip already in the target transfer gets an empty conversion filter."""
         from immich_memories.processing.ffmpeg_runner import AssemblyContext
-        from immich_memories.processing.hdr_utilities import _resolve_clip_hdr
+        from immich_memories.processing.hdr_utilities import resolve_clip_hdr
 
         ctx = AssemblyContext(
             target_w=1280,
@@ -771,7 +771,7 @@ class TestClipHdrResolutionExtra:
             target_fps=30,
             fade_duration=0.3,
         )
-        conversion, *_ = _resolve_clip_hdr(0, ctx, ctx.hdr_type)
+        conversion, *_ = resolve_clip_hdr(0, ctx, ctx.hdr_type)
         assert conversion == ""
 
 

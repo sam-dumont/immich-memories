@@ -4,11 +4,11 @@ import hashlib
 import json
 from pathlib import Path
 
-from immich_memories.analysis import editorial_preparation_detectors as detectors
-from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_VERSION
-from immich_memories.analysis.editorial_preparation_detector_frames import FRAME_WIDTH, FRAMES
-from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
-from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.analysis.facts.clip_frames import CLIP_FRAMES_VERSION
+from immich_memories.analysis.preparation import detectors
+from immich_memories.analysis.preparation.detector_frames import FRAME_WIDTH, FRAMES
+from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
+from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 from immich_memories.db.tables import head_facts
 from immich_memories.triage import encoder, preprocess
 
@@ -54,9 +54,9 @@ def test_v1_pins_payload_keys_models_labels_and_sampling():
 
 
 def test_switching_tiers_preserves_banked_detector_versions_and_gpu_reads():
-    from immich_memories.analysis.editorial_shareability import load_detector_heads
-    from immich_memories.config_loader import Config
-    from immich_memories.config_tiers import apply_tier
+    from immich_memories.analysis.audience.shareability import load_detector_heads
+    from immich_memories.config.loader import Config
+    from immich_memories.config.tiers import apply_tier
     from tests.annotation_rows import add_rows, annotation_store
 
     config = Config(tier="gpu")

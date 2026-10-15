@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.web.dependencies import config_file, immich_greeter
 from tests.web_api_fixtures import api_client, config_in
 
@@ -31,7 +31,7 @@ def greeted() -> list[tuple[str, str]]:
 
 @pytest.fixture
 def client(config: Config, tmp_path: Path, greeted) -> Iterator[TestClient]:
-    from immich_memories.config_loader import load_config, set_config
+    from immich_memories.config.loader import load_config, set_config
 
     # The saves re-read the process's config; it has to be this test's, never the host's.
     (tmp_path / "config.yaml").write_text("")

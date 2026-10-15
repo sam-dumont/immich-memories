@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.analysis.annotation_lines import (
+from immich_memories.analysis.reading.annotation_lines import (
     AnnotationContract,
     AnnotationLineBatch,
     AssetAnnotationLine,

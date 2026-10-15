@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.analysis.special_day import ask_if_special
+from immich_memories.analysis.special_days.detection import ask_if_special
 
 
 def _asset(hour: int = 10) -> SimpleNamespace:
@@ -29,7 +29,7 @@ def test_a_bug_in_our_own_code_stops_the_scan_loudly() -> None:
     # WHY: the ask path is the boundary; here our own call into it is wrong.
     with (
         patch(
-            "immich_memories.analysis.special_day._ask",
+            "immich_memories.analysis.special_days.detection._ask",
             side_effect=TypeError("_capture() got an unexpected keyword argument 'thinking'"),
         ),
         pytest.raises(TypeError, match="unexpected keyword argument"),
@@ -41,7 +41,8 @@ def test_a_model_that_cannot_be_reached_is_still_quietly_not_a_verdict() -> None
     """The fail-open path stays exactly as it was for transport failures."""
     # WHY: the LLM server is the external boundary; here it is unreachable.
     with patch(
-        "immich_memories.analysis.special_day._ask", side_effect=OSError("no route to host")
+        "immich_memories.analysis.special_days.detection._ask",
+        side_effect=OSError("no route to host"),
     ):
         verdict = ask_if_special([_asset()], llm_config=SimpleNamespace())
 
@@ -55,8 +56,10 @@ def test_the_bug_is_logged_before_it_is_raised(caplog) -> None:
 
     # WHY: the ask path is the boundary; here our own call into it is wrong.
     with (
-        patch("immich_memories.analysis.special_day._ask", side_effect=TypeError("boom")),
-        caplog.at_level(logging.ERROR, logger="immich_memories.analysis.special_day"),
+        patch(
+            "immich_memories.analysis.special_days.detection._ask", side_effect=TypeError("boom")
+        ),
+        caplog.at_level(logging.ERROR, logger="immich_memories.analysis.special_days.detection"),
         pytest.raises(TypeError),
     ):
         ask_if_special([_asset()], llm_config=SimpleNamespace())

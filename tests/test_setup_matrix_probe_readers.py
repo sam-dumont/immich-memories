@@ -19,8 +19,8 @@ from setup_matrix_plan import (  # noqa: E402
     Step,
 )
 
-from immich_memories.analysis.llm_wire import LLMTransportAttempt  # noqa: E402
-from immich_memories.config_models_llm import LLMConfig  # noqa: E402
+from immich_memories.analysis.llm.wire import LLMTransportAttempt  # noqa: E402
+from immich_memories.config.models.llm import LLMConfig  # noqa: E402
 
 
 def _result(shape="story-pick", seconds=10, completion=10_000):

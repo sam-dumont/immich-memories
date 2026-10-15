@@ -16,7 +16,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.logging_config import configure_logging
 
 JSON_COMMANDS = [

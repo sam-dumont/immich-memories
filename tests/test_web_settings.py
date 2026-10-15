@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from immich_memories.config_loader import set_config
+from immich_memories.config.loader import set_config
 from tests.web_api_fixtures import api_client, config_in
 
 
 def _settings_client(tmp_path, monkeypatch, config_text: str = ""):
-    from immich_memories.config_loader import load_config
+    from immich_memories.config.loader import load_config
     from immich_memories.web.dependencies import config_file
 
     path = tmp_path / "config.yaml"
@@ -160,7 +160,7 @@ def test_deployment_service_defaults_remain_editable_and_saved_settings_win(tmp_
 
 
 def test_legacy_tier_in_saved_settings_is_refused(tmp_path, monkeypatch):
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import open_store
     from immich_memories.settings_store import SettingsStore
 

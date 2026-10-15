@@ -59,7 +59,9 @@ def test_cli_actual_context_and_generation_reuse_exact_timing(tmp_path):
     # WHY: replaces the selection pipeline and render step so timing context can be checked.
     with (
         # WHY: the pipeline is a stand-in; its side effect captures the editorial context passed.
-        patch("immich_memories.analysis.editorial_runtime.build_smart_pipeline", side_effect=build),
+        patch(
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline", side_effect=build
+        ),
         # WHY: replaces the FFmpeg render; the side effect asserts on the params it receives.
         patch("immich_memories.generate.generate_memory", side_effect=render) as generated,
     ):

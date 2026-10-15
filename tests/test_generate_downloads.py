@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from tests.conftest import make_clip
 
@@ -114,7 +114,7 @@ def test_disabled_cache_download_is_run_owned_and_cleaned(tmp_path: Path) -> Non
 def test_disabled_cache_http_failure_removes_partial_run_owned_file(tmp_path: Path) -> None:
     import httpx
 
-    from immich_memories.generate_downloads import _download_temporary_asset
+    from immich_memories.generate_downloads import fetch_temporary_asset
 
     asset = MagicMock()
     asset.id = "partial-temporary"
@@ -135,9 +135,9 @@ def test_disabled_cache_http_failure_removes_partial_run_owned_file(tmp_path: Pa
     client = MagicMock()
     client.download_asset.side_effect = partial_then_success
 
-    assert _download_temporary_asset(client, asset, tmp_path) is None
+    assert fetch_temporary_asset(client, asset, tmp_path) is None
     assert not list((tmp_path / ".temporary_downloads").rglob("*.*"))
-    path = _download_temporary_asset(client, asset, tmp_path)
+    path = fetch_temporary_asset(client, asset, tmp_path)
 
     assert path is not None
     assert path.read_bytes() == b"complete"
@@ -313,7 +313,7 @@ def test_extraction_uses_burst_prefetch_results_without_component_retries(
 
 def test_extraction_does_not_prefetch_static_photo(tmp_path: Path, monkeypatch) -> None:
     from immich_memories.api.models import AssetType
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_clips import extract_clips
 

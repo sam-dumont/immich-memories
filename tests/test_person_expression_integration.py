@@ -11,11 +11,11 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis.editorial_case import Case
-from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_source import resolve_named_expression
-from immich_memories.analysis.person_presence import present_on_assets
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.reading.case import Case
+from immich_memories.analysis.runtime.composition import EditorialRunContext
+from immich_memories.analysis.sources.person_presence import present_on_assets
+from immich_memories.analysis.sources.window_context import resolve_named_expression
 from immich_memories.api.models import AssetType, Person
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.memory_types.factory import create_preset

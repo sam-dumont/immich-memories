@@ -17,7 +17,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
-from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.config.models.editorial import EditorialConfig
 from immich_memories.db import Store, from_db
 from immich_memories.db.tables import annotation_assets
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context

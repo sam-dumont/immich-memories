@@ -28,8 +28,8 @@ from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
-from immich_memories.analysis.framing_target import PictureFaces, faces_extent, framing_centre
-from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.analysis.facts.framing_target import PictureFaces, faces_extent, framing_centre
+from immich_memories.analysis.facts.subject_framing import FaceBox
 from immich_memories.photos.renderer import EASINGS, KenBurnsParams
 
 # A single subject (a person, a lone face, the centre of a faceless picture)

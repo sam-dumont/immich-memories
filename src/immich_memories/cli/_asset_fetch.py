@@ -13,7 +13,7 @@ import logging
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.analysis.source_filter import asset_of
+from immich_memories.api.models import asset_of
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.person_scope import (
     people_in_window,
@@ -226,7 +226,7 @@ def fetch_videos(
     Live Photos are not fetched here any more. Their stills come back with the
     photographs, because that is what they are; the video half is dropped from
     this pool once the photographs are known
-    (live_photo_pipeline.drop_live_photo_components).
+    (`sources.live_photos.drop_live_photo_components`).
 
     ``history_from`` names where the memory's expected-sparse windows start, so
     the per-window report can summarise them rather than warn about each.
@@ -364,7 +364,7 @@ def holiday_pool(
     """
     if memory_type != "holiday":
         return videos, photos
-    from immich_memories.analysis.source_filter import asset_of
+    from immich_memories.api.models import asset_of
     from immich_memories.memory_types.holiday_pool import keep_the_day
 
     kept_videos, kept_photos = keep_the_day(

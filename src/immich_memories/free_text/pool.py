@@ -15,11 +15,11 @@ from datetime import date, datetime, timedelta
 from types import MappingProxyType, SimpleNamespace
 from typing import Protocol, cast
 
-from immich_memories.analysis.moment_grouping import EPISODE_WINDOW_MINUTES
-from immich_memories.analysis.person_presence import present_on_assets
+from immich_memories.analysis.corpus.moment_grouping import EPISODE_WINDOW_MINUTES
+from immich_memories.analysis.sources.person_presence import present_on_assets
 from immich_memories.api.models import Asset, Person
 from immich_memories.api.person_expression import PersonExpression
-from immich_memories.config_models_automation import TripsConfig
+from immich_memories.config.models.automation import TripsConfig
 from immich_memories.free_text import caption_words
 from immich_memories.free_text.facts import (
     LibraryFacts,

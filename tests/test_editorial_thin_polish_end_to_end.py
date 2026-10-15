@@ -8,11 +8,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_picture_admission import PictureAdmission
-from immich_memories.analysis.editorial_standing_facts import carries_nothing
-from immich_memories.analysis.editorial_story_standing import StandingGate
-from immich_memories.analysis.editorial_thin_layer import ThinPolish
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.facts.standing_facts import carries_nothing
+from immich_memories.analysis.polish.layer import ThinPolish
+from immich_memories.analysis.selection.picture_admission import PictureAdmission
+from immich_memories.analysis.selection.standing import StandingGate
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.db import open_store
 
 ACCOUNT = "The month a family found its feet."
@@ -251,7 +251,7 @@ def test_a_second_run_over_the_same_bank_asks_nothing_and_cuts_the_same_film(tmp
 def banked_records(tmp_path):
     """The record the reading of S3's episode left behind, read back the way a run reads it."""
     del tmp_path  # kept for call-site symmetry; the store is the one this test's env names
-    from immich_memories.analysis.catalogue_runtime import banked_notable_records
+    from immich_memories.analysis.runtime.period_accounts import banked_notable_records
     from immich_memories.store.episode_readings import (
         BankedEpisodeReading,
         EpisodeReadingIdentity,

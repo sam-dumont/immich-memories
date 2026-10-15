@@ -54,23 +54,23 @@ locals {
     var.database_url != "" ? {
       IMMICH_MEMORIES_DATABASE_SCHEMA = var.database_schema
     } : {},
-    # Third-party hosts (config_models_network.py); both off by default.
+    # Third-party hosts (config/models/network.py); both off by default.
     var.network_geocoding ? { IMMICH_MEMORIES_NETWORK__GEOCODING = "true" } : {},
     var.network_map_tiles ? { IMMICH_MEMORIES_NETWORK__MAP_TILES = "true" } : {},
-    # Cache caps (config_models.py); null keeps the app's own 10 GB default.
+    # Cache caps (config/models/resources.py); null keeps the app's own 10 GB default.
     var.cache_video_max_size_gb != null ? {
       IMMICH_MEMORIES_CACHE__VIDEO_CACHE_MAX_SIZE_GB = tostring(var.cache_video_max_size_gb)
     } : {},
     var.cache_thumbnail_max_size_mb != null ? {
       IMMICH_MEMORIES_CACHE__THUMBNAIL_CACHE_MAX_SIZE_MB = tostring(var.cache_thumbnail_max_size_mb)
     } : {},
-    # ACE-Step 1.5, API mode (config_models_soundtrack.py ACEStepConfig).
+    # ACE-Step 1.5, API mode (config/models/soundtrack.py ACEStepConfig).
     var.ace_step_enabled ? {
       IMMICH_MEMORIES_ACE_STEP__ENABLED = "true"
       IMMICH_MEMORIES_ACE_STEP__MODE    = "api"
       IMMICH_MEMORIES_ACE_STEP__API_URL = var.ace_step_api_url
     } : {},
-    # OIDC behind a reverse proxy (config_models_auth.py AuthConfig). List-valued
+    # OIDC behind a reverse proxy (config/models/auth.py AuthConfig). List-valued
     # fields take JSON, the same as the environment-variables.md convention.
     var.oidc_enabled ? merge(
       {
@@ -90,7 +90,7 @@ locals {
       IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL = "http://${local.captioner_service_name}:8092/v1"
     } : {},
     # The sidecar shares a network namespace with the app, so loopback needs
-    # neither TLS nor render.allow_insecure_http (config_models_render.py).
+    # neither TLS nor render.allow_insecure_http (config/models/render.py).
     var.render_worker_sidecar_enabled ? {
       IMMICH_MEMORIES_RENDER__WORKER_BASE_URL = "http://127.0.0.1:8093"
     } : {},
@@ -308,7 +308,7 @@ resource "kubernetes_deployment_v1" "this" {
 
         # A ConfigMap volume's files belong to root, readable by the app's uid
         # only through group or world bits, which is exactly what
-        # config_loader.py warns on ("Config file ... is readable by other
+        # config/loader.py warns on ("Config file ... is readable by other
         # users"). This copies it onto the
         # writable cache PVC as the app's own uid instead, and chmods it
         # there. Only present when var.config_yaml is set: the default path

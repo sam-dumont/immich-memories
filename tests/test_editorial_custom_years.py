@@ -11,11 +11,11 @@ import json
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.selection.trim import trim_to_timing_budget
+from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+from immich_memories.analysis.structure.planner import plan_structure
 from immich_memories.processing.editorial_timing import build_editorial_timing_policy
 from immich_memories.timeperiod import DateRange
 from tests.editorial_film_fixtures import HOME, SEASIDE, Day, film_source

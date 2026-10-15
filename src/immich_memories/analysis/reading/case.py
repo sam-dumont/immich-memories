@@ -1,0 +1,117 @@
+"""The editorial case and text-request contracts the story-first planner and runtime share.
+
+Extracted from the retired post-card moment editor; only the contracts survive here.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+
+from immich_memories.analysis.reading.moment_cards import MomentCard as ProductionMomentCard
+from immich_memories.analysis.reading.moment_contract import Moment, MomentCard
+from immich_memories.analysis.sources.event_scope import SpecialEventAdmission
+from immich_memories.api.person_expression import PersonExpression
+from immich_memories.timeperiod import DateRange
+
+if TYPE_CHECKING:
+    pass
+
+
+@dataclass(frozen=True)
+class Case:
+    key: str
+    label: str
+    product: str
+    ranges: tuple[DateRange, ...]
+    target_seconds: float
+    brief: str
+    target_source: str = "manifest"
+    people: tuple[str, ...] = ()
+    person_match: str = "and"
+    accept_any_provenance: bool = False
+    trip: bool = False
+    album_ref: str | None = None
+    special_event_id: str | None = None
+    event_asset_ids: tuple[str, ...] = ()
+    event_admission: SpecialEventAdmission | None = None
+    person_expression: PersonExpression | None = None
+    # The written subject an album was curated for; None unless the album is a subject pool.
+    pool_subject: str | None = None
+    # What that subject pool's free-text request asked left out (#2061).
+    excluded: tuple[str, ...] = ()
+    # A named person that request excluded, by people-file id, checked against a selected
+    # carrier's own recognised faces the same way a required person condition is (#2061).
+    excluded_person_ids: tuple[str, ...] = ()
+    # The fetch's own condition, over face ids after the people store and the roster
+    # resolved every name/group/uuid (`cli/run_people.py`), and the household account each
+    # face counts on. `people`/`person_expression` above are display names for the brief;
+    # a carrier is checked against THIS, with `present_on_assets`, the same function and
+    # rule the fetch used to build the pool (#1954). None when the run names nobody.
+    resolved_person_condition: PersonExpression | None = None
+    face_accounts: Mapping[str, str] = field(default_factory=dict)
+    # The birthday a birthday film celebrates ("MM-DD"); None for every other film.
+    celebrated_birthday: str | None = None
+    # What the film is the occasion of, in the film's language: a holiday's name, a trip's
+    # destination, whose birthday. The summary leads with it; empty for a period film.
+    occasion: str = ""
+
+    def __post_init__(self) -> None:
+        from immich_memories.analysis.sources.event_scope import validate_special_event_scope
+
+        if self.person_expression is not None:
+            if not isinstance(self.person_expression, PersonExpression):
+                raise ValueError("case people condition must be a validated expression")
+            if self.people and set(self.people) != set(self.person_expression.leaf_values):
+                raise ValueError("case people names and grouped condition disagree")
+            object.__setattr__(self, "people", self.person_expression.leaf_values)
+        if self.resolved_person_condition is not None and not isinstance(
+            self.resolved_person_condition, PersonExpression
+        ):
+            raise ValueError("case resolved people condition must be a validated expression")
+        members = validate_special_event_scope(
+            self.special_event_id, self.event_asset_ids, product=self.product
+        )
+        object.__setattr__(self, "event_asset_ids", members)
+        if self.event_admission is not None:
+            if not isinstance(self.event_admission, SpecialEventAdmission):
+                raise ValueError("special event admission must be an explicit validated record")
+            self.event_admission.validate_scope(
+                self.special_event_id, members, product=self.product
+            )
+
+
+def adapt_production_cards(
+    prepared: Any,
+    cards: tuple[ProductionMomentCard, ...],
+) -> tuple[tuple[MomentCard, ...], dict[str, tuple[str, ...]]]:
+    """Join scope-stable production cards back to their canonical source groups."""
+    groups_by_id = {group.group_id: group for group in prepared.moment_groups}
+    if len(groups_by_id) != len(prepared.moment_groups):
+        raise ValueError("prepared source contains duplicate moment group IDs")
+    if len({card.moment_id for card in cards}) != len(cards):
+        raise ValueError("production card wall contains duplicate moment IDs")
+
+    adapted: list[MomentCard] = []
+    selectable_by_group: dict[str, tuple[str, ...]] = {}
+    for index, card in enumerate(cards, start=1):
+        group = groups_by_id.get(card.moment_id)
+        if group is None:
+            raise ValueError("production card does not belong to the prepared moment groups")
+        if card.full_asset_ids != group.candidate_ids:
+            raise ValueError("production card full membership differs from its canonical moment")
+        selectable = card.selectable_asset_ids
+        if not selectable or len(set(selectable)) != len(selectable):
+            raise ValueError("production card needs unique selectable members")
+        selectable_set = set(selectable)
+        canonical_selectable = tuple(
+            asset_id for asset_id in group.candidate_ids if asset_id in selectable_set
+        )
+        if selectable != canonical_selectable:
+            raise ValueError("production card selectable members are not in canonical order")
+
+        moment = Moment(alias=f"M{index:03d}", group=group, descriptions=())
+        adapted.append(MomentCard(moment, card.text, None))
+        selectable_by_group[group.group_id] = selectable
+    return tuple(adapted), selectable_by_group

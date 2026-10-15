@@ -16,14 +16,14 @@ from typing import Annotated, Any
 import yaml
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from immich_memories.config_loader import (
-    _TIER2_SECTIONS,
+from immich_memories.config.loader import (
+    TIER2_SECTIONS,
     Config,
-    _load_yaml_data,
     get_config,
     get_config_path,
+    load_yaml_data,
 )
-from immich_memories.config_sources import SettingSource, describe_settings
+from immich_memories.config.sources import SettingSource, describe_settings
 from immich_memories.security import write_secret_file
 from immich_memories.settings_store import (
     SECRET_KEY_ENV,
@@ -224,7 +224,7 @@ def _remove_from_file(raw: dict, key: str) -> None:
     parts = key.split(".")
     _pop_path(raw, parts)
     advanced = raw.get("advanced")
-    if parts[0] in _TIER2_SECTIONS and isinstance(advanced, dict):
+    if parts[0] in TIER2_SECTIONS and isinstance(advanced, dict):
         _pop_path(advanced, parts)
         if not advanced:
             del raw["advanced"]
@@ -272,7 +272,7 @@ def move_to_database(keys: list[str], *, path: Path | None = None) -> Path:
     """
     path = path or get_config_path()
     config = get_config()
-    loaded = _load_yaml_data(path)
+    loaded = load_yaml_data(path)
     values = {}
     for key in keys:
         if refusal := _bootstrap_refusal(key):

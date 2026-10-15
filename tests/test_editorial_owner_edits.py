@@ -6,12 +6,12 @@ from datetime import UTC, datetime
 
 import pytest
 
-from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.generate import GenerationParams
-from immich_memories.generate_clips import _validated_render_directives
+from immich_memories.generate_clips import validated_render_directives
 from immich_memories.processing.editorial_live_render import validate_editorial_live_clip
 from immich_memories.processing.editorial_owner_edits import project_editorial_owner_edits
 from immich_memories.processing.editorial_timing import (
@@ -134,7 +134,7 @@ def test_removal_rebinds_survivors_in_story_order_and_recomputes_title_overhead(
     assert params == before
     updated = rendered_params(params, result)
     prepare_certified_timeline(updated)
-    assert list(_validated_render_directives(updated)) == ["chosen-0", "chosen-3"]
+    assert list(validated_render_directives(updated)) == ["chosen-0", "chosen-3"]
 
 
 @pytest.mark.parametrize("asset_id", ["chosen-1", "chosen-2"])
@@ -144,7 +144,7 @@ def test_motion_trim_updates_directive_and_recertifies_same_live_material(tmp_pa
     result = project(params, segments={**params.clip_segments, asset_id: (1.0, 3.0)})
     updated = rendered_params(params, result)
     prepare_certified_timeline(updated)
-    directive = _validated_render_directives(updated)[asset_id]
+    directive = validated_render_directives(updated)[asset_id]
     assert (directive.start_time, directive.end_time) == (1, 3)
     assert updated.clip_segments[asset_id] == (1, 3)
     if asset_id == "chosen-2":
@@ -160,7 +160,7 @@ def test_still_range_changes_hold_without_changing_selected_picture(tmp_path, as
     params = original_params(tmp_path)
     result = project(params, segments={**params.clip_segments, asset_id: (2, 7)})
     updated = rendered_params(params, result)
-    directive = _validated_render_directives(updated)[asset_id]
+    directive = validated_render_directives(updated)[asset_id]
     assert updated.clip_segments[asset_id] == (0, 5)
     assert (directive.start_time, directive.end_time) == (0, 5)
     assert directive.render_frame_seconds == (1.5 if asset_id == "chosen-3" else None)
@@ -264,7 +264,7 @@ def test_a_recorded_sibling_takes_the_shot_s_place_and_passes_the_render_guards(
     assert params == before
     updated = rendered_params(params, result)
     prepare_certified_timeline(updated)
-    directive = _validated_render_directives(updated)["sibling-0"]
+    directive = validated_render_directives(updated)["sibling-0"]
     assert directive.render_mode == "still"
 
 

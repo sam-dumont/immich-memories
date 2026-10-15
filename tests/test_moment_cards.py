@@ -5,22 +5,22 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from immich_memories.analysis.annotation_lines import (
-    AnnotationContract,
-    AnnotationLineBatch,
-    AssetAnnotationLine,
-)
-from immich_memories.analysis.selection_source import (
+from immich_memories.analysis.corpus.admission import (
     EditorialDependencies,
     EditorialSelectionRequest,
     SourceScope,
     prepare_editorial_source,
 )
-from immich_memories.analysis.selection_source_groups import (
+from immich_memories.analysis.corpus.groups import (
     project_episode_groups,
     project_moment_groups,
 )
-from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+from immich_memories.analysis.reading.annotation_lines import (
+    AnnotationContract,
+    AnnotationLineBatch,
+    AssetAnnotationLine,
+)
+from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 from immich_memories.api.models import AssetType
 from immich_memories.store.episode_readings import (
     EpisodeReadingProducer,
@@ -56,7 +56,7 @@ class _AnnotationLines:
 def test_scope_changes_selectable_members_without_changing_the_full_moment_card(
     tmp_path: Path,
 ) -> None:
-    from immich_memories.analysis.moment_cards import build_moment_cards
+    from immich_memories.analysis.reading.moment_cards import build_moment_cards
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(
@@ -160,7 +160,7 @@ def test_scope_changes_selectable_members_without_changing_the_full_moment_card(
 
 
 def test_card_rolls_up_typed_heads_and_unique_stitching_bursts(tmp_path: Path) -> None:
-    from immich_memories.analysis.moment_cards import build_moment_cards
+    from immich_memories.analysis.reading.moment_cards import build_moment_cards
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
     prepared = prepare_editorial_source(

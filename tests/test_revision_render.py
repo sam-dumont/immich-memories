@@ -163,7 +163,7 @@ def test_an_added_video_plays_from_its_start_as_long_as_the_cut_s_moving_shots(c
 
 
 def test_an_added_live_photo_plays_its_stitched_motion_and_falls_back_to_a_still(cut):
-    from immich_memories.analysis.motion_rendering import MotionRendering
+    from immich_memories.analysis.clips.motion_rendering import MotionRendering
     from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
 
     params, attempt = cut

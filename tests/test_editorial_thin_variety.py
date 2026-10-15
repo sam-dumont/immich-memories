@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from immich_memories.analysis.editorial_shot_kinds import PORTRAIT, TEXTURE, shot_kind
+from immich_memories.analysis.polish.shot_kinds import PORTRAIT, TEXTURE, shot_kind
 from tests.editorial_thin_fixtures import JUNK, START, Film, polish
 
 

@@ -3,10 +3,10 @@
 from datetime import UTC, datetime
 from functools import partial
 
-from immich_memories.analysis.catalogue_runtime import catalogue_requester
-from immich_memories.analysis.library_catalogue import LibraryEpisode, build_catalogue
-from immich_memories.config_loader import Config
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.reading.library_catalogue import LibraryEpisode, build_catalogue
+from immich_memories.analysis.runtime.period_accounts import catalogue_requester
+from immich_memories.config.loader import Config
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_store
 from immich_memories.conformance.runtime import Case
 from immich_memories.store.episode_readings import (
@@ -60,8 +60,8 @@ def catalogue_cases(llm: LLMConfig) -> tuple[Case, ...]:
             partial(catalogue, llm),
             frozenset(
                 {
-                    "analysis.library_catalogue:_AccountBuilder._ask",
-                    "analysis.editorial_text_gateway:SyncTextPromptRequester._query",
+                    "analysis.reading.library_catalogue:_AccountBuilder._ask",
+                    "analysis.judgments.text_gateway:SyncTextPromptRequester._query",
                 }
             ),
         ),

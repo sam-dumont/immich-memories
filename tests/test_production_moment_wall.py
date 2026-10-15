@@ -11,17 +11,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis import editorial_case as editor
-from immich_memories.analysis.editorial_contracts import EditorialCandidate
-from immich_memories.analysis.editorial_moment_wall import (
+from immich_memories.analysis.corpus.groups import EditorialGroup
+from immich_memories.analysis.corpus.records import EditorialCandidate
+from immich_memories.analysis.reading import case as editor
+from immich_memories.analysis.reading.moment_cards import MomentCard
+from immich_memories.analysis.reading.moment_wall import (
     MAX_PRODUCTION_MOMENT_WALL_ROW_CHARS,
     MomentCardEvidence,
     ProductionMomentWallRenderer,
     RepresentativeEvidence,
 )
-from immich_memories.analysis.editorial_people import adapt_editorial_people
-from immich_memories.analysis.moment_cards import MomentCard
-from immich_memories.analysis.selection_source_groups import EditorialGroup
+from immich_memories.analysis.reading.people_identities import adapt_editorial_people
 from immich_memories.api.models import ExifInfo, Person
 from immich_memories.people.context import PersonPromptContext
 from tests.conftest import make_asset
@@ -166,7 +166,7 @@ def _fixture(
         episode_groups=episode_groups,
         candidates=candidates,
     )
-    adapted, _selectable = editor._adapt_production_cards(prepared, cards)
+    adapted, _selectable = editor.adapt_production_cards(prepared, cards)
     renderer = ProductionMomentWallRenderer(prepared, cards, people)
     return prepared, cards, adapted, people, renderer
 
@@ -246,7 +246,7 @@ def test_rows_are_bounded_and_escaped_input_cannot_inject_a_moment() -> None:
         ),
     )
     injected_cards = (injected, *cards[1:])
-    adapted, _ = editor._adapt_production_cards(prepared, injected_cards)
+    adapted, _ = editor.adapt_production_cards(prepared, injected_cards)
     wall = ProductionMomentWallRenderer(prepared, injected_cards, people).render(adapted)
 
     assert MAX_PRODUCTION_MOMENT_WALL_ROW_CHARS == 256
@@ -262,7 +262,7 @@ def test_rows_are_bounded_and_escaped_input_cannot_inject_a_moment() -> None:
         ),
     )
     oversized = (too_long, *cards[1:])
-    adapted_oversized, _ = editor._adapt_production_cards(prepared, oversized)
+    adapted_oversized, _ = editor.adapt_production_cards(prepared, oversized)
     with pytest.raises(ValueError, match="evidence row exceeds 256"):
         ProductionMomentWallRenderer(prepared, oversized, people).render(adapted_oversized)
 
@@ -354,6 +354,6 @@ def test_wall_still_refuses_identifiers_in_literal_evidence(leak):
         ),
     )
     selected = (leaked, *cards[1:])
-    adapted, _ = editor._adapt_production_cards(prepared, selected)
+    adapted, _ = editor.adapt_production_cards(prepared, selected)
     with pytest.raises(ValueError, match="contains a private identifier fragment"):
         ProductionMomentWallRenderer(prepared, selected, people).render(adapted)

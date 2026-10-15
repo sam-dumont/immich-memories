@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_people import EditorialPeople, adapt_editorial_people
+from immich_memories.analysis.reading.people_identities import (
+    EditorialPeople,
+    adapt_editorial_people,
+)
 from immich_memories.people.context import load_people_prompt_context
 from tests.people_registry_seed import seed_people
 

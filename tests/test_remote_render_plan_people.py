@@ -6,7 +6,7 @@ render of a two-person film panned to one of them and ignored the other.
 
 from __future__ import annotations
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.processing.remote_render_plan import build_render_request
 from tests.conftest import make_clip

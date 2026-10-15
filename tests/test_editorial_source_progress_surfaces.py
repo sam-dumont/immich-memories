@@ -69,7 +69,8 @@ def test_cli_real_display_enters_indeterminate_then_reports_actual_terminal_stag
     with (
         # WHY: the collaborator under inspection; run_editorial_source calls are asserted below.
         patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
+            "immich_memories.analysis.runtime.composition.build_smart_pipeline",
+            return_value=pipeline,
         ),
         patch(
             "immich_memories.generate.generate_memory",

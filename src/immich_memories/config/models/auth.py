@@ -1,0 +1,111 @@
+"""Authentication configuration model for Immich Memories."""
+
+from __future__ import annotations
+
+from typing import ClassVar, Literal
+from urllib.parse import urlsplit
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from immich_memories.config.models.resources import http_url_or_blank
+
+# The username a generated sign-in goes with when the config names none.
+DEFAULT_USERNAME = "admin"
+
+
+def _check_email_entries(entries: list[str]) -> None:
+    """A domain in allowed_emails would silently never match; say so instead."""
+    bad = [e for e in entries if "@" not in e]
+    if bad:
+        raise ValueError(f"allowed_emails entries must be addresses, got {bad!r}")
+
+
+def _normalised_public_url(value: str) -> str:
+    """Reject anything that is not an absolute http(s) URL, and drop the trailing slash."""
+    parts = urlsplit(value)
+    if parts.scheme not in {"http", "https"} or not parts.netloc:
+        raise ValueError("public_url must be an absolute http(s) URL, e.g. https://host")
+    return value.rstrip("/")
+
+
+class AuthConfig(BaseModel):
+    """Authentication settings for the web UI."""
+
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset(
+        {"password", "client_secret", "issuer_url", "client_id"}
+    )
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = Field(
+        default=True,
+        description=(
+            "Ask for sign-in. With basic sign-in and no password set, the first start "
+            "generates one and shows it once. false runs without sign-in"
+        ),
+    )
+    provider: Literal["basic", "oidc", "header"] = "basic"
+    session_ttl_hours: int = Field(default=24, ge=1, le=720)
+
+    # Basic auth
+    username: str = ""
+    password: str = ""
+
+    # The externally reachable base URL of this app, e.g.
+    # "https://memories.example.com". Pins the OIDC redirect_uri behind a
+    # reverse proxy and makes callback-origin validation possible; without it
+    # there is nothing trustworthy to compare an incoming Host header against.
+    public_url: str = ""
+
+    # OIDC
+    issuer_url: str = ""
+    client_id: str = ""
+    client_secret: str = ""
+    scope: str = "openid email profile"
+    auto_launch: bool = False
+    button_text: str = "Sign in with SSO"
+
+    # Who may sign in, once the IdP has authenticated them. Empty means anyone
+    # the IdP accepts, which is right for a single-user tenant and wrong for a
+    # shared realm -- the option exists so that choice is a visible one.
+    allowed_emails: list[str] = Field(default_factory=list)
+    allowed_domains: list[str] = Field(default_factory=list)
+
+    # Trusted header SSO
+    user_header: str = "Remote-User"
+    email_header: str = "Remote-Email"
+    trusted_proxies: list[str] = Field(default_factory=list)
+
+    _http_url = field_validator("issuer_url")(http_url_or_blank)
+
+    @property
+    def sign_in_username(self) -> str:
+        """The username basic sign-in expects: the configured one, else "admin"."""
+        return self.username or DEFAULT_USERNAME
+
+    @property
+    def generates_login(self) -> bool:
+        """Whether sign-in uses the password the app generated, because none is configured."""
+        return self.enabled and self.provider == "basic" and not self.password
+
+    @model_validator(mode="after")
+    def validate_provider_requirements(self) -> AuthConfig:
+        """Check public_url and the allow-list, then the active provider's fields."""
+        _check_email_entries(self.allowed_emails)
+        if self.public_url:
+            self.public_url = _normalised_public_url(self.public_url)
+
+        if not self.enabled:
+            return self
+
+        # Basic sign-in needs nothing here: the username defaults to "admin", and without a
+        # password the app generates one on first start.
+        if self.provider == "oidc":
+            if not self.issuer_url:
+                raise ValueError("issuer_url is required when provider is 'oidc'")
+            if not self.client_id:
+                raise ValueError("client_id is required when provider is 'oidc'")
+
+        elif self.provider == "header" and not self.trusted_proxies:
+            raise ValueError("trusted_proxies must be non-empty when provider is 'header'")
+
+        return self

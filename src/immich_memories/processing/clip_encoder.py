@@ -10,7 +10,7 @@ from pathlib import Path
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
     AssemblySettings,
-    _get_rotation_filter,
+    get_rotation_filter,
 )
 from immich_memories.processing.encoding_plan import (
     EncodingPlan,
@@ -21,7 +21,7 @@ from immich_memories.processing.encoding_plan import (
 from immich_memories.processing.ffmpeg_prober import FFmpegProber
 from immich_memories.processing.ffmpeg_runner import (
     AssemblyContext,
-    _run_ffmpeg_with_progress,
+    run_ffmpeg_with_progress,
 )
 from immich_memories.processing.hardware_encode import (
     HardwareChainUnavailable,
@@ -29,7 +29,7 @@ from immich_memories.processing.hardware_encode import (
     encoder_backend,
 )
 from immich_memories.processing.hdr_utilities import (
-    _detect_hdr_type,
+    detect_hdr_type,
     get_colorspace_filter,
     get_hdr_conversion_filter,
 )
@@ -153,9 +153,9 @@ class ClipEncoder:
         plan = self.settings.encoding_plan
         source_probe_cache = getattr(self.prober, "probe_cache", None)
         source_hdr = (
-            _detect_hdr_type(clip.path, probe_cache=source_probe_cache)
+            detect_hdr_type(clip.path, probe_cache=source_probe_cache)
             if isinstance(source_probe_cache, ProbeCache)
-            else _detect_hdr_type(clip.path)
+            else detect_hdr_type(clip.path)
         )
         if plan.hdr:
             target_hdr = plan.target_transfer.value
@@ -182,7 +182,7 @@ class ClipEncoder:
 
         rotation_filter = ""
         if clip.rotation_override is not None and clip.rotation_override != 0:
-            rotation_filter = _get_rotation_filter(clip.rotation_override) + ","
+            rotation_filter = get_rotation_filter(clip.rotation_override) + ","
 
         has_audio = self.prober.has_audio_stream(clip.path)
 
@@ -362,4 +362,4 @@ class ClipEncoder:
 
         total_duration = self.prober.estimate_duration(clips)
         logger.debug(f"Running assembly: {' '.join(cmd)}")
-        return _run_ffmpeg_with_progress(cmd, total_duration, progress_callback)
+        return run_ffmpeg_with_progress(cmd, total_duration, progress_callback)

@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from immich_memories.api.person_expression import PersonExpression
-from immich_memories.config_loader import Config
-from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.config.loader import Config
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import Store, open_store
 from immich_memories.people.editor import (
     ROLE_SUGGESTIONS,

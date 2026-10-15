@@ -35,7 +35,7 @@ def test_distinct_shots_keeps_an_undated_row_beside_dated_ones():
 )
 @pytest.mark.feature("selection.small-fixes")
 def test_page_shares_never_grants_a_slot_to_a_page_with_nothing_to_offer(offered, grant, expected):
-    from immich_memories.analysis.editorial_story_pick_pages import page_shares
+    from immich_memories.analysis.selection.pick_pages import page_shares
 
     shares = page_shares(offered, grant)
 
@@ -58,9 +58,9 @@ def _at(key: str, day: int, lat: float, lon: float) -> Asset:
 @pytest.mark.feature("selection.small-fixes")
 def test_a_trip_on_the_equator_is_centred_on_every_one_of_its_pictures():
     """`if latitude` skipped 0.0, so the latitudes and longitudes averaged different pictures."""
-    from immich_memories.analysis.trip_discovery import discover_year_trips
+    from immich_memories.analysis.sources.trip_discovery import discover_year_trips
     from immich_memories.api.sync_client import SyncImmichClient
-    from immich_memories.config_models_automation import TripsConfig
+    from immich_memories.config.models.automation import TripsConfig
 
     pictures = [_at("a", 10, 0.0, 10.0), _at("b", 11, 1.0, 11.0), _at("c", 12, 1.0, 12.0)]
     # WHY: the Immich read boundary; the autospec refuses any call the real client would.

@@ -17,7 +17,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.tracking.models import PhaseStats, RunMetadata, SystemInfo
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
@@ -829,15 +829,15 @@ class TestGenerateValidation:
 
 
 class TestGenerateBuildParamsTable:
-    """_build_params_table renders expected rows."""
+    """build_params_table renders expected rows."""
 
     def test_basic_table(self):
         """Table includes expected settings."""
-        from immich_memories.cli._generate_display import _build_params_table
+        from immich_memories.cli._generate_display import build_params_table
         from immich_memories.timeperiod import DateRange
 
         config = Config()
-        table = _build_params_table(
+        table = build_params_table(
             config=config,
             memory_type="year_in_review",
             date_range=DateRange(
@@ -867,11 +867,11 @@ class TestGenerateBuildParamsTable:
 
     def test_table_with_all_options(self):
         """Table renders special rows for enabled options."""
-        from immich_memories.cli._generate_display import _build_params_table
+        from immich_memories.cli._generate_display import build_params_table
         from immich_memories.timeperiod import DateRange
 
         config = Config()
-        table = _build_params_table(
+        table = build_params_table(
             config=config,
             memory_type=None,
             date_range=DateRange(
@@ -905,12 +905,12 @@ class TestGenerateBuildParamsTable:
 
         from rich.console import Console
 
-        from immich_memories.cli._generate_display import _build_params_table
+        from immich_memories.cli._generate_display import build_params_table
         from immich_memories.timeperiod import DateRange
 
         config = Config()
         config.output.resolution = "720p"
-        table = _build_params_table(
+        table = build_params_table(
             config=config,
             memory_type="monthly_highlights",
             date_range=DateRange(start=datetime(2024, 6, 1), end=datetime(2024, 6, 30)),

@@ -5,13 +5,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis.editorial_source_gate import screen_document_rejections
-from immich_memories.analysis.editorial_speech import resolve_speech_cuts
-from immich_memories.analysis.editorial_structure_budget import (
+from immich_memories.analysis.clips.budget import (
     MIN_MOTION_SECONDS,
     MOTION_CAP_SECONDS,
 )
-from immich_memories.analysis.generated_source_provenance import generated_source_ids
+from immich_memories.analysis.clips.speech import resolve_speech_cuts
+from immich_memories.analysis.corpus.generated_provenance import generated_source_ids
+from immich_memories.analysis.reading.source_gate import screen_document_rejections
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 

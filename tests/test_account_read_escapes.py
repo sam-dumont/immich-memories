@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.analysis.editorial_demanded_previews import DemandedPreviewReader
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+from immich_memories.analysis.preparation.demanded_previews import DemandedPreviewReader
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
 from immich_memories.api.access_clients import AccessBoundClient, AccountReadFailed
 from immich_memories.api.models import Asset
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
@@ -83,12 +83,32 @@ SRC = Path(__file__).resolve().parents[1] / "src" / "immich_memories"
 # into unavailable evidence, so each must let an account's failed read through first.
 # Not the detectors worker: it runs in a detector-only interpreter over previews already on
 # disk, reads nothing from Immich, and must not import the package at all.
-UNGUARDED = {SRC / "analysis/editorial_preparation_detectors.py"}
+UNGUARDED = {SRC / "analysis/preparation/detectors.py"}
 GUARDED = sorted(
     {
-        *SRC.glob("analysis/editorial_preparation*.py"),
-        *SRC.glob("analysis/selection_source*.py"),
-        SRC / "analysis/editorial_demanded_previews.py",
+        *(
+            SRC / "analysis/preparation" / f"{name}.py"
+            for name in (
+                "acquire",
+                "detector_frames",
+                "detectors",
+                "edits",
+                "heads",
+                "model_facts",
+                "motion_lines",
+                "obstruction_bank",
+                "pixels",
+                "previews",
+                "remote",
+                "remote_frames",
+            )
+        ),
+        SRC / "analysis/captions/requests.py",
+        *(
+            SRC / "analysis/corpus" / f"{name}.py"
+            for name in ("admission", "groups", "rendering", "validation")
+        ),
+        SRC / "analysis/preparation/demanded_previews.py",
         SRC / "speech/facts.py",
     }
     - UNGUARDED

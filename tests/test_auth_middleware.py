@@ -8,8 +8,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from immich_memories.config_loader import Config
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config.loader import Config
+from immich_memories.config.models.auth import AuthConfig
 from immich_memories.web.auth import (
     clear_session,
     is_auth_enabled,

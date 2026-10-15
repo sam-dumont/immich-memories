@@ -1,7 +1,7 @@
 """The order stories are funded in, when there are more of them than the film has slots."""
 
-from immich_memories.analysis.editorial_story_planner import funding_order
-from immich_memories.analysis.editorial_story_slots import allocate_slots
+from immich_memories.analysis.selection.story_planner import funding_order
+from immich_memories.analysis.stories.slots import allocate_slots
 
 
 def story(key, *, day, weight="major", gate="remarkable", moments=1, favourites=0):

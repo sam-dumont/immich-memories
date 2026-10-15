@@ -11,16 +11,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from immich_memories.analysis import editorial_shareability as share
-from immich_memories.analysis.editorial_rule_banked_facts import (
+from immich_memories.analysis.audience import shareability as share
+from immich_memories.analysis.audience.verdicts import AudienceBank
+from immich_memories.analysis.stories.banked_facts import (
     NO_BANKED_FACTS,
     banked_leaders,
     open_banked_facts,
     withheld_by_bank,
 )
-from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
-from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
-from immich_memories.analysis.editorial_structure_audience import AudienceBank
+from immich_memories.analysis.stories.rule_quality import rule_representative_rank
+from immich_memories.analysis.stories.shortlist import capture_group_moments
 from immich_memories.db import open_store
 from tests.annotation_rows import add_rows, annotation_store
 from tests.picture_fake import PictureFake
@@ -57,7 +57,7 @@ def _draft(assets, *, banked, favourites=()):
     def starred(asset_id: str) -> bool:
         return asset_id in favourites
 
-    choices = _capture_group_moments(
+    choices = capture_group_moments(
         _units(ids, favourites=favourites),
         quality=lambda _a: 1.0,
         rank=rule_representative_rank(
@@ -100,7 +100,7 @@ def test_a_library_nothing_has_read_draws_the_draft_it_always_drew():
         "last": _asset("last", minute=2),
     }
 
-    cold = _capture_group_moments(
+    cold = capture_group_moments(
         _units(("first", "best", "last")),
         quality=lambda _a: 1.0,
         rank=rule_representative_rank(assets, {}, {}),

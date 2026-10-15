@@ -7,15 +7,18 @@ from datetime import timedelta
 import click
 from click.testing import CliRunner
 
-from immich_memories.analysis import editorial_preparation
-from immich_memories.analysis.editorial_planner import EditorialPlan
-from immich_memories.analysis.editorial_pool import EditorialSourcePool
-from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
-from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
-from immich_memories.analysis.selection_trace import Trace
+from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.analysis.preparation import acquire as editorial_preparation
+from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+from immich_memories.analysis.runtime.composition import (
+    EditorialRunContext,
+    build_editorial_planner,
+)
+from immich_memories.analysis.runtime.plan import EditorialPlan
+from immich_memories.analysis.runtime.ports import EditorialRuntimePorts
+from immich_memories.analysis.sources.pool import EditorialSourcePool
 from immich_memories.cli.prepare_cmd import register_prepare_commands
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from tests.conftest import make_asset
 from tests.test_editorial_preparation import preview, successful_ports
 from tests.test_editorial_runtime import _window

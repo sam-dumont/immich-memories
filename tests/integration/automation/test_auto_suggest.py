@@ -33,7 +33,7 @@ pytestmark = [pytest.mark.integration, requires_immich]
 
 @pytest.fixture(scope="module")
 def config():
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     return Config.from_yaml(Config.get_default_path())
 

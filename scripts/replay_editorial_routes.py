@@ -109,8 +109,8 @@ def provider_hosts(config_path: Path) -> set[str]:
     """Hosts that must not be contacted: every configured model endpoint."""
     import yaml
 
-    from immich_memories.analysis.llm_providers import resolved_llm_config
-    from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.analysis.llm.providers import resolved_llm_config
+    from immich_memories.config.models.llm import LLMConfig
 
     document = yaml.safe_load(config_path.read_text()) or {}
     advanced = document.get("advanced") or {}
@@ -134,7 +134,7 @@ EVIDENCE_HASHES = "evidence-hashes.json"
 
 def store_location(config_path: Path | None = None):
     """The store the replayed CLI reads: the environment, then config.yaml, then the default."""
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
     from immich_memories.db import resolve_location
 
     config = Config.from_yaml(config_path) if config_path is not None else Config()

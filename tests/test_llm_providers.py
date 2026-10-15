@@ -9,11 +9,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from immich_memories.analysis.llm_wire import (
+from immich_memories.analysis.llm.wire import (
     GROWN_REASONING_HEADROOM_TOKENS,
     REASONING_HEADROOM_TOKENS,
 )
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 
 
 def _anthropic_blocks(blocks, stop_reason="end_turn"):
@@ -33,7 +33,7 @@ def _anthropic_response(text='{"ok": true}', stop_reason="end_turn"):
 class TestAnthropicProvider:
     @pytest.mark.asyncio
     async def test_speaks_the_messages_dialect(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -59,7 +59,7 @@ class TestAnthropicProvider:
 
     @pytest.mark.asyncio
     async def test_thinking_sends_the_hosts_own_switch_and_the_default_temperature(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -82,7 +82,7 @@ class TestAnthropicProvider:
     @pytest.mark.asyncio
     async def test_the_older_budget_dialect_is_written_out_by_hand(self):
         """A host still on `enabled` plus a budget is reached without code changes."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -104,7 +104,7 @@ class TestAnthropicProvider:
 
     @pytest.mark.asyncio
     async def test_compatible_gateway_can_explicitly_disable_default_thinking(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -125,7 +125,7 @@ class TestAnthropicProvider:
 
     @pytest.mark.asyncio
     async def test_native_anthropic_does_not_receive_qwen_default_params(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -145,7 +145,7 @@ class TestAnthropicProvider:
 
     @pytest.mark.asyncio
     async def test_truncated_thinking_falls_back_to_a_fast_answer(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -170,7 +170,7 @@ class TestProviderPresets:
 
     @pytest.mark.asyncio
     async def test_zai_applies_its_level_to_the_configured_anthropic_route(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -192,7 +192,7 @@ class TestProviderPresets:
 
     @pytest.mark.asyncio
     async def test_zai_on_its_openai_route_still_speaks_chat_completions(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -213,7 +213,7 @@ class TestProviderPresets:
 
     @pytest.mark.asyncio
     async def test_openai_applies_its_dialect_to_the_configured_url(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -243,7 +243,7 @@ class TestProviderPresets:
 
     @pytest.mark.asyncio
     async def test_zai_with_an_anthropic_base_speaks_the_messages_dialect(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -261,7 +261,7 @@ class TestProviderPresets:
 
     @pytest.mark.asyncio
     async def test_a_200_carrying_a_provider_error_envelope_names_its_code_and_message(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -288,7 +288,7 @@ class TestProviderPresets:
 
     @pytest.mark.asyncio
     async def test_a_generic_thinking_block_does_not_hide_the_providers_own_switch(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -325,7 +325,7 @@ class TestAnthropicIsAGenericProvider:
 
     @pytest.mark.asyncio
     async def test_anthropic_uses_the_configured_url_and_pins_the_version(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -354,7 +354,7 @@ class TestAnthropicIsAGenericProvider:
 
     @pytest.mark.asyncio
     async def test_any_messages_api_host_is_reached_by_naming_its_base_url(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -374,7 +374,7 @@ class TestAnthropicIsAGenericProvider:
     async def test_the_reader_sends_its_tiles_as_base64_blocks(self):
         import base64
 
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -403,7 +403,7 @@ class TestThinkingIsALevel:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("level", ["low", "high", "max"])
     async def test_a_level_reaches_claude_as_the_effort_it_maps_to(self, level: str):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -424,7 +424,7 @@ class TestThinkingIsALevel:
 
     @pytest.mark.asyncio
     async def test_auto_sends_no_reasoning_field_in_either_direction(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -447,7 +447,7 @@ class TestThinkingIsALevel:
 
     @pytest.mark.asyncio
     async def test_auto_leaves_a_chat_completions_server_to_its_own_default(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -465,7 +465,7 @@ class TestThinkingIsALevel:
 
     @pytest.mark.asyncio
     async def test_disabled_refuses_to_reason_even_where_the_caller_asks(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -487,7 +487,7 @@ class TestThinkingIsALevel:
 
     @pytest.mark.asyncio
     async def test_zai_gets_its_own_vocabulary_for_the_same_level(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -536,7 +536,7 @@ class TestZaiThinkingLevel:
 
     @pytest.mark.asyncio
     async def test_a_model_that_always_reasons_gets_the_cheapest_level_it_accepts(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -554,7 +554,7 @@ class TestZaiThinkingLevel:
 
     @pytest.mark.asyncio
     async def test_a_model_that_can_be_told_not_to_reason_still_gets_disabled(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -572,7 +572,7 @@ class TestZaiThinkingLevel:
 
     @pytest.mark.asyncio
     async def test_a_level_the_operator_names_wins_over_the_preset(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -593,7 +593,7 @@ class TestZaiThinkingLevel:
     async def test_a_refusal_to_stop_reasoning_retries_once_at_the_lowest_level(self, caplog):
         import logging
 
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         # A line the preset has never heard of, so it starts from "disabled".
         # A model name of its own too: the dialect a call negotiates is
@@ -627,7 +627,7 @@ class TestZaiThinkingLevel:
         # WHY: the LLM server is the external boundary this request reaches.
         with (
             patch("httpx.AsyncClient.post", side_effect=_refuse_then_answer),
-            caplog.at_level(logging.WARNING, logger="immich_memories.analysis.llm_query"),
+            caplog.at_level(logging.WARNING, logger="immich_memories.analysis.llm.query"),
         ):
             assert await query_llm("Describe this wall", config, thinking=False) == "ok"
 
@@ -641,7 +641,7 @@ class TestProviderErrorsAreLegible:
 
     @pytest.mark.asyncio
     async def test_a_4xx_carries_the_providers_code_and_message(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -667,7 +667,7 @@ class TestProviderErrorsAreLegible:
 
     @pytest.mark.asyncio
     async def test_the_messages_dialect_reports_its_refusals_the_same_way(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -693,7 +693,7 @@ class TestProviderErrorsAreLegible:
 
     @pytest.mark.asyncio
     async def test_ollama_names_its_refusal_too(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True, provider="ollama", base_url="http://localhost:11434", model="qwen3"
@@ -719,7 +719,7 @@ class TestAnthropicReasoningBlocks:
 
     @pytest.mark.asyncio
     async def test_a_reply_that_is_all_reasoning_names_the_stop_reason(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -746,8 +746,8 @@ class TestAnthropicReasoningBlocks:
 
     @pytest.mark.asyncio
     async def test_the_callers_cap_buys_the_answer_and_not_the_reasoning(self):
-        from immich_memories.analysis.llm_query import query_llm
-        from immich_memories.analysis.llm_wire import REASONING_HEADROOM_TOKENS
+        from immich_memories.analysis.llm.query import query_llm
+        from immich_memories.analysis.llm.wire import REASONING_HEADROOM_TOKENS
 
         config = LLMConfig(
             enabled=True,
@@ -766,7 +766,7 @@ class TestAnthropicReasoningBlocks:
 
     @pytest.mark.asyncio
     async def test_the_reasoning_in_front_of_the_answer_is_skipped(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -788,7 +788,7 @@ class TestAnthropicReasoningBlocks:
 
     @pytest.mark.asyncio
     async def test_a_server_that_reasons_only_when_asked_keeps_the_callers_cap(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -806,7 +806,7 @@ class TestAnthropicReasoningBlocks:
 
     @pytest.mark.asyncio
     async def test_the_models_level_reaches_the_route_without_the_generic_keys(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -831,7 +831,7 @@ class TestAnthropicReasoningBlocks:
 
     @pytest.mark.asyncio
     async def test_reasoning_that_truncates_still_falls_back_to_a_fast_answer(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -883,7 +883,7 @@ class TestAnthropicImageCallsGetReasoningRoom:
 
     @pytest.mark.asyncio
     async def test_a_picture_that_bought_only_thinking_is_asked_again_with_room(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         starved = _anthropic_blocks(
             [{"type": "thinking", "thinking": "Looking at the image", "signature": "s"}],
@@ -911,8 +911,8 @@ class TestAnthropicImageCallsGetReasoningRoom:
 
     @pytest.mark.asyncio
     async def test_a_reply_that_thought_teaches_the_endpoint_even_when_it_answered(self):
-        from immich_memories.analysis.llm_query import query_llm
-        from immich_memories.analysis.llm_wire import _REASONING_HEADROOM
+        from immich_memories.analysis.llm.query import query_llm
+        from immich_memories.analysis.llm.wire import _REASONING_HEADROOM
 
         config = LLMConfig(
             enabled=True,
@@ -945,7 +945,7 @@ class TestLiveAnthropicCompatibleHost:
     @pytest.mark.asyncio
     async def test_the_generic_provider_reaches_a_compatible_host(self):
         """`provider: anthropic` plus somebody else's base URL is the whole promise."""
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,
@@ -968,7 +968,7 @@ class TestLiveAnthropicCompatibleHost:
     @_LIVE
     @pytest.mark.asyncio
     async def test_a_small_json_ask_comes_back_as_a_text_block(self):
-        from immich_memories.analysis.llm_query import query_llm
+        from immich_memories.analysis.llm.query import query_llm
 
         config = LLMConfig(
             enabled=True,

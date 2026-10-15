@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from immich_memories.automation.runner import StartedAutoRun
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.security import configured_secret_values
 
 TOKEN = "workflow-token"  # noqa: S105
@@ -74,7 +74,7 @@ class TestTriggerTokenIsASecret:
         assert "workflow-token-secret" in configured_secret_values(config)
 
     def test_the_settings_report_masks_it_like_every_other_secret(self, tmp_path) -> None:
-        from immich_memories.config_sources import describe_settings
+        from immich_memories.config.sources import describe_settings
 
         config = Config(server={"trigger_token": "workflow-token-secret"})
         entries = describe_settings(config, path=tmp_path / "absent.yaml", stored_keys=set())

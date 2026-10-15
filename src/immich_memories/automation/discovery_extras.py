@@ -24,7 +24,7 @@ from immich_memories.automation.material import (
     pictures_in,
 )
 from immich_memories.automation.season_holiday_detectors import HolidayDetector, SeasonDetector
-from immich_memories.config_models_automation import AutomationConfig
+from immich_memories.config.models.automation import AutomationConfig
 from immich_memories.timeperiod import DateRange
 
 logger = logging.getLogger(__name__)

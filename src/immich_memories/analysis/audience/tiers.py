@@ -1,0 +1,228 @@
+"""Sharing uses the evidence each preparation tier produced, never a prose LLM.
+
+The captioned tier asks Laya and holds unanswered pictures to the family. The no-captions
+tier uses detector heads and flags; only its strict-sharing policy can clear clean evidence.
+The metadata-only tier has no content evidence and never clears a picture for public sharing.
+Detector and owner holds apply on every tier.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from typing import Any
+
+from immich_memories.analysis.audience.questions import (
+    exposure_members,
+    underwear_only,
+)
+from immich_memories.analysis.audience.shareability import REVIEW, check_audience
+
+RULE_AUDIENCE_POLICY = "audience-rules-v1-detector-heads-and-flags"
+NO_EVIDENCE_AUDIENCE_POLICY = "audience-withheld-v1-no-content-evidence"
+
+AudienceCheck = Callable[[Any, Mapping[str, Any], str], dict[str, Any]]
+
+_HELD = {
+    "underwear_only": "the caption explicitly describes a person wearing only underwear",
+    "exposure_evidence": "a detector or exposure flag marks this unit",
+    "exposure_chain": "most of this capture run is flagged for exposure",
+    "owner_review_flag": "the owner left a review flag on this unit",
+}
+
+
+def _flag_rows(evidence: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    members = evidence.get("members", ())
+    return [
+        *(row for member in members for row in member.get("flags", ())),
+        *evidence.get("companion_flags", ()),
+    ]
+
+
+def _hold(evidence: Mapping[str, Any]) -> str:
+    """The first deterministic reason to keep this unit in the family, or an empty string."""
+    if underwear_only(evidence):
+        return "underwear_only"
+    if exposure_members(evidence):
+        return "exposure_evidence"
+    if evidence.get("exposure_chain"):
+        return "exposure_chain"
+    if any(row.get("flag") == REVIEW for row in _flag_rows(evidence)):
+        return "owner_review_flag"
+    return ""
+
+
+def rule_audience(_judge: Any, evidence: Mapping[str, Any], _stage: str) -> dict[str, Any]:
+    """The audience verdict from detector heads and flags alone, with no model asked.
+
+    Identical to the model check on what it *refuses* -- the same detector positives and
+    the same exposure flags. It never clears, because eight of the findings that refuse a
+    unit are named only by a written description: bathing, toileting, intimate hygiene, a
+    medical procedure, an identifying record, and the rest. The heads cannot see them, so
+    "no detector objected" is not a clearance, and the gate may only ever tighten.
+
+    A unit with nothing against it therefore stays `family_only` and says why. To earn a
+    `shareable` export, run the tier that does the reading.
+    """
+    result: dict[str, Any] = {
+        "policy": RULE_AUDIENCE_POLICY,
+        "verdict": "family_only",
+        "parsed": True,
+        "missing_members": [],
+        "activity": None,
+        "exposure": None,
+    }
+    if not evidence.get("members"):
+        return result | {"finding": "unavailable_evidence", "why": "no rendered member to read"}
+    held = _hold(evidence)
+    if held:
+        chain = evidence.get("exposure_chain")
+        return (
+            result
+            | {
+                "verdict": "just_us" if held == "underwear_only" else "family_only",
+                "finding": held,
+                "why": _HELD[held],
+            }
+            | ({"exposure_chain": chain} if chain else {})
+        )
+    return result | {
+        "finding": "unread_private_activity",
+        "why": "no detector head objected, but no description was read to clear it",
+    }
+
+
+CLEAN_EVIDENCE_POLICY = "audience-rules-v3-cheap-heads-under-strict-sharing"
+# A room a picture can be private in whatever is in frame; the rules reader keeps the same set.
+_PRIVATE_VENUES = frozenset({"bedroom", "medical", "private_facility"})
+_PHOTOGRAPH = "photograph"
+
+
+def _clean_heads(heads: Mapping[str, str]) -> bool:
+    """Require read exposure evidence and reject objections from either head family."""
+    exposure_read = heads.get("nsfw_marqo") == "no" or (
+        heads.get("uncovered_person") == heads.get("screen") == "no"
+        and heads.get("frame_kind")
+        in {"people_moment", "place_or_scenery", "meaningful_record", "lone_everyday_object"}
+    )
+    return (
+        exposure_read
+        and heads.get("nsfw_marqo", "no") == heads.get("uncovered_person", "no") == "no"
+        and heads.get("screen", "no") == "no"
+        and heads.get("frame_kind") not in {"screen_or_document", "body_part_closeup"}
+        and heads.get("doc_docling", _PHOTOGRAPH) == _PHOTOGRAPH
+        and heads.get("venue") not in _PRIVATE_VENUES
+    )
+
+
+def clean_evidence(evidence: Mapping[str, Any]) -> bool:
+    """Nothing marked any picture, and exposure evidence was read for every member.
+
+    An unread member or Live clip, any flag, or a flagged capture run keeps it in the family.
+    Each member needs complete cheap heads or a negative Marqo row.
+    """
+    members = evidence.get("members", ())
+    return (
+        bool(members)
+        and all(_clean_heads(member.get("detectors", {})) for member in members)
+        and all(_clean_heads(heads) for heads in evidence.get("companion_detectors", ()))
+        and not _flag_rows(evidence)
+        and not evidence.get("exposure_chain")
+        and not evidence.get("companion_body_warnings")
+    )
+
+
+def rule_audience_with_clean_share(
+    judge: Any, evidence: Mapping[str, Any], stage: str
+) -> dict[str, Any]:
+    """The rules check for a film shared outside the household, with strict sharing on.
+
+    Where every head that could object read the unit and none did, and nothing flagged it,
+    the unit is `share`: strict sharing already keeps out anything a head or a flag marked, so
+    what is left is what no detector saw anything in. A private moment only a caption would
+    name stays possible here; that is the price of a shareable film with no captions, and the
+    reason a model tier, when there is one, still reads the captions first.
+    """
+    result = rule_audience(judge, evidence, stage)
+    if result["finding"] != "unread_private_activity" or not clean_evidence(evidence):
+        return result
+    return result | {
+        "policy": CLEAN_EVIDENCE_POLICY,
+        "verdict": "share",
+        "finding": "clean_evidence",
+        "why": "exposure evidence was read, no head objected, and nothing flagged it",
+    }
+
+
+def withheld_audience(_judge: Any, _evidence: Mapping[str, Any], _stage: str) -> dict[str, Any]:
+    """Family viewing for every unit, because nothing in this tier looked at the picture."""
+    return {
+        "policy": NO_EVIDENCE_AUDIENCE_POLICY,
+        "verdict": "family_only",
+        "parsed": True,
+        "missing_members": [],
+        "activity": None,
+        "exposure": None,
+        "finding": "no_content_evidence",
+        "why": "prepared without the detector evidence the gate reads",
+    }
+
+
+class _NoLLM:
+    """The judge the local check hands on: the sharing question never goes to an LLM."""
+
+    calls: tuple[()] = ()
+
+    def ask(self, stage: str, _prompt: str, max_tokens: int) -> str:
+        raise RuntimeError(f"{stage}: the sharing question never goes to an LLM")
+
+
+def local_reader_audience(rules: AudienceCheck) -> Callable[..., dict[str, Any]]:
+    """The captioned check, with the activity question answered by the local reader (Laya).
+
+    A carrier the local reader answered is read from its captions exactly as a reader's reply
+    would be, and every detector floor still applies. A carrier it did not answer, or one a
+    head or flag already marks, gets the rules check: nothing here ever asks an LLM.
+    """
+
+    def check(
+        _judge: Any, evidence: Mapping[str, Any], stage: str, *, activity_answer: str | None = None
+    ) -> dict[str, Any]:
+        if activity_answer is None or _hold(evidence):
+            return rules(_judge, evidence, stage)
+        return check_audience(_NoLLM(), evidence, stage, activity_answer=activity_answer)
+
+    return check
+
+
+def audience_check_for(
+    tier: str, *, strict_sharing: bool = False, local_reader: bool = False
+) -> Callable[..., dict[str, Any]]:
+    """The check this preparation tier may use; anything unrecognised gets the strictest.
+
+    `strict_sharing` is set for a shareable film under `editorial.strict_sharing`: then the
+    no-captions rules may clear a unit on clean evidence alone. `local_reader` says Laya answers the
+    activity question from the captions, which only the `full` tier writes. No tier asks an LLM:
+    without a Laya answer, the captioned tier stays held to the family.
+    """
+    if tier not in ("full", "no_captions"):
+        return withheld_audience
+    if tier == "full":
+        return local_reader_audience(rule_audience) if local_reader else rule_audience
+    return rule_audience_with_clean_share if strict_sharing else rule_audience
+
+
+def sharing_refusal(config: Any, level: str | None = None) -> str | None:
+    """Why this install can't cut a shareable film, before the cut starts; None when it can.
+
+    Every tier with the detectors can: a NAS clears what they read as clean. `metadata_only`
+    ran none of them, so nothing it holds can ever be cleared, and the film would be empty.
+    """
+    chosen = level or config.defaults.sharing
+    if chosen != "shareable" or config.editorial.preparation.demands_models:
+        return None
+    return (
+        "A shareable film needs the detectors, and this install prepares at the "
+        f"{config.editorial.preparation.tier} tier, which runs none. Set "
+        "advanced.editorial.preparation.tier to no_captions (and run `immich-memories models "
+        "fetch`), or cut a family film."
+    )

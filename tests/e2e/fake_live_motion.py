@@ -17,10 +17,10 @@ from typing import Any
 
 
 def _plays_as_motion(rendering: Any, residual: float | None) -> bool:
-    """`editorial_structure_material.StructureMaterial._live_unit`: a rendering that may play,
+    """`film.material.StructureMaterial._live_unit`: a rendering that may play,
     with measured motion at or above the residual threshold, plays; anything else stays a still.
     """
-    from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
+    from immich_memories.analysis.clips.budget import RESIDUAL_MIN
 
     return bool(rendering.may_play and residual is not None and residual >= RESIDUAL_MIN)
 
@@ -45,10 +45,10 @@ def live_projection(
     interval is never trimmed at the render, so, as the structure planner does, the cut is
     fitted to the budget here, by holding the other shots shorter.
     """
-    from immich_memories.analysis.editorial_motion_facts import measure_motion
-    from immich_memories.analysis.editorial_source_route import project_source_rendering
-    from immich_memories.analysis.live_clock_offsets import BankedClockOffsets
-    from immich_memories.analysis.motion_rendering import motion_renderings
+    from immich_memories.analysis.clips.live_clock_offsets import BankedClockOffsets
+    from immich_memories.analysis.clips.motion_facts import measure_motion
+    from immich_memories.analysis.clips.motion_rendering import motion_renderings
+    from immich_memories.analysis.runtime.source_route import project_source_rendering
     from immich_memories.api.models import AssetType
 
     companion_assets = {companion.id: companion for companion in companions}
@@ -119,8 +119,10 @@ def _fit(carriers: list[dict], budget: float | None) -> None:
 
 def _motion_carrier(asset_id: str, rendering: Any) -> dict:
     """A `live-motion` carrier row as the structure planner writes one."""
-    from immich_memories.analysis.editorial_structure_budget import MOTION_CAP_SECONDS
-    from immich_memories.analysis.editorial_structure_material import raw_centiseconds
+    from immich_memories.analysis.clips.budget import (
+        MOTION_CAP_SECONDS,
+        raw_centiseconds,
+    )
 
     return {
         "asset_id": asset_id,

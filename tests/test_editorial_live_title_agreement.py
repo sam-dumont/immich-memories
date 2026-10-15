@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from immich_memories.api.models import AssetType, VideoClipInfo
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import build_assembly_settings
 from immich_memories.processing.assembly_config import (

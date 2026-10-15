@@ -24,7 +24,7 @@ def register_auth_commands(cli_group: click.Group) -> None:
         For the password the server generated because none is configured. Only its hash is
         kept. A password you set in auth.password is changed there instead.
         """
-        from immich_memories.config_loader import config_state_dir
+        from immich_memories.config.loader import config_state_dir
         from immich_memories.web.generated_login import login_path, reset_generated_login
         from immich_memories.web.session_validity import end_sessions
 

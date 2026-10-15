@@ -9,17 +9,17 @@ import tarfile
 
 from click.testing import CliRunner
 
-from immich_memories.analysis.annotation_lines import AssetAnnotationLine
-from immich_memories.analysis.editorial_laya_reader import (
+from immich_memories.analysis.audience.laya_reader import (
     AUDIENCE_FINDINGS,
     LayaReader,
     laya_reader_for,
     unpack_checkpoint,
 )
-from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
-from immich_memories.config_models_editorial import EditorialConfig
-from immich_memories.config_models_free_text import FreeTextConfig
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.analysis.audience.verdicts import AudienceBank, AudienceGate
+from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLine
+from immich_memories.config.models.editorial import EditorialConfig
+from immich_memories.config.models.free_text import FreeTextConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.db import open_store
 from tests.editorial_thin_fixtures import PRIVATE, CountingJudge
 
@@ -299,7 +299,7 @@ def _fake_laya_mlx(monkeypatch):
 def test_the_mlx_scorer_returns_one_probability_row_per_state_in_the_order_given(
     monkeypatch, tmp_path
 ):
-    from immich_memories.analysis.editorial_laya_reader import AUDIENCE_QUESTION, MlxLayaScorer
+    from immich_memories.analysis.audience.laya_reader import AUDIENCE_QUESTION, MlxLayaScorer
 
     _fake_laya_mlx(monkeypatch)
     scorer = MlxLayaScorer(tmp_path, batch_size=2)
@@ -328,3 +328,19 @@ def test_a_configured_checkpoint_gives_a_reader_at_the_configured_threshold(monk
     answers = reader.activity_answers({"k": (["a caption"], True)})
     assert json.loads(answers["k"])["finding"] == FINDINGS[1]
     assert (tmp_path / "laya" / "model.safetensors").is_file()
+
+
+def test_banked_audience_answers_keep_their_reader_identity_when_the_scorer_moves():
+    """The audience bank keys its answers by the reader's identity; a code move must not re-ask.
+
+    The identity names the scorer by the module path it had when the answers were banked.
+    """
+    from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer
+    from immich_memories.analysis.audience.laya_reader import MlxLayaScorer
+
+    for scorer_type, banked in (
+        (MlxLayaScorer, "immich_memories.analysis.audience.laya_reader.MlxLayaScorer"),
+        (OnnxLayaScorer, "immich_memories.analysis.audience.laya_onnx.OnnxLayaScorer"),
+    ):
+        reader = LayaReader(scorer_type.__new__(scorer_type), threshold=0.5, checkpoint_id="c1")
+        assert reader.cache_identity == f"laya|{banked}|c1|threshold={(0.5).hex()}"

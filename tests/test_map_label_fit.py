@@ -12,9 +12,9 @@ from PIL import Image, ImageDraw
 
 from immich_memories.titles.map_renderer import (
     _draw_label_at,
-    _fit_pin_label_font,
-    _fit_title_lines,
     _get_font,
+    fit_pin_label_font,
+    fit_title_lines,
 )
 
 _FR = "Saint-Jean-Cap-Ferrat"
@@ -33,7 +33,7 @@ class TestFitTitleLines:
         draw = _draw()
         base_font = _get_font(120, bold=True)
 
-        lines, font = _fit_title_lines(_FR, draw, base_size=120, bold=True, max_width=10_000)
+        lines, font = fit_title_lines(_FR, draw, base_size=120, bold=True, max_width=10_000)
 
         assert lines == [_FR]
         assert getattr(font, "size", None) == getattr(base_font, "size", None)
@@ -42,7 +42,7 @@ class TestFitTitleLines:
         draw = _draw()
         max_width = 1080 * 0.88  # portrait card safe width (6% margin each side)
 
-        lines, font = _fit_title_lines(_FR, draw, base_size=130, bold=True, max_width=max_width)
+        lines, font = fit_title_lines(_FR, draw, base_size=130, bold=True, max_width=max_width)
 
         widths = [draw.textbbox((0, 0), line, font=font)[2] for line in lines]
         assert max(widths) <= max_width
@@ -51,14 +51,14 @@ class TestFitTitleLines:
     def test_never_shrinks_below_the_floor(self):
         draw = _draw()
 
-        _, font = _fit_title_lines(_CJK, draw, base_size=130, bold=True, max_width=50, min_size=18)
+        _, font = fit_title_lines(_CJK, draw, base_size=130, bold=True, max_width=50, min_size=18)
 
         assert font.size >= 18
 
     def test_at_most_two_lines(self):
         draw = _draw()
 
-        lines, _ = _fit_title_lines(
+        lines, _ = fit_title_lines(
             "one two three four five six seven", draw, base_size=60, bold=True, max_width=10
         )
 
@@ -73,7 +73,7 @@ class TestFitTitleLines:
         text = "La Chapelle-Saint-Mesmin Loiret Centre-Val de Loire"
         max_width = 1080 * 0.88
 
-        lines, font = _fit_title_lines(text, draw, base_size=130, bold=True, max_width=max_width)
+        lines, font = fit_title_lines(text, draw, base_size=130, bold=True, max_width=max_width)
 
         rendered_words = " ".join(lines).replace("…", "").split()
         assert set(rendered_words) == set(text.split())
@@ -88,7 +88,7 @@ class TestFitTitleLines:
         text = "Petite ville de Bourg-en-Bresse, Auvergne-Rhône-Alpes"
         max_width = 1080 * 0.88
 
-        lines, _ = _fit_title_lines(text, draw, base_size=130, bold=True, max_width=max_width)
+        lines, _ = fit_title_lines(text, draw, base_size=130, bold=True, max_width=max_width)
 
         assert not any(line.endswith(",") for line in lines)
         rendered_words = " ".join(lines).replace(",", "").split()
@@ -102,7 +102,7 @@ class TestFitTitleLines:
         draw = _draw()
         max_width = 1080 * 0.88
 
-        lines, font = _fit_title_lines(_FR, draw, base_size=130, bold=True, max_width=max_width)
+        lines, font = fit_title_lines(_FR, draw, base_size=130, bold=True, max_width=max_width)
 
         assert any(line.endswith("-") for line in lines)
         # Breaking at a hyphen keeps the font well above the 18px floor.
@@ -115,7 +115,7 @@ class TestFitTitleLines:
         draw = _draw()
         text = "one two three four five six seven eight nine ten eleven twelve"
 
-        lines, _ = _fit_title_lines(text, draw, base_size=20, bold=True, max_width=40, min_size=18)
+        lines, _ = fit_title_lines(text, draw, base_size=20, bold=True, max_width=40, min_size=18)
 
         assert len(lines) <= 2
         assert lines[-1].endswith("…")
@@ -126,7 +126,7 @@ class TestFitTitleLinesOtherScripts:
         draw = _draw()
         max_width = 1080 * 0.88
 
-        lines, font = _fit_title_lines(_GREEK, draw, base_size=130, bold=True, max_width=max_width)
+        lines, font = fit_title_lines(_GREEK, draw, base_size=130, bold=True, max_width=max_width)
 
         widths = [draw.textbbox((0, 0), line, font=font)[2] for line in lines]
         assert max(widths) <= max_width
@@ -135,7 +135,7 @@ class TestFitTitleLinesOtherScripts:
         draw = _draw()
         max_width = 1080 * 0.88
 
-        lines, font = _fit_title_lines(
+        lines, font = fit_title_lines(
             _CYRILLIC, draw, base_size=130, bold=True, max_width=max_width
         )
 
@@ -146,7 +146,7 @@ class TestFitTitleLinesOtherScripts:
         draw = _draw()
         max_width = 1080 * 0.88
 
-        lines, font = _fit_title_lines(_KOREAN, draw, base_size=130, bold=True, max_width=max_width)
+        lines, font = fit_title_lines(_KOREAN, draw, base_size=130, bold=True, max_width=max_width)
 
         widths = [draw.textbbox((0, 0), line, font=font)[2] for line in lines]
         assert max(widths) <= max_width
@@ -156,7 +156,7 @@ class TestFitPinLabelFont:
     def test_a_short_label_is_unchanged(self):
         draw = _draw()
 
-        font, width = _fit_pin_label_font("Paris", draw, base_size=40, max_width=10_000)
+        font, width = fit_pin_label_font("Paris", draw, base_size=40, max_width=10_000)
 
         assert font.size == 40
         assert width == draw.textbbox((0, 0), "Paris", font=font)[2]
@@ -164,7 +164,7 @@ class TestFitPinLabelFont:
     def test_a_long_label_shrinks_to_fit(self):
         draw = _draw()
 
-        font, width = _fit_pin_label_font(_CYRILLIC, draw, base_size=40, max_width=300)
+        font, width = fit_pin_label_font(_CYRILLIC, draw, base_size=40, max_width=300)
 
         assert width <= 300
         assert font.size < 40
@@ -172,7 +172,7 @@ class TestFitPinLabelFont:
     def test_never_shrinks_below_the_floor(self):
         draw = _draw()
 
-        font, _ = _fit_pin_label_font(_CJK, draw, base_size=40, max_width=5, min_size=10)
+        font, _ = fit_pin_label_font(_CJK, draw, base_size=40, max_width=5, min_size=10)
 
         assert font.size >= 10
 

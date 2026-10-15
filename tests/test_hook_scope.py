@@ -39,7 +39,7 @@ def upper(text):
 
 FILES = {
     "src/immich_memories/__init__.py": "from immich_memories.config import Config\n",
-    "src/immich_memories/config.py": "class Config:\n    width = 1\n",
+    "src/immich_memories/config/__init__.py": "class Config:\n    width = 1\n",
     "src/immich_memories/titles/__init__.py": "",
     "src/immich_memories/titles/letters.py": LETTERS,
     # Reads SIZE while it is imported: a change to SIZE reaches what render builds.
@@ -90,7 +90,7 @@ EXECUTED = {
     "src/immich_memories/titles/render.py": ["tests/test_render.py"],
     "src/immich_memories/layout.py": ["tests/test_layout.py"],
     "src/immich_memories/reader.py": ["tests/test_reader.py"],
-    "src/immich_memories/config.py": ["tests/test_unrelated_0.py"],
+    "src/immich_memories/config/__init__.py": ["tests/test_unrelated_0.py"],
 }
 ALWAYS = {"tests/test_walks.py"}  # walks the repository: runs on every commit
 # Start the app in a child, directly or through a helper: they run on every source change.
@@ -161,7 +161,7 @@ def test_a_change_at_import_runs_what_reads_it_on_import_and_its_users(hook_scop
 
 
 def test_what_the_package_loads_on_start_runs_everything(hook_scope, repo, test_map):
-    before = _edit(repo, "src/immich_memories/config.py", "width = 1", "width = 2")
+    before = _edit(repo, "src/immich_memories/config/__init__.py", "width = 1", "width = 2")
 
     selection = hook_scope.select(list(before), repo, test_map, before)
 

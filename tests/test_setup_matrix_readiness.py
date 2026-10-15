@@ -32,7 +32,7 @@ import setup_matrix  # noqa: E402
 import setup_matrix_readiness  # noqa: E402
 from setup_matrix_plan import INFERENCE_ENV, Cell, CellPlan, Plan, Step  # noqa: E402
 
-from immich_memories.analysis.editorial_description_contract import API_MODEL  # noqa: E402
+from immich_memories.analysis.captions.contract import API_MODEL  # noqa: E402
 
 
 def _plan(item: CellPlan) -> Plan:

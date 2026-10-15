@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from immich_memories.config_models_llm import LLMConfig
+from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.runtime import run_case
 
 

@@ -22,7 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.analysis.moment_grouping import (
+from immich_memories.analysis.corpus.moment_grouping import (
     MOMENT_RADIUS_METRES,
     MOMENT_WINDOW_MINUTES,
     metres_between,

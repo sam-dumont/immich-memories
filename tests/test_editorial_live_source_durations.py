@@ -5,10 +5,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from immich_memories.analysis.editorial_source_route import project_source_rendering
-from immich_memories.analysis.motion_rendering import motion_renderings
+from immich_memories.analysis.clips.motion_rendering import motion_renderings
+from immich_memories.analysis.runtime.source_route import project_source_rendering
 from immich_memories.api.models import AssetType
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.processing.editorial_live_render import validate_editorial_live_clip
 from tests.conftest import make_asset
 from tests.editorial_story_fixtures import ControlledStoryJudge

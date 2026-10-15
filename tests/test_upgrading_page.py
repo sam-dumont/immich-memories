@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_models_automation import AutomationConfig
+from immich_memories.config.models.automation import AutomationConfig
 
 PAGE = (
     Path(__file__).resolve().parents[1] / "docs-site/docs/run/maintenance/upgrading.md"

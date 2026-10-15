@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from immich_memories.api.immich import ImmichAPIError
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.security import sanitize_error_message
 from immich_memories.settings_edit import SettingRefused, same_server, save_settings
 from immich_memories.web.dependencies import Greeter, config_file, current_config, immich_greeter

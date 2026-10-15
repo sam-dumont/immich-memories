@@ -354,7 +354,7 @@ def _evidence_lines(carriers: Sequence[dict]) -> tuple[Any, ...]:
     The real reader keys an episode by the exact annotation lines of its members; the
     fixture has no annotation store, so it renders the same shape from its own metadata.
     """
-    from immich_memories.analysis.editorial_evidence_provenance import EpisodeEvidenceLines
+    from immich_memories.analysis.reading.evidence_provenance import EpisodeEvidenceLines
 
     by_episode: dict[str, list[tuple[str, str]]] = {episode["key"]: [] for episode in _EPISODES}
     for row in carriers:
@@ -380,7 +380,7 @@ def write_plan_files(
     render_timing: dict | None = None,
 ) -> None:
     """Leave behind what the structure record and the projection leave after a real run."""
-    from immich_memories.analysis.editorial_evidence_provenance import AttemptEvidenceProvenance
+    from immich_memories.analysis.reading.evidence_provenance import AttemptEvidenceProvenance
 
     AttemptEvidenceProvenance().capture(_evidence_lines(carriers), directory=attempt_dir)
     content = round(sum(row["seconds"] for row in carriers), 2)
@@ -432,12 +432,12 @@ def _decision_log(carriers: Sequence[dict], dropped: Sequence[tuple[str, str]] =
     rejected with the library's reason, so `runs why` reads a hermetic run the
     way it reads a real one.
     """
-    from immich_memories.analysis.editorial_contracts import (
+    from immich_memories.analysis.corpus.records import (
         DecisionProvenance,
         PassTrace,
         TraceDecision,
     )
-    from immich_memories.analysis.selection_trace import Trace
+    from immich_memories.analysis.corpus.trace import Trace
 
     ids = tuple(row["asset_id"] for row in carriers)
     rejected = tuple(TraceDecision(asset_id, reason) for asset_id, reason in dropped)
@@ -476,7 +476,7 @@ def _decision_log(carriers: Sequence[dict], dropped: Sequence[tuple[str, str]] =
 
 def _candidates(sources: Sequence[Any], *, photo_seconds: float) -> tuple[Any, ...]:
     """Demand every requested source, timed from its own metadata, in capture order."""
-    from immich_memories.analysis.smart_pipeline import ClipWithSegment
+    from immich_memories.analysis.runtime.smart_pipeline import ClipWithSegment
     from immich_memories.api.models import VideoClipInfo
 
     rows = []
@@ -512,7 +512,7 @@ class _FakeEditorialPipeline:
         client: Any = None,
         companions: Sequence[Any] = (),
     ) -> None:
-        from immich_memories.analysis.progress import ProgressTracker
+        from immich_memories.analysis.runtime.progress import ProgressTracker
 
         self._app_config = app_config
         self._context = context
@@ -550,7 +550,7 @@ class _FakeEditorialPipeline:
         A kept Live Photo plays as motion when its measured clip earns it, and only while
         ``include_live_photos`` admits motion (`fake_live_motion`).
         """
-        from immich_memories.analysis.editorial_projection import EditorialStageReporter
+        from immich_memories.analysis.runtime.pipeline_result import EditorialStageReporter
         from immich_memories.operations.cancellation import (
             PipelineCancelled,
             cancellation_scope,
@@ -568,7 +568,7 @@ class _FakeEditorialPipeline:
                 EditorialAttempt(self._context.artifact_dir, request=request) as attempt,
                 cancellation_scope(report_stage.repeat),
             ):
-                from immich_memories.analysis.editorial_source_snapshot import (
+                from immich_memories.analysis.sources.snapshot import (
                     SNAPSHOT_NAME,
                     source_payload,
                 )
@@ -694,8 +694,8 @@ class _FakeEditorialPipeline:
         pool: int,
         selections: tuple[Any, ...] | None = None,
     ) -> Any:
-        from immich_memories.analysis.editorial_planner import EditorialSelection
-        from immich_memories.analysis.smart_pipeline import PipelineResult
+        from immich_memories.analysis.runtime.plan import EditorialSelection
+        from immich_memories.analysis.runtime.smart_pipeline import PipelineResult
         from immich_memories.api.models import AssetType
 
         selections = selections or tuple(
@@ -795,13 +795,13 @@ def install_fake_editorial_route(
 ) -> None:
     """Point the production pipeline builder at the scripted route.
 
-    Replaces one seam, ``editorial_runtime.build_smart_pipeline``, which both
+    Replaces one seam, ``runtime.composition.build_smart_pipeline``, which both
     the UI and the CLI import at call time. ``models_fetched`` is the host a
     user leaves after `immich-memories models fetch`; False is a first launch
     that skipped it, which the run's install check must refuse.
     """
-    import immich_memories.analysis.editorial_runtime as editorial_runtime
-    import immich_memories.analysis.place_geocoder as place_geocoder
+    import immich_memories.analysis.places.geocoder as place_geocoder
+    import immich_memories.analysis.runtime.composition as editorial_runtime
 
     if models_fetched:
         _stand_in_for_models_fetch()

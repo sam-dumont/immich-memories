@@ -2,13 +2,13 @@
 
 from dataclasses import replace
 
-from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
-from immich_memories.analysis.editorial_motion_facts import DemandedMotionResolver
-from immich_memories.analysis.editorial_preparation_motion import read_motion_residuals
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_material import build_material, read_wall
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.analysis.editorial_structure_record import shave_content_duration
+from immich_memories.analysis.clips.bound_sample import source_metadata_digest
+from immich_memories.analysis.clips.motion_facts import DemandedMotionResolver
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.film.material import build_material, read_wall
+from immich_memories.analysis.preparation.motion_lines import read_motion_residuals
+from immich_memories.analysis.structure.planner import plan_structure
+from immich_memories.analysis.structure.record import shave_content_duration
 from immich_memories.speech.facts import read_speech_regions, speech_producer
 from immich_memories.store.cut_measurements import PendingMeasurements
 from tests.annotation_rows import annotation_store

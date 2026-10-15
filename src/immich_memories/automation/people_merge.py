@@ -4,7 +4,7 @@ Two accounts on one server give the same real person two Immich ids. Discovery's
 (`calendar_detectors.py`, `event_detectors.py`) still take one plain list of duck-typed
 people (`.id`, `.name`, `.birth_date`, `.thumbnail_path`) and one asset-count dict keyed
 by that same id — this is where per-account reads become that one merged view, using the
-same store aliases `--accounts` resolution already reads (`analysis/person_resolution.py`).
+same store aliases `--accounts` resolution already reads (`analysis/sources/person_resolution.py`).
 
 Pure functions over typed values: no network and no store I/O here. The caller reads the
 store document and each account once, and hands the results in.
@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.analysis.person_resolution import StorePerson
+from immich_memories.analysis.sources.person_resolution import StorePerson
 from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import people_entries
 

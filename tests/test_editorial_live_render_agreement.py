@@ -9,11 +9,11 @@ import pytest
 
 from immich_memories import generate_clips
 from immich_memories import generate_downloads as downloads
-from immich_memories.analysis.editorial_planner import EditorialSelection
+from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.models import AssetType, VideoClipInfo
-from immich_memories.config_models import HardwareAccelConfig
-from immich_memories.config_models_analysis import AnalysisConfig
-from immich_memories.config_models_render import OutputConfig
+from immich_memories.config.models.analysis import AnalysisConfig
+from immich_memories.config.models.render import OutputConfig
+from immich_memories.config.models.resources import HardwareAccelConfig
 from immich_memories.generate import GenerationParams
 from immich_memories.processing import editorial_live_render as certified
 from immich_memories.processing import live_photo_merger
@@ -146,7 +146,7 @@ def test_changed_render_identity_cannot_reuse_an_old_merge(source, probes, tmp_p
         paths[0].write_bytes(b"new-source-bytes")
     if change == "selected_interval":
         clip.editorial_live_manifest["selected_interval"] = [0.0, 1.5]
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     second = certified.render_certified_live(
         clip,

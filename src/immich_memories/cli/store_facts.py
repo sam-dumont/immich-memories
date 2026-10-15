@@ -4,7 +4,7 @@ import json
 
 import click
 
-from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
+from immich_memories.analysis.facts.clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
 from immich_memories.cli._helpers import console
 from immich_memories.db import open_store
 from immich_memories.store.detector_cache import CONTRACT, fact_status, migrate_facts, refresh_facts

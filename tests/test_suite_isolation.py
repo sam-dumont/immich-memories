@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from immich_memories import config_loader
 from immich_memories.cli import main
+from immich_memories.config import loader as config_loader
 from tests.conftest import (
     _OUTSIDE_CONNECTIONS,
     _REAL_CONFIG_READS,
@@ -112,7 +112,7 @@ def test_each_test_has_its_own_automation_lock():
     Shared by every test on a worker, a trigger still running after its test held the lease,
     and every later automation test on that worker was refused.
     """
-    from immich_memories.config_loader import Config
+    from immich_memories.config.loader import Config
 
     folder = Config().cache.database_path.parent
 

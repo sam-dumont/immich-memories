@@ -12,7 +12,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from immich_memories.analysis.framing_target import PictureFaces
+from immich_memories.analysis.facts.framing_target import PictureFaces
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 from immich_memories.processing.map_move_timing import MapMoveTiming
 
@@ -24,7 +24,7 @@ __all__ = [
     "AssemblySettings",
     "TitleScreenSettings",
     "TransitionType",
-    "_get_rotation_filter",
+    "get_rotation_filter",
     "standalone_assembly_encoding_plan",
 ]
 
@@ -221,7 +221,7 @@ class AssemblyClip:
     known_faces: PictureFaces = PictureFaces()
 
 
-def _get_rotation_filter(rotation: int) -> str:
+def get_rotation_filter(rotation: int) -> str:
     """Get FFmpeg filter string for rotation.
 
     Args:

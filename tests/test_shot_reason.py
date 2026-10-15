@@ -11,7 +11,7 @@ import re
 
 import pytest
 
-from immich_memories.analysis.shot_reason import (
+from immich_memories.analysis.facts.shot_reason import (
     REASON_CHARS,
     reads_as_telemetry,
     shot_reason,

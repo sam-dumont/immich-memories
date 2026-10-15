@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
 from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckResult, CheckStatus
 
 

@@ -41,7 +41,7 @@ def _save_audio(output_path: Path, waveform, sample_rate: int) -> None:
     sf.write(output_path, samples, sample_rate, subtype="PCM_16")
 
 
-def _is_demucs_importable() -> bool:
+def is_demucs_importable() -> bool:
     """Check if the demucs package is installed."""
     try:
         import importlib.util
@@ -84,7 +84,7 @@ class DemucsLocalBackend:
         return f"Demucs (local, {self._model_name})"
 
     async def is_available(self) -> bool:
-        return _is_demucs_importable()
+        return is_demucs_importable()
 
     def _load_model(self) -> None:
         """Lazy-load the Demucs model. Called on first separation request."""

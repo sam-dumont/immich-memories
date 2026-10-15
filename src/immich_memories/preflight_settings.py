@@ -7,7 +7,7 @@ so the operator can set it in config.yaml or the environment instead.
 
 from __future__ import annotations
 
-from immich_memories.config_loader import Config
+from immich_memories.config.loader import Config
 from immich_memories.preflight import CheckResult, CheckStatus
 from immich_memories.settings_store import read_settings
 

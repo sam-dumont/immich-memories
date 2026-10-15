@@ -7,9 +7,9 @@ from datetime import date, timedelta
 
 import pytest
 
-from immich_memories.analysis.editorial_story_reading import read_period_story
-from immich_memories.analysis.editorial_story_weight_contract import StoryWeightDecisionError
-from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
+from immich_memories.analysis.stories.period_account import read_period_story
+from immich_memories.analysis.stories.weight_contract import StoryWeightDecisionError
 from tests.test_editorial_story_reading import ScriptedJudge, episode_row, opened, page_answer
 
 

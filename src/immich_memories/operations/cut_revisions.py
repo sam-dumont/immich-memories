@@ -19,8 +19,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, load_sources
-from immich_memories.analysis.editorial_structure_material import raw_centiseconds
+from immich_memories.analysis.clips.budget import raw_centiseconds
+from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, load_sources
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.locked_file import file_lock
 from immich_memories.operations.storyboard import (

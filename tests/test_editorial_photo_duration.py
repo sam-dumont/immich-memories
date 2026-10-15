@@ -9,10 +9,10 @@ from __future__ import annotations
 import dataclasses
 from datetime import date, timedelta
 
-from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_planner import plan_structure
-from immich_memories.config_models_render import PhotoConfig
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.stories.rule_reader import NoModelJudge, RuleStructureReader
+from immich_memories.analysis.structure.planner import plan_structure
+from immich_memories.config.models.render import PhotoConfig
 from tests.editorial_film_fixtures import Day, film_source
 
 MAY = (date(2030, 5, 1), date(2030, 5, 31))

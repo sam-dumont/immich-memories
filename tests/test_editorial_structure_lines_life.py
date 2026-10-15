@@ -3,9 +3,9 @@
 from dataclasses import replace
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
-from immich_memories.analysis.editorial_structure_lines import UnitLines, metadata_life
-from immich_memories.analysis.editorial_structure_material import build_material, read_wall
+from immich_memories.analysis.film.contract import StructurePlannerPorts
+from immich_memories.analysis.film.lines import UnitLines, metadata_life
+from immich_memories.analysis.film.material import build_material, read_wall
 from immich_memories.api.models import Person
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import source
@@ -134,7 +134,7 @@ def test_the_material_reads_the_faces_immich_found(tmp_path):
 
 
 def test_only_a_named_visible_person_is_someone_the_library_knows():
-    from immich_memories.analysis.editorial_structure_lines import strangers_only
+    from immich_memories.analysis.film.lines import strangers_only
 
     named = SimpleNamespace(id="p1", name="someone", is_hidden=False)
     unnamed = SimpleNamespace(id="p2", name="", is_hidden=False)

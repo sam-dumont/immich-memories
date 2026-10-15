@@ -92,8 +92,8 @@ def test_a_refused_weak_candidate_can_be_replaced_by_a_kept_candidate(tmp_path):
 
 
 def test_a_swap_takes_its_shots_block_and_an_append_joins_the_block_its_time_falls_in():
-    from immich_memories.analysis.editorial_thin_layer import rejoined_blocks
-    from immich_memories.analysis.editorial_thin_refill import ThinSlot
+    from immich_memories.analysis.polish.layer import rejoined_blocks
+    from immich_memories.analysis.polish.refill import ThinSlot
 
     def row(asset, day):
         return {"asset_id": asset, "taken": f"2024-02-{day:02d}T09:00:00"}

@@ -1,7 +1,7 @@
 """The intent report's fail-safe for a people condition (#1954).
 
 A people condition is decided strictly per picture at the fetch, so a carrier failing it
-should never reach here. The caller (editorial_structure_record.py) is the one that
+should never reach here. The caller (structure/record.py) is the one that
 checks each carrier against the resolved face-id condition with `present_on_assets`,
 the exact same function and rule as the fetch; this module only turns the caller's
 already-computed violating ids into a visible, named violation.
@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
-from immich_memories.analysis.editorial_intent import build_editorial_intent
-from immich_memories.analysis.editorial_intent_validation import CarrierView, validate_intent
+from immich_memories.analysis.film.intent import build_editorial_intent
+from immich_memories.analysis.film.intent_validation import CarrierView, validate_intent
 from immich_memories.timeperiod import DateRange
 
 DAY = date(2031, 4, 4)
