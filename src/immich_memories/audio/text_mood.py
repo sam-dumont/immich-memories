@@ -154,9 +154,17 @@ def _accepts(raw: str) -> bool:
 
 
 def music_hemisphere(config: Config) -> str:
-    """The hemisphere the configured music generator reads seasons in."""
-    section = config.ace_step if config.ace_step.enabled else config.musicgen
-    return section.hemisphere
+    """The hemisphere the music reads seasons in: the home base's, like the titles.
+
+    A generator section that still sets its own `hemisphere` keeps it until 2.0; the
+    loader names that key when it is set.
+    """
+    from immich_memories.config_unsupported import is_set
+
+    name = "ace_step" if config.ace_step.enabled else "musicgen"
+    if is_set(config, f"{name}.hemisphere"):
+        return str(getattr(config, name).hemisphere)
+    return config.trips.hemisphere or "north"
 
 
 def _mood_prompt(facts: FilmFacts, evidence: str) -> str:

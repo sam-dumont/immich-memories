@@ -9,6 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from immich_memories.config_models import http_url_or_blank
 
+# The username a generated sign-in goes with when the config names none.
+DEFAULT_USERNAME = "admin"
+
 
 def _check_email_entries(entries: list[str]) -> None:
     """A domain in allowed_emails would silently never match; say so instead."""
@@ -33,7 +36,13 @@ class AuthConfig(BaseModel):
     )
     model_config = ConfigDict(extra="forbid")
 
-    enabled: bool = False
+    enabled: bool = Field(
+        default=True,
+        description=(
+            "Ask for sign-in. With basic sign-in and no password set, the first start "
+            "generates one and shows it once. false runs without sign-in"
+        ),
+    )
     provider: Literal["basic", "oidc", "header"] = "basic"
     session_ttl_hours: int = Field(default=24, ge=1, le=720)
 
@@ -68,6 +77,16 @@ class AuthConfig(BaseModel):
 
     _http_url = field_validator("issuer_url")(http_url_or_blank)
 
+    @property
+    def sign_in_username(self) -> str:
+        """The username basic sign-in expects: the configured one, else "admin"."""
+        return self.username or DEFAULT_USERNAME
+
+    @property
+    def generates_login(self) -> bool:
+        """Whether sign-in uses the password the app generated, because none is configured."""
+        return self.enabled and self.provider == "basic" and not self.password
+
     @model_validator(mode="after")
     def validate_provider_requirements(self) -> AuthConfig:
         """Check public_url and the allow-list, then the active provider's fields."""
@@ -78,20 +97,15 @@ class AuthConfig(BaseModel):
         if not self.enabled:
             return self
 
-        if self.provider == "basic":
-            if not self.username:
-                raise ValueError("username is required when provider is 'basic'")
-            if not self.password:
-                raise ValueError("password is required when provider is 'basic'")
-
-        elif self.provider == "oidc":
+        # Basic sign-in needs nothing here: the username defaults to "admin", and without a
+        # password the app generates one on first start.
+        if self.provider == "oidc":
             if not self.issuer_url:
                 raise ValueError("issuer_url is required when provider is 'oidc'")
             if not self.client_id:
                 raise ValueError("client_id is required when provider is 'oidc'")
 
-        elif self.provider == "header":
-            if not self.trusted_proxies:
-                raise ValueError("trusted_proxies must be non-empty when provider is 'header'")
+        elif self.provider == "header" and not self.trusted_proxies:
+            raise ValueError("trusted_proxies must be non-empty when provider is 'header'")
 
         return self

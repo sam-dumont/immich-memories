@@ -253,13 +253,11 @@ def _album_flag(command: list[str]) -> str | None:
 
 
 @pytest.mark.feature("automation.upload")
-def test_upload_to_immich_delivers_automatic_films_to_the_automation_album(
+def test_the_old_automation_switch_and_album_still_deliver_automatic_films(
     tmp_path: Path, child: FakeGenerateChild
 ) -> None:
     config = write_config(
-        tmp_path,
-        automation={"upload_to_immich": True, "album_name": "Automatic films"},
-        upload={"enabled": False, "album_name": "Memories"},
+        tmp_path, automation={"upload_to_immich": True, "album_name": "Automatic films"}
     )
 
     _auto_run(config, _two_candidates())
@@ -269,19 +267,19 @@ def test_upload_to_immich_delivers_automatic_films_to_the_automation_album(
 
 
 @pytest.mark.feature("automation.upload")
-def test_upload_enabled_delivers_automatic_films_to_the_automation_album(
+def test_upload_set_by_itself_wins_over_the_old_automation_pair(
     tmp_path: Path, child: FakeGenerateChild
 ) -> None:
     config = write_config(
         tmp_path,
-        automation={"album_name": "Automatic films"},
+        automation={"upload_to_immich": True, "album_name": "Automatic films"},
         upload={"enabled": True, "album_name": "Memories"},
     )
 
     _auto_run(config, _two_candidates())
 
     assert "--upload-to-immich" in child.commands[0]
-    assert _album_flag(child.commands[0]) == "Automatic films"
+    assert _album_flag(child.commands[0]) == "Memories"
 
 
 @pytest.mark.feature("automation.upload")

@@ -13,6 +13,113 @@ store to a revision older code will refuse.
 
 ## From 1.0.0-rc.10 to 1.0.0
 
+### Sign-in is on
+
+Authentication is on by default now. An install that ran without it asks for a sign-in after the
+upgrade. With nothing configured, the first start generates a password and prints it once, in the
+server log. No page shows it. The username is `admin`.
+
+```sh
+docker compose logs immich-memories 2>&1 | grep -A2 "Sign in to Immich Memories"
+```
+
+Only a hash of that password is kept, in `generated-login.json` beside the config file
+(`~/.immich-memories/`, the config volume in Docker). Lost it? Make a new one; it is printed once
+in the terminal and every browser signed in with the old one is signed out:
+
+```sh
+docker compose exec immich-memories immich-memories auth reset-password
+```
+
+Your own credentials (`auth.username` and `auth.password`, or the `IMMICH_MEMORIES_AUTH_USERNAME`
+and `IMMICH_MEMORIES_AUTH_PASSWORD` pair), OIDC and header sign-in work as before. A password
+without a username signs in as `admin`.
+
+To keep running without sign-in on purpose, say so: `auth.enabled: false` under `advanced:`, or
+`IMMICH_MEMORIES_AUTH__ENABLED=false`. Without sign-in the UI answers on localhost only.
+`server.allow_unauthenticated_lan` is gone: it is ignored with a warning. For LAN access without a
+login of its own, put the app behind your proxy and use header sign-in.
+
+`immich-memories ui` still listens on `127.0.0.1` with the generated password. With sign-in on,
+the server answers any host name, since the sign-in is what protects it.
+
+### One tier setting
+
+`tier` (`auto`, `basic`, `gpu`, `full`) is the only tier setting. `editorial.preparation.tier`,
+`editorial.reader`, `editorial.laya_audience` and `editorial.detectors_enabled` stop being
+settings: the tier sets them, as it already did at runtime. A config, environment variable or
+saved setting that still names one logs a warning naming `tier`. They stop being read in 2.0.
+
+A Compose, Kubernetes or Terraform install sets the tier with one variable,
+`IMMICH_MEMORIES_DEPLOYMENT_TIER` (`TIER` in the Compose `.env`). It now ranks like any other
+environment variable, so it outranks a tier saved in Settings or written in config.yaml. Those are
+ignored, with a warning naming the variable, and Settings shows the tier as set by the
+environment. If you picked a tier in Settings on a Compose install, that choice stops counting
+after the upgrade: set `TIER` in `.env` instead. The variable also takes
+`auto`. The shipped deployment files no longer set `IMMICH_MEMORIES_TIER`; if your own files set
+both, `IMMICH_MEMORIES_TIER` wins.
+
+`people show --tier` is now `people show --closeness` (inner, recurring, episodic or event).
+`--tier` keeps working with a warning until 2.0.
+
+### Settings that left the config
+
+These keys are no longer documented settings. Each one still works through 1.x and logs a warning
+when set (the key, never its value); in 2.0 they stop being read. Delete them to use the default.
+
+| Key | What replaces it |
+|---|---|
+| `editorial.preparation.tier` | `tier` |
+| `editorial.reader` | `tier` |
+| `editorial.laya_audience` | `tier` |
+| `editorial.detectors_enabled` | `tier` |
+| `musicgen.hemisphere` | `trips.homebase_latitude`: generated music now reads seasons in your home's hemisphere, like the titles |
+| `ace_step.hemisphere` | `trips.homebase_latitude`, as above |
+| `automation.upload_to_immich` | `upload.enabled`: one switch for manual and automatic films; the old value is applied to it |
+| `automation.album_name` | `upload.album_name`, the same way |
+| `server.allow_unauthenticated_lan` | nothing: ignored; without sign-in the UI answers on localhost only |
+| `musicgen.num_versions` | `audio.max_regenerations`; ignored |
+| `ace_step.num_versions` | `audio.max_regenerations`; ignored |
+| `analysis.optimal_clip_duration` | nothing: fixed at 5 s |
+| `analysis.min_source_short_side` | nothing: fixed at 1080 px |
+| `analysis.max_album_assets` | nothing: fixed at 10,000 per media type |
+| `title_screens.title_duration` | nothing: fixed at 3.5 s |
+| `title_screens.month_divider_duration` | nothing: fixed at 2 s |
+| `title_screens.ending_duration` | nothing: fixed at 7 s |
+| `title_screens.month_divider_threshold` | nothing: fixed at 2 clips |
+| `llm.preflight_timeout_seconds` | nothing: fixed at 10 s |
+| `speech.vad_threshold` | nothing: fixed at 0.25 |
+| `speech.min_silence_ms` | nothing: fixed at 200 ms |
+| `analysis.live_photo_merge_window_seconds` | nothing: fixed at 10 s |
+| `analysis.live_photo_min_clip_seconds` | nothing: fixed at 2.5 s |
+| `photos.burst_window_seconds` | nothing: fixed at 300 s |
+| `photos.burst_hash_threshold` | nothing: fixed at 8 bits |
+| `title_screens.map_move_min_seconds` | nothing: fixed at 6 s |
+| `title_screens.map_move_max_seconds` | nothing: fixed at 8 s |
+| `audio.music_block_seconds` | nothing: fixed at 240 s |
+| `audio.max_music_blocks` | nothing: fixed at 3 |
+| `automation.burst_threshold` | nothing: fixed at 2.0 |
+| `editorial.preparation.batch_size` | nothing: fixed at 32 |
+| `editorial.people.seat_min_pictures` | nothing: fixed at 20 |
+| `editorial.people.seat_min_share` | nothing: fixed at 0.05 |
+| `editorial.people.big_story_density` | nothing: fixed at 2.0 |
+| `editorial.people.big_story_family_share` | nothing: fixed at 0.3 |
+| `editorial.laya_audience_threshold` | nothing: the platform's calibrated threshold |
+| `editorial.description_model` | nothing: set by the caption provider |
+| `editorial.head_versions` | nothing: the shipped producer versions |
+| `editorial.pixel_producer_key` | nothing: the shipped producer |
+
+If you set only `automation.upload_to_immich: true`, manual films now upload too: it lands on
+`upload.enabled`, which covers both. Delivering only the automatic films is no longer a separate
+choice. An `automation.album_name` lands on `upload.album_name`
+the same way, unless `upload.album_name` names an album of its own.
+
+The warning reads like this:
+
+```text
+Config key photos.burst_hash_threshold is no longer supported: it is internal tuning with no supported use; remove it, it stops being read in 2.0
+```
+
 ### A birthday film is the year
 
 `--birthday` used to give you the year up to the birthday plus that birthday ±1 day in five
@@ -405,7 +512,7 @@ proxy, not an upgrade step. Originals are unchanged.
 - **Stacks.** Add `stack.read` to the key if you want a stack (an edit and its original, a burst)
   to play as its top picture. It is optional: without it the run logs one warning per account and
   treats every stacked picture as its own candidate.
-- **Native people sharing** is tested on 3.3.0 final. It also accepts 3.3.0-rc.1, later
+- **Native people sharing** is tested on 3.3.3. It also accepts 3.3.0-rc.1, later
   3.3.0 release candidates and every 3.3 release. See [A second Immich account](../multi-account.mdx).
 
 ## Scheduled runs

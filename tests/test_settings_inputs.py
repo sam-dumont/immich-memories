@@ -17,7 +17,8 @@ from immich_memories.settings_edit import field_type
 def config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     monkeypatch.setenv("IMMICH_MEMORIES_SECRET_KEY", "k" * 40)
     path = tmp_path / "config.yaml"
-    path.write_text("")
+    # This module tests the settings page itself, not sign-in.
+    path.write_text("auth:\n  enabled: false\n")
     load_config(path)
     yield path
     set_config(None)

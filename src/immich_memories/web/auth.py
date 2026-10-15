@@ -153,12 +153,15 @@ def is_bypass_path(path: str) -> bool:
 def verify_credentials(username: str, password: str, auth_config: AuthConfig) -> bool:
     """Check username/password against config using constant-time comparison.
 
+    A configured password without a username goes with "admin".
+
     Both are compared as UTF-8 bytes with secrets.compare_digest, which refuses non-ASCII
     text: a typed "ü" is a wrong password, not a server error.
     """
-    username_ok = _same_secret(username, auth_config.username)
+    username_ok = _same_secret(username, auth_config.sign_in_username)
     password_ok = _same_secret(password, auth_config.password)
-    return username_ok and password_ok
+    # No configured password is the generated sign-in, checked against its hash instead.
+    return username_ok and password_ok and bool(auth_config.password)
 
 
 def _same_secret(presented: str, configured: str) -> bool:

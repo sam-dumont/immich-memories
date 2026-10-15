@@ -189,7 +189,7 @@ def test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link(
     assert (decision["outcome"], decision["candidate_key"]) == ("completed", album["memory_key"])
     # This test's own Immich: its one upload is this film, whatever ran before it.
     delivered = delivery_immich.uploads
-    assert len(delivered) == 1 and delivered[0].content_type == "video/mp4"
+    assert len(delivered) == 1 and delivered[0].content_type == "video/mp4", result.explain()
     asset_id = "uploaded-1"
     messages = sink.posted()
     assert [m["title"] for m in messages] == ["Memory Generated: Album"]

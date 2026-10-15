@@ -141,8 +141,5 @@ def test_config_show_names_the_tier_and_what_it_set(tmp_path) -> None:
         for line in result.output.splitlines()
         if len(cells := [cell.strip() for cell in line.split("│")]) > 3
     }
-    assert rows == {
-        "tier": "gpu",
-        "editorial.reader": "rules",
-        "editorial.laya_audience": "true",
-    }
+    # The keys the tier sets are not settings: nothing set them, so they are not listed.
+    assert rows == {"tier": "gpu"}

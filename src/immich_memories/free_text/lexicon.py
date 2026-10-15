@@ -266,6 +266,9 @@ def load_wordnet(path: Path, *, sha256: str = WORDNET_SHA256) -> WordNetLexicon:
             f"{corpus}: digest {digest[:12]} is not the pinned WordNet corpus. "
             "Run immich-memories models fetch"
         )
+    # Security review (SECURITY.md, Reviewed NLTK advisory): this reads only the corpus whose
+    # digest was just checked. The advisory's model save/load APIs (TransitionParser,
+    # AveragedPerceptron, PerceptronTagger, maxent) are never called; keep it that way.
     # nltk reads data only from directories on its own path list.
     if str(corpus.parent) not in nltk.data.path:
         nltk.data.path.append(str(corpus.parent))

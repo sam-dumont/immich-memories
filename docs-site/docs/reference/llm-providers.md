@@ -71,14 +71,13 @@ its calibrated default threshold is
 archive's filename. When configuring a checkpoint for a different backend manually, set its
 threshold explicitly too.
 
-The GPU and Full product tiers enable Laya automatically. A saved `laya_audience` value cannot
-override the resolved tier. Fetch the checkpoint and check the services with `immich-memories preflight`.
+The GPU and Full product tiers enable Laya automatically; the tier decides, with no separate switch. Fetch the checkpoint and check the services with `immich-memories preflight`.
 
 It only adds holds. The detector holds (the sensitive-content detector and the uncovered-person
 head) apply first and are never lifted, its findings go through the same support checks as the
 reader's, and a shot it doesn't answer stays held to the family. Sharing never asks the prose
 LLM, including when Laya is absent or a detector flags exposure. The MLX threshold,
-`laya_audience_threshold: 0.186`, kept every hold of its public calibration split. Its known gap:
+0.186, kept every hold of its public calibration split. Its known gap:
 a travel or administrative document (a boarding pass, an invoice) can slip
 through, since few such captions were in its training data. The detectors stay the floor either way.
 
@@ -87,7 +86,7 @@ directory containing `model.onnx`, `model.onnx.data`, `rl_agent_config.json` and
 The scorer chooses CUDA when available and otherwise uses CPU. This path needs neither
 PyTorch nor MLX.
 
-For the audience ONNX export, set `laya_audience_threshold: 0.185`. This threshold was
+The audience ONNX export uses a fixed threshold of 0.185 and the app picks it with the backend. It was
 chosen on the public calibration split to retain all 15 MLX holds. On 3,143 held-out
 captions it retained all 23 MLX holds and added one. These are classifier checks, not
 end-to-end film performance; the calibration numbers stand on their own.

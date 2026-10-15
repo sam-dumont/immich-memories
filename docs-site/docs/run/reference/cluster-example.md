@@ -100,7 +100,7 @@ kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- imm
 kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- immich-memories preflight -v
 ```
 
-The overlay explicitly sets `IMMICH_MEMORIES_TIER=full`: the environment wins over the config
+The overlay explicitly sets `IMMICH_MEMORIES_DEPLOYMENT_TIER=full`: the environment wins over the config
 file. Seeing Full in `config show` confirms the setting; preflight checks its required services
 and models. Run preparation on a small date window, review a first film and confirm its reported
 render path before enabling daily automation.

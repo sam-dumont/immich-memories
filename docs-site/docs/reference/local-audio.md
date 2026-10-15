@@ -97,7 +97,6 @@ advanced:
     enabled: true
     base_url: "http://musicgen-server:8000"
     timeout_seconds: 10800
-    num_versions: 3
 ```
 
 Generated audio is decoded before mastering or stem separation. Empty, unreadable, non-finite
@@ -118,7 +117,7 @@ the substitution.
   Music is never dropped for it.
 - **One film, one piece of music.** One generator makes the whole soundtrack, planned from the assembled film's length, so a
   100 s photo film gets about 100 s of music. Up to
-  `audio.music_block_seconds` (240) that is one take. Past it, up to `audio.max_music_blocks` (3)
+  240 s that is one take. Past it, up to 3
   takes share one caption, style, tempo, key and seed, and are cut on bar lines and joined with a
   0.3 s crossfade, matched in level. Each take ends a few seconds early, before its outro, and the
   next starts on its first downbeat.

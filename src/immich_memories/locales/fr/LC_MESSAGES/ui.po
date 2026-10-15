@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 17:42+0200\n"
+"POT-Creation-Date: 2026-10-15 06:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -1151,7 +1151,7 @@ msgstr "Propriétaire de {account}"
 msgid "Passed {stages}"
 msgstr "A passé {stages}"
 
-#: web/routes/login/+page.svelte:66
+#: web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "Mot de passe"
 
@@ -1551,11 +1551,11 @@ msgid "Show more"
 msgstr "Afficher plus"
 
 #: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
-#: web/routes/login/+page.svelte:69
+#: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "Se connecter"
 
-#: web/routes/login/+page.svelte:72
+#: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "Connectez-vous via le proxy placé devant ce serveur."
 
@@ -1872,6 +1872,15 @@ msgstr ""
 "Cette exécution n’a pas conservé la liste des médias disponibles. Relancez le montage pour la"
 " retrouver."
 
+#: web/routes/login/+page.svelte:63
+msgid ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+msgstr ""
+"Ce serveur a créé son propre mot de passe et l'a écrit une fois dans son journal (docker "
+"compose logs immich-memories). Lance immich-memories auth reset-password pour en créer un "
+"nouveau."
+
 #: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "Cache des miniatures"
@@ -1982,7 +1991,7 @@ msgstr ""
 msgid "Use this picture instead"
 msgstr "Utiliser cette image à la place"
 
-#: web/routes/login/+page.svelte:63
+#: web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "Nom d'utilisateur"
 

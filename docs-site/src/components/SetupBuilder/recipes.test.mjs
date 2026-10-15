@@ -445,8 +445,15 @@ test('without a login the generated file has no LAN port and no credentials', ()
   assert.match(text, /IMMICH_MEMORIES_AUTH_PASSWORD: ""/);
 });
 
-test('LAN access without a login, a short password or a lone password is refused', () => {
-  assert.match(buildSetup({...setup, lanAccess: true}, sources, '1.2.3').error, /needs an app login/);
+test('LAN access without a login is allowed: the app generates a password on first start', () => {
+  const result = buildSetup({...setup, lanAccess: true, inline: false}, sources, '1.2.3');
+  assert.equal(result.error, null);
+  const env = fileNamed(result, '.env');
+  assert.match(env, /UI_BIND_ADDRESS=0\.0\.0\.0/);
+  assert.doesNotMatch(env, /AUTH_PASSWORD/);
+});
+
+test('a short password or a lone password is refused', () => {
   assert.match(buildSetup({...setup, authUsername: 'admin', authPassword: 'short'}, sources, '1.2.3').error, /at least 12/);
   assert.match(buildSetup({...setup, authPassword: 'a-long-enough-password'}, sources, '1.2.3').error, /username/);
 });

@@ -1,5 +1,5 @@
-# Authentication is disabled by default: anyone who reaches the UI can use it.
-# Enable auth first (IMMICH_MEMORIES_AUTH_USERNAME/PASSWORD in the Secret, or
+# Sign-in is on by default (a generated password, printed once in the pod log).
+# Set your own first (IMMICH_MEMORIES_AUTH_USERNAME/PASSWORD in the Secret, or
 # OIDC), then: cp ingress.yaml.example ingress.yaml, edit the host, and add
 # `- ingress.yaml` to kustomization.yaml.
 apiVersion: networking.k8s.io/v1

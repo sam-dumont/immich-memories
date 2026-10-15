@@ -75,20 +75,26 @@ def test_a_picture_the_exposure_head_flags_stays_in_the_family_film_only(
     assert (verdict["verdict"], verdict["finding"]) == ("family_only", "exposure_evidence")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="needs a product ruling: Basic reads no Live Photo clip, yet a shareable film plays "
-    "the unread clip as motion (clean_evidence skips a companion with no reading)",
-)
 def test_a_shareable_film_plays_no_live_clip_that_no_detector_read(home: UserHome, tmp_path: Path):
-    """`clean_evidence`: an unread member or Live clip keeps its unit in the family."""
+    """An unread Live clip keeps its picture in the shared film, as its still (#2563)."""
     log = tmp_path / "producers.jsonl"
 
+    family = _day(home, LIVE_DAY, "family", log)
     shared = _day(home, LIVE_DAY, "shareable", log)
 
     read = set().union(
         *(ids for producer, ids in _asked(log).items() if producer != "public_heads")
     )
-    playing = {clip for row in shared.carriers for clip in row.get("video_ids") or ()}
-    assert playing, shared.carriers
+    playing = {
+        clip
+        for row in shared.carriers
+        if row["kind"] == "live-motion"
+        for clip in row.get("video_ids") or ()
+    }
     assert playing <= read, sorted(playing - read)
+    # Nothing is held out: every Live Photo of the family film is still in the shared one,
+    # and the family film keeps the motion the shared one gave up.
+    lives = {row["asset_id"] for row in family.carriers if row["kind"].startswith("live")}
+    assert lives, family.carriers
+    assert lives <= {row["asset_id"] for row in shared.carriers}
+    assert any(row["kind"] == "live-motion" for row in family.carriers), family.carriers

@@ -34,6 +34,8 @@ def _builder(assets, moments, *, rules):
         assets={a.id: a for a in assets},
         motion_residuals={},
         clip_frames={},
+        audience="family",
+        companion_detectors={},
         speech_regions={},
         config=Config(),
         pixel_facts={a.id: (900.0, 118.0) for a in assets},

@@ -42,11 +42,11 @@ def test_random_yaml_has_a_clean_cli_result(tmp_path, text):
 @given(st.text(alphabet=st.characters(codec="utf-8", blacklist_characters="\x00"), max_size=100))
 def test_invalid_boolean_env_does_not_silently_use_the_default(tmp_path, monkeypatch, value):
     with monkeypatch.context() as env:
-        env.setenv("IMMICH_MEMORIES_SERVER__ALLOW_UNAUTHENTICATED_LAN", value)
+        env.setenv("IMMICH_MEMORIES_SERVER__SECURE_COOKIES", value)
         valid = {"0", "1", "true", "false", "t", "f", "yes", "no", "y", "n", "on", "off"}
         if value.lower() in valid:
             config = Config.from_yaml(tmp_path / "missing.yaml", stored={})
-            assert config.server.allow_unauthenticated_lan == (
+            assert config.server.secure_cookies == (
                 value.lower() in {"1", "true", "t", "yes", "y", "on"}
             )
         else:

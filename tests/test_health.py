@@ -18,6 +18,11 @@ from immich_memories.config_loader import Config
 from immich_memories.security import configured_secret_values
 
 
+def _open_config(**sections: object) -> Config:
+    """A config with sign-in explicitly off: these tests read what health reports, not who may."""
+    return Config(auth={"enabled": False}, **sections)
+
+
 def _config_with_every_secret_class() -> Config:
     """Build one health config covering the centralized credential inventory."""
     return Config(
@@ -26,6 +31,7 @@ def _config_with_every_secret_class() -> Config:
         musicgen={"api_key": "musicgen-log-secret"},
         ace_step={"api_key": "ace-step-log-secret"},
         auth={
+            "enabled": False,
             "password": "basic-password-log-secret",
             "client_secret": "oidc-client-log-secret",
         },
@@ -39,7 +45,7 @@ def _server():
 
     # WHY: building the app reads the config file and the session secret from the host.
     with (
-        patch("immich_memories.web.server.get_config", return_value=Config()),
+        patch("immich_memories.web.server.get_config", return_value=_open_config()),
         patch.dict(
             "os.environ", {"IMMICH_MEMORIES_STORAGE_SECRET": "test-session-key-0f3a9c2e7b41d856e0"}
         ),
@@ -140,7 +146,7 @@ class TestHealthEndpoint:
         app = _server()
         from immich_memories.web.health import _ImmichDependency
 
-        config = Config(
+        config = _open_config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
             cache={"database": str(tmp_path / "t.db"), "directory": str(tmp_path / "c")},
             automation={"enabled": True, "daily_at": "07:30"},
@@ -176,7 +182,7 @@ class TestHealthEndpoint:
         app = _server()
         from immich_memories.web.health import _ImmichDependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = TestClient(app, raise_server_exceptions=False)
         with (
             patch("immich_memories.web.health.get_config", return_value=config) as get_config_mock,
@@ -205,7 +211,7 @@ class TestHealthEndpoint:
         """Until Encoding Task 5, the real producer reports no pending delivery state."""
         from immich_memories.automation.runner import AutoRunner
 
-        config = Config(
+        config = _open_config(
             cache={"database": str(tmp_path / "health.db"), "directory": str(tmp_path / "cache")}
         )
 
@@ -219,7 +225,7 @@ class TestHealthEndpoint:
         """The detailed endpoint consumes delivery fields from the real status producer."""
         from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
-        config = Config(
+        config = _open_config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
             cache={"database": str(tmp_path / "health.db"), "directory": str(tmp_path / "cache")},
         )
@@ -248,7 +254,7 @@ class TestHealthEndpoint:
         """The Runs/health page surfaces the same free-space warning a run's own preflight logs."""
         from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
-        config = Config(
+        config = _open_config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
             cache={"database": str(tmp_path / "health.db"), "directory": str(tmp_path / "cache")},
             output={"directory": str(tmp_path / "output"), "min_free_space_gb": 5.0},
@@ -284,7 +290,7 @@ class TestHealthEndpoint:
         )
         from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
-        config = Config(
+        config = _open_config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
             cache={"database": str(tmp_path / "health.db"), "directory": str(tmp_path / "cache")},
             notifications={"enabled": True, "urls": ["ntfy://topic"]},
@@ -387,7 +393,7 @@ class TestHealthEndpoint:
         from immich_memories.web.health import _readiness_handler
 
         with (
-            patch("immich_memories.web.health.get_config", return_value=Config()),
+            patch("immich_memories.web.health.get_config", return_value=_open_config()),
             patch(
                 "immich_memories.web.health._check_immich_dependency",
                 side_effect=AssertionError("missing config should not contact Immich"),
@@ -409,7 +415,7 @@ class TestHealthEndpoint:
         """An unreachable configured server must fail the readiness gate."""
         from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="unreachable", reachable=False)
         with (
             patch("immich_memories.web.health.get_config", return_value=config),
@@ -431,7 +437,7 @@ class TestHealthEndpoint:
         """Auto-detecting an unsupported major must fail the readiness gate."""
         from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="unsupported_version", reachable=True)
         with (
             patch("immich_memories.web.health.get_config", return_value=config),
@@ -454,7 +460,7 @@ class TestHealthEndpoint:
         from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         secret = "never-serialize-this-key"  # noqa: S105
-        config = Config(immich={"url": "http://immich.test", "api_key": secret})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": secret})
         dependency = _ImmichDependency(
             status="ready",
             reachable=True,
@@ -513,7 +519,7 @@ class TestHealthEndpoint:
         """Compatibility clients retain details without inheriting readiness status codes."""
         from immich_memories.web.health import _health_handler, _ImmichDependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="unreachable", reachable=False)
         with (
             patch("immich_memories.web.health.get_config", return_value=config),
@@ -537,7 +543,7 @@ class TestHealthEndpoint:
         """Compatibility health keeps its established healthy status label."""
         from immich_memories.web.health import _health_handler, _ImmichDependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="ready", reachable=True, resolved_api_version="v3")
         with (
             patch("immich_memories.web.health.get_config", return_value=config),
@@ -565,7 +571,7 @@ class TestHealthEndpoint:
         with (
             patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.web.health._get_last_successful_run", return_value=None),
-            patch("immich_memories.web.health.get_config", return_value=Config()),
+            patch("immich_memories.web.health.get_config", return_value=_open_config()),
         ):
             response = await _health_handler(mock_request)
 
@@ -580,7 +586,7 @@ class TestHealthEndpoint:
         from immich_memories.api.compatibility import ResolvedApiVersion
         from immich_memories.web.health import _check_immich_dependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
         client.__aenter__.return_value = client
         client.get_api_version.return_value = ResolvedApiVersion.V3
@@ -599,7 +605,7 @@ class TestHealthEndpoint:
         from immich_memories.api.compatibility import ResolvedApiVersion
         from immich_memories.web.health import _check_immich_dependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
         client.__aenter__.return_value = client
         client.get_api_version.return_value = ResolvedApiVersion.V2
@@ -617,7 +623,7 @@ class TestHealthEndpoint:
         from immich_memories.api.immich import ImmichAuthError
         from immich_memories.web.health import _check_immich_dependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
         client.__aenter__.return_value = client
         client.get_api_version.return_value = ResolvedApiVersion.V3
@@ -641,7 +647,7 @@ class TestHealthEndpoint:
                 await task
             raise TimeoutError
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
         client.__aenter__.return_value = client
         with (
@@ -663,7 +669,7 @@ class TestHealthEndpoint:
         from immich_memories.api.compatibility import UnsupportedImmichVersion
         from immich_memories.web.health import _check_immich_dependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
         client.__aenter__.return_value = client
         client.get_api_version.side_effect = UnsupportedImmichVersion("major 4")
@@ -680,7 +686,7 @@ class TestHealthEndpoint:
         # WHY: RunDatabase reads from SQLite file (lazy import inside function)
         with patch("immich_memories.tracking.run_database.RunDatabase") as mock_db_cls:
             mock_db_cls.return_value.list_runs.return_value = []
-            result = _get_last_successful_run(Config())
+            result = _get_last_successful_run(_open_config())
 
         assert result is None
 
@@ -734,7 +740,7 @@ class TestHealthDisclosure:
         app = _server()
         from immich_memories.web.health import _ImmichDependency
 
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         automation = {"last_attempt": {"memory_key": "year_in_review:2024"}}
         client = TestClient(app, raise_server_exceptions=False)
         with (
@@ -778,7 +784,7 @@ class TestHealthProbeHost:
 
     @pytest.mark.feature("security.health-ready-detail")
     def test_unknown_host_with_auth_off_gets_status_only(self):
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         response = self._get("rebound.example.test", config)
 
         assert response.status_code == 200
@@ -787,7 +793,7 @@ class TestHealthProbeHost:
 
     @pytest.mark.feature("security.health-ready-detail")
     def test_pod_ip_host_still_gets_a_usable_status_code(self):
-        config = Config(immich={"url": "http://immich.test", "api_key": ""})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": ""})
         response = self._get("10.42.0.7:8080", config)
 
         assert response.status_code == 503
@@ -795,7 +801,7 @@ class TestHealthProbeHost:
 
     @pytest.mark.feature("security.health-ready-detail")
     def test_local_host_with_auth_off_keeps_its_detail(self):
-        config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
+        config = _open_config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         response = self._get("127.0.0.1:8080", config)
 
         assert response.json()["last_automation_attempt"] == {
@@ -827,9 +833,8 @@ class TestHealthIsCheapUnderRepeatedProbes:
         without this the assertions passed on a developer machine with a real
         config and never probed at all in CI.
         """
-        from immich_memories.config_loader import Config
 
-        return Config(immich={"url": "http://immich.test:2283", "api_key": "test-key"})
+        return _open_config(immich={"url": "http://immich.test:2283", "api_key": "test-key"})
 
     @pytest.mark.asyncio
     async def test_a_burst_of_probes_does_the_work_once(self):

@@ -28,6 +28,7 @@ def session_view(request: Request) -> SessionView:
         username=session.get("username"),
         button_text=auth.button_text if enabled and auth.provider == "oidc" else None,
         auto_launch=enabled and auth.provider == "oidc" and auth.auto_launch,
+        generated_login=auth.generates_login,
         demo_mode_offered=config.server.enable_demo_mode,
         music_preview_offered=config.musicgen.enabled or config.ace_step.enabled,
         captions=CaptionDefaults(

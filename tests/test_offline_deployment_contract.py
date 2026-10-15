@@ -14,7 +14,8 @@ def test_offline_runtime_overrides_disable_saved_outbound_features(tmp_path, mon
     compose = yaml.safe_load((ROOT / "deploy/offline/docker-compose.yml.example").read_text())
     assert compose["services"]["immich-memories"]["ports"] == ["127.0.0.1:22830:8080"]
     env = compose["services"]["immich-memories"]["environment"]
-    assert env["IMMICH_MEMORIES_TIER"] == "basic"
+    assert env["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "basic"
+    assert "IMMICH_MEMORIES_TIER" not in env
     source = tmp_path / "config.yaml"
     source.write_text(
         yaml.safe_dump(

@@ -2494,6 +2494,11 @@ export interface components {
              */
             demo_mode_offered: boolean;
             /**
+             * Generated Login
+             * @default false
+             */
+            generated_login: boolean;
+            /**
              * Music Preview Offered
              * @default false
              */

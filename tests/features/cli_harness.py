@@ -84,6 +84,13 @@ class UserHome:
     def videos(self) -> Path:
         return self.root / "Videos"
 
+    def turn_sign_in_off(self) -> Path:
+        """Write `auth.enabled: false` into this home's config, for a test about something
+        other than sign-in. Sign-in is on by default, so a test that talks to the served app
+        without signing in says so here."""
+        config = yaml.safe_load(self.config_path.read_text()) or {}
+        return self.write_config(without_sign_in(config))
+
     def write_config(self, config: dict[str, Any]) -> Path:
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         self.config_path.write_text(yaml.safe_dump(config, sort_keys=False))
@@ -136,6 +143,12 @@ class UserHome:
             check=False,
         )
         return CliResult(tuple(args), completed.returncode, completed.stdout, completed.stderr)
+
+
+def without_sign_in(config: dict[str, Any]) -> dict[str, Any]:
+    """The same config with sign-in explicitly off (it is on unless the config says otherwise)."""
+    config.setdefault("advanced", {}).setdefault("auth", {})["enabled"] = False
+    return config
 
 
 def basic_config(immich_url: str, api_key: str, home: UserHome) -> dict[str, Any]:

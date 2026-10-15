@@ -21,8 +21,8 @@ release; `example.env` and every image default carry that release's version, inc
 ## Select the files
 
 The base file runs Basic alone and publishes the web UI on host port 22830 (the app listens on
-8080 inside the container). To reach it from another machine, enable auth and set
-`UI_BIND_ADDRESS`. For NVIDIA, download the GPU and CUDA files from the same
+8080 inside the container). To reach it from another machine, set
+`UI_BIND_ADDRESS`; the sign-in is already on. For NVIDIA, download the GPU and CUDA files from the same
 release as your app; Full also needs its tier file and a configured reader. The matching tab in
 [Quick start](../get-started/quick-start.md#1-download-the-files) has the downloads.
 

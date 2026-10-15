@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 17:42+0200\n"
+"POT-Creation-Date: 2026-10-15 06:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -1119,7 +1119,7 @@ msgstr "{account}의 소유자"
 msgid "Passed {stages}"
 msgstr "{stages} 통과"
 
-#: web/routes/login/+page.svelte:66
+#: web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "비밀번호"
 
@@ -1517,11 +1517,11 @@ msgid "Show more"
 msgstr "더 보기"
 
 #: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
-#: web/routes/login/+page.svelte:69
+#: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "로그인"
 
-#: web/routes/login/+page.svelte:72
+#: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "이 서버 앞의 프록시를 통해 로그인합니다."
 
@@ -1825,6 +1825,14 @@ msgstr "이 카테고리는 최근 여섯 개의 추억에 이미 두 번 등장
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "이 작업은 후보 소재 목록을 저장하지 않았습니다. 다시 편집하면 확인할 수 있습니다."
 
+#: web/routes/login/+page.svelte:63
+msgid ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+msgstr ""
+"이 서버가 비밀번호를 직접 만들어 로그에 한 번 기록했습니다 (docker compose logs immich-memories). 새 비밀번호는 immich-"
+"memories auth reset-password로 만드세요."
+
 #: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
@@ -1931,7 +1939,7 @@ msgstr "라이브러리에 등록된 이름을 정확히 쓰세요. 각 소재�
 msgid "Use this picture instead"
 msgstr "대신 이 소재 사용"
 
-#: web/routes/login/+page.svelte:63
+#: web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "사용자 이름"
 

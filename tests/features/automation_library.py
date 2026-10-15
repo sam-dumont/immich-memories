@@ -193,7 +193,11 @@ def write_config(
         "trips": (
             {"homebase_latitude": 50.8417, "homebase_longitude": 4.3624} if home_base else {}
         ),
-        "advanced": {"automation": {"detect_trips": False, **(automation or {})}},
+        # These tests are about automation, not sign-in; a test of sign-in passes its own `auth`.
+        "advanced": {
+            "auth": {"enabled": False},
+            "automation": {"detect_trips": False, **(automation or {})},
+        },
     }
     for key, value in sections.items():
         if key in ("notifications", "server", "auth"):

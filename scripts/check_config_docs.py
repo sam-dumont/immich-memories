@@ -19,6 +19,7 @@ from typing import NamedTuple, get_args
 from pydantic import BaseModel
 
 from immich_memories.config_loader import Config
+from immich_memories.config_unsupported import UNDOCUMENTED
 
 PAGE = "docs-site/docs/reference/config-reference.md"
 
@@ -66,6 +67,8 @@ class SectionSchema(NamedTuple):
 
     model: str
     fields: frozenset[str]
+    # Still read but out of the documented config (`config_unsupported`): must not be shown.
+    hidden: frozenset[str] = frozenset()
 
 
 def _section_model(annotation: object) -> type[BaseModel] | None:
@@ -73,6 +76,16 @@ def _section_model(annotation: object) -> type[BaseModel] | None:
         if isinstance(candidate, type) and issubclass(candidate, BaseModel):
             return candidate
     return None
+
+
+def _undocumented(annotation: object, path: str) -> bool:
+    """A retired key, or a nested block (`editorial.people`) holding nothing but retired keys."""
+    if path in UNDOCUMENTED:
+        return True
+    nested = _section_model(annotation)
+    return nested is not None and all(
+        f"{path}.{field}" in UNDOCUMENTED for field in nested.model_fields
+    )
 
 
 def schema_sections() -> dict[str, SectionSchema]:
@@ -86,7 +99,12 @@ def schema_sections() -> dict[str, SectionSchema]:
         else:
             # YAML spells a field by its alias when it has one (`database.schema`).
             keys = frozenset(f.alias or key for key, f in model.model_fields.items())
-            sections[name] = SectionSchema(model.__name__, keys)
+            hidden = frozenset(
+                f.alias or key
+                for key, f in model.model_fields.items()
+                if _undocumented(f.annotation, f"{name}.{key}")
+            )
+            sections[name] = SectionSchema(model.__name__, keys - hidden, hidden)
     return sections
 
 
@@ -100,7 +118,9 @@ def _section_drift(
         drift.append(
             f"{section}: in the schema but not on the page: {', '.join(sorted(undocumented))}"
         )
-    if invented := shown - entry.fields:
+    if retired := shown & entry.hidden:
+        drift.append(f"{section}: no longer documented, remove: {', '.join(sorted(retired))}")
+    if invented := shown - entry.fields - entry.hidden:
         drift.append(f"{section}: on the page but not in the schema: {', '.join(sorted(invented))}")
     return drift
 

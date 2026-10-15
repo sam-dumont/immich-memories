@@ -101,7 +101,7 @@ def fetch_album_media(
     if truncated:
         logger.warning(
             "Album %r holds more than %d assets per type — using the most recent %d. "
-            "Narrow the album, raise advanced.analysis.max_album_assets, or use a date range.",
+            "Narrow the album or use a date range.",
             album.name,
             cap,
             cap,

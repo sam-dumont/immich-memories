@@ -72,8 +72,10 @@ The client implements the **Immich v2 and v3 API contracts** and detects the maj
 `/api/server/version`. Leave `api_version: auto`; forcing `v2` or `v3` is a troubleshooting
 override, not a way to make an unsupported server supported.
 
-The real-server CI gate runs Immich **2.7.5, 3.2.2 and 3.3.0**. Other versions may work when
-their API major matches; run the checks below before relying on them.
+The real-server CI gate runs Immich **2.7.5, 3.2.4 and 3.3.3**. Run at least **2.7.5 on v2** and
+**3.2.4 on v3**: earlier v3 releases carry fixed security problems (an SVG upload that reaches
+ImageMagick before 3.2.4, broken access control on an admin endpoint before 3.0.4). Other versions
+may work when their API major matches; run the checks below before relying on them.
 [Native person sharing](./multi-account.mdx#native-person-identities) has its own version checks.
 
 ```bash

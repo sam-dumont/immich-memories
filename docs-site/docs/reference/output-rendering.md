@@ -7,11 +7,10 @@ title: Titles, maps and audio rendering
 The clips are the film, but the cards around them are what make it read as a memory and not an FFmpeg concat
 of your camera roll:
 
-- **Intro card**: a blurred, darkened frame from the first clip behind white text, 3.5 seconds
-  (`title_screens.title_duration`). Title and subtitle shrink together when the pair would pass 80 % of the
+- **Intro card**: a blurred, darkened frame from the first clip behind white text, 3.5 seconds. Title and subtitle shrink together when the pair would pass 80 % of the
   frame height.
 - **Month dividers**: at each month change in a single-year film spanning four months or more. The first
-  month gets none: the intro already said it. `month_divider_threshold` sizes a budget. When not every card fits, the film keeps as many as
+  month gets none: the intro already said it. A budget of 2 clips sizes the cards. When not every card fits, the film keeps as many as
   do, picked by clip count (ties go to the earlier month), so a busy November keeps its card and a thin
   March loses its. A tight film never drops to zero while one card still fits.
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
@@ -231,12 +230,6 @@ its own town, so a hike reads as village to village on the map.
 A move lasts 6 seconds for a short hop and 8 for a long flight, scaled on the log of the distance: 30 km gets
 6 s, 300 km about 7 s, 3000 km and more 8 s. The 2 s hold always stays; the flight gets the rest.
 
-```yaml
-title_screens:
-  map_move_min_seconds: 6.0   # nearby place, hold included
-  map_move_max_seconds: 8.0   # far place, hold included
-```
-
 With animated backgrounds enabled, a card renders every flight frame once and the hold once, so a 7 s card at 30 fps is about 150 map renders.
 Tiles are cached for the whole card. The log line per card gives frames, renders and tiles.
 
@@ -268,7 +261,7 @@ watchable speed, and an 8-stop trip at 2 s a hop would open on 18 s of map befor
 ### Maps and film length
 
 Maps run on top of the length you asked for. The budget counts each map at the price of what it replaces (a
-location card at `month_divider_duration`, the intro at `title_duration`), so a 3-minute trip keeps its
+location card at 2 seconds, the intro at 3.5), so a 3-minute trip keeps its
 3 minutes of pictures and regular cards, and the seconds the maps run past that are added on top. Three
 location cards and an intro add about 20 s.
 
@@ -369,8 +362,8 @@ on electronic. The other styles in the caption matrix (jazz trio, indie rock, or
 metal) are never picked automatically.
 
 A generated soundtrack is one piece. One backend makes all of it, and a film up to 4 minutes
-(`audio.music_block_seconds`, 240 by default, 300 at most) is a single ACE-Step take. A longer film
-gets up to `audio.max_music_blocks` takes (3 by default) that share one caption, tempo and key, joined
+(240 seconds per take, 300 at most) is a single ACE-Step take. A longer film
+gets up to 3 takes that share one caption, tempo and key, joined
 on a bar line with a 0.3 s crossfade. The music is planned to the film's real length.
 
 A generator that fails falls through to a bundled track, and the swap comes back as a warning on the finished

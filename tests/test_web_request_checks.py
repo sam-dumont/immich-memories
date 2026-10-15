@@ -16,6 +16,7 @@ from tests.web_server_fixtures import basic_auth_config, server_client
 
 def _open_config(tmp_path: Path, **server: object) -> Config:
     return Config(
+        auth={"enabled": False},  # these tests are about the open server's host and origin checks
         immich={"url": "http://immich.lan:2283", "api_key": "stored-immich-key"},
         cache={"database": str(tmp_path / "runs.db"), "directory": str(tmp_path / "cache")},
         server=server or {},

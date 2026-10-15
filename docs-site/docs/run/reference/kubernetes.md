@@ -277,8 +277,8 @@ Deployment, and keep the Job for a batch cluster where the Deployment stays scal
 runs.
 
 Whichever clock fires it, the daily film stays on the output PVC unless upload is on
-([Getting the films](kubernetes-operations.md#getting-the-films)); `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH=true`
-uploads the daily runs only. The trigger route itself: [Trigger it over HTTP](../../make/automate.md#trigger-it-over-http).
+([Getting the films](kubernetes-operations.md#getting-the-films)); `IMMICH_MEMORIES_UPLOAD__ENABLED=true`
+uploads every film, the daily runs included. The trigger route itself: [Trigger it over HTTP](../../make/automate.md#trigger-it-over-http).
 
 
 ## Database

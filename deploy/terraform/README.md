@@ -3,7 +3,8 @@
 Deploys Immich Memories to Kubernetes with the `hashicorp/kubernetes` provider. CPU only by
 default; NVIDIA GPU scheduling is a variable.
 
-Authentication is disabled by default. Configure it before enabling Ingress. The UI is
+Sign-in is on by default. With no credentials set, the first start generates a password and prints it once in the pod log
+(`kubectl logs -n <namespace> deploy/immich-memories`); set your own through `secret_env` before enabling Ingress. The UI is
 single-user, single-replica because active workflow state is in-process; do not scale past one pod.
 
 This module gets less exercise than Docker Compose: it is `terraform validate`d in the repo, not
@@ -22,11 +23,11 @@ The image runs as user `immich`, UID/GID 1000, `HOME=/home/immich`:
 | `/models` | models PVC (`models_storage_size`, 10Gi) | pinned encoder, sensitive-content model and detector snapshot |
 | `/tmp` | emptyDir (`tmp_size`, 4Gi) | FFmpeg intermediates |
 
-The init container runs `models fetch` on an empty models claim. The module runs `tier: auto`
-(`IMMICH_MEMORIES_TIER`), which selects the plain NAS tier until it finds GPU inference; to use a
-caption server, set `IMMICH_MEMORIES_TIER` to `gpu` or `full` and
-`IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` in `env`. The preparation tier follows
-the product tier; setting `EDITORIAL__PREPARATION__TIER` by hand is overridden with a warning.
+The init container runs `models fetch` on an empty models claim. The module runs the `auto` tier
+(`IMMICH_MEMORIES_DEPLOYMENT_TIER`), which selects Basic until it finds GPU inference; to use a
+caption server, set `IMMICH_MEMORIES_DEPLOYMENT_TIER` to `gpu` or `full` and
+`IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` in `env`. That one variable is the
+deployment's tier: a `tier` in `config.yaml` or Settings is ignored with a warning naming it.
 
 No ConfigMap by default. `immich_url` / `immich_api_key` (and `llm_api_key`, `musicgen_api_key`,
 `secret_env`) land in the Secret and reach the pod through `envFrom`; every other setting is an
@@ -106,7 +107,7 @@ module "immich_memories" {
   output_storage_size = "100Gi"
   cache_storage_size  = "50Gi"
 
-  # Ingress — enable auth first (secret_env = { IMMICH_MEMORIES_AUTH_USERNAME = ..., IMMICH_MEMORIES_AUTH_PASSWORD = ... })
+  # Ingress. Sign-in is on; set your own login with secret_env = { IMMICH_MEMORIES_AUTH_USERNAME = ..., IMMICH_MEMORIES_AUTH_PASSWORD = ... }
   ingress_enabled = false
 }
 ```

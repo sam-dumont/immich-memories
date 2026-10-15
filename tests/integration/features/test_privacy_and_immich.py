@@ -11,6 +11,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import numpy as np
 import pytest
@@ -307,6 +308,10 @@ def test_map_tiles_leave_the_network_only_once_switched_on(
     # Naming a destination is not contacting it.
     assert before_the_film == []
     assert trip.returncode == 0, trip.explain()
-    reached = {request.split()[1] for request in trap.requests}
-    assert "server.arcgisonline.com:443" in reached
-    assert reached <= {"server.arcgisonline.com:443", "nominatim.openstreetmap.org:443"}
+    # Each request line is `CONNECT host:port ...`; compare the parsed host and port exactly.
+    reached = set()
+    for request in trap.requests:
+        target = urlsplit("//" + request.split()[1])
+        reached.add((target.hostname, target.port))
+    assert ("server.arcgisonline.com", 443) in reached
+    assert reached <= {("server.arcgisonline.com", 443), ("nominatim.openstreetmap.org", 443)}

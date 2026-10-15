@@ -24,7 +24,7 @@ For an example of independently managed services, [How I run it](how-i-run-it.md
 
 ## Protect access and keep your data
 
-The default UI listens on localhost with authentication off. It holds an Immich API key: enable [authentication](authentication.mdx) before publishing it to other machines. Run one UI replica.
+The UI asks for a sign-in by default and generates the first password for you ([where to find it](authentication.mdx#the-generated-password)). It holds an Immich API key: keep [authentication](authentication.mdx) on before publishing it to other machines. Run one UI replica.
 
 - [Network and security](network-security.md): bind addresses, proxies and service access.
 - [Privacy](privacy.md): what leaves your network and the switches that enable it.

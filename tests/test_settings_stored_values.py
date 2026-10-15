@@ -20,7 +20,8 @@ def config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Pat
     monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", SIGNING_SECRET)
     monkeypatch.setenv("SOME_DEPLOYMENT_SECRET", ENV_SECRET)
     path = tmp_path / "config.yaml"
-    path.write_text("")
+    # These tests are about stored settings, not sign-in.
+    path.write_text("auth:\n  enabled: false\n")
     load_config(path)
     yield path
     set_config(None)

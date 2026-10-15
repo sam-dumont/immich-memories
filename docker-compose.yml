@@ -1,6 +1,6 @@
 # Copy example.env to .env, then mkdir -p output && docker compose up -d.
 # Before the first film, open Memory and press Download models, or run: docker compose exec immich-memories immich-memories models fetch
-# URLs/models stay editable in Settings. Enable auth before exposing the localhost UI.
+# URLs/models stay editable in Settings. Sign-in is on: the first start generates a password (docker logs immich-memories).
 services:
   immich-memories:
     image: ghcr.io/sam-dumont/immich-memories:${IMMICH_MEMORIES_VERSION:-1.0.0-rc.10}

@@ -351,6 +351,7 @@ def auto_generate_music(
         from immich_memories.audio.music_generator import generate_music_for_video
         from immich_memories.audio.music_generator_client import MusicGenClientConfig
         from immich_memories.audio.music_generator_models import VideoTimeline
+        from immich_memories.audio.text_mood import music_hemisphere
         from immich_memories.audio.track_quality import score_track
 
         clip_data: list[tuple[float, str, int | None]] = [
@@ -390,6 +391,7 @@ def auto_generate_music(
                 config=musicgen_config,
                 progress_callback=music_progress,
                 app_config=config,
+                hemisphere=music_hemisphere(config),
                 memory_type=memory_type,
                 photo_cadence_seconds=photo_cadence_seconds(
                     assembly_clips, transition_overlap=transition_overlap, fps=fps

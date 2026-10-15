@@ -57,6 +57,19 @@ automatically. Review it before attaching it to an issue. [Report details](../ma
 | `A prepared clip disappeared before assembly (…)` | Something removed a prepared clip while the film rendered. The run stops rather than ship a shorter film; render it again |
 | `uploaded without description: the key lacks asset.update`, or `uploaded without story tags: the key lacks …` | The film is in Immich; only its label is missing. Add the named permission to the API key ([the API key](../run/docker.md#the-api-key)); the next upload gets it |
 
+## I lost the generated password
+
+The first start prints the username and password once in the server log. The app keeps only a
+hash, so it cannot show them again. Make a new password: the command prints it once in the terminal
+and signs every browser out.
+
+```bash
+docker compose exec immich-memories immich-memories auth reset-password
+```
+
+On a pip or uv install, run `immich-memories auth reset-password` directly. To skip the generated password for good, set your own login
+([Authentication](../run/authentication.mdx)).
+
 ## Cannot connect to Immich
 
 The read-only check comes first: authentication and the resolved API contract, nothing searched, generated or

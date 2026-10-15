@@ -36,7 +36,7 @@ locals {
     {
       IMMICH_MEMORIES_OUTPUT__DIRECTORY  = local.output_dir
       IMMICH_MEMORIES_OUTPUT__RESOLUTION = var.output_resolution
-      IMMICH_MEMORIES_TIER               = "auto"
+      IMMICH_MEMORIES_DEPLOYMENT_TIER    = "auto"
     },
     var.llm_base_url != "" ? {
       IMMICH_MEMORIES_LLM__BASE_URL = var.llm_base_url
@@ -642,8 +642,9 @@ resource "kubernetes_service_v1" "this" {
   depends_on = [kubernetes_namespace_v1.this]
 }
 
-# Ingress (optional). Authentication is disabled by default: enable it before
-# turning this on.
+# Ingress (optional). Sign-in is on by default and the first start generates a
+# password (printed once in the pod log). Set your own through secret_env
+# before turning this on.
 resource "kubernetes_ingress_v1" "this" {
   count = var.ingress_enabled ? 1 : 0
 

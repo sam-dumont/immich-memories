@@ -152,13 +152,20 @@ def _register_scan(people: click.Group) -> None:
 def _register_show(people: click.Group) -> None:
     @people.command("show")
     @click.option(
-        "--tier",
+        "--closeness",
         type=click.Choice(_TIER_ORDER),
         default=None,
-        help="Show only one tier",
+        help="Show only the people at one closeness: inner, recurring, episodic or event",
     )
-    def show(tier: str | None) -> None:
+    # "Tier" names the product tier only; the old spelling keeps working until 2.0.
+    @click.option("--tier", type=click.Choice(_TIER_ORDER), default=None, hidden=True)
+    def show(closeness: str | None, tier: str | None) -> None:
         """Print the people registry: what the last scan read and what you confirmed."""
+        if tier:
+            click.echo(
+                "people show --tier is now --closeness; --tier stops working in 2.0", err=True
+            )
+        tier = closeness or tier
         store = open_store()
         document = load_document(store)
         entries = people_entries(document)

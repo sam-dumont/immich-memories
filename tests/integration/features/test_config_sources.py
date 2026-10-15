@@ -48,6 +48,8 @@ def _without_immich(home: UserHome) -> dict:
 @contextmanager
 def _settings_page(home: UserHome, **env: str) -> Iterator[httpx.Client]:
     """`immich-memories ui` on this home, and a client asking its Settings API."""
+    # These tests ask the Settings API, not sign-in.
+    home.turn_sign_in_off()
     port = free_port()
     served = UserHome(home.root, extra_env=(*home.extra_env, *env.items()))
     with (
@@ -246,8 +248,10 @@ def test_immich_shorthands_beat_the_nested_variables_and_basic_auth_needs_both(
     assert _row(shown, "immich.api_key")[1:] == ("env", "IMMICH_API_KEY")
     assert years.returncode == 0, years.explain()
     assert "2025" in years.stdout
-    # One Basic-auth value alone is ignored; the pair turns sign-in on.
-    assert _row(half, "auth.enabled")[:2] == ("false", "default")
+    # One Basic-auth value alone is ignored (sign-in stays at its default, on, with a generated
+    # password); the pair sets the login you chose.
+    assert _row(half, "auth.enabled")[:2] == ("true", "default")
+    assert _row(half, "auth.password")[1] == "default"
     assert _row(both, "auth.enabled")[:2] == ("true", "env")
     assert _row(both, "auth.provider")[0] == "basic"
     assert _row(both, "auth.username")[0] == "kit"
@@ -264,7 +268,7 @@ def _selection_tier(home: UserHome, **env: str) -> str:
 
 
 @pytest.mark.feature("config.tiers")
-def test_tier_chooses_the_compute_tier_and_the_deployment_default_yields_to_yaml_and_settings(
+def test_tier_chooses_the_compute_tier_and_the_deployment_tier_beats_yaml_and_settings(
     home: UserHome,
 ):
     config = basic_config(UNREACHABLE, "a-key", home)
@@ -280,16 +284,20 @@ def test_tier_chooses_the_compute_tier_and_the_deployment_default_yields_to_yaml
     config["tier"] = "basic"
     home.write_config(config)
     in_yaml = _selection_tier(home, **deployment)
-    moved = home.run("config", "move-to-db", "tier", env=deployment)
-    in_settings = _row(home.run("config", "show", "tier", env=deployment), "tier")
-    settings_tier = _selection_tier(home, **deployment)
+    yaml_run = home.run("config", "show", "tier", env=deployment)
+    moved = home.run("config", "move-to-db", "tier")
+    in_settings = _row(home.run("config", "show", "tier"), "tier")
+    settings_tier = _selection_tier(home)
+    over_settings = _selection_tier(home, **deployment)
 
     assert deployed == "gpu"
-    assert deployed_row[:2] == ("gpu", "default")
-    assert in_yaml == "basic"
+    assert deployed_row[:2] == ("gpu", "env")
+    assert in_yaml == "gpu"
+    assert "IMMICH_MEMORIES_DEPLOYMENT_TIER" in yaml_run.output + yaml_run.stderr
     assert moved.returncode == 0, moved.explain()
     assert in_settings[:2] == ("basic", "database")
     assert settings_tier == "basic"
+    assert over_settings == "gpu"
 
 
 # ── -v and --log-level ───────────────────────────────────────────────────────

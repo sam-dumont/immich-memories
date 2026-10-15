@@ -112,7 +112,7 @@ The default host port, <ComposePort />, is local to the NAS. From your desktop:
 
 Open `http://localhost:8080` on the desktop. If SSH forwarding is denied, the browser cannot
 reach the app through that tunnel. For LAN access
-without a tunnel, turn on authentication and set `UI_BIND_ADDRESS=0.0.0.0` in `.env`:
+without a tunnel, set `UI_BIND_ADDRESS=0.0.0.0` in `.env` (the sign-in is on by default; its generated password is in `docker logs immich-memories`):
 [Docker access recipe](./docker.md#reaching-the-ui-from-another-machine). That port is plain
 HTTP; use the proxy route if you want TLS.
 

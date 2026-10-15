@@ -6,22 +6,45 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # Authentication
 
-Authentication is disabled by default. Keep the app on localhost until you enable a login provider.
-Anyone who reaches it can use your Immich library through the app. Keep one UI replica.
+Authentication is on by default. Anyone who reaches the app can use your Immich library through it,
+so it asks for a sign-in before it shows anything. Keep one UI replica.
 Everyone who can sign in can use the library and change what Settings offers, so with OIDC set an
 allow-list (`allowed_emails` or `allowed_domains`). Login, server, render-worker and model-path
 settings stay with `config.yaml` and the environment; see
 [settings only the operator sets](./network-security.md#settings-only-the-operator-sets).
 
-For personal LAN access, start with Basic auth below. Use OIDC for your existing identity provider,
-or trusted headers when an authenticated proxy is the only route to the app.
+The first start with nothing configured generates a password for you. To pick your own, use Basic
+auth below. Use OIDC for your existing identity provider, or trusted headers when an authenticated
+proxy is the only route to the app.
 [Proxy, TLS and bind-address setup](./network-security.md) is a separate operator guide.
 
 <ThemedScreenshot name="login" alt="Login page" />
 
+## The generated password
+
+With basic sign-in and no password configured, the first start generates one. The username is
+`admin` unless you set `auth.username`. The app stores only a scrypt hash of the password in
+`generated-login.json`, next to `config.yaml` (`~/.immich-memories/` for a pip or uv install,
+`/home/immich/.immich-memories` in the Docker image, which is the config volume).
+
+The first start prints the username and password once in the server log:
+`docker compose logs immich-memories` (or `docker logs immich-memories`) in Docker, the terminal for
+`immich-memories ui`. No web page shows it. The sign-in page only tells you where to look.
+
+Later starts never print it again. Write it down, or sign in and move to a password of your own.
+
+Lost it? Make a new one. The command writes a new hash, prints the new password once in the
+terminal and signs every browser out.
+
+```bash
+docker compose exec immich-memories immich-memories auth reset-password
+```
+
+On a pip or uv install, run `immich-memories auth reset-password` directly.
+
 ## Basic auth
 
-This is the Immich Memories app login. Choose its username and password yourself; your Immich,
+This is the Immich Memories app login. Choose its username and password yourself, or keep the generated one; your Immich,
 NAS and operating-system accounts do not set them. It is independent of the Basic installation tier.
 
 Set these two variables in the shipped Compose setup's `.env`:
@@ -36,14 +59,13 @@ variables to the app service's `environment:` block and redeploy the stack.
 
 "Basic" names the provider: a username and password typed into the login page, which starts a session cookie. The app does not accept an HTTP `Authorization: Basic` header, so `curl -u` gets 401; script it with `POST /auth/login` and the cookie (a [Synology example](reference/synology-operations.md#checking-auth-with-curl) shows the calls).
 
-Set both; one alone is ignored, and setting both turns auth on with `provider: basic`. From a
+Set both; one alone is ignored. Configured credentials replace the generated password. From a
 shell each line needs `export` in front of it. A password under 12 characters works, but startup
 and `immich-memories preflight` warn about it. The YAML form:
 
 ```yaml
 advanced:
   auth:
-    enabled: true
     provider: basic
     username: admin
     password: ${MY_SECRET_PASSWORD}
@@ -118,6 +140,19 @@ and a request without it is not signed in. Header auth uses `trusted_proxies` on
 `FORWARDED_ALLOW_IPS` present, even if empty, the app refuses to start, since uvicorn would
 replace the proxy's address with the visitor's before the check runs. Remove the variable
 entirely and keep direct access restricted to the authenticating proxy.
+
+## Turning it off on purpose
+
+For a throwaway test on your own machine you can run with no sign-in:
+
+```ini
+IMMICH_MEMORIES_AUTH__ENABLED=false
+```
+
+(or `enabled: false` under `advanced: auth:`). Anyone who reaches the app can then use your Immich
+API key. The UI binds to localhost only, and answers only local hosts and `server.allowed_hosts`,
+unless you pass an explicit host. To reach it from the LAN without a login of its own, put your own
+auth proxy in front and use [header sign-in](#trusted-header-reverse-proxy).
 
 ## Behind a reverse proxy with TLS
 

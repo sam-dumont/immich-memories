@@ -18,7 +18,7 @@ Tier 2 sections (`analysis`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`
 ```yaml
 advanced:
   analysis:
-    max_album_assets: 5000
+    download_workers: 2
   hardware:
     encoder_preset: "quality"
 ```
@@ -49,9 +49,9 @@ inference capability, selection stays on `basic` and reports what is missing. A 
 does not establish inference capability. The runtime check loads no model weights and sends no
 pictures; preflight and acquisition still check the actual producers.
 
-`editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience` are derived from
-the product tier. These values are derived rather than separate user controls. Save omits these
-derived settings and keeps automatic resolution automatic when the file moves to another host.
+`tier` is the only tier setting. The reader, the preparation mode, Laya and the detectors follow
+from it; none of them is a key of its own. Save keeps automatic resolution automatic when the file
+moves to another host.
 An explicit `basic`, `gpu` or `full` pins a tier for a controlled comparison; it does not install or
 start its services. `full` requires an enabled reader: the app-owned local model or a configured API.
 
@@ -62,7 +62,9 @@ and sharing never asks the prose LLM. Captions use their own configured service;
 not an automatic caption fallback. A missing Laya checkpoint or runtime is reported and uses
 the conservative rules fallback; that is a degraded run, not a verified GPU/full comparison.
 
-Env: `IMMICH_MEMORIES_TIER=auto`. From a source checkout,
+Env: `IMMICH_MEMORIES_TIER=auto`. A Compose, Kubernetes or Terraform install sets it with its
+`TIER` (`IMMICH_MEMORIES_DEPLOYMENT_TIER`), which ranks with the environment: a `tier` in
+config.yaml or Settings is ignored there, with a warning naming the variable. From a source checkout,
 `uv run python scripts/tier_settings.py` prints what each tier runs with. That helper script is
 not part of a pip/uv install; `immich-memories capabilities` reports the resolved setup there.
 
@@ -190,25 +192,16 @@ advanced:
       - "img-*-wa[0-9][0-9][0-9][0-9]*"
       - "vid-*-wa[0-9][0-9][0-9][0-9]*"
     exclude_stills_without_camera_exif: true   # a photo naming no camera was received, not shot
-    min_source_short_side: 1080    # Drop smaller clips unless they carry camera EXIF; 0 or more pixels
     max_source_video_seconds: 300  # Exclude longer source videos on Immich metadata, before download (0 disables)
     forwarded_copies_when_short: false  # Let forwarded copies fill gaps in the film's camera timeline
-
-    # Album source
-    max_album_assets: 10000        # Most assets read from one album, per media type (min 1)
 
     # Downloads
     download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
     source_prepare_workers: auto   # Sources prepared at once (1-4); auto: reserve 1 GiB, then 3 GiB per worker; 1-2, capped by available CPUs
     prepared_source_cache_max_size_gb: 10.0  # Disk for prepared sources a later render reuses (0-500 GB; 0 keeps none)
 
-    # Duration sizing
-    optimal_clip_duration: 5.0     # Expected seconds per clip when a trip or album sizes its own duration (2-15s)
-
     # Live Photos (iPhone 3s video clips)
     include_live_photos: true      # Include Live Photo clips (ON by default)
-    live_photo_merge_window_seconds: 10.0  # Max gap to group as burst (1-60s)
-    live_photo_min_clip_seconds: 2.5       # Shortest clip, stitched or single, that plays as motion (0-30s)
 ```
 
 The filename globs exclude matching source media before preparation. Replacing the list replaces
@@ -254,8 +247,7 @@ software encode after the hardware encoder failed) is never kept, so the next re
 used sources go first, and `0` turns the reuse off. It also stays off with
 `cache.video_cache_enabled: false`.
 
-`max_album_assets` applies per media type, so the default reads up to 10,000 videos and 10,000
-photos from one album. Immich returns newest first, so a bigger album is truncated to its most
+An album source reads up to 10,000 videos and 10,000 photos. Immich returns newest first, so a bigger album is truncated to its most
 recent assets, with a warning naming it.
 
 ## Speech boundaries
@@ -264,8 +256,6 @@ recent assets, with a warning naming it.
 advanced:
   speech:
     enabled: true          # Move video cuts out of detected speech
-    vad_threshold: 0.25    # Voice probability threshold (0.1-0.9)
-    min_silence_ms: 200    # Pause that separates utterances (50-2000ms)
 ```
 
 The bundled FireRedVAD model runs locally with the `editorial` or `editorial-cuda` extra.
@@ -371,8 +361,6 @@ the one this protects. See [health, logs and caches](../run/maintenance/health-l
 photos:
   enabled: true                  # Include photos in memories
   duration: 4.0                  # Seconds per photo clip (1-10)
-  burst_window_seconds: 300      # Near-identical photos this close apart are one burst (0-3600)
-  burst_hash_threshold: 8        # Hash bits two photos may differ by and still be one burst (0-64)
 ```
 
 `duration` is how long the cut holds a still. With no model reader, an empty scene gets half a
@@ -383,9 +371,8 @@ The animation per photo (Ken Burns, face pan) is picked from the photo's content
 configurable. The bands around a photo that does not fill the canvas follow `defaults.scale_mode`,
 as they do for video.
 
-Burst de-duplication keeps only the best-scored frame of a run of near-identical photos, so fifteen
-shots of the same jump do not become fifteen clips. `burst_window_seconds: 0` all but turns it off:
-photos sharing an identical timestamp still group.
+Burst de-duplication keeps only the best-scored frame of a run of near-identical photos (five
+minutes apart at most), so fifteen shots of the same jump do not become fifteen clips.
 
 ## Hardware acceleration
 
@@ -423,16 +410,12 @@ and `--no-music` skips music. Music volume is per run too (`--music-volume`); th
 audio:
   local_music_dir: "~/Music/Memories"   # Library scanned by `immich-memories music search`
   max_regenerations: 2                  # Extra auto-mode takes when the first is flagged (0-3)
-  music_block_seconds: 240              # Longest single ACE-Step take before auto mode joins several (30-300)
-  max_music_blocks: 3                   # Takes to join for a longer film, repeated past that (1-6)
 advanced:
   musicgen:
     enabled: false                 # Use a MusicGen API server
     base_url: "http://localhost:8000"
     api_key: ""
     timeout_seconds: 10800         # 3 hours (60-18000)
-    num_versions: 3                # Versions generated for selection (1-5)
-    hemisphere: "north"            # north or south, for seasonal prompts
 
   ace_step:
     enabled: false                 # Use ACE-Step (remote server or local library)
@@ -443,8 +426,6 @@ advanced:
     lm_model_size: "1.7B"          # Default planner; use 4B with the XL production profile
     use_lm: false
     cpu_offload: true              # Local CUDA: move models back to CPU between phases
-    num_versions: 3                # 1-5
-    hemisphere: "north"
     timeout_seconds: 3600          # 60-18000
 
 ```
@@ -463,9 +444,11 @@ flags as a repetitive "tic-tac". The first take is scored; if it is flagged, aut
 up to that many more takes and keeps the best-scored one. It never drops music, so a run ends with
 a track even when every take is flagged.
 
-Generated music is planned from the assembled film's length. A film up to
-`audio.music_block_seconds` gets one ACE-Step take. A longer one gets up to
-`audio.max_music_blocks` takes that share one caption, style, tempo and key, cut on bar lines and
+Seasonal music prompts read seasons in the home base's hemisphere (`trips.homebase_latitude`),
+like the titles do; without a home base they read the northern one.
+
+Generated music is planned from the assembled film's length. A film up to 4 minutes gets one
+ACE-Step take. A longer one gets up to 3 takes that share one caption, style, tempo and key, cut on bar lines and
 joined with a 0.3 s crossfade, then repeated if the film is longer still. No setting chooses the
 style: the app picks acoustic folk, electronic or solo piano. Two takes never play over
 each other for longer than that crossfade. MusicGen continues its own audio, so it gets the whole
@@ -488,7 +471,6 @@ advanced:
     local_context: 32768             # bounded local context; affects memory use; at least 1024 tokens
     api_key: ""                      # optional, only for cloud APIs
     timeout_seconds: 300             # increase for slow local models (10-3600)
-    preflight_timeout_seconds: 10    # reader availability checks only (greater than 0, at most 3600)
     send_image_detail: true          # off: APIs whose strict schema rejects image_url.detail
     always_reasons: false            # true: the endpoint thinks on every call, asked or not
     thinking: "disabled"             # disabled | low | high | max | auto
@@ -619,61 +601,35 @@ stop selection.
 ```yaml
 advanced:
   editorial:
-    reader: rules                 # derived from the product tier; not an independent choice
     thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
     strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
     annotation_database: ""        # compatibility field; leave blank for the default cache directory
-    laya_audience: false           # derived: off for Basic, on for GPU and Full
-    detectors_enabled: false      # derived: Marqo and Docling off for Basic, on for GPU and Full
     # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
     laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
     laya_checkpoint_url: "https://github.com/sam-dumont/immich-memories/releases/download/models-v2/laya-audience-a79ad9fa.tar"
-    laya_audience_threshold: 0.186 # Laya's hold probability at or above which a carrier is held; 0-1
-    description_model: "smolvlm2-500m-base-public@envelope-v3-compact"
-    pixel_producer_key: "pixel-facts-v1"  # exact producer of pixel facts and thresholds  # gitleaks:allow
-    head_versions:                 # exact producer version selected for each annotation head
-      activity: public-v1
-      children: public-v1
-      doc_docling: det-v2
-      frame_kind: public-v1
-      location: public-v1
-      nsfw_marqo: det-v3
-      people: public-v1
-      screen: public-v1-strict
-      uncovered_person: public-v1
-      venue: oi-v3
     preparation:
-      tier: no_captions            # internal producer mode, derived from the product tier
       caption_provider: smolvlm    # llm explicitly opts into images sent to advanced.llm; higher cost
       caption_base_url: http://localhost:8092/v1
       caption_artifact_id: ""   # optional artifact/revision label; existing captions stay banked; at most 512 characters
       caption_api_key: ""          # bearer token for a caption server that requires one
       caption_timeout_seconds: 90   # positive seconds
       caption_concurrency: 1        # 1-16; raise it for a captioner on a GPU
-      batch_size: 32                # 1-256
       head_bundle: ""              # packaged public eight-head bundle
       detector_python: ""          # current Python interpreter
       detector_cache_dir: ""       # normal Hugging Face Hub cache
       marqo_onnx: ~/.immich-memories/models/detectors/nsfw-marqo-384.onnx  # digest-pinned sensitive-content export
       marqo_onnx_url: https://github.com/sam-dumont/immich-memories/releases/download/models-v1/nsfw-marqo-384-924658f1.onnx
       allow_model_downloads: false
-    people:
-      seat_min_pictures: 20        # a close family member on this many pictures with no shot gets one; at least 1
-      seat_min_share: 0.05         # ...or on this share of the period's pictures; greater than 0, at most 1
-      big_story_density: 2.0       # a story is big only at this multiple of the median photographed day...; greater than 0
-      big_story_family_share: 0.3  # ...with at least this share of its pictures showing close family; 0-1
 ```
 
 In YAML, place this section under `advanced:`.
 
-`people` is how the people registry's close family (partner, child, parent) reach the selection. A close
-family member on at least `seat_min_pictures` of the period's pictures, or `seat_min_share` of them,
-who is in none of the film's shots gets one seat: see
-[the family seat](selection-internals/family-audience-duplicates.md#the-family-seat). A story without three favourites is floored
-to `major` only when it is both dense (`big_story_density` times the period's median photographed
-day, in pictures per day) and mostly close family (`big_story_family_share` of its pictures); both
-defaults were measured on real months, see
+Close family from the people registry (partner, child, parent) reach the selection in two ways:
+one seat for a close family member the draft left out, see
+[the family seat](selection-internals/family-audience-duplicates.md#the-family-seat), and the
+weight of a story that is dense and mostly close family, see
 [editing without a language model](selection-internals/moments-and-stories.md#how-much-a-story-weighs).
+Both use thresholds measured on real months; they are not settings.
 
 Docling uses `det-v2`, because ONNX layout optimization mislabels documents on the Celeron J4125.
 Saved `doc_docling: det-v1` settings upgrade on load, and the next run recomputes that head's facts
@@ -692,7 +648,7 @@ strict band, baked into its coefficients because the bundle schema holds no thre
 it answered `yes` on 37 of 3,564 photographs and every one of them was a screen. Each of the three
 only adds to a rule another producer already answered, and none of them can clear anything.
 
-The top-level [`tier`](#tier) sets `reader`: `rules` on `basic` and `gpu`, `model` on `full`.
+The top-level [`tier`](#tier) picks the reader: rules on `basic` and `gpu`, a model on `full`.
 Rules cover the ten standard memory products, including albums and recurring dates,
 from dates, places, favourites, people metadata and whatever preparation facts exist. They reuse
 the normal allocation, spacing, audience and timing checks, write a one-line summary made only of
@@ -720,8 +676,7 @@ active head or detector read as clean and nothing flagged is `share`; with it of
 nothing. Just-us
 and family films are unchanged. Turning it off does not let a caption clear an exposure flag.
 
-`laya_audience` answers the sharing question with a local Laya model:
-`tier: gpu` and `tier: full` turn it on, and `immich-memories models fetch` downloads it.
+On `tier: gpu` and `tier: full`, a local Laya model answers the sharing question; and `immich-memories models fetch` downloads it.
 Apple Silicon uses `laya-mlx`; Linux, Windows and Intel Macs use the portable ONNX checkpoint with the appropriate editorial runtime.
 
 | Platform default | Checkpoint under `~/.immich-memories/models/laya/` | Hold threshold |
@@ -739,9 +694,8 @@ See [Add a reader](llm-providers.md#the-laya-audience-pre-screen).
 ### Preparation tiers
 
 Preparation follows the product tier. Basic acquires pixel facts and the eight shared-DINO heads.
-GPU and Full add Marqo, Docling, captions and Laya. `detectors_enabled` is tier-owned; a saved
-value does not override the tier. `head_versions` keeps all producer identities, while the active
-view filters out Marqo and Docling on Basic. Banked facts remain available when you switch back.
+GPU and Full add Marqo, Docling, captions and Laya. Every producer identity is kept, while the
+active view filters out Marqo and Docling on Basic. Banked facts remain available when you switch back.
 Saved review decisions and permanent holds persist across tier changes.
 
 A film starts with a caption-free rules draft, retaining the resolved tier's detector policy, then
@@ -817,18 +771,12 @@ fetches it while a film is being made.
 ```yaml
 title_screens:
   enabled: true                  # Opening title, month dividers and ending screen
-  title_duration: 3.5            # seconds (1-10)
-  month_divider_duration: 2.0    # seconds (1-5)
-  ending_duration: 7.0           # seconds (2-15)
-  map_move_min_seconds: 6.0      # trip map to a nearby place, 2 s still hold included (3-15)
-  map_move_max_seconds: 8.0      # trip map to a far place, 2 s still hold included (3-15)
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based), random, or a named preset
   # Named presets: modern_warm, elegant_minimal, vintage_charm, playful_bright, soft_romantic
   fade_color: "white"            # white or black at the opening and closing
   animated_background: true      # Animated titles and smooth map flights
   show_month_dividers: true      # When the video spans several months (all-or-none)
-  month_divider_threshold: 2     # Min clips in a month to show its divider (1-10)
   use_first_name_only: true      # "Riley" instead of "Riley Smith" in titles
 ```
 
@@ -939,9 +887,6 @@ advanced:
     secure_cookies: false          # Mark the session cookie Secure (turn on behind an HTTPS reverse proxy)
     trigger_token: ""              # Shared secret for POST /api/trigger. Empty, and with auth
                                    # off, the trigger API is not served at all
-    allow_unauthenticated_lan: false  # Listen beyond localhost with auth disabled:
-                                   # anyone reaching the port can use the UI and the
-                                   # Immich library behind it
     allowed_hosts: []              # Hosts answered beyond localhost. Auth off: any other
                                    # Host gets 421. Auth on: empty answers any host, set
                                    # answers only these (and localhost, auth.public_url)
@@ -954,9 +899,9 @@ Kubernetes Service, a NAS hostname), is let in. See
 
 `host` and `port` also have CLI flags: `immich-memories ui --host 127.0.0.1 --port 9090`.
 A YAML `server.host: 0.0.0.0` is ignored: older versions saved that value automatically.
-Without auth or an explicit override, native installs bind to `127.0.0.1`; enabling auth
-normally permits all interfaces. For deliberate exposure without auth, use `ui --host 0.0.0.0`,
-`IMMICH_MEMORIES_SERVER__HOST=0.0.0.0`, or `allow_unauthenticated_lan: true` on a restricted network.
+Native installs bind to `127.0.0.1` unless you pass `--host` or set `server.host`. For LAN
+access, keep sign-in on, or put the app behind your own proxy with
+[header sign-in](../run/authentication.mdx#trusted-header-reverse-proxy).
 The Docker image already passes `--host 0.0.0.0`; its host port mapping controls reachability.
 Unauthenticated LAN requests also need the hostname in `server.allowed_hosts`.
 See [Network and security](../run/network-security.md) before changing it.
@@ -968,7 +913,7 @@ Keep it out of `config.yaml` with `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN`: `serv
 a `${VAR}` reference, so writing one here stores the six literal characters as your token. Either
 way the value is redacted from `/health`, the config viewer and the logs, from config load onwards.
 
-Saving settings does not write `config.yaml`. Set a LAN bind deliberately, with authentication or `allow_unauthenticated_lan: true`; otherwise the secure default is localhost.
+Saving settings does not write `config.yaml`. Set a LAN bind deliberately; otherwise the secure default is localhost.
 
 ## Upload to Immich
 
@@ -976,6 +921,7 @@ Saving settings does not write `config.yaml`. Set a LAN bind deliberately, with 
 upload:
   enabled: false
   album_name: null               # Created if missing, reused if exists
+                                 # enabled and album_name cover manual and automatic films
   film_tags: false               # Tag each film with its type, years and stories
 ```
 
@@ -1001,14 +947,11 @@ advanced:
     daily_at: "09:00"               # HH:MM, local time of that process (container TZ)
     cooldown_hours: 24              # min hours between auto-generated memories (1-168)
     max_delivery_attempts: 5        # give up on an Immich upload after this many failures (1-50)
-    upload_to_immich: false         # auto-upload results
-    album_name: null                # target album for uploads
     detect_monthly: true            # monthly highlights candidates
     detect_yearly: true             # year-in-review candidates
     detect_trips: true              # GPS trip detection (needs homebase coords)
     detect_person_spotlight: true   # per-person highlight candidates
     detect_activity_burst: true     # unusually active months
-    burst_threshold: 2.0            # multiplier above rolling average to trigger burst; 1-10
     special_days_per_year: 6        # days a year discover-days keeps without a model, strongest first; 1-100
     accounts: []                    # accounts automation reads, as generate --accounts does: list
                                     # primary too, e.g. ["primary", "partner"] (default: primary alone)

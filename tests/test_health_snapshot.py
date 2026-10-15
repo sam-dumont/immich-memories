@@ -21,6 +21,7 @@ def health_client(tmp_path, request, monkeypatch):
     thread.start()
     set_config(
         Config(
+            auth={"enabled": False},  # this test is about readiness, not sign-in
             immich={
                 "url": f"http://127.0.0.1:{server.server_port}",
                 "api_key": FakeImmichServer.api_key if request.param else "rejected-test-key",

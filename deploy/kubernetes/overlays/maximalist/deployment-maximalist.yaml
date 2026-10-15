@@ -63,12 +63,12 @@ spec:
                 name: immich-memories-secrets
             - secretRef:
                 name: immich-memories-maximalist
-          # base/deployment.yaml sets IMMICH_MEMORIES_TIER=auto, and an env var
-          # beats config.yaml: without this the pod runs `auto`, which lands on
-          # nas here (no inference service) and never asks the caption server.
-          # env merges by name, so this replaces only that one entry.
+          # base/deployment.yaml sets IMMICH_MEMORIES_DEPLOYMENT_TIER=auto, and
+          # the environment beats config.yaml: without this the pod runs `auto`,
+          # which lands on basic here (no inference service) and never asks the
+          # reader. env merges by name, so this replaces only that one entry.
           env:
-            - name: IMMICH_MEMORIES_TIER
+            - name: IMMICH_MEMORIES_DEPLOYMENT_TIER
               value: full
       volumes:
         - name: config-src

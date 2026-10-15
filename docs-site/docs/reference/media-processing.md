@@ -123,11 +123,10 @@ flowchart TD
 ```
 
 1. **The video half is not footage.** It leaves the video pool: it belongs to a photograph.
-2. **Bursts.** Photos within `live_photo_merge_window_seconds` (10 s) of each other form a burst. A
+2. **Bursts.** Photos within 10 s of each other form a burst. A
    burst collapses to one unit before the editor chooses: the favourite carries it, otherwise the
    sharpest, best-exposed frame, and the siblings are not separately selectable.
-3. **Length.** The clip that would play must last `live_photo_min_clip_seconds` (2.5 s,
-   `MIN_LIVE_MOTION_SECONDS`), whether it is a stitch or one Live Photo's own clip. A lone clip
+3. **Length.** The clip that would play must last 2.5 s, whether it is a stitch or one Live Photo's own clip. A lone clip
    runs 1.2 to 3.3 s; a 1.2 s clip is half a sentence, a 2.9 s one reads as a moment. When a
    burst's joins cannot be measured, or its stitch comes out short (shots a fraction of a second
    apart overlap so much that their stitch can be barely longer than one clip), the kept
@@ -143,8 +142,8 @@ flowchart TD
 A clip only ever costs a picture its motion, never its place, favourite or not. A Live Photo that
 plays is offered beside the videos, and a true video always plays whatever its residual.
 
-The keys that decide anything are `include_live_photos` (true) and `live_photo_min_clip_seconds`
-(2.5). `--include-live-photos` cannot turn the feature on when the config says false: both must
+The one setting that decides anything is `include_live_photos` (true); the 2.5 s floor is fixed.
+`--include-live-photos` cannot turn the feature on when the config says false: both must
 agree. With it off, a Live Photo is used as its still, never dropped.
 
 A shared album can hold a downscaled copy of a Live Photo pointing at the same video. The video

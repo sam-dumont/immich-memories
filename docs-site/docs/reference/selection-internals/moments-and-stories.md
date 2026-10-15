@@ -133,9 +133,9 @@ remarkable seeds `minor`, maybe seeds `glimpse`, background gets `none`. Then th
 
 - **Three favourites** in a story raise it to `major`.
 - **A big story** is raised to `major` too: one that is both dense (at least
-  `advanced.editorial.people.big_story_density`, 2.0 by default, times the period's median
+  2.0 times the period's median
   photographed day, in pictures per day) **and** has enough close family (at least
-  `big_story_family_share`, 0.3, of its pictures show a partner, child or parent). Density alone
+  0.3 of its pictures show a partner, child or parent). Density alone
   never does it: a race day with no confirmed close-family members does not meet the people condition.
 - **Present** stories (remarkable, or holding a favourite, or close family) are floored at `minor`.
 - **A birthday, a visit or a one-leg trip** weighs at least `major` (`raise_kept_days`): what the

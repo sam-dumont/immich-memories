@@ -348,7 +348,8 @@ def test_ui_deployment_docs_are_explicit_about_exposure_and_replica_limits() -> 
     ):
         text = " ".join(_read(relative_path).lower().split())
         assert "single-user, single-replica" in text or "one ui replica" in text, relative_path
-        assert "authentication is disabled" in text or "authentication off" in text, relative_path
+        # Sign-in is on by default; each entry point says where the first password comes from.
+        assert "generates a password" in text or "generated password" in text, relative_path
     assert "all" in text
 
 

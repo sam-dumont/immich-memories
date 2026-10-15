@@ -59,6 +59,9 @@
         <Text size="small" color="muted" class="text-center">{t('You will be redirected to your identity provider')}</Text>
       </div>
     {:else if session?.provider === 'basic'}
+      {#if session.generated_login}
+        <Text size="small" color="muted" data-testid="generated-login-hint">{t('This server made its own password and printed it once in its log (docker compose logs immich-memories). Run immich-memories auth reset-password to make a new one.')}</Text>
+      {/if}
       <form class="flex flex-col gap-3" onsubmit={(event) => { event.preventDefault(); void signIn(); }}>
         <label class="flex flex-col gap-1 text-sm font-medium">{t('Username')}
           <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" autocomplete="username" bind:value={username} required />

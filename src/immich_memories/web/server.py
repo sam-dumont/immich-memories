@@ -29,7 +29,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 from immich_memories.config import get_config, init_config_dir
-from immich_memories.config_loader import Config, get_config_path
+from immich_memories.config_loader import Config, config_state_dir, get_config_path
 from immich_memories.security import write_secret_file
 from immich_memories.startup_checks import StartupRefused, check_startup
 from immich_memories.web import mount_web
@@ -45,6 +45,11 @@ from immich_memories.web.auth import (
     sign_in_paused,
     trigger_token_authorizes,
     verify_credentials,
+)
+from immich_memories.web.generated_login import (
+    announce_generated_login,
+    generated_credentials_match,
+    login_path,
 )
 from immich_memories.web.health import register_health_routes
 from immich_memories.web.request_checks import RequestChecks
@@ -149,6 +154,13 @@ async def _auth_middleware(request: Request, call_next: Any) -> Response:
     return await call_next(request)
 
 
+def _credentials_match(username: str, password: str, config: Config) -> bool:
+    if config.auth.generates_login:
+        path = login_path(config_state_dir())
+        return generated_credentials_match(username, password, config.auth, path)
+    return verify_credentials(username, password, config.auth)
+
+
 class Credentials(BaseModel):
     username: str
     password: str
@@ -185,7 +197,8 @@ async def login(credentials: Credentials, request: Request) -> JSONResponse:
         # No credential was attempted on this provider, so none failed: counting these
         # would let anyone pause sign-in for the whole server, pre-auth.
         return JSONResponse({"detail": "Invalid username or password"}, status_code=401)
-    if not verify_credentials(user, credentials.password, config.auth):
+    # WHY a thread: a generated password is checked against its scrypt hash.
+    if not await run_in_threadpool(_credentials_match, user, credentials.password, config):
         record_failed_login(client_ip, user)
         return JSONResponse({"detail": "Invalid username or password"}, status_code=401)
     await run_in_threadpool(
@@ -354,6 +367,7 @@ def create_app() -> FastAPI:
     from immich_memories.store_migration_notice import log_store_migration_warnings
 
     log_store_migration_warnings(config)
+    announce_generated_login(config.auth, config_state_dir())
     app = FastAPI(title="Immich Memories", lifespan=_lifespan, docs_url=None, redoc_url=None)
     app.state.session_secret = session_secret
     register_health_routes(app)

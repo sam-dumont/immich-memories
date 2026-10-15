@@ -104,8 +104,10 @@ Commands in other guides use a Docker prefix; here run `immich-memories ...` dir
 
 ## Access from another machine {#reaching-the-ui-from-another-machine}
 
-Keep the localhost bind for a private desktop install. Configure [authentication](./authentication.mdx)
-before listening on the network. [Network and security](./network-security.md) covers proxies and HTTPS.
+Keep the localhost bind for a private desktop install; it still asks for the generated sign-in
+(the password is printed once in the terminal).
+`immich-memories ui --host 0.0.0.0` opens it to the LAN, behind that sign-in. Set your own login with
+[authentication](./authentication.mdx) first if you want one. [Network and security](./network-security.md) covers proxies and HTTPS.
 
 ## After the first film
 

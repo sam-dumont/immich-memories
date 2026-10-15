@@ -74,5 +74,5 @@ month reads it as the account its polish judges shots against, instead of paying
 own summary is a separate question, asked of the stories that film shows. It is banked by the readings it
 summarises and the model that wrote them, so a rerun over an unchanged month asks nothing. You never have to run
 it: a model cut that finds no account writes its own. It is worth it when you would rather pay for a year of
-months overnight. With `advanced.editorial.reader: rules` the command refuses it by name. What the account is for is on
+months overnight. On a rules tier (Basic or GPU) the command refuses it by name. What the account is for is on
 [What a model adds](../how-it-chooses/what-a-model-adds.md).

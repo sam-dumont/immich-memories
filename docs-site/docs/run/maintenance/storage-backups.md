@@ -188,7 +188,7 @@ directory whose permissions were widened. Demucs and render jobs also keep their
 directories under their configured storage, including on the combined GPU worker.
 
 Video and Live Photo preparation can keep sampled frames for many source clips at once. The
-`advanced.editorial.preparation.batch_size` setting does not cap that disk usage.
+size of a preparation batch does not cap that disk usage.
 
 Scratch needs space beyond the preview and video cache budgets. Temporary files are removed
 when their work finishes. Each process works in a folder of its own inside the scratch and holds

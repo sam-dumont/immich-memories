@@ -176,8 +176,7 @@ those service URLs as defaults below saved Settings. Existing installs can chang
 and caption URLs in Settings; runtime URL environment overrides would pin them above Settings.
 
 GPU is a requested tier, not proof of a working device. Run preflight after startup. CPU
-inference does not pass the GPU compute check. Preparation follows the product tier; do not
-set a separate preparation tier.
+inference does not pass the GPU compute check. Preparation follows the product tier.
 
 Running `ghcr.io/ggml-org/llama.cpp:server` by hand works the same way, with the weights
 bind-mounted at `/models` and

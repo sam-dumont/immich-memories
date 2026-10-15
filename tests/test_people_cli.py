@@ -297,13 +297,22 @@ class TestShow:
         # Rowan is in one of the library's ten photographed covid months.
         assert "covid 10%" in output
 
-    def test_one_tier_can_be_asked_for_on_its_own(self):
+    def test_one_closeness_can_be_asked_for_on_its_own(self):
+        _run(["people", "scan"])
+
+        output = _run(["people", "show", "--closeness", "event"])
+
+        assert "Rowan Example" in output
+        assert "Sam Sample" not in output
+
+    def test_the_old_tier_spelling_still_works_and_names_its_replacement(self):
         _run(["people", "scan"])
 
         output = _run(["people", "show", "--tier", "event"])
 
         assert "Rowan Example" in output
         assert "Sam Sample" not in output
+        assert "now --closeness" in output
 
 
 class TestExportAndImport:

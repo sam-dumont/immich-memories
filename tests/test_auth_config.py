@@ -11,9 +11,20 @@ from immich_memories.config_models_auth import AuthConfig
 class TestAuthConfigDefaults:
     """AuthConfig has safe defaults."""
 
-    def test_disabled_by_default(self):
+    def test_enabled_by_default(self):
         cfg = AuthConfig()
+        assert cfg.enabled is True
+
+    def test_a_default_sign_in_has_no_password_and_goes_by_admin(self):
+        cfg = AuthConfig()
+        assert cfg.password == ""
+        assert cfg.generates_login
+        assert cfg.sign_in_username == "admin"
+
+    def test_an_explicit_off_runs_without_sign_in(self):
+        cfg = AuthConfig(enabled=False)
         assert cfg.enabled is False
+        assert not cfg.generates_login
 
     def test_provider_default(self):
         cfg = AuthConfig()
@@ -48,13 +59,15 @@ class TestAuthConfigValidation:
         cfg = AuthConfig(enabled=True, provider="header", trusted_proxies=["10.0.0.1"])
         assert cfg.provider == "header"
 
-    def test_basic_requires_username(self):
-        with pytest.raises(ValueError, match="username"):
-            AuthConfig(enabled=True, provider="basic", password="secret")  # noqa: S106
+    def test_basic_without_username_signs_in_as_admin(self):
+        cfg = AuthConfig(enabled=True, provider="basic", password="secret")  # noqa: S106
+        assert cfg.sign_in_username == "admin"
+        assert not cfg.generates_login
 
-    def test_basic_requires_password(self):
-        with pytest.raises(ValueError, match="password"):
-            AuthConfig(enabled=True, provider="basic", username="admin")
+    def test_basic_without_password_uses_the_generated_one(self):
+        cfg = AuthConfig(enabled=True, provider="basic", username="op")
+        assert cfg.sign_in_username == "op"
+        assert cfg.generates_login
 
     def test_basic_with_creds_ok(self):
         cfg = AuthConfig(
@@ -132,9 +145,10 @@ class TestAuthEnvVarShortcut:
         assert config.auth.username == "admin"
         assert config.auth.password == "secret"  # noqa: S105
 
-    def test_only_username_set_stays_disabled(self, monkeypatch):
+    def test_only_username_set_leaves_the_generated_sign_in(self, monkeypatch):
         monkeypatch.setenv("IMMICH_MEMORIES_AUTH_USERNAME", "admin")
         monkeypatch.delenv("IMMICH_MEMORIES_AUTH_PASSWORD", raising=False)
         config = Config()
         _apply_env_overrides(config)
-        assert config.auth.enabled is False
+        assert config.auth.enabled is True
+        assert config.auth.generates_login

@@ -78,7 +78,7 @@ module "immich_memories" {
   captioner_enabled = true
   captioner_cuda    = true
 
-  # The module sets IMMICH_MEMORIES_TIER=auto, which picks gpu or full only
+  # The module sets IMMICH_MEMORIES_DEPLOYMENT_TIER=auto, which picks gpu or full only
   # once it finds GPU picture reading, and `env` is merged last, so this pins
   # the tier the captioner and the LLM are for. The module does not deploy
   # the inference service (encoder, heads, detectors on a GPU): apply
@@ -87,7 +87,7 @@ module "immich_memories" {
   # pod resolved with `immich-memories config show` (the tier row). Daily
   # automation inside the pod.
   env = {
-    IMMICH_MEMORIES_TIER                      = "full"
+    IMMICH_MEMORIES_DEPLOYMENT_TIER           = "full"
     IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL = "http://inference:8092"
     IMMICH_MEMORIES_AUTOMATION__ENABLED       = "true"
     IMMICH_MEMORIES_AUTOMATION__DAILY_AT      = "09:00"

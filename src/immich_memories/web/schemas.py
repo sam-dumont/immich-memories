@@ -295,6 +295,8 @@ class SessionView(BaseModel):
     username: str | None
     button_text: str | None
     auto_launch: bool
+    # Sign-in uses the password the server generated and printed once in its log.
+    generated_login: bool = False
     # `server.enable_demo_mode`: whether the blur switch is on offer at all.
     demo_mode_offered: bool = False
     # A music generator (MusicGen or ACE-Step) is configured, so a track can be previewed.

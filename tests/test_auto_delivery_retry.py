@@ -658,8 +658,8 @@ def test_pending_delivery_count_is_source_scoped_and_keeps_missing_artifacts(
 def test_initial_automation_upload_uses_the_retry_album_provenance(tmp_path: Path) -> None:
     """Initial generation and a future retry must address the same Immich album."""
     config = _config(tmp_path)
-    config.automation.upload_to_immich = True
-    config.automation.album_name = "Daily Auto Memories"
+    config.upload.enabled = True
+    config.upload.album_name = "Daily Auto Memories"
     candidate = MemoryCandidate(
         memory_type="monthly_highlights",
         category=CandidateCategory.MONTHLY_REVIEW,

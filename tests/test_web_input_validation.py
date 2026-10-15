@@ -13,6 +13,8 @@ from tests.web_api_fixtures import config_in, save_run
 @pytest.fixture
 def client(tmp_path):
     config = config_in(tmp_path)
+    # These tests are about request validation, not sign-in.
+    config.auth.enabled = False
     set_config(config)
     save_run(config, "input-check")
     return TestClient(create_app())

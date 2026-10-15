@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 17:42+0200\n"
+"POT-Creation-Date: 2026-10-15 06:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -1138,7 +1138,7 @@ msgstr "Owner of {account}"
 msgid "Passed {stages}"
 msgstr "Passed {stages}"
 
-#: web/routes/login/+page.svelte:66
+#: web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "Password"
 
@@ -1538,11 +1538,11 @@ msgid "Show more"
 msgstr "Show more"
 
 #: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
-#: web/routes/login/+page.svelte:69
+#: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "Sign in"
 
-#: web/routes/login/+page.svelte:72
+#: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "Sign in through the proxy in front of this server."
 
@@ -1848,6 +1848,14 @@ msgstr "This category already appears twice in the last six memories."
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "This run kept no record of its pool. Cut again to see one."
 
+#: web/routes/login/+page.svelte:63
+msgid ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+msgstr ""
+"This server made its own password and printed it once in its log (docker compose logs immich-"
+"memories). Run immich-memories auth reset-password to make a new one."
+
 #: web/routes/settings/+page.svelte:30
 msgid "Thumbnail cache"
 msgstr "Thumbnail cache"
@@ -1954,7 +1962,7 @@ msgstr "Use exact library names; each picture must match. It replaces the names 
 msgid "Use this picture instead"
 msgstr "Use this picture instead"
 
-#: web/routes/login/+page.svelte:63
+#: web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "Username"
 

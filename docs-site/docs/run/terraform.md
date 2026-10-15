@@ -28,9 +28,9 @@ Choose the tier through the example's `env` map:
 
 | Tier | Configuration |
 |---|---|
-| **Basic** | `IMMICH_MEMORIES_TIER = "basic"`; no model services |
-| **GPU** | `IMMICH_MEMORIES_TIER = "gpu"`; set the [inference and caption endpoints](../get-started/choose-your-setup.md#gpu-understand-more-of-the-pictures) |
-| **Full** | GPU configuration with `IMMICH_MEMORIES_TIER = "full"`, `IMMICH_MEMORIES_LLM__ENABLED = "true"`, plus `llm_base_url`, `llm_model` and any `llm_api_key` |
+| **Basic** | `IMMICH_MEMORIES_DEPLOYMENT_TIER = "basic"`; no model services |
+| **GPU** | `IMMICH_MEMORIES_DEPLOYMENT_TIER = "gpu"`; set the [inference and caption endpoints](../get-started/choose-your-setup.md#gpu-understand-more-of-the-pictures) |
+| **Full** | GPU configuration with `IMMICH_MEMORIES_DEPLOYMENT_TIER = "full"`, `IMMICH_MEMORIES_LLM__ENABLED = "true"`, plus `llm_base_url`, `llm_model` and any `llm_api_key` |
 
 GPU/Full require working CUDA inference, captions and Laya; Full also needs a reader with 32k
 context. The module does not deploy an inference or reader server. See the
@@ -48,8 +48,8 @@ terraform output -raw port_forward_command
 ```
 
 `terraform apply` waits for the deployment rollout and a Ready pod. The `/health/ready` probe stays unready until configuration is present and Immich answers; inspect the pod events and logs if apply waits or times out. Run the printed port-forward command and open `http://localhost:8080`.
-The production example adds ingress/TLS; enable authentication before exposing it.
-Authentication is disabled by default. Keep one UI replica (`replicas = 1`).
+The production example adds ingress/TLS and sets its own sign-in credentials. Without them the
+first start generates a password and prints it once in the pod log. Keep one UI replica (`replicas = 1`).
 
 ## What it creates
 

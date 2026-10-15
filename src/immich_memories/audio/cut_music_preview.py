@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from immich_memories.audio.music_generator import generate_music_for_video
 from immich_memories.audio.music_generator_client import MusicGenClientConfig
 from immich_memories.audio.music_generator_models import VideoTimeline
-from immich_memories.audio.text_mood import mood_for_cut
+from immich_memories.audio.text_mood import mood_for_cut, music_hemisphere
 from immich_memories.processing.render_inputs import read_render_inputs
 
 if TYPE_CHECKING:
@@ -72,6 +72,7 @@ async def preview_music_for_cut(
         config=service,
         progress_callback=progress,
         app_config=config,
+        hemisphere=music_hemisphere(config),
         mood_detail=choice.mood,
     )
     if not result or not result.versions:

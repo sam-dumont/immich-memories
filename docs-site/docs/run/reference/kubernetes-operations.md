@@ -117,9 +117,10 @@ kubectl port-forward -n immich-memories svc/immich-memories 8080:80
 Open `http://localhost:8080`. Port 8080 taken on your machine? `kubectl port-forward -n immich-memories svc/immich-memories 8081:80` serves it at `http://localhost:8081`: the service port stays 80. Set home coordinates and timezone below, then make
 [your first film](../../get-started/first-film.mdx).
 
-:::caution Keep it private until login works
-Authentication is disabled by default. Do not expose the Service or add an Ingress before
-[enabling authentication](.././authentication.mdx). Keep one UI replica.
+:::caution Know your sign-in before you expose it
+Sign-in is on by default. The first start generates a password and prints it once in the pod log
+(`kubectl logs -n immich-memories deploy/immich-memories`). Set your own credentials, or OIDC, per
+[authentication](.././authentication.mdx) before you add an Ingress. Keep one UI replica.
 :::
 
 ### Rotating a key
@@ -298,9 +299,9 @@ CPU service variants are `overlays/inference` and `overlays/captioner`. The CUDA
 deliberately requests no `nvidia.com/gpu`; it depends on device sharing/time-slicing and has no
 scheduler GPU reservation. Configure that on your cluster or add a GPU request on a separate
 card. Applying the overlay alone does not make a GPU available.
-The base deployment defaults to Basic. After connecting both services, set the tier to GPU in
-Settings or your controlling configuration. Use `IMMICH_MEMORIES_TIER=gpu` in the app
-environment if the deployment must fix that choice. For Full, configure and explicitly enable an
+The base deployment defaults to Basic. After connecting both services, set
+`IMMICH_MEMORIES_DEPLOYMENT_TIER=gpu` in the app environment: it is the deployment's one tier
+setting, and a `tier` in Settings or `config.yaml` is ignored with a warning. For Full, configure and explicitly enable an
 [external reader](../../better/reader.md), then select Full. The app image has no
 owned `llama-server`. One `advanced.llm` configuration serves titles, selection, music mood,
 special days and explicitly opted-in LLM captions. The commented Deployment recipe uses native
