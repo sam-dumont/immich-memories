@@ -15,7 +15,7 @@ from immich_memories.config_models import http_url_or_blank
 
 
 class AudioConfig(BaseModel):
-    """Soundtrack policy: the local library the `music` CLI scans, and how
+    """Soundtrack policy: whether films get music, your own music folder, and how
     auto-generated music is vetted.
 
     Generation picks its backend from `ace_step.enabled` / `musicgen.enabled`
@@ -23,8 +23,19 @@ class AudioConfig(BaseModel):
     mixer.
     """
 
+    no_music: bool = Field(
+        default=False,
+        description=(
+            "Render films without music unless a run asks for it (`--music`, or a "
+            "track picked in the web render panel); automation follows it too"
+        ),
+    )
     local_music_dir: str = Field(
-        default="~/Music/Memories", description="Directory for local music library"
+        default="~/Music/Memories",
+        description=(
+            "Your own music, one subfolder per mood like the bundled tracks. Films pick "
+            "from it by mood before the bundled tracks; a mood it lacks plays bundled ones"
+        ),
     )
     max_regenerations: int = Field(
         default=2,

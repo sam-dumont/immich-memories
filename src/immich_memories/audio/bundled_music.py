@@ -3,6 +3,9 @@
 The tracks ship in the separate ``immich-memories-music`` distribution (the
 ``music`` extra) so a plain install stays small, while the Docker image — which
 installs every extra — has music without a GPU or a music server.
+
+Your own folder (``audio.local_music_dir``), laid out the same way, takes the
+bundle's place for every mood it has a folder for.
 """
 
 from __future__ import annotations
@@ -39,6 +42,38 @@ def bundled_library() -> Path | None:
     return directory if directory.is_dir() else None
 
 
+def music_library_for_mood(
+    mood: str | None,
+    own_library: Path | None,
+    bundled: Path | None,
+    *,
+    own_library_named: bool = True,
+) -> Path | None:
+    """The library a film of this mood picks its music from: your folder, else the bundle.
+
+    Your folder wins for every mood it has tracks for. A mood it lacks plays the
+    bundled tracks for that mood; a mood neither has a folder for picks from all
+    of your folder, since any track of yours is closer to what you want than any
+    bundled one. The log names the mood, never the folder: the path comes from
+    the config.
+    """
+    family = (mood or "").lower()
+    if own_library is None or not _all_tracks(own_library):
+        # The default folder rarely exists; only a folder someone named is worth a warning.
+        log = logger.warning if own_library_named else logger.debug
+        log("Your music folder is missing or has no tracks; films use the bundled music")
+        return bundled
+    if not family or _mood_folder_tracks(family, own_library):
+        logger.info("Picking %s music from your music folder", family or "any")
+        return own_library
+    if bundled is not None and bundled.is_dir() and _mood_folder_tracks(family, bundled):
+        logger.info("Your music folder has no %s tracks; using the bundled ones", family)
+        return bundled
+    # Neither library has the mood: any track of yours is closer to what you want.
+    logger.info("No library has %s tracks; picking from all of your music folder", family)
+    return own_library
+
+
 def bundled_track_for_mood(
     mood: str | None,
     library: Path | None = None,
@@ -64,7 +99,7 @@ def bundled_track_for_mood(
         return None
 
     chosen = _fitting_track(candidates, cadence_seconds) or random.choice(candidates)
-    logger.info("Using bundled music: %s/%s", chosen.parent.name, chosen.name)
+    logger.info("Using music track: %s/%s", chosen.parent.name, chosen.name)
     return chosen
 
 
@@ -160,18 +195,33 @@ def _one_family(
 
 def _mood_candidates(mood: str | None, root: Path) -> list[Path]:
     """Tracks in the mood's own folder, or the whole library when it has none."""
-    family = (mood or "").lower()
-    folder = root / _MOOD_FOLDERS.get(family, family)
-    candidates = _tracks_in(folder) if folder.is_dir() else []
-    if not candidates:
-        candidates = sorted(
-            track for child in root.iterdir() if child.is_dir() for track in _tracks_in(child)
-        )
-    return candidates
+    return _mood_folder_tracks((mood or "").lower(), root) or _all_tracks(root)
+
+
+def _mood_folder_tracks(family: str, root: Path) -> list[Path]:
+    """The tracks of a mood's folder: its own name first, then the near neighbour's.
+
+    The bundle has no folder for some moods; a library of your own may.
+    """
+    for name in dict.fromkeys((family, _MOOD_FOLDERS.get(family, family))):
+        folder = root / name
+        tracks = _tracks_in(folder) if folder.is_dir() else []
+        if tracks:
+            return tracks
+    return []
+
+
+def _all_tracks(root: Path) -> list[Path]:
+    """Every track in the library's mood folders."""
+    if not root.is_dir():
+        return []
+    return sorted(
+        track for child in root.iterdir() if child.is_dir() for track in _tracks_in(child)
+    )
 
 
 def _tracks_in(folder: Path) -> list[Path]:
-    return sorted(p for p in folder.iterdir() if p.suffix.lower() in _SUFFIXES)
+    return sorted(p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in _SUFFIXES)
 
 
 def _fitting_track(candidates: list[Path], cadence_seconds: float | None) -> Path | None:

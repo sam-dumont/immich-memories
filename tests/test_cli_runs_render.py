@@ -185,3 +185,14 @@ def test_runs_render_can_mute_original_audio_for_one_film(tmp_path):
     rendered.clear()
     assert _invoke(config, ["runs", "render", RUN], rendered).exit_code == 0
     assert rendered[0]["request"].original_audio is True
+
+
+def test_runs_render_follows_audio_no_music_unless_the_film_asks_for_music(tmp_path):
+    config = _config(tmp_path)
+    config.audio.no_music = True
+    save_run(config, RUN)
+    rendered: list[dict] = []
+
+    for args, off in (([], True), (["--music", "auto"], False)):
+        assert _invoke(config, ["runs", "render", RUN, *args], rendered).exit_code == 0
+        assert rendered.pop()["request"].no_music is off

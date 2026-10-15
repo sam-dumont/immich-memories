@@ -155,6 +155,7 @@ def register_render_command(runs: click.Group) -> None:
                 print_error(f"Run {resolved} has no revision {revision}.")
                 sys.exit(1)
         from immich_memories.generate_captions import resolve_caption_overlays
+        from immich_memories.generate_music import music_turned_off
 
         add_date, add_place = resolve_caption_overlays(
             config, add_date=options["add_date"], add_place=options["add_place"]
@@ -177,7 +178,7 @@ def register_render_command(runs: click.Group) -> None:
             # "auto" is a request to choose, as generate reads it, not a file to load.
             music_path=Path(options["music"]) if options["music"] not in {None, "auto"} else None,
             music_volume=options["music_volume"],
-            no_music=options["no_music"],
+            no_music=music_turned_off(config, music=options["music"], no_music=options["no_music"]),
             original_audio=options["original_audio"],
             upload=options["upload_to_immich"],
             album=options["album"],

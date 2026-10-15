@@ -316,15 +316,18 @@ or had its title refused.
 
 ```mermaid
 flowchart TD
-    start["Pick the music"] --> nomusic{"--no-music?"}
+    start["Pick the music"] --> nomusic{"--no-music, or audio.no_music<br/>with no --music?"}
     nomusic -- yes --> silent["No music"]
     nomusic -- no --> file{"A track you chose?<br/>--music FILE, or an upload"}
     file -- yes --> yours["Your file, as you made it"]
     file -- no --> mood["A mood for the cut"]
     mood --> gen{"ACE-Step or MusicGen<br/>enabled?"}
     gen -- yes --> generated["Generated track"]
-    gen -- no --> bundled["Bundled track for the mood"]
-    generated -. fails .-> bundled
+    gen -- no --> own{"Your music folder<br/>has the mood?"}
+    own -- yes --> owntrack["Your track for the mood"]
+    own -- no --> bundled["Bundled track for the mood"]
+    generated -. fails .-> own
+    owntrack --> duck
     generated --> duck["Ducked under the clips' own sound"]
     bundled --> duck
     yours --> duck
@@ -372,7 +375,7 @@ video and in any completion notification, so a dead backend never passes for wor
 The bundled tracks come with the `music` extra, which the Docker image and the `all` extra include: 28
 royalty-free tracks in five moods (calm, energetic, happy, nostalgic, tender), about 30 s each, looped with a
 crossfade. They were generated locally with ACE-Step from nothing sampled; tempo, key and seed per track are in
-`LICENSE-MUSIC`. A pip install without the extra renders silent unless you pass a file. In a film with photos,
+`LICENSE-MUSIC`. A pip install without the extra renders silent unless you pass a file or fill your own music folder. In a film with photos,
 the pick prefers a track whose beat lands within 0.2 beats of the photo cadence. A film longer than one
 track gets a playlist from one mood folder only: the mood's own, or, with no mood, the folder of the
 track that fits the cadence or one picked at random, so the music never jumps from happy to nostalgic mid-film.
@@ -389,7 +392,7 @@ and clip.
 |---|---|
 | CLI | `--music PATH`, `--no-music`, `--music-volume` |
 | Web UI, Render | **Music**: Automatic (as configured), No music, a previewed track, an uploaded one, and **Music volume** |
-| Config | `advanced.ace_step.enabled`, `advanced.musicgen.enabled` |
+| Config | `audio.no_music`, `audio.local_music_dir`, `advanced.ace_step.enabled`, `advanced.musicgen.enabled` |
 
 ### Generated music {#install-locally-on-a-mac}
 
@@ -404,7 +407,7 @@ immich-memories music add compilation.mp4 output.mp4 --music ~/Music/track.mp3 -
 immich-memories music add compilation.mp4 output.mp4 --mood nostalgic
 ```
 
-`music search` reads `audio.local_music_dir` (`~/Music/Memories`). `music add` mixes a track under a video you
+`music search` reads `audio.local_music_dir` (`~/Music/Memories`), the folder films pick your own music from. `music add` mixes a track under a video you
 already have, with the same ducking. Without `--music` it picks a track from that folder by `--mood`, and by
 `calm` when you give none. A standalone video has no cut text to read, and no command here sends a frame to a
 model: pictures are read once, at ingest. To hear what a finished cut would get before you render it,

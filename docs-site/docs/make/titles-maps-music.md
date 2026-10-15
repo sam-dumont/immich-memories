@@ -132,6 +132,30 @@ immich-memories runs render RUN_ID --no-original-audio --music ~/Music/track.mp3
 
 Automatic uses a bundled track by default. A configured [music generator](../better/music.md) can make an original one and enables **Preview a track** so you can listen first. A failed generator falls back to a bundled track and leaves a warning.
 
+### Your own music folder
+
+Put your own tracks in `audio.local_music_dir` (`~/Music/Memories` unless you change it), one subfolder per mood, the way the bundled tracks are laid out:
+
+```text
+~/Music/Memories/
+  calm/       slow-piano.mp3, rain-guitar.flac
+  happy/      ukulele-morning.m4a
+  tender/     lullaby.opus
+```
+
+Automatic then picks from your folder instead of the bundled tracks, by the film's mood, the same way: a beat that fits the photo cadence first, and a playlist from one folder for a long film. Folder names are moods: calm, peaceful, tender, nostalgic, playful, happy, exciting, energetic, and the rarer ones (sad, romantic, dramatic, mysterious, inspiring, melancholic, uplifting). A playful film without a `playful` folder takes `happy`; peaceful takes `calm`, exciting `energetic` and romantic `tender`, as the bundled music does.
+
+A mood your folder lacks plays the bundled tracks for it. A mood neither has (a year in review starts as `inspiring`) picks from all of your folder. An empty or missing folder leaves the bundled music in charge, and the log says so without printing the path. A configured generator still comes first; your folder replaces the bundled fallback, not the generator. In Docker, mount the folder and point `audio.local_music_dir` at the mount.
+
+### No music by default
+
+```yaml
+audio:
+  no_music: true
+```
+
+Films then render without music on every surface: `generate`, `runs render`, the daily timer and triggered runs, and the web **Render** panel, which opens on **No music**. A run can still ask for music: `--music FILE`, `--music auto`, or picking **Automatic** or a track in the panel. `--no-music` turns it off for one film when the config leaves it on.
+
 Temporary files used to join and master bundled tracks are removed after mixing, including
 when the mix fails.
 

@@ -159,7 +159,7 @@ def resolve_music(
     # the Docker/NAS path gets by default.
     return _resolve_bundled_music(
         music_mood,
-        bundled_library,
+        _film_music_library(config, music_mood, bundled_library),
         assembly_clips,
         transition_overlap,
         video_duration,
@@ -167,6 +167,29 @@ def resolve_music(
         warning,
         fps=fps,
     )
+
+
+def _film_music_library(config: Config, mood: str | None, bundled: Path | None) -> Path | None:
+    """Your own music folder when it has the film's mood, else the bundled library."""
+    from immich_memories.audio.bundled_music import bundled_library, music_library_for_mood
+
+    audio = config.audio
+    named = audio.local_music_dir != type(audio).model_fields["local_music_dir"].default
+    return music_library_for_mood(
+        mood,
+        audio.local_music_path,
+        bundled if bundled is not None else bundled_library(),
+        own_library_named=named,
+    )
+
+
+def music_turned_off(config: Config, *, music: str | None, no_music: bool) -> bool:
+    """Whether a film plays without music: what the run asked, else ``audio.no_music``.
+
+    One rule for the CLI, the web render panel and automation. ``--no-music`` always
+    wins; any ``--music`` (a file, or ``auto``) asks for music despite the config.
+    """
+    return no_music or (music is None and config.audio.no_music)
 
 
 def _resolve_bundled_music(

@@ -134,7 +134,7 @@ path that is missing here, so a copied config fails up front instead of hours in
 | `advanced.editorial.preparation.marqo_onnx` | the pinned sensitive-content export |
 | `advanced.editorial.preparation.detector_cache_dir` | the Hugging Face cache the detectors read |
 | `advanced.editorial.preparation.detector_python` | an interpreter for the detector worker |
-| `audio.local_music_dir` | your own music, read by `immich-memories music` |
+| `audio.local_music_dir` | your own music, one folder per mood: films pick from it, and `immich-memories music` reads it |
 
 Blank is the default for `head_bundle`, `detector_python` and `detector_cache_dir`, and the portable
 value: it means "work it out here". A `detector_python` that is not on this host (a Mac venv

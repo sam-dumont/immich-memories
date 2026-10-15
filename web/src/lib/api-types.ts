@@ -2570,6 +2570,11 @@ export interface components {
              */
             generated_login: boolean;
             /**
+             * Music Off
+             * @default false
+             */
+            music_off: boolean;
+            /**
              * Music Preview Offered
              * @default false
              */

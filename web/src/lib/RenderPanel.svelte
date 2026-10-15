@@ -37,7 +37,8 @@
   let addPlace = $state(captions.add_place);
   let privacy = $state(false);
   let naming = $state<'' | 'model' | 'rules'>('');
-  let music = $state<string>('auto');
+  // audio.no_music, the rule generate and automation read too: the owner can still pick music.
+  let music = $state<string>(page.data.session?.music_off ? 'none' : 'auto');
   let volume = $state(0.5);
   let originalAudio = $state(true);
   let upload = $state(false);

@@ -127,7 +127,9 @@ class RenderOptions(BaseModel):
                 for n in either_way
                 if getattr(self, n) is not None
             ),
+            # "auto" is said out loud, so a film can have music when audio.no_music is on.
             *(["--no-music"] if self.music == "none" else []),
+            *(["--music=auto"] if self.music == "auto" else []),
             *([f"--music={music_path}"] if music_path else []),
             *(
                 []
