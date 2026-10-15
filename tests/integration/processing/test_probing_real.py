@@ -60,35 +60,6 @@ class TestGetVideoResolution:
 
 
 # ---------------------------------------------------------------------------
-# FFmpegProber.probe_duration
-# ---------------------------------------------------------------------------
-
-
-class TestProbeDuration:
-    def test_audio_duration(self, test_clip_720p: Path):
-        prober = _make_prober()
-        dur = prober.probe_duration(test_clip_720p, stream_type="audio")
-        assert 2.5 < dur < 3.5, f"Expected ~3s audio duration, got {dur}"
-
-    def test_video_duration(self, test_clip_720p: Path):
-        prober = _make_prober()
-        dur = prober.probe_duration(test_clip_720p, stream_type="video")
-        assert 2.5 < dur < 3.5, f"Expected ~3s video duration, got {dur}"
-
-    def test_no_audio_clip_falls_back_to_format(self, no_audio_clip: Path):
-        """Probing audio duration on a video-only file falls back to format duration."""
-        prober = _make_prober()
-        dur = prober.probe_duration(no_audio_clip, stream_type="audio")
-        # Should get format duration as fallback, not 0
-        assert dur > 0, "Should fall back to format duration for video-only files"
-
-    def test_short_clip_duration(self, short_clip: Path):
-        prober = _make_prober()
-        dur = prober.probe_duration(short_clip, stream_type="video")
-        assert 0.5 < dur < 1.5, f"Expected ~1s duration, got {dur}"
-
-
-# ---------------------------------------------------------------------------
 # FFmpegProber.probe_framerate
 # ---------------------------------------------------------------------------
 

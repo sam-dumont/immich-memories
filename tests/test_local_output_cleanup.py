@@ -86,3 +86,14 @@ def test_a_cleanup_that_fails_never_fails_the_confirmed_upload(tmp_path: Path) -
         assert film.exists()
     finally:
         locked.chmod(0o700)
+
+
+def test_a_folder_that_only_mentions_the_run_id_is_not_the_run_folder(tmp_path: Path) -> None:
+    """Only `<slug>_<run_id>` is the run's own folder; anything else is someone else's."""
+    for name in ("run-4-archive", "copies_of_run-4_keep"):
+        folder = tmp_path / name
+        folder.mkdir()
+        film = folder / "memory.mp4"
+        film.write_bytes(b"film")
+
+        assert local_output_directory(_run("run-4", film)) is None

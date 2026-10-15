@@ -40,6 +40,10 @@ To keep running without sign-in on purpose, say so: `auth.enabled: false` under 
 `server.allow_unauthenticated_lan` is gone: it is ignored with a warning. For LAN access without a
 login of its own, put the app behind your proxy and use header sign-in.
 
+A config whose `auth.password` is a `${VARIABLE}` nobody set now stops the server at start.
+Before, the password was the text `${VARIABLE}` itself. Set the variable, or remove the line to
+use the generated password.
+
 `immich-memories ui` still listens on `127.0.0.1` with the generated password. With sign-in on,
 the server answers any host name, since the sign-in is what protects it.
 

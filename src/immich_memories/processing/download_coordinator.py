@@ -16,7 +16,7 @@ import httpx
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.compatibility import ApiVersionPolicy
 from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
-from immich_memories.security import sanitize_error_message
+from immich_memories.security import sanitize_client_error
 
 if TYPE_CHECKING:
     from immich_memories.cache.video_cache import CacheBatch
@@ -217,7 +217,7 @@ class DownloadCoordinator:
             try:
                 client = self._client_factory()
             except Exception as exc:
-                safe_error = _safe_error_message(exc)
+                safe_error = sanitize_client_error(exc)
                 return {
                     download_id: DownloadResult(asset.id, download_id, None, safe_error)
                     for download_id, asset in assets
@@ -234,7 +234,7 @@ class DownloadCoordinator:
                 except Exception as exc:
                     logger.warning(
                         "Failed to close isolated download client: %s",
-                        _safe_error_message(exc, client),
+                        sanitize_client_error(exc, client),
                     )
         finally:
             with self._worker_lock:
@@ -250,7 +250,7 @@ class DownloadCoordinator:
                 return DownloadResult(asset.id, download_id, None, "download returned no file")
             return DownloadResult(asset.id, download_id, path)
         except (ImmichAPIError, httpx.HTTPError, OSError, RuntimeError, ValueError) as exc:
-            return DownloadResult(asset.id, download_id, None, _safe_error_message(exc, client))
+            return DownloadResult(asset.id, download_id, None, sanitize_client_error(exc, client))
 
     def _download_with_batch(self, client: SyncImmichClient, asset: PrefetchAsset) -> Path | None:
         if self._cache_batch is None:
@@ -264,12 +264,3 @@ class DownloadCoordinator:
     @staticmethod
     def _is_static_photo(asset: PrefetchAsset) -> bool:
         return getattr(asset.type, "value", asset.type) == "IMAGE" and not asset.live_photo_video_id
-
-
-def _safe_error_message(exc: Exception, client: SyncImmichClient | None = None) -> str:
-    """Return a coordinator diagnostic without credentials from a worker client."""
-    message = sanitize_error_message(str(exc))
-    api_key = getattr(client, "api_key", None)
-    if isinstance(api_key, str) and api_key:
-        message = message.replace(api_key, "***")
-    return message

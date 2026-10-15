@@ -48,7 +48,6 @@ def test_apple_backend_has_metal():
 
     # On macOS with FFmpeg built with VideoToolbox, Apple backend is detected
     if caps.backend == HWAccelBackend.APPLE:
-        assert caps.metal_available is True
         assert caps.supports_h264_encode is True
         assert caps.device_name != ""
 

@@ -153,9 +153,9 @@ def test_a_cache_that_cannot_be_written_still_returns_frames(tmp_path) -> None:
 
 def test_a_video_that_will_not_probe_reports_no_duration(tmp_path) -> None:
     """ffprobe fails on odd containers; even_timestamps has a fallback for it."""
-    from immich_memories.processing.frame_sampling import probe_duration
+    from immich_memories.processing.clip_probing import probe_format_duration
 
-    assert probe_duration(tmp_path / "does-not-exist.mp4") == 0.0
+    assert probe_format_duration(tmp_path / "does-not-exist.mp4") == 0.0
 
 
 def test_a_frame_that_will_not_extract_is_left_out(tmp_path) -> None:

@@ -118,6 +118,16 @@ class PeopleGraph:
     # The pictures a person needed to make the roster on this scan.
     min_assets: int = DEFAULT_MIN_ASSETS
 
+    def owner_record(self) -> dict[str, Any] | None:
+        """The owner as the people file and the evidence file write it, or None."""
+        if self.owner is None:
+            return None
+        return {
+            "person_id": self.owner.person_id,
+            "name": self.owner.name,
+            "identified": self.owner.identified,
+        }
+
 
 def build_graph(
     source: PeopleSource,

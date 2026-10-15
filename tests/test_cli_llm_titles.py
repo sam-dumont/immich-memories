@@ -163,32 +163,6 @@ def test_an_explicit_title_outranks_the_model() -> None:
     assert called == []
 
 
-def test_the_grouped_condition_travels_with_the_names() -> None:
-    """Either grandparent AND the child is a shape, not a list of three names."""
-    ask, seen = _answers()
-
-    resolve_film_title(
-        enabled=None,
-        title_override=None,
-        clips=[make_clip("clip-1")],
-        config=_config_with_llm(),
-        memory_type="special_day",
-        date_range=_RANGE,
-        person_names=["Ada Example", "Grace Example"],
-        memory_preset_params={
-            "person_expression": {
-                "all": [
-                    {"person": "Ada Example"},
-                    {"person": "Grace Example"},
-                ]
-            }
-        },
-        ask=ask,
-    )
-
-    assert seen["facts"].people_condition == '("Ada Example" AND "Grace Example")'
-
-
 def test_a_catalogued_day_hands_the_model_what_the_catalogue_saw() -> None:
     ask, seen = _answers(title="A day at the bowling alley")
 

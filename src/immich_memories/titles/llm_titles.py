@@ -1,4 +1,9 @@
-"""LLM-powered title generation for memory videos."""
+"""LLM-powered title generation for memory videos.
+
+The reader names the films the app does not title itself: a trip, an album, a special day.
+A typed film (a period, a person, a birthday, a holiday, a day across the years) gets the
+app's own title (`film_title.static_title`); the run never asks about one here.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +11,7 @@ import json
 import logging
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -16,13 +21,9 @@ import httpx
 from immich_memories.analysis.llm_query import query_llm
 from immich_memories.analysis.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
-from immich_memories.titles.period_title import leading_with_the_period
 from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
 from immich_memories.titles.title_guards import (
-    _template_title_text,
     eliding_french,
-    naming_everyone,
-    naming_the_birthday,
     refusing_a_wrong_year,
     refusing_contentless_title,
     refusing_invented_names,
@@ -37,7 +38,6 @@ from immich_memories.titles.title_guards import (
 from immich_memories.titles.title_routing import (
     OCCASION_MEMORY_TYPES,
     PEOPLE_MEMORY_TYPES,
-    PERIOD_MEMORY_TYPES,
     is_trip,
 )
 from immich_memories.titles.title_slots import closing_empty_slots
@@ -96,28 +96,22 @@ class TitlePrompt:
 class MemoryTitleFacts:
     """What the run knows about a memory beyond its dates, places and names.
 
-    Everything here is a recorded fact the title may use: the people condition
-    the selection ran on, the name the catalogue or the album owner already
-    gave the occasion, the names of the cut's own stories, and where to read
+    Everything here is a recorded fact the title may use: the name the
+    catalogue or the album owner already gave the occasion, the names of the cut's own stories, and where to read
     the family record. The cut's summary rides along for the model to read but
     is never a source of names, and no reading's raw text is: readings promote
     names off banners and signs, and a title may not invent.
     """
 
-    people_condition: str | None = None
-    person_match: str = "and"
     occasion_name: str | None = None
     album_name: str | None = None
     holiday: str | None = None
-    birthday: bool = False
     # The trip's place as trip naming chose it ("Crete, Greece"): the title must name it.
     place: str | None = None
     people_store: Store | None = None
     today: date | None = None
     # The stories the cut tells, heaviest first, and its summary.
     stories: FilmStories | None = None
-    # A period film's own title, as the rules write it ("Summer 2025"): the title it must lead with.
-    period_title: str | None = None
 
 
 def parse_title_response(raw: str) -> TitleSuggestion | None:
@@ -188,26 +182,6 @@ def _load_prompt_template(name: str = "title_generation.md") -> str:
     return _PROMPT_TEMPLATES[name]
 
 
-def _condition_text(preset: Mapping[str, Any]) -> str | None:
-    """The people condition the selection ran on, as one reads it aloud."""
-    raw = preset.get("person_expression")
-    if not raw:
-        return None
-    from immich_memories.api.person_expression import PersonExpression
-
-    try:
-        expression = PersonExpression.from_dict(raw)
-        display = preset.get("person_display_names")
-        if display is not None:
-            if any(not display.get(leaf) for leaf in expression.leaf_values):
-                return None
-            expression = expression.map_leaves(lambda leaf: display[leaf])
-        return str(expression)
-    except (TypeError, ValueError):
-        logger.debug("Unreadable people condition; the names carry the film", exc_info=True)
-        return None
-
-
 def _occasion_name(preset: Mapping[str, Any]) -> str | None:
     """What the catalogue saw on this day, months before anybody asked for a film.
 
@@ -245,12 +219,9 @@ def memory_title_facts(
     """
     preset = preset_params or {}
     return MemoryTitleFacts(
-        people_condition=_condition_text(preset),
-        person_match=str(preset.get("person_match") or "and"),
         occasion_name=_occasion_name(preset) or (str(preset.get("subject") or "").strip() or None),
         album_name=album_name or preset.get("album_name") or None,
         holiday=preset.get("holiday") or None,
-        birthday=bool(preset.get("birthday")),
         place=preset.get("location_name") or None,
     )
 
@@ -436,55 +407,6 @@ def _summary_line(stories: FilmStories | None) -> str:
     return f"\nWhat the film is about: {stories.summary}"
 
 
-def birthday_requirement_line(person_names: Sequence[str]) -> str:
-    """The fact line naming what `naming_the_birthday` checks: whose birthday the title names."""
-    whose = f"{person_names[0]}'s birthday" if person_names else "the birthday"
-    return f"Occasion the title or subtitle must name: {whose}"
-
-
-def _plain_condition(person_names: Sequence[str], match: str) -> str:
-    """The condition a plain --person run selected on, written the way one reads it."""
-    quoted = [json.dumps(name, ensure_ascii=False) for name in person_names]
-    if not quoted:
-        return "none recorded"
-    if len(quoted) == 1:
-        return quoted[0]
-    return "(" + (" OR " if match == "or" else " AND ").join(quoted) + ")"
-
-
-def _people_prompt(
-    lang: str,
-    memory_type: str,
-    start: date,
-    end: date,
-    person_names: Sequence[str],
-    facts: MemoryTitleFacts,
-    year_line: str,
-) -> TitlePrompt:
-    condition = facts.people_condition or _plain_condition(person_names, facts.person_match)
-    known = people_title_facts(person_names, start, end, people_store=facts.people_store)
-    if facts.album_name:
-        known += f"\nAlbum this film sits in: {facts.album_name}"
-    span = span_title_facts(
-        start, end, person_names, people_store=facts.people_store, today=facts.today
-    )
-    if facts.birthday:
-        span += f"; birthday celebrated: {end}"
-        year_line += "\n" + birthday_requirement_line(person_names)
-    stories = "".join(f"\n{line}" for line in _story_lines(facts.stories))
-    return TitlePrompt(
-        _load_prompt_template("title_people.md")
-        .replace("{lang}", lang)
-        .replace("{memory_type}", memory_type)
-        .replace("{condition}", condition)
-        .replace("{people_facts}", known)
-        .replace("{span}", span)
-        .replace("{story_facts}", stories + _summary_line(facts.stories))
-        .replace("{required_year}", year_line),
-        f"{condition}\n{known}\n{span}{stories}",
-    )
-
-
 def _occasion_lines(
     facts: MemoryTitleFacts,
     start: date,
@@ -499,8 +421,6 @@ def _occasion_lines(
         lines.append(f"Album name in Immich: {facts.album_name}")
     if facts.holiday:
         lines.append(f"Holiday: {facts.holiday}")
-    if facts.period_title:
-        lines.append(f"The period, as the calendar names it: {facts.period_title}")
     lines += _story_lines(facts.stories)
     if daily_locations:
         lines.append("Places by day:")
@@ -524,13 +444,6 @@ _OCCASION_RULES = (
     "its place; an album by its name, reworded only when the name is a date or a code; a "
     "holiday by the holiday and the family."
 )
-# How a period is named: by the period. What filled it is the subtitle's to say.
-_PERIOD_RULES = (
-    "- The title is the period itself, as the calendar names it in {lang} (the period fact "
-    "above), and nothing else: never a story, an album, a trip or a place.\n"
-    "- The subtitle names the heaviest story in the film, or the two heaviest, in {lang}. An "
-    "album name only when it is that story; with no story, the subtitle is null."
-)
 
 
 def _occasion_prompt(
@@ -548,7 +461,6 @@ def _occasion_prompt(
         start, end, person_names, people_store=facts.people_store, today=facts.today
     )
     known = "\n".join(_occasion_lines(facts, start, end, daily_locations, person_names))
-    rules = _PERIOD_RULES if memory_type in PERIOD_MEMORY_TYPES else _OCCASION_RULES
     return TitlePrompt(
         _load_prompt_template("title_occasion.md")
         .replace("{lang}", lang)
@@ -556,7 +468,7 @@ def _occasion_prompt(
         .replace("{span}", span)
         .replace("{occasion_facts}", known + _summary_line(facts.stories))
         .replace("{required_year}", year_line)
-        .replace("{naming_rules}", rules.replace("{lang}", lang)),
+        .replace("{naming_rules}", _OCCASION_RULES),
         f"{span}\n{known}",
     )
 
@@ -575,21 +487,15 @@ def build_title_prompt(
     smart_objects: list[str] | None = None,
     facts: MemoryTitleFacts | None = None,
 ) -> TitlePrompt:
-    """Build the prompt this memory is named from: people, occasion, or trip."""
+    """Build the prompt this memory is named from: an occasion, or a trip."""
     lang = _LOCALE_NAMES.get(locale, locale.capitalize())
     known = facts or MemoryTitleFacts()
     names = list(person_names or ())
     start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
-    if period := _period_of(known, memory_type, start, end, locale):
-        known = replace(known, period_title=period)
     year_line = _year_requirement_line(
-        required_years(
-            memory_type, start, end, tuple(names), known.holiday, birthday=known.birthday
-        )
+        required_years(memory_type, start, end, tuple(names), known.holiday)
     )
-    if memory_type in PEOPLE_MEMORY_TYPES:
-        return _people_prompt(lang, memory_type, start, end, names, known, year_line)
-    if memory_type in OCCASION_MEMORY_TYPES:
+    if memory_type in OCCASION_MEMORY_TYPES or memory_type in PEOPLE_MEMORY_TYPES:
         return _occasion_prompt(
             lang,
             memory_type,
@@ -662,21 +568,6 @@ def _trip_prompt(
     )
 
 
-def _period_of(
-    facts: MemoryTitleFacts | None, memory_type: str, start: date, end: date, locale: str
-) -> str | None:
-    """The period a period film's title must be, as the rules would title the film.
-
-    The run states it (it knows the home's hemisphere, which names a season); a
-    caller that did not gets the dates' own reading of it.
-    """
-    if memory_type not in PERIOD_MEMORY_TYPES:
-        return None
-    if facts and facts.period_title:
-        return facts.period_title
-    return _template_title_text(memory_type, start, end, (), locale)
-
-
 def _guarded_suggestion(
     parsed: TitleSuggestion | None,
     *,
@@ -693,10 +584,6 @@ def _guarded_suggestion(
     people_store = facts.people_store if facts else None
     suggestion = closing_empty_slots(eliding_french(parsed, locale), locale, person_names)
     suggestion = refusing_invented_names(suggestion, prompt.facts, locale)
-    period = _period_of(
-        facts, memory_type, date.fromisoformat(start_date), date.fromisoformat(end_date), locale
-    )
-    suggestion = leading_with_the_period(suggestion, memory_type, period)
     suggestion = refusing_unbacked_subtitle(
         suggestion, prompt.facts, memory_type, start_date, end_date, person_names, locale
     )
@@ -705,13 +592,7 @@ def _guarded_suggestion(
     )
     suggestion = refusing_a_wrong_year(suggestion, start_date, end_date)
     suggestion = requiring_the_year(
-        suggestion,
-        memory_type,
-        start_date,
-        end_date,
-        person_names,
-        holiday,
-        birthday=bool(facts and facts.birthday),
+        suggestion, memory_type, start_date, end_date, person_names, holiday
     )
     suggestion = refusing_single_year_title(
         suggestion, memory_type, start_date, end_date, person_names, holiday
@@ -719,12 +600,8 @@ def _guarded_suggestion(
     suggestion = refusing_contentless_title(
         suggestion, memory_type, start_date, end_date, person_names, locale
     )
-    suggestion = naming_the_birthday(suggestion, bool(facts and facts.birthday), locale)
-    suggestion = naming_everyone(
-        suggestion, memory_type, person_names, facts.people_condition if facts else None
-    )
     suggestion = separating_the_years(suggestion, person_names)
-    if memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES:
+    if memory_type in OCCASION_MEMORY_TYPES or memory_type in PEOPLE_MEMORY_TYPES:
         return suggestion
     return requiring_the_place(suggestion, facts.place if facts else None, locale)
 

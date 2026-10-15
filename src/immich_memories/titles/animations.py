@@ -161,61 +161,6 @@ class AnimationPreset:
         return values
 
 
-def reverse_preset(preset: AnimationPreset) -> AnimationPreset:
-    """Create a reversed version of an animation preset.
-
-    This reverses all animation properties so that the animation plays backward.
-    For example, if fade_up animates opacity 0→1 and y_offset 20→0,
-    the reversed version animates opacity 1→0 and y_offset 0→20.
-
-    Used for text fade-out at the end of title screens.
-
-    Args:
-        preset: The animation preset to reverse.
-
-    Returns:
-        A new AnimationPreset with reversed properties.
-    """
-    return AnimationPreset(
-        name=f"{preset.name}_reverse",
-        description=f"Reversed: {preset.description}",
-        duration_ms=preset.duration_ms,
-        easing=preset.easing,
-        stagger_ms=preset.stagger_ms,
-        opacity=AnimationProperty(
-            from_value=preset.opacity.to_value,
-            to_value=preset.opacity.from_value,
-        )
-        if preset.opacity
-        else None,
-        y_offset=AnimationProperty(
-            from_value=preset.y_offset.to_value,
-            to_value=preset.y_offset.from_value,
-        )
-        if preset.y_offset
-        else None,
-        x_offset=AnimationProperty(
-            from_value=preset.x_offset.to_value,
-            to_value=preset.x_offset.from_value,
-        )
-        if preset.x_offset
-        else None,
-        scale=AnimationProperty(
-            from_value=preset.scale.to_value,
-            to_value=preset.scale.from_value,
-        )
-        if preset.scale
-        else None,
-        blur=AnimationProperty(
-            from_value=preset.blur.to_value,
-            to_value=preset.blur.from_value,
-        )
-        if preset.blur
-        else None,
-        phases=[],  # Don't reverse complex phase animations
-    )
-
-
 # Pre-defined animation presets
 # Values increased for MORE VISIBLE motion (not subtle/static looking)
 TEXT_ANIMATIONS: dict[str, AnimationPreset] = {

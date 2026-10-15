@@ -38,7 +38,6 @@ CULL_BUCKETS = tuple(CULL_BUCKET_REASONS)
 # Given this third list it held four -- a photographed document and three shots
 # of a television -- and nothing else. Choosing between similar frames is a
 # later pass's work, so what lands here is not Cull's to act on.
-_RESPONSE_PLANNING_CHARS_PER_TOKEN = 3
 
 
 @dataclass(frozen=True)

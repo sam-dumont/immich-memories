@@ -21,6 +21,7 @@ if __package__:
     from .memory import (
         DEFAULT_OFFLINE_WORKING_SET_GIB,
         ensure_offline_process_memory,
+        fsync_directory,
         validate_offline_working_set_gib,
     )
 else:  # pragma: no cover - direct script invocation
@@ -30,6 +31,7 @@ else:  # pragma: no cover - direct script invocation
     from scripts.triage_heads.memory import (
         DEFAULT_OFFLINE_WORKING_SET_GIB,
         ensure_offline_process_memory,
+        fsync_directory,
         validate_offline_working_set_gib,
     )
 
@@ -578,14 +580,6 @@ def _load_manifest_bytes(payload: bytes) -> list[dict[str, str]]:
     return rows
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _temporary_path(path: Path) -> Path:
     descriptor, name = tempfile.mkstemp(
         prefix=path.name + ".",
@@ -626,7 +620,7 @@ def _write_json(path: Path, payload: Any) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         temporary.replace(path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -1411,7 +1405,7 @@ def _promote_artifact(
         except FileExistsError:
             if not _existing_promotion_matches(destination, identity):  # pragma: no cover
                 raise AssertionError("existing-promotion validation returned unexpectedly")
-        _fsync_directory(destination.parent)
+        fsync_directory(destination.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -1432,7 +1426,7 @@ def _upsert_metrics(path: Path, row: dict[str, Any]) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         temporary.replace(path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 

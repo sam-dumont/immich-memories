@@ -43,7 +43,6 @@ def _apple_capabilities() -> HWAccelCapabilities:
         backend=HWAccelBackend.APPLE,
         supports_h264_encode=True,
         supports_h265_encode=True,
-        prores_encode=True,
     )
 
 

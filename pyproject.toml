@@ -48,7 +48,6 @@ dependencies = [
     # Decode-only build of pillow-heif: no bundled x265 encoder, so no GPL (#1894).
     "pi-heif>=1.4",
     "numpy>=1.24",
-    "watchdog>=3.0",
     "geopy>=2.5.0",
     "staticmap>=0.5",
     "apprise>=1.11.0,<2",
@@ -84,11 +83,8 @@ dependencies = [
 music = [
     "immich-memories-music>=0.1.0",
 ]
-# Mac-specific dependencies for GPU-accelerated processing
+# Mac-specific: Metal tells the automatic tier that this Mac has a GPU.
 mac = [
-    "pyobjc-core>=9.0; sys_platform == 'darwin'",
-    "pyobjc-framework-Vision>=9.0; sys_platform == 'darwin'",
-    "pyobjc-framework-Quartz>=9.0; sys_platform == 'darwin'",
     "pyobjc-framework-Metal>=9.0; sys_platform == 'darwin'",
 ]
 # OIDC authentication (only needed for SSO login)
@@ -146,9 +142,10 @@ all = [
     "immich-memories[demucs]; sys_platform != 'linux' or platform_machine != 'aarch64'",
     "immich-memories[editorial]",
 ]
-# All features for macOS (includes Apple Vision framework)
+# All features for macOS (adds the Metal probe)
 all-mac = [
     "immich-memories[music]",
+    "immich-memories[auth]",
     "immich-memories[demucs]; sys_platform != 'linux' or platform_machine != 'aarch64'",
     "immich-memories[mac]",
     "immich-memories[editorial]",
@@ -394,11 +391,7 @@ warn_unused_ignores = false
 module = [
     "scenedetect.*",
     # macOS frameworks (PyObjC)
-    "Vision.*",
-    "Quartz.*",
-    "CoreImage.*",
     "Metal.*",
-    "objc.*",
     # Editorial preparation's encoder and detectors (optional, editorial extra).
     # CI installs only dev + gpu, so these imports must stay ignorable there
     # while still type-checking on a machine that has the extra.
@@ -457,7 +450,6 @@ module = [
     "immich_memories.analysis.scenes",
     "immich_memories.analysis.scoring",
     "immich_memories.analysis.face_scoring",
-    "immich_memories.analysis.apple_vision",
     "immich_memories.processing.scaling_utilities",
 ]
 disable_error_code = ["attr-defined", "call-overload", "union-attr", "assignment", "misc", "has-type"]
@@ -499,11 +491,6 @@ module = [
     "immich_memories.titles.ending_service",
 ]
 disable_error_code = ["attr-defined", "arg-type", "union-attr", "has-type"]
-
-# Title video encoding with optional subprocess pipes
-[[tool.mypy.overrides]]
-module = ["immich_memories.titles.video_encoding"]
-disable_error_code = ["union-attr", "arg-type"]
 
 # Title rendering service with optional kernel-library imports
 [[tool.mypy.overrides]]
@@ -553,16 +540,11 @@ exclude = ["tests", "docs", "scripts"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = [
-    "gunicorn",                                         # Runtime-only server
     "itsdangerous", "python-multipart",                 # Loaded by Starlette/FastAPI, never imported
-    "hatch-vcs", "hatchling",                           # Build-only
-    "semantic-release",                                 # CI-only
     "opencv-python",                                    # imported as cv2
     "pyyaml",                                           # imported as yaml
     "pillow",                                           # imported as PIL
-    "watchdog",                                         # runtime scheduler
-    "pyobjc-core", "pyobjc-framework-Vision",           # macOS-only, runtime
-    "pyobjc-framework-Quartz", "pyobjc-framework-Metal", # macOS GPU
+    "pyobjc-framework-Metal",                           # macOS GPU, imported dynamically
     "freetype-py",                                      # imported as freetype
     "pytest", "pytest-cov", "pytest-asyncio",           # dev tools (CLI usage)
     "pytest-benchmark", "pytest-xdist", "pytest-playwright", # dev tools
@@ -570,32 +552,28 @@ DEP002 = [
     "pillow-heif",                                      # encodes HEIC test inputs (tests/ is excluded)
     "mypy", "ruff",                                      # dev tools
     "pre-commit", "commitizen",                         # dev tools
-    "types-pyyaml",                                     # mypy stub
     "grimp",                                            # import-linter backend
     "refurb", "import-linter",                          # quality CLI tools
     "diff-cover", "deptry",                             # quality tools
     "python-semantic-release",                          # CI release tool
     "types-PyYAML",                                     # mypy stub
-    "authlib",                                          # auth: used in upcoming OIDC client task
-    "oidc-provider-mock",                               # auth: used in upcoming OIDC tests task
-    "demucs",                                           # optional: local stem separation
+    "oidc-provider-mock",                               # auth: the OIDC tests' provider (tests/ is excluded)
     "psycopg",                                          # loaded by SQLAlchemy's postgresql+psycopg dialect
     "onnxruntime-gpu",                                  # editorial-cuda: the CUDA variant of the ONNX seats
 ]
 DEP001 = [
-    "cv2", "Quartz", "Vision", "Metal", "CoreImage",   # Platform/alt-name imports
-    "yaml", "acestep", "soundfile", "scipy",            # Optional deps imported conditionally
+    "cv2",                                              # alt-name import
+    "yaml", "acestep",                                  # alt-name import; ACE-Step out of band
     # Optional: local audio pipeline. `torch` arrives with `demucs` and with the
     # ACE-Step stack installed out of band; nothing in this project declares it
     # any more, now that both detector seats are ONNX graphs.
-    "torch", "torchaudio", "demucs", "torchcodec", "loguru",
+    "torch", "loguru",
     "mlx", "safetensors",                               # Optional: owned ACE-Step MLX/weight path
     "laya_mlx",                                         # Optional: Laya audience pre-screen, out of band
-    "transformers", "huggingface_hub",                  # Optional: smart-turn, off by default
-    "PIL", "av", "freetype", "streamlit",               # Alt package names (Pillow→PIL, pyav→av)
+    "PIL", "freetype", "streamlit",                     # Alt package names (Pillow→PIL)
     "starlette",                                        # Transitive via fastapi→starlette
 ]
-DEP003 = ["PIL", "cv2", "yaml", "starlette"]  # Known transitive imports
+DEP003 = ["starlette"]  # Known transitive import
 
 # Architectural boundaries
 [tool.importlinter]

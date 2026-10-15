@@ -58,7 +58,7 @@ from .image_diversity import (
     describe_preview_bytes,
     selected_cluster_metrics,
 )
-from .memory import acquire_recovery_pipeline_lock
+from .memory import acquire_recovery_pipeline_lock, fsync_directory
 from .preview_store import pin_preview_store
 
 SEMANTIC_LAYOUT_VERSION = "dinov2-s14/l2-cls+l2-global-mean/l2/fp32-v1"
@@ -1534,14 +1534,6 @@ def select_semantic_cohort(
     )
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _private_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(path, 0o700)
@@ -1571,7 +1563,7 @@ def _write_create_only_idempotent(path: Path, payload: bytes) -> None:
             if path.read_bytes() != payload:
                 raise RuntimeError(f"existing {path.name} has different immutable content")
         os.chmod(path, 0o600)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -1945,7 +1937,7 @@ def materialize_semantic_refinement(
         output_dir / "semantic-refinement-public.json",
         _canonical_bytes(public_manifest),
     )
-    _fsync_directory(output_dir)
+    fsync_directory(output_dir)
     _assert_memory_limit(config.memory_limit_bytes)
     return SemanticRefinementArtifacts(
         output_dir=output_dir,

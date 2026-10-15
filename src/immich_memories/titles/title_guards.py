@@ -19,10 +19,10 @@ from datetime import date
 from difflib import SequenceMatcher
 from functools import lru_cache
 
-from immich_memories.i18n import elide_french, film_text
+from immich_memories.i18n import elide_french
 from immich_memories.titles.common_nouns import is_a_common_noun, own_words
 from immich_memories.titles.relationship_words import name_words
-from immich_memories.titles.title_routing import PERIOD_MEMORY_TYPES, is_trip
+from immich_memories.titles.title_routing import is_trip
 from immich_memories.titles.title_suggestion import TitleSuggestion
 
 logger = logging.getLogger(__name__)
@@ -274,57 +274,6 @@ def separating_the_years(
     return replace(suggestion, title=title)
 
 
-# Japanese, Korean and Chinese glue a particle to the name before it ("RobinとKit"), so these
-# scripts end a name the way a space would.
-_GLUED_SCRIPTS = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
-
-
-def _first_names_shown(text: str) -> set[str]:
-    return {word.casefold() for word in _name_words(_GLUED_SCRIPTS.sub(" ", text))}
-
-
-def _shows_first_name(name: str, shown: set[str], text: str) -> bool:
-    words = _name_words(name)
-    if not words:
-        return True
-    first = words[0].casefold()
-    if _GLUED_SCRIPTS.search(first):
-        return first in text.casefold()
-    return first in shown
-
-
-def naming_everyone(
-    suggestion: TitleSuggestion | None,
-    memory_type: str,
-    person_names: Sequence[str],
-    people_condition: str | None,
-) -> TitleSuggestion | None:
-    """The suggestion, unless a film about several people leaves one of them unnamed.
-
-    Every person a multi-person film was asked for appears by first name, in the title or
-    the subtitle, as the rules title shows the whole cast in its subtitle. Leaving one out
-    ("Kit in 2025" over a film of Robin and Kit) makes it somebody else's film, so the rules
-    title names this memory instead. A people expression is not checked: its condition can
-    name somebody the film leaves out ("Robin AND NOT Kit").
-    """
-    if suggestion is None or memory_type != "multi_person" or people_condition:
-        return suggestion
-    text = f"{suggestion.title} {suggestion.subtitle or ''}"
-    shown = _first_names_shown(text)
-    missing = [name for name in person_names if not _shows_first_name(name, shown, text)]
-    if len(person_names) < 2 or not missing:
-        return suggestion
-    logger.warning(
-        "Title %r (subtitle %r) leaves out %d of the film's %d people; "
-        "the template names this memory instead",
-        suggestion.title,
-        suggestion.subtitle,
-        len(missing),
-        len(person_names),
-    )
-    return None
-
-
 def names_the_place(title: str, place: str, locale: str) -> bool:
     """Whether `title` names the trip's place, in English or in `locale`.
 
@@ -385,8 +334,6 @@ def required_years(
     end: date,
     person_names: tuple[str, ...],
     holiday: str | None,
-    *,
-    birthday: bool = False,
 ) -> frozenset[int]:
     """The year(s) the BASIC template's own title would show for this memory.
 
@@ -402,8 +349,6 @@ def required_years(
     a lone year in full, but English abbreviates a cross-year season's end
     year ("Summer 2024–25"), which would under-read a two-year span here.
     """
-    if memory_type == "person_spotlight" and birthday:
-        return frozenset({end.year})
     if is_trip(memory_type):
         years = {start.year}
         if end.year != start.year:
@@ -446,8 +391,6 @@ def requiring_the_year(
     end_date: str,
     person_names: tuple[str, ...],
     holiday: str | None,
-    *,
-    birthday: bool = False,
 ) -> TitleSuggestion | None:
     """The suggestion, unless it drops a year the template title would show.
 
@@ -459,7 +402,7 @@ def requiring_the_year(
     if suggestion is None:
         return suggestion
     start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
-    required = required_years(memory_type, start, end, person_names, holiday, birthday=birthday)
+    required = required_years(memory_type, start, end, person_names, holiday)
     if not required:
         return suggestion
     combined = f"{suggestion.title} {suggestion.subtitle or ''}"
@@ -640,29 +583,6 @@ def _is_album_copy_shape(title: str) -> bool:
     return bool(_ALBUM_COPY_SHAPE.match(title.strip()))
 
 
-def naming_the_birthday(
-    suggestion: TitleSuggestion | None, birthday: bool, locale: str
-) -> TitleSuggestion | None:
-    """The suggestion, unless a birthday film's title and subtitle never say "birthday".
-
-    A birthday film titled "Kit en 2026" says nothing about what it celebrates; the template
-    ("2026", "Anniversaire de Kit") does. The word is the film language's own
-    (`title.birthday_word`), read as part of a longer word too ("Geburtstagsfeier", "誕生日").
-    """
-    if suggestion is None or not birthday:
-        return suggestion
-    word = "".join(_name_words(film_text("title.birthday_word", locale))).casefold()
-    said = "".join(_name_words(f"{suggestion.title} {suggestion.subtitle or ''}")).casefold()
-    if word and word in said:
-        return suggestion
-    logger.info(
-        "Title %r (subtitle %r) does not name the birthday; the template names this memory instead",
-        suggestion.title,
-        suggestion.subtitle,
-    )
-    return None
-
-
 def refusing_contentless_title(
     suggestion: TitleSuggestion | None,
     memory_type: str,
@@ -680,10 +600,6 @@ def refusing_contentless_title(
     """
     if suggestion is None:
         return suggestion
-    if memory_type in PERIOD_MEMORY_TYPES:
-        # A period film's title is the period (`leading_with_the_period`): what the model
-        # adds is its subtitle, and with none the rules title says the same thing plainer.
-        return suggestion if suggestion.subtitle else None
     if _is_album_copy_shape(suggestion.title):
         logger.info(
             "Title %r is the album-copy shape, not a crafted title; "

@@ -6,7 +6,6 @@ from enum import StrEnum
 class MemoryType(StrEnum):
     """Enumeration of all supported memory video types."""
 
-    # Phase 1
     YEAR_IN_REVIEW = "year_in_review"
     SEASON = "season"
     PERSON_SPOTLIGHT = "person_spotlight"
@@ -14,7 +13,6 @@ class MemoryType(StrEnum):
     MONTHLY_HIGHLIGHTS = "monthly_highlights"
     ON_THIS_DAY = "on_this_day"
     ALBUM = "album"
-    # Phase 2 (placeholders)
     HOLIDAY = "holiday"
     TRIP = "trip"
     # Discovered, not typed: its scope comes from a catalogue entry the library

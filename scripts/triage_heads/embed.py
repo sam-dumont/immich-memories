@@ -32,6 +32,7 @@ if __package__:
         acquire_pipeline_lock,
         ensure_offline_process_memory,
         ensure_private_directory,
+        fsync_directory,
         validate_offline_working_set_gib,
     )
     from .preview_store import verify_committed_preview_store
@@ -42,6 +43,7 @@ else:  # pragma: no cover - direct script invocation
         acquire_pipeline_lock,
         ensure_offline_process_memory,
         ensure_private_directory,
+        fsync_directory,
         validate_offline_working_set_gib,
     )
     from scripts.triage_heads.preview_store import verify_committed_preview_store
@@ -861,14 +863,6 @@ def _arguments(argv: list[str] | None = None) -> argparse.Namespace:
     return args
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _acquire_artifact_lock(
     directory: Path,
     *,
@@ -897,7 +891,7 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         temporary.replace(path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 

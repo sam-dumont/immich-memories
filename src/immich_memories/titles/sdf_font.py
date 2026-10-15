@@ -160,14 +160,17 @@ def _search_font_paths(candidates: list[str]) -> Path | None:
         if not search_path.exists():
             continue
         for candidate in candidates:
-            font_path = search_path / candidate
-            if font_path.exists():
-                return font_path
-            for subdir in search_path.iterdir():
-                if subdir.is_dir():
-                    font_path = subdir / candidate
-                    if font_path.exists():
-                        return font_path
+            if found := _candidate_in(search_path, candidate):
+                return found
+    return None
+
+
+def _candidate_in(search_path: Path, candidate: str) -> Path | None:
+    """The candidate file directly in `search_path`, else in one of its subfolders."""
+    for folder in (search_path, *(d for d in search_path.iterdir() if d.is_dir())):
+        font_path = folder / candidate
+        if font_path.exists():
+            return font_path
     return None
 
 

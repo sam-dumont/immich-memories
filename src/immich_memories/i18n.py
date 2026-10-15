@@ -158,21 +158,6 @@ def get_translator(
     return gettext.GNUTranslations(compiled)
 
 
-def _(message: str, locale_code: str = DEFAULT_LOCALE) -> str:
-    """Translate a message through gettext."""
-    return get_translator(locale_code).gettext(message)
-
-
-def ngettext(
-    singular: str,
-    plural: str,
-    n: int,
-    locale_code: str = DEFAULT_LOCALE,
-) -> str:
-    """Translate with plural support through gettext."""
-    return get_translator(locale_code).ngettext(singular, plural, n)
-
-
 def _capitalised(word: str) -> str:
     return word[:1].upper() + word[1:]
 

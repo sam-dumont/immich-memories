@@ -478,8 +478,6 @@ def _preprocess_privacy_audio(
 def _cleanup_temp_files(paths: list[Path]) -> None:
     for p in paths:
         p.unlink(missing_ok=True)
-        # Also clean up the intermediate .raw.wav if it wasn't deleted
-        p.with_suffix(".raw.wav").unlink(missing_ok=True)
 
 
 def _probe_duration(path: Path, *, probe_cache: ProbeCache | None = None) -> float:
@@ -491,13 +489,9 @@ def _probe_duration(path: Path, *, probe_cache: ProbeCache | None = None) -> flo
             return probe_cache.get(path).duration_seconds
         except (OSError, ProbeError, ValueError):
             return 0.0
-    result = subprocess.run(  # noqa: S603, S607
-        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    return float(result.stdout.strip()) if result.returncode == 0 else 0.0
+    from immich_memories.processing.clip_probing import probe_format_duration
+
+    return probe_format_duration(path)
 
 
 def mux_video_audio(

@@ -225,11 +225,6 @@ class LLMConfig(BaseModel):
         )
 
     @property
-    def configured(self) -> bool:
-        """Whether disabled settings name a reader beyond the built-in defaults."""
-        return bool(self.configured_fields)
-
-    @property
     def reasons(self) -> bool:
         """Whether this server may reason at all when a load-bearing call asks."""
         return self.thinking != "disabled"

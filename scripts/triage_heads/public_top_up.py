@@ -42,7 +42,7 @@ from scripts.triage_heads.image_diversity import (
     DESCRIPTOR_VERSION,
     confirmed_near_duplicate,
 )
-from scripts.triage_heads.memory import acquire_recovery_pipeline_lock
+from scripts.triage_heads.memory import acquire_recovery_pipeline_lock, fsync_directory
 from scripts.triage_heads.public_corpus import (
     CC_BY_2_0,
     LICENSE_NAME,
@@ -833,14 +833,6 @@ manifest is committed. Local source paths exist only in the private source lock.
 """
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _write_create_only(path: Path, payload: bytes, *, mode: int) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700 if mode == 0o600 else 0o755)
     if path.exists():
@@ -876,7 +868,7 @@ def _write_create_only(path: Path, payload: bytes, *, mode: int) -> None:
                 or path.read_bytes() != payload
             ):
                 raise RuntimeError(f"existing immutable file differs: {path}")
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -931,7 +923,7 @@ def _write_verified_image_create_only(row: VerifiedRow, destination: Path) -> No
                 or _file_sha256(destination) != row.content_sha256
             ):
                 raise RuntimeError(f"existing immutable image differs: {destination.name}")
-        _fsync_directory(destination.parent)
+        fsync_directory(destination.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -1219,7 +1211,7 @@ def _build_verified_top_up(
     for row in selected:
         _write_verified_image_create_only(row, output / "public" / "images" / f"{row.image_id}.jpg")
     _write_create_only(output / "public" / "manifest.json", _canonical_bytes(manifest), mode=0o644)
-    _fsync_directory(output)
+    fsync_directory(output)
     return verify_top_up_artifact(output, expected_manifest=manifest)
 
 

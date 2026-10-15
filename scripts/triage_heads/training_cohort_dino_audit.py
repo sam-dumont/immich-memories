@@ -800,5 +800,5 @@ def build_dino_diversity_audit(
         if target.exists() or target.is_symlink():
             raise RuntimeError("DINO audit output appeared before atomic publish")
         _publish_directory_noreplace(staging, target)
-        _v1._fsync_directory(target.parent)  # noqa: SLF001
+        _v1.fsync_directory(target.parent)
         return staged

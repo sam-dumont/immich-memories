@@ -36,7 +36,7 @@ from typing import Any, Protocol
 from urllib.parse import urlsplit
 
 from PIL import Image, UnidentifiedImageError
-from scripts.triage_heads.memory import acquire_recovery_pipeline_lock
+from scripts.triage_heads.memory import acquire_recovery_pipeline_lock, fsync_directory
 from scripts.triage_heads.public_corpus import (
     CC_BY_2_0,
     CVDF_IMAGE_URL,
@@ -775,14 +775,6 @@ def _write_create_only(path: Path, payload: bytes, *, mode: int = 0o600) -> None
     _regular_snapshot(path, mode=mode)
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 class _HeldLock:
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -840,7 +832,7 @@ def _ensure_plan_checkpoint(workspace: Path, plan: AcquisitionPlan) -> None:
     expected = _canonical_bytes(plan.as_payload())
     if not path.exists():
         _write_create_only(path, expected, mode=0o600)
-        _fsync_directory(workspace)
+        fsync_directory(workspace)
         return
     observed = _read_snapshot(
         path,
@@ -1149,12 +1141,12 @@ def _publish(
                 _canonical_bytes(_seal(expected_manifest, manifest_sha256=expected_digest)),
                 mode=0o600,
             )
-            _fsync_directory(images)
-            _fsync_directory(publishing)
+            fsync_directory(images)
+            fsync_directory(publishing)
             if output.exists():
                 raise ValueError("acquired source output appeared during create-only publish")
             os.rename(publishing, output)
-            _fsync_directory(output.parent)
+            fsync_directory(output.parent)
         except BaseException:
             if publishing.exists():
                 shutil.rmtree(publishing)
@@ -1204,7 +1196,7 @@ def acquire_from_plan(
                 raise ValueError("retrieval clock returned a noncanonical timestamp")
             image_path = workspace / "images" / f"{candidate.image_id}.jpg"
             _write_create_only(image_path, payload, mode=0o600)
-            _fsync_directory(image_path.parent)
+            fsync_directory(image_path.parent)
             record = {
                 "schema": ACQUISITION_WAL_SCHEMA,
                 "plan_sha256": plan.plan_sha256,

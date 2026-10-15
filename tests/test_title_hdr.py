@@ -132,12 +132,16 @@ class TestPlanDerivedTitleEncoding:
         assert plan.hdr is False
 
 
+def _get_best_encoder(plan: EncodingPlan) -> tuple[list[str], str]:
+    from immich_memories.titles.encoding import title_color_filter, title_encoder_args
+
+    return title_encoder_args(plan), title_color_filter(plan)
+
+
 class TestVideoEncodingPlan:
     """PIL title encoding derives color conversion from the plan."""
 
     def test_sdr_plan_embeds_bt709_tags_in_filter(self):
-        from immich_memories.titles.video_encoding import _get_best_encoder
-
         _, video_filter = _get_best_encoder(_software_h264_plan())
         assert "setparams=colorspace=bt709" in video_filter
         assert "color_primaries=bt709" in video_filter
@@ -171,8 +175,6 @@ class TestVideoEncodingPlan:
     def test_hdr_true_returns_hlg_filter(self):
         from unittest.mock import patch
 
-        from immich_memories.titles.video_encoding import _get_best_encoder
-
         with patch(
             "immich_memories.processing.hdr_utilities.check_zscale_available",
             return_value=True,
@@ -198,8 +200,6 @@ class TestVideoEncodingPlan:
         assert "color_trc=arib-std-b67" in video_filter
 
     def test_hdr_title_fails_instead_of_relabeling_when_zscale_is_missing(self):
-        from immich_memories.titles.video_encoding import _get_best_encoder
-
         with (
             patch(
                 "immich_memories.processing.hdr_utilities.check_zscale_available",
@@ -212,8 +212,6 @@ class TestVideoEncodingPlan:
     def test_pq_plan_uses_smpte2084_not_hlg(self):
         from unittest.mock import patch
 
-        from immich_memories.titles.video_encoding import _get_best_encoder
-
         with patch(
             "immich_memories.processing.hdr_utilities.check_zscale_available",
             return_value=True,
@@ -225,8 +223,6 @@ class TestVideoEncodingPlan:
         assert encoder_args[encoder_args.index("-color_trc") + 1] == "smpte2084"
 
     def test_hdr_false_no_color_metadata(self):
-        from immich_memories.titles.video_encoding import _get_best_encoder
-
         encoder_args, _ = _get_best_encoder(_software_h264_plan())
         assert "bt2020" not in encoder_args
         assert "arib-std-b67" not in encoder_args

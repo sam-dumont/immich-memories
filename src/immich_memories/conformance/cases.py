@@ -8,7 +8,6 @@ from immich_memories.conformance.audience_cases import audience_cases
 from immich_memories.conformance.catalogue_cases import catalogue_cases
 from immich_memories.conformance.editorial_cases import editorial_cases
 from immich_memories.conformance.episode_cases import episode_cases
-from immich_memories.conformance.fixtures import scratch_store
 from immich_memories.conformance.free_text_cases import free_text_cases
 from immich_memories.conformance.lexical_cases import lexical_cases
 from immich_memories.conformance.music_cases import music_cases
@@ -72,30 +71,6 @@ def trip_title(llm: LLMConfig) -> str:
     return "names Iceland, keeps its year, and classifies the moving driving itinerary"
 
 
-def people_title(llm: LLMConfig) -> str:
-    with scratch_store() as (_, store):
-        answer = asyncio.run(
-            generate_title_with_llm(
-                "person_spotlight",
-                "en",
-                "2030-01-01",
-                "2030-12-31",
-                365,
-                person_names=["Avery Example"],
-                facts=MemoryTitleFacts(people_store=store),
-                llm_config=llm,
-            )
-        )
-    assert answer is not None, (
-        "people title failed to parse, or was refused by a guard (an invented name, a missing year)"
-    )
-    assert "avery" in answer.title.lower(), "people title lost the named person"
-    assert "2030" in f"{answer.title} {answer.subtitle or ''}", (
-        "people title dropped the year the template would show"
-    )
-    return "names the synthetic person, keeps its year, without inventing a family relationship"
-
-
 def cases(llm: LLMConfig) -> tuple[Case, ...]:
     return (
         Case(
@@ -110,11 +85,6 @@ def cases(llm: LLMConfig) -> tuple[Case, ...]:
         Case(
             "trip title and route",
             partial(trip_title, llm),
-            frozenset({"titles.llm_titles:generate_title_with_llm"}),
-        ),
-        Case(
-            "people title",
-            partial(people_title, llm),
             frozenset({"titles.llm_titles:generate_title_with_llm"}),
         ),
         *free_text_cases(llm),

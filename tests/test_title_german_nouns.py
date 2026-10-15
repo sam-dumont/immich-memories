@@ -68,20 +68,6 @@ async def test_a_german_title_of_plain_nouns_passes(title, subtitle, span):
 
 
 @pytest.mark.asyncio
-async def test_a_german_birthday_title_passes():
-    result = await _titled(
-        "Kits fünfter Geburtstag 2025",
-        names=("Kit",),
-        memory_type="person_spotlight",
-        span=("2025-03-01", "2025-03-14"),
-        facts=MemoryTitleFacts(birthday=True),
-    )
-
-    assert result is not None
-    assert result.title == "Kits fünfter Geburtstag 2025"
-
-
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("title", "subtitle"),
     [

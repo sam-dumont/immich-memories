@@ -1431,7 +1431,7 @@ def _build_training_cohort_v2_staged(
         if publish_output_dir.exists() or publish_output_dir.is_symlink():
             raise RuntimeError("v2 output appeared before the atomic publish")
         os.rename(output_dir, publish_output_dir)
-        _v1._fsync_directory(publish_output_dir.parent)  # noqa: SLF001
+        _v1.fsync_directory(publish_output_dir.parent)
 
     ledger.commit_if_unchanged(
         expected_ledger_sha256=evidence.ledger_sha256,

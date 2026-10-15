@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from immich_memories.config_loader import Config
+from immich_memories.config_models import has_unresolved_env_reference
 
 MIN_SECRET_LENGTH = 32
 MIN_PASSWORD_LENGTH = 12
@@ -41,8 +42,19 @@ def startup_refusals(config: Config, environ: Mapping[str, str], session_secret:
             f"server.trigger_token is too weak: it needs {MIN_SECRET_LENGTH}+ random characters; "
             f"{_GENERATE}"
         )
+    if _password_names_an_unset_variable(config):
+        refusals.append(
+            "auth.password names an environment variable that is not set, so the password "
+            "would be the reference itself; set the variable, or remove auth.password to use "
+            "the generated sign-in"
+        )
     refusals.extend(_forwarding_refusals(config, environ.get("FORWARDED_ALLOW_IPS")))
     return refusals
+
+
+def _password_names_an_unset_variable(config: Config) -> bool:
+    auth = config.auth
+    return auth.enabled and auth.provider == "basic" and has_unresolved_env_reference(auth.password)
 
 
 def _forwarding_refusals(config: Config, forwarded_allow_ips: str | None) -> list[str]:

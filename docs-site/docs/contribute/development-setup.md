@@ -26,7 +26,7 @@ the GPU title kernels are a base dependency wherever they publish a wheel.
 | `make dev` | CPU `all` + `mac` + `dev`, and the built web client; includes torch and demucs | Default contributor setup |
 | `make dev-test` | dev tools only | Reproduce CI's lightweight test environment |
 | `make dev-ci` | dev tools only | Identical to `dev-test` today |
-| `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon app dependencies; Laya and ACE-Step need the installs below |
+| `make dev-mac` | dev + `all-mac` (Metal, sign-in with SSO, the editorial stack) | Apple Silicon app dependencies; Laya and ACE-Step need the installs below |
 
 For CUDA editorial development on Linux, use `uv sync --extra dev --extra editorial-cuda`.
 Do not combine it with `editorial`, `all` or `all-mac`: CPU and GPU ONNX distributions

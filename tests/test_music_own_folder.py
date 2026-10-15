@@ -142,3 +142,33 @@ def test_a_missing_folder_warns_only_when_someone_named_it(tmp_path, caplog, nam
         music_library_for_mood("happy", tmp_path / "absent", None, own_library_named=named)
 
     assert [record.levelno for record in caplog.records] == [level]
+
+
+def test_a_failed_generator_names_your_folder_as_the_stand_in(tmp_path, monkeypatch):
+    """The fallback warning says where the track came from, not "bundled" for your own."""
+    own = _library(tmp_path / "own", "own", ("happy",))
+    config = _config(own)
+    config.ace_step.enabled = True
+
+    def unreachable(*_args, **_kwargs):
+        raise ConnectionError("unreachable")
+
+    # WHY: stands in for the ACE-Step backend failing, which needs a model server.
+    monkeypatch.setattr("immich_memories.generate_music.auto_generate_music", unreachable)
+
+    selection = resolve_music(
+        config,
+        None,
+        no_music=False,
+        assembly_clips=[],
+        run_output_dir=tmp_path / "run",
+        memory_type="monthly_highlights",
+        bundled_library=_library(tmp_path / "bundled", "bundled", ("happy",)),
+        transition_overlap=0.0,
+    )
+
+    assert selection.path is not None and selection.path.name == "mastered_own-happy.wav"
+    assert selection.warning is not None
+    assert "used a track from your music folder instead" in selection.warning
+    assert "bundled" not in selection.warning
+    assert str(own) not in selection.warning

@@ -157,16 +157,25 @@ def resolve_music(
 
     # WHY: with no generator configured this used to return silence, which is what
     # the Docker/NAS path gets by default.
+    library = _film_music_library(config, music_mood, bundled_library)
     return _resolve_bundled_music(
         music_mood,
-        _film_music_library(config, music_mood, bundled_library),
+        library,
         assembly_clips,
         transition_overlap,
         video_duration,
         work_dir if work_dir is not None else run_output_dir,
         warning,
         fps=fps,
+        from_your_folder=library is not None and library == config.audio.local_music_path,
     )
+
+
+def own_music_available(config: Config) -> bool:
+    """Whether your music folder (`audio.local_music_dir`) holds tracks a film can play."""
+    from immich_memories.audio.bundled_music import library_has_tracks
+
+    return library_has_tracks(config.audio.local_music_path)
 
 
 def _film_music_library(config: Config, mood: str | None, bundled: Path | None) -> Path | None:
@@ -202,15 +211,22 @@ def _resolve_bundled_music(
     warning: str | None,
     *,
     fps: float = 30,
+    from_your_folder: bool = False,
 ) -> MusicSelection:
-    """The bundled fallback: one track, or a varied playlist for a long film."""
+    """The library fallback: one track, or a varied playlist for a long film.
+
+    The library is your music folder or the bundle (`_film_music_library`); a warning
+    says which one the track came from, never the folder's path.
+    """
+    where = "a track from your music folder" if from_your_folder else "a bundled track"
     cadence = photo_cadence_seconds(assembly_clips, transition_overlap=transition_overlap, fps=fps)
     # The film's music mood (#2471) picks the bundled family, so a birthday is not
     # served from the calm folder.
     bundled_sequence = _bundled_sequence(music_mood, bundled_library, cadence, video_duration)
     if not bundled_sequence:
         if warning:
-            warning = f"{warning}; no bundled track available; no music added"
+            missing = "no track in your music folder" if from_your_folder else "no bundled track"
+            warning = f"{warning}; {missing} available; no music added"
             logger.warning(warning)
         return MusicSelection(None, warning)
     if len(bundled_sequence) == 1:
@@ -222,7 +238,7 @@ def _resolve_bundled_music(
         track = _crossfaded_playlist(bundled_sequence, video_duration, run_output_dir)
     mastered = _master(track, run_output_dir)
     if warning:
-        warning = f"{warning}; used a bundled track instead"
+        warning = f"{warning}; used {where} instead"
         logger.warning(warning)
     return MusicSelection(mastered, warning)
 

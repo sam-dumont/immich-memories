@@ -119,20 +119,6 @@ class FFmpegProber:
             resolution_counts, total, orientation_str, res_4k, res_1080p, res_720p
         )
 
-    def probe_duration(self, file_path: Path, stream_type: str = "audio") -> float:
-        """Falls back to format duration if stream duration unavailable."""
-        try:
-            probe = self.probe_cache.get(file_path)
-            stream_duration = (
-                probe.audio_duration_seconds
-                if stream_type == "audio"
-                else probe.video_duration_seconds
-            )
-            return stream_duration or probe.duration_seconds
-        except (OSError, ProbeError, ValueError) as e:
-            logger.warning(f"Failed to probe {stream_type} duration of {file_path}: {e}")
-            return 0.0
-
     def probe_framerate(self, path: Path) -> float:
         try:
             fps = self.probe_cache.get(path).fps

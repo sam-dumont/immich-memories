@@ -39,29 +39,6 @@ REVEAL_SECONDS = 1.0
 _SOURCE_DECODE_TIMEOUT_SECONDS = 30
 
 
-def _probe_duration(clip_path: Path) -> float:
-    """Get video duration via ffprobe."""
-    try:
-        probe = subprocess.run(
-            [
-                "ffprobe",
-                "-v",
-                "error",
-                "-show_entries",
-                "format=duration",
-                "-of",
-                "default=noprint_wrappers=1:nokey=1",
-                str(clip_path),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        return float(probe.stdout.strip() or "3")
-    except (OSError, subprocess.SubprocessError, ValueError):
-        return 3.0
-
-
 class SlowmoBackgroundReader:
     """Generates smooth slow-motion frames without changing their transfer.
 
@@ -105,7 +82,9 @@ class SlowmoBackgroundReader:
         if not shutil.which("ffmpeg"):
             return
 
-        clip_duration = _probe_duration(clip_path)
+        from immich_memories.processing.clip_probing import probe_format_duration
+
+        clip_duration = probe_format_duration(clip_path) or 3.0
         # WHY the whole file for a reveal: its pre-render is exactly the
         # seconds the title borrows, and the clip resumes after its last frame.
         actual_source = clip_duration if self._reveal else min(source_seconds, clip_duration * 0.8)

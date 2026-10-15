@@ -18,6 +18,8 @@ from typing import Any
 
 from PIL import Image
 
+from .memory import fsync_directory
+
 DEFAULT_MEMORY_LIMIT_BYTES = 64 * 1024**3
 MAX_PREVIEW_BYTES = 32 * 1024**2
 _BASE_PRIVATE_ROW_KEYS = frozenset(
@@ -75,14 +77,6 @@ def _file_sha256(path: Path) -> str:
         return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 def _write_create_only(path: Path, payload: bytes) -> None:
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=path.name + ".",
@@ -97,7 +91,7 @@ def _write_create_only(path: Path, payload: bytes) -> None:
             os.fsync(handle.fileno())
         os.chmod(temporary, 0o600)
         os.link(temporary, path)
-        _fsync_directory(path.parent)
+        fsync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -752,7 +746,7 @@ def pin_available_preview_store(
         )
         _verify_available_store(destination, manifest)
         _write_create_only_idempotent(manifest_path, _canonical_bytes(manifest))
-        _fsync_directory(destination)
+        fsync_directory(destination)
         return manifest
 
     reusable_previews = _load_reusable_previews(
@@ -793,7 +787,7 @@ def pin_available_preview_store(
         memory_limit_bytes=memory_limit_bytes,
     )
     _write_create_only(manifest_path, _canonical_bytes(manifest))
-    _fsync_directory(destination)
+    fsync_directory(destination)
     return manifest
 
 
@@ -920,5 +914,5 @@ def pin_preview_store(
     }
     manifest["manifest_sha256"] = _canonical_sha256(manifest)
     _write_create_only(manifest_path, _canonical_bytes(manifest))
-    _fsync_directory(destination)
+    fsync_directory(destination)
     return manifest

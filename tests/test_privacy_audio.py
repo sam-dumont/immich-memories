@@ -78,3 +78,31 @@ class TestReverseSegments:
         result = reverse_speech_segments(audio, sample_rate=48000)
         correlation = np.abs(np.corrcoef(audio, result)[0, 1])
         assert correlation < 0.5, f"Too correlated: {correlation:.2f}"
+
+
+def test_privacy_audio_runs_on_a_plain_install(tmp_path, monkeypatch):
+    """Privacy mode works without the optional soundfile package (it ships only with demucs)."""
+    import subprocess
+    import sys
+    import wave
+
+    from immich_memories.processing.privacy_audio import apply_privacy_audio
+
+    source = tmp_path / "clip.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1.5",
+         "-c:a", "aac", str(source)],
+        capture_output=True,
+        check=True,
+    )  # fmt: skip
+    # WHY: hides the optional package the way a plain `pip install immich-memories` does.
+    monkeypatch.setitem(sys.modules, "soundfile", None)
+
+    output = tmp_path / "private.wav"
+    apply_privacy_audio(source, output)
+
+    with wave.open(str(output)) as written:
+        seconds = written.getnframes() / written.getframerate()
+        assert written.getnchannels() == 2
+        assert written.getframerate() == 48000
+    assert abs(seconds - 1.5) < 0.1

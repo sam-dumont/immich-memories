@@ -20,7 +20,7 @@ from immich_memories.api.asset_service import large_original_size
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.processing.hardware import HWAccelCapabilities
 from immich_memories.processing.probe_cache import ProbeCache, ProbeError
-from immich_memories.security import sanitize_error_message
+from immich_memories.security import sanitize_client_error
 
 if TYPE_CHECKING:
     from immich_memories.api.immich import SyncImmichClient
@@ -32,15 +32,6 @@ logger = logging.getLogger(__name__)
 
 _PARTIAL_SUFFIX = ".part"
 _PARTIAL_GRACE_SECONDS = 3600
-
-
-def _safe_download_error(exc: Exception, client: SyncImmichClient) -> str:
-    """Keep credentials out of cache-download diagnostics."""
-    message = sanitize_error_message(str(exc))
-    api_key = getattr(client, "api_key", None)
-    if isinstance(api_key, str) and api_key:
-        message = message.replace(api_key, "***")
-    return message
 
 
 @dataclass
@@ -422,7 +413,7 @@ class VideoDownloadCache:
             logger.warning("Downloaded file empty or missing: %s", dest)
         except (ImmichAPIError, httpx.HTTPError, OSError, RuntimeError) as e:
             logger.warning(
-                "Failed to download video %s: %s", download_id, _safe_download_error(e, client)
+                "Failed to download video %s: %s", download_id, sanitize_client_error(e, client)
             )
         finally:
             part.unlink(missing_ok=True)

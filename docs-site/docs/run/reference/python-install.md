@@ -10,7 +10,7 @@ title: "Python installation details"
 |---|---|
 | `editorial` | ONNX Runtime and Hugging Face Hub, for the context heads and the two detectors. The one you need |
 | `editorial-cuda` | The same on a CUDA host. **Replaces** `editorial`, never joins it |
-| `mac` | pyobjc bindings (Quartz, Metal, Vision) for hardware probing. Not enough to cut with alone |
+| `mac` | The pyobjc Metal binding, so the automatic tier sees the GPU. Not enough to cut with alone |
 | `music` | The bundled royalty-free track library |
 | `auth` | OIDC login (authlib) |
 | `demucs` | Local Demucs stem separation for music ducking (Torch, about 80 MB of model) |

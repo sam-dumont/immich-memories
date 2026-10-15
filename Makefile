@@ -966,7 +966,7 @@ diff-cover-ci:
 		if [ "$$COVERAGE_FILES" != "coverage.xml" ]; then \
 			echo "Merging local integration coverage with CI coverage"; \
 		fi; \
-		uvx diff-cover $$COVERAGE_FILES --compare-branch=origin/main --fail-under=80 --exclude "**/analysis/apple_vision*.py"; \
+		uvx diff-cover $$COVERAGE_FILES --compare-branch=origin/main --fail-under=80; \
 	fi
 
 # Build check (twine)

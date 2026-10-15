@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
+from immich_memories.processing.clip_probing import probe_format_duration
 from immich_memories.security import validate_audio_path, validate_video_path
 
 logger = logging.getLogger(__name__)
@@ -113,7 +114,7 @@ def get_audio_duration(audio_path: Path) -> float:
     """
     # Validate path before subprocess call
     validated_path = validate_audio_path(audio_path, must_exist=True)
-    return _get_duration_unchecked(validated_path)
+    return probe_format_duration(validated_path)
 
 
 def get_video_duration(video_path: Path) -> float:
@@ -128,27 +129,7 @@ def get_video_duration(video_path: Path) -> float:
     # Validate as video, then use audio duration probe (same ffprobe command)
     validated_path = validate_video_path(video_path, must_exist=True)
     # Re-use the audio duration function with validated path
-    return _get_duration_unchecked(validated_path)
-
-
-def _get_duration_unchecked(path: Path) -> float:
-    """Get duration without validation (internal use after validation)."""
-    cmd = [
-        "ffprobe",
-        "-v",
-        "error",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
-        str(path),
-    ]
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return float(result.stdout.strip())
-    except (subprocess.CalledProcessError, ValueError) as e:
-        logger.error(f"Could not get duration: {e}")
-        return 0.0
+    return probe_format_duration(validated_path)
 
 
 def plan_loop_copies(*, audio_duration: float, target_duration: float, crossfade: float) -> int:

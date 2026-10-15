@@ -36,15 +36,7 @@ def _print_title_test_params(
     table.add_row("Screen Type", screen_type)
     if screen_type == "title":
         if birthday_age:
-            ordinal = (
-                "st"
-                if birthday_age == 1
-                else "nd"
-                if birthday_age == 2
-                else "rd"
-                if birthday_age == 3
-                else "th"
-            )
+            ordinal = {1: "st", 2: "nd", 3: "rd"}.get(birthday_age, "th")
             table.add_row("Title Type", f"Birthday ({birthday_age}{ordinal} Year)")
         else:
             table.add_row("Title Type", "Calendar Year")

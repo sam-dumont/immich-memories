@@ -105,3 +105,19 @@ class TestCredentialFingerprint:
         fingerprint = security.credential_fingerprint("short-key")
         assert fingerprint != hashlib.sha256(b"short-key").hexdigest()
         assert "short-key" not in fingerprint
+
+
+def test_a_client_error_never_carries_the_client_key():
+    """A transport error that echoes the request keeps the client's key out of the log line."""
+    from types import SimpleNamespace
+
+    from immich_memories.security import sanitize_client_error
+
+    client = SimpleNamespace(api_key="k3y-from-the-account")
+    error = RuntimeError("GET /api/assets failed; sent k3y-from-the-account, Bearer abc")
+
+    message = sanitize_client_error(error, client)
+
+    assert "k3y-from-the-account" not in message
+    assert "Bearer abc" not in message
+    assert sanitize_client_error(RuntimeError("plain failure")) == "plain failure"

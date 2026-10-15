@@ -322,3 +322,16 @@ def sanitize_error_message(msg: str) -> str:
     msg = re.sub(r"Bearer\s+\S+", "Bearer ***", msg, flags=re.IGNORECASE)
     msg = re.sub(r"api[_-]?key['\"]?\s*[:=]\s*['\"]?\S+", "api_key=***", msg, flags=re.IGNORECASE)
     return msg
+
+
+def sanitize_client_error(exc: BaseException, client: object | None = None) -> str:
+    """The error as a log line, with token shapes stripped and the client's own key masked.
+
+    The key can appear verbatim in a transport error (a URL, an echoed header) without any
+    of the shapes `sanitize_error_message` recognises, so the client's key is masked too.
+    """
+    message = sanitize_error_message(str(exc))
+    api_key = getattr(client, "api_key", None)
+    if isinstance(api_key, str) and api_key:
+        message = message.replace(api_key, "***")
+    return message

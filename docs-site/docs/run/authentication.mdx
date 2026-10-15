@@ -71,6 +71,10 @@ advanced:
     password: ${MY_SECRET_PASSWORD}
 ```
 
+If `MY_SECRET_PASSWORD` is not set, the server refuses to start rather than take
+`${MY_SECRET_PASSWORD}` as the password. Set the variable, or drop the line to use the generated
+password.
+
 ## OIDC / SSO
 
 Any OpenID Connect provider, with PKCE, discovered from `issuer_url/.well-known/openid-configuration`.

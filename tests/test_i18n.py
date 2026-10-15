@@ -9,11 +9,9 @@ import pytest
 
 from immich_memories.i18n import (
     SUPPORTED_LOCALES,
-    _,
     detect_system_locale,
     get_month_name,
     get_ordinal,
-    ngettext,
     resolve_film_locale,
 )
 
@@ -194,28 +192,3 @@ class TestResolveFilmLocale:
     def test_unsupported_host_locale_falls_back_to_english(self):
         with patch.dict(os.environ, _env(LANG="sw_KE.UTF-8"), clear=False):
             assert resolve_film_locale("auto") == "en"
-
-
-# ---------------------------------------------------------------------------
-# ngettext
-# ---------------------------------------------------------------------------
-
-
-class TestNgettext:
-    def test_singular_and_plural(self):
-        # NullTranslations returns singular for n=1, plural otherwise
-        assert ngettext("item", "items", 1) == "item"
-        assert ngettext("item", "items", 2) == "items"
-        assert ngettext("item", "items", 0) == "items"
-
-
-# ---------------------------------------------------------------------------
-# _ translation function
-# ---------------------------------------------------------------------------
-
-
-class TestTranslateFunction:
-    def test_returns_string(self):
-        # NullTranslations returns the original string
-        result = _("hello", "en")
-        assert result == "hello"

@@ -57,7 +57,6 @@ docker:
 platform/mac:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/immich_memories/analysis/apple_vision.py'
           - '**/*apple*'
           - '**/*vision*'
           - '**/*metal*'

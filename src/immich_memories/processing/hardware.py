@@ -40,16 +40,9 @@ class HWAccelCapabilities:
     supports_h265_decode: bool = False
     supports_scaling: bool = False
     cuda_available: bool = False
-    metal_available: bool = False
     opencv_cuda: bool = False
     vram_mb: int = 0
     extra_info: dict = field(default_factory=dict)
-
-    # Apple-specific capabilities
-    vision_available: bool = False  # Apple Vision framework for face detection
-    neural_engine: bool = False  # Apple Neural Engine (ANE) for ML
-    prores_encode: bool = False  # ProRes encoding support
-    prores_decode: bool = False  # ProRes decoding support
 
     @property
     def has_encoding(self) -> bool:
@@ -473,72 +466,6 @@ def get_opencv_backend(capabilities: HWAccelCapabilities) -> str:
     return "cpu"
 
 
-# ---------------------------------------------------------------------------
-# Display / info helpers
-# ---------------------------------------------------------------------------
-
-
-def _format_gpu_info(capabilities: HWAccelCapabilities) -> list[str]:
-    _yn = {True: "Yes", False: "No"}
-    lines = [f"  GPU Scaling: {_yn[capabilities.supports_scaling]}"]
-
-    if capabilities.backend == HWAccelBackend.NVIDIA:
-        lines.extend(
-            (
-                f"  OpenCV CUDA: {_yn[capabilities.opencv_cuda]}",
-                f"  CUDA Available: {_yn[capabilities.cuda_available]}",
-            )
-        )
-
-    if capabilities.backend == HWAccelBackend.APPLE:
-        lines.extend(
-            (
-                f"  Metal Available: {_yn[capabilities.metal_available]}",
-                f"  Vision Framework: {_yn[capabilities.vision_available]}",
-                f"  Neural Engine: {_yn[capabilities.neural_engine]}",
-            )
-        )
-
-    return lines
-
-
-def print_hardware_info(capabilities: HWAccelCapabilities) -> None:
-    _yn = {True: "Yes", False: "No"}
-
-    print("\n=== Hardware Acceleration Info ===")
-    print(f"Backend: {capabilities.backend.value}")
-    print(f"Device: {capabilities.device_name or 'Unknown'}")
-
-    if capabilities.vram_mb > 0:
-        if capabilities.vram_mb >= 1024:
-            print(f"Memory: {capabilities.vram_mb / 1024:.1f} GB")
-        else:
-            print(f"Memory: {capabilities.vram_mb} MB")
-
-    print("\nVideo Encoding/Decoding:")
-    print(f"  H.264 Encode: {_yn[capabilities.supports_h264_encode]}")
-    print(f"  H.265 Encode: {_yn[capabilities.supports_h265_encode]}")
-    print(f"  H.264 Decode: {_yn[capabilities.supports_h264_decode]}")
-    print(f"  H.265 Decode: {_yn[capabilities.supports_h265_decode]}")
-
-    # Apple-specific capabilities
-    if capabilities.backend == HWAccelBackend.APPLE:
-        print(f"  ProRes Encode: {_yn[capabilities.prores_encode]}")
-        print(f"  ProRes Decode: {_yn[capabilities.prores_decode]}")
-
-    print("\nGPU Processing:")
-    for line in _format_gpu_info(capabilities):
-        print(line)
-
-    if capabilities.extra_info:
-        print("\nAdditional Info:")
-        for key, value in capabilities.extra_info.items():
-            # Format key nicely
-            formatted_key = key.replace("_", " ").title()
-            print(f"  {formatted_key}: {value}")
-    print()
-
-
 # Temp files for analysis and previews are never shown to anyone, so they run at
 # the CRF the "low" quality preset means. The rate control comes from the same
 # mapping the final output uses, so "CRF 28" costs the same picture on every
@@ -596,5 +523,4 @@ __all__ = [
     "get_ffmpeg_scale_filter",
     "get_opencv_backend",
     "nvenc_capability_hint",
-    "print_hardware_info",
 ]

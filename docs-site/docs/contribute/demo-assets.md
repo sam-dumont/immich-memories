@@ -24,7 +24,7 @@ The docs use the app’s pinned `@immich/ui` theme tokens. After updating that p
 
 ## Fixture and asset contracts
 
-Use only the credited CC0 demo fixture for public library pictures. The private test households are separate: their real-person photos must never appear in screenshots, demos, hosted previews or the public website. Only anonymous aggregate test results may leave them.
+Use only the credited demo fixture (CC0 and CC BY) for public library pictures. The private test households are separate: their real-person photos must never appear in screenshots, demos, hosted previews or the public website. Only anonymous aggregate test results may leave them.
 
 Nothing on the docs site or in the README is a screenshot of a real library. The demo is a
 React recreation of the UI rendered with Remotion over the demo library, the CLI demo is a VHS

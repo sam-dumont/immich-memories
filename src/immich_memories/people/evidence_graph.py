@@ -45,7 +45,7 @@ def save_evidence_graph(
     document = {
         "version": SCHEMA_VERSION,
         "generated": (graph.built_at or datetime.now()).isoformat(timespec="seconds"),
-        "owner": _owner_block(graph),
+        "owner": graph.owner_record(),
         "nodes": [_node_block(node) for node in graph.people],
         "edges": [
             {
@@ -118,16 +118,6 @@ def _node_block(node: PersonNode) -> dict[str, Any]:
         "last_month": _month(person.last_month),
         "onset": _month(person.onset),
         "tier": node.tier.value,
-    }
-
-
-def _owner_block(graph: PeopleGraph) -> dict[str, Any] | None:
-    if graph.owner is None:
-        return None
-    return {
-        "person_id": graph.owner.person_id,
-        "name": graph.owner.name,
-        "identified": graph.owner.identified,
     }
 
 

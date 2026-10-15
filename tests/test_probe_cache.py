@@ -73,7 +73,6 @@ def test_one_probe_supplies_all_source_metadata(
         probe.rotation,
         probe.fps,
     ) == (5.12, (1080, 1920), "hevc", "hlg", True, 90, 60000 / 1001)
-    assert probe.audio_duration_seconds == 5.08
     assert probe.video_duration_seconds == 5.10
     assert probe.audio_bitrate == 192000
     assert probe.audio_sample_rate == 48000
@@ -215,7 +214,6 @@ def test_source_probe_helpers_share_one_caller_owned_cache(tmp_path: Path, monke
     assert get_main_video_stream_map(source, probe_cache=cache) == "0:v:0"
     assert prober.get_video_resolution(source) == (1080, 1920)
     assert prober.probe_framerate(source) == pytest.approx(59.94, abs=0.01)
-    assert prober.probe_duration(source, "audio") == 5.08
     assert prober.has_audio_stream(source) is True
     assert detect_dominant_hdr_transfer([clip], probe_cache=cache) is HdrTransfer.HLG
     assert calls == 1

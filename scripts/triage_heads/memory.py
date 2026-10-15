@@ -17,6 +17,15 @@ HARD_MAX_OFFLINE_WORKING_SET_GIB = 8.0
 DEFAULT_PIPELINE_ROOT = Path.home() / ".immich-memories-matrix" / "triage-heads"
 
 
+def fsync_directory(path: Path) -> None:
+    """Flush a directory entry so a just-renamed file survives a crash."""
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def ensure_private_directory(path: Path) -> Path:
     """Create or tighten one local artifact directory to owner-only access."""
     directory = Path(path)
