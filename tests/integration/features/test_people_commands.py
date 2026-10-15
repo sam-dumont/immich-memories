@@ -352,3 +352,33 @@ def test_runs_list_person_lists_only_that_persons_runs(fresh_home: UserHome):
     assert "Showing 1 run" in listed, listed
     assert "No runs found" in nobody
     assert {kit, pat, everyone.run_id} <= set(re.findall(r"\d{8}_\d{6}_[0-9a-f]{4}", every_run))
+
+
+@pytest.mark.feature("runs.list-by-person")
+def test_a_run_about_two_people_is_listed_under_either_name(fresh_home: UserHome):
+    together = cut(
+        fresh_home,
+        "generate",
+        "--memory-type",
+        "multi_person",
+        "--person",
+        "Kit",
+        "--person",
+        "Pat",
+        "--person-match",
+        "or",
+        "--start",
+        _FOREST_DAY,
+        "--end",
+        "2025-07-07",
+        *_PICTURES,
+    ).run_id
+
+    by_first = _ok(fresh_home, "runs", "list", "--person", "Kit")
+    by_second = _ok(fresh_home, "runs", "list", "--person", "pat")
+    shown = _ok(fresh_home, "runs", "show", together)
+
+    assert together in by_first
+    assert together in by_second, by_second
+    assert "Kit, Pat" in by_second, by_second
+    assert "Kit, Pat" in shown, shown

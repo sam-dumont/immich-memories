@@ -46,3 +46,14 @@ def owner_edits_of_attempt(store: Store, attempt_id: str) -> list[dict[str, Any]
                 .order_by(owner_edits.c.recorded_at, owner_edits.c.edit_id)
             ).scalars()
         )
+
+
+def owner_edits_of_film(store: Store, attempt_id: str, film_stem: str) -> dict[str, Any] | None:
+    """The review edits one film was rendered with, or None when it played the cut as chosen."""
+    with store.connect() as connection:
+        return connection.execute(
+            sa.select(owner_edits.c.record)
+            .where(owner_edits.c.attempt_id == attempt_id, owner_edits.c.film_stem == film_stem)
+            .order_by(owner_edits.c.recorded_at.desc(), owner_edits.c.edit_id.desc())
+            .limit(1)
+        ).scalar()

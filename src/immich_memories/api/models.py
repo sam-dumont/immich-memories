@@ -428,7 +428,6 @@ class VideoClipInfo(BaseModel):
     codec: str = ""
     rotation: int = 0  # Rotation metadata (0, 90, 180, 270) - affects displayed orientation
     # HDR metadata
-    color_space: str | None = None  # e.g., "bt2020nc"
     color_transfer: str | None = None  # e.g., "smpte2084" (HDR10), "arib-std-b67" (HLG)
     color_primaries: str | None = None  # e.g., "bt2020"
     bit_depth: int | None = None  # 8, 10, 12

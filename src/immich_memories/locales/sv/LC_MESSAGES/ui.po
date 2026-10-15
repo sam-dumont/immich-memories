@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-15 06:04+0200\n"
+"POT-Creation-Date: 2026-10-15 08:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -33,7 +33,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "En månadssammanfattning har redan skapats den här månaden."
 
-#: web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:92
 msgid "API Key"
 msgstr "API-nyckel"
 
@@ -237,7 +237,7 @@ msgstr "Suddig bakgrund"
 msgid "Browse the whole pool"
 msgstr "Bläddra bland alla tillgängliga medier"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:114 web/routes/settings/+page.svelte:115
 msgid "Caches"
 msgstr "Cachar"
 
@@ -310,6 +310,10 @@ msgstr "Kontrollerar videoklipp för täckt objektiv"
 msgid "Checking video frames for the family audience"
 msgstr "Kontrollerar videobildrutor för familjepublik"
 
+#: web/lib/SettingsChecks.svelte:41 web/lib/SettingsChecks.svelte:43
+msgid "Checks"
+msgstr "Kontroller"
+
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "Välj ett album"
@@ -326,7 +330,7 @@ msgstr ""
 "Välj vad filmen ska berätta. Kommandot nedan förbereder klippningen; du kan granska den innan"
 " renderingen börjar."
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:120
 msgid "Clear"
 msgstr "Rensa"
 
@@ -338,7 +342,7 @@ msgstr "Ta bort spärr"
 msgid "Clear this hold?"
 msgstr "Ta bort den här spärren?"
 
-#: web/routes/settings/+page.svelte:70
+#: web/routes/settings/+page.svelte:72
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} poster rensades från {cache}."
@@ -360,11 +364,15 @@ msgstr "Slutfört"
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsfil: {config_path}"
 
+#: web/lib/SettingsChecks.svelte:47
+msgid "Config warnings"
+msgstr "Konfigurationsvarningar"
+
 #: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
 msgid "Configuration"
 msgstr "Konfiguration"
 
-#: web/routes/settings/+page.svelte:59
+#: web/routes/settings/+page.svelte:61
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Ansluten som: {name}"
@@ -534,10 +542,14 @@ msgstr "Sluta här"
 msgid "Ends"
 msgstr "Slutar"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:119
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Poster: {count}"
+
+#: web/lib/SettingsChecks.svelte:21
+msgid "Error"
+msgstr "Fel"
 
 #: web/lib/PhaseTimeline.svelte:22
 msgid "Estimate based on available measurements. It can change as work progresses."
@@ -553,7 +565,7 @@ msgstr ""
 "eller avmarkera bilder och öppna förhandsvisningen: ditt urval används precis som det är i "
 "filmen. Valen ”Använd aldrig” och ”Ta bort spärr” gäller även vid kommande körningar."
 
-#: web/routes/settings/+page.svelte:81
+#: web/routes/settings/+page.svelte:83
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -673,11 +685,11 @@ msgstr "Hur reglerna ledde till det här urvalet"
 msgid "How the sentence was read"
 msgstr "Hur meningen tolkades"
 
-#: web/routes/settings/+page.svelte:84 web/routes/settings/+page.svelte:85
+#: web/routes/settings/+page.svelte:86 web/routes/settings/+page.svelte:87
 msgid "Immich Connection"
 msgstr "Immich-anslutning"
 
-#: web/routes/settings/+page.svelte:87
+#: web/routes/settings/+page.svelte:89
 msgid "Immich Server URL"
 msgstr "Immich-serverns URL"
 
@@ -801,6 +813,10 @@ msgstr "Live"
 #: web/lib/JobPanel.svelte:95
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "Liveuppdateringar frånkopplade. Kontrollerar jobbets sparade status."
+
+#: web/lib/SettingsChecks.svelte:48
+msgid "Loading your config warned about these keys:"
+msgstr "När konfigurationen lästes in varnade den för dessa nycklar:"
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -993,7 +1009,7 @@ msgstr "Ingen motivering sparad för den här bilden."
 msgid "No rule the preview can check would drop a picture."
 msgstr "Ingen regel som förhandsvisningen kan kontrollera skulle sortera bort en bild."
 
-#: web/routes/runs/+page.svelte:121
+#: web/routes/runs/+page.svelte:122
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Inga körningar matchar den här vyn. Skapa ett minne från Minne eller Förslag."
 
@@ -1062,6 +1078,10 @@ msgstr "Anteckningar"
 #: web/lib/people/RelationshipRows.svelte:62
 msgid "Nothing recorded yet."
 msgstr "Inget registrerat ännu."
+
+#: web/lib/SettingsChecks.svelte:19
+msgid "OK"
+msgstr "OK"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1151,7 +1171,7 @@ msgid "Pending"
 msgstr "Väntar"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:105 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/+page.svelte:107 web/routes/settings/people/+page.svelte:113
 #: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "Personer"
@@ -1237,6 +1257,10 @@ msgstr "Stående"
 msgid "Possible"
 msgstr "Möjligt"
 
+#: web/lib/SettingsChecks.svelte:55
+msgid "Preflight checks"
+msgstr "Förkontroller"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare pictures"
 msgstr "Förbered bilder"
@@ -1244,6 +1268,10 @@ msgstr "Förbered bilder"
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare selected clips"
 msgstr "Förbered valda klipp"
+
+#: web/routes/settings/+page.svelte:32
+msgid "Prepared-source cache"
+msgstr "Cache för förberedda källor"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1406,6 +1434,14 @@ msgstr "Detaljer om körningen"
 msgid "Run not found. It may have been removed."
 msgstr "Körningen hittades inte. Den kan ha tagits bort."
 
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the checks again"
+msgstr "Kör kontrollerna igen"
+
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the preflight checks"
+msgstr "Kör förkontrollerna"
+
 #: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "Kör det här förslaget"
@@ -1418,6 +1454,10 @@ msgstr "Pågår"
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
+
+#: web/lib/SettingsChecks.svelte:68
+msgid "Running the preflight checks..."
+msgstr "Förkontrollerna körs..."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
@@ -1441,7 +1481,7 @@ msgstr "Samplar videobildrutor"
 msgid "Save"
 msgstr "Spara"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:98
 msgid "Save Config"
 msgstr "Spara konfiguration"
 
@@ -1453,7 +1493,7 @@ msgstr "Spara grupp"
 msgid "Save revision"
 msgstr "Spara version"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:92
+#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:94
 msgid "Saved - type a new key to replace it"
 msgstr "Sparad. Skriv en ny nyckel för att ersätta den"
 
@@ -1476,7 +1516,7 @@ msgstr "Sparad här"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet används"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:64
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:66
 msgid "Saved to the database"
 msgstr "Sparad i databasen"
 
@@ -1524,8 +1564,8 @@ msgstr "Satt av {name} (miljö)"
 msgid "Set in config.yaml as {key}"
 msgstr "Satt i config.yaml som {key}"
 
-#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:76
-#: web/routes/settings/+page.svelte:80 web/routes/settings/people/+page.svelte:118
+#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:78
+#: web/routes/settings/+page.svelte:82 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "Inställningar"
 
@@ -1558,7 +1598,7 @@ msgstr "Logga ut"
 msgid "Sign-in expired. Try again."
 msgstr "Inloggningen har gått ut. Försök igen."
 
-#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:34
+#: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
 msgstr "Överhoppat"
 
@@ -1667,7 +1707,7 @@ msgstr "Utbytt"
 msgid "Take out"
 msgstr "Ta bort"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:97
 msgid "Test Connection"
 msgstr "Testa anslutning"
 
@@ -1699,7 +1739,11 @@ msgstr ""
 "API-nyckelns kontonamn har inte kopplats till någon namngiven person. Välj ägaren, eller "
 "namnge personer i Immich och skanna igen."
 
-#: web/routes/settings/+page.svelte:55
+#: web/lib/SettingsChecks.svelte:70
+msgid "The checks could not be run."
+msgstr "Kontrollerna kunde inte köras."
+
+#: web/routes/settings/+page.svelte:57
 msgid "The connection could not be checked."
 msgstr "Anslutningen kunde inte kontrolleras."
 
@@ -1820,7 +1864,7 @@ msgstr "Rapporten kunde inte läsas in."
 msgid "The revision could not be saved."
 msgstr "Versionen kunde inte sparas."
 
-#: web/routes/runs/+page.svelte:126
+#: web/routes/runs/+page.svelte:127
 msgid "The runs could not be loaded."
 msgstr "Körningarna kunde inte läsas in."
 
@@ -1870,7 +1914,7 @@ msgstr ""
 "Den här servern skapade ett eget lösenord och skrev det en gång i sin logg (docker compose "
 "logs immich-memories). Kör immich-memories auth reset-password för att skapa ett nytt."
 
-#: web/routes/settings/+page.svelte:30
+#: web/routes/settings/+page.svelte:31
 msgid "Thumbnail cache"
 msgstr "Miniatyrbildscache"
 
@@ -1918,7 +1962,7 @@ msgstr "Resedetekteringen misslyckades."
 msgid "Trips"
 msgstr "Resor"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "Försök igen"
 
@@ -1991,7 +2035,7 @@ msgstr "Utlåtande"
 msgid "Video"
 msgstr "Video"
 
-#: web/routes/settings/+page.svelte:29
+#: web/routes/settings/+page.svelte:30
 msgid "Video cache"
 msgstr "Videocache"
 
@@ -2015,6 +2059,10 @@ msgstr "Visa i Immich"
 #: web/lib/RenderPanel.svelte:187
 msgid "Vintage charm"
 msgstr "Nostalgisk charm"
+
+#: web/lib/SettingsChecks.svelte:20
+msgid "Warning"
+msgstr "Varning"
 
 #: web/routes/login/+page.svelte:53
 msgid "Watch your memories again, in films you can make your own."
@@ -2065,7 +2113,7 @@ msgstr "Vit"
 msgid "Who"
 msgstr "Vem"
 
-#: web/routes/settings/+page.svelte:105
+#: web/routes/settings/+page.svelte:107
 msgid "Who is who, their roles and relationships."
 msgstr "Vem som är vem, deras roller och relationer."
 

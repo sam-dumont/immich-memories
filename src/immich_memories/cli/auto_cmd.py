@@ -502,22 +502,23 @@ def test_notification(ctx: click.Context) -> None:
     config: Config = ctx.obj["config"]
     notif = config.notifications
 
+    # Nothing sent is a failure whatever the reason: scripts read the exit code.
     if not notif.enabled:
-        print_info("Notifications are disabled — set notifications.enabled: true in config")
-        return
+        print_error("Notifications are disabled — set notifications.enabled: true in config")
+        ctx.exit(1)
     if not notif.urls:
-        print_info("No notification URLs configured — add URLs to notifications.urls in config")
-        return
+        print_error("No notification URLs configured — add URLs to notifications.urls in config")
+        ctx.exit(1)
 
-    if send_test_notification(
+    if not send_test_notification(
         notif.urls,
         store=notification_store(config),
         attach_thumbnail=notif.attach_thumbnail,
         cooldown_hours=notif.cooldown_hours,
     ):
-        print_success("Test notification sent successfully")
-    else:
-        print_info("Test notification failed — check URLs and apprise installation")
+        print_error("Test notification failed — check URLs and apprise installation")
+        ctx.exit(1)
+    print_success("Test notification sent successfully")
 
 
 def register_auto_commands(cli_group: click.Group) -> None:

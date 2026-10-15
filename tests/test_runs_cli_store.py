@@ -88,3 +88,33 @@ def test_runs_list_keeps_a_live_run_running() -> None:
 
     assert "│ running" in printed
     live.complete_run()
+
+
+def test_runs_about_a_person_include_older_one_person_records_and_page_in_order() -> None:
+    from datetime import timedelta
+
+    db = RunDatabase(open_store(_config()))
+    # A record written before runs kept every name has only its `person_name`.
+    db.save_run(RunMetadata(run_id="20260301_090000_old1", created_at=_T0, person_name="Kit"))
+    for minutes, run_id in ((1, "20260301_090100_two1"), (2, "20260301_090200_two2")):
+        db.save_run(
+            RunMetadata(
+                run_id=run_id,
+                created_at=_T0 + timedelta(minutes=minutes),
+                person_name="Pat",
+                person_names=("Pat", "Kit"),
+            )
+        )
+    db.save_run(
+        RunMetadata(
+            run_id="20260301_090300_lou1", created_at=_T0 + timedelta(minutes=3), person_name="Lou"
+        )
+    )
+
+    about_kit = [run.run_id for run in db.list_runs(person_name="kit")]
+    second_page = [run.run_id for run in db.list_runs(person_name="Kit", limit=2, offset=2)]
+    old = db.get_run("20260301_090000_old1")
+
+    assert about_kit == ["20260301_090200_two2", "20260301_090100_two1", "20260301_090000_old1"]
+    assert second_page == ["20260301_090000_old1"]
+    assert old is not None and old.people == ("Kit",)

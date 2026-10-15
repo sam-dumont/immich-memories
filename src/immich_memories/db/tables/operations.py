@@ -63,6 +63,8 @@ pipeline_runs = Table(
     Column("title_source", String(), nullable=True),
     # Seconds of content, of titles at their regular cost, and of map time on top.
     Column("film_timeline", JSON, nullable=True),
+    # Every person the run was about, as given; NULL on rows older than the column.
+    Column("person_names", JSON, nullable=True),
     Index(None, "delivery_status", "source", "status"),
 )
 

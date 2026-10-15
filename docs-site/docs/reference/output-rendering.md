@@ -408,5 +408,6 @@ immich-memories music add compilation.mp4 output.mp4 --mood nostalgic
 already have, with the same ducking. Without `--music` it picks a track from that folder by `--mood`, and by
 `calm` when you give none. A standalone video has no cut text to read, and no command here sends a frame to a
 model: pictures are read once, at ingest. To hear what a finished cut would get before you render it,
-`music preview RUN` generates its track ([runs render](../make/cli/runs.md#runs-render)). Every flag is in the
+`music preview RUN` generates its track ([runs render](../make/cli/runs.md#runs-render)). `music search` exits 1
+when no track matches, and `music add` exits 1 when the mix fails, so a script can tell. Every flag is in the
 [CLI reference](cli-reference.md#music).

@@ -14,6 +14,8 @@ class RunSummary(BaseModel):
     source: str
     created_at: datetime
     memory_type: str | None
+    # Every person the run was about, as given; empty for a run about nobody in particular.
+    people: list[str]
     date_range_start: date | None
     date_range_end: date | None
     preview_asset_ids: list[str]
@@ -380,6 +382,24 @@ class SettingsView(BaseModel):
     # Whether IMMICH_MEMORIES_SECRET_KEY is set, so a secret can be stored in the database.
     can_store_secrets: bool
     sections: list[SettingsSection]
+
+
+class ConfigWarnings(BaseModel):
+    """What loading the config warns about: removed, unknown or unsupported keys, a reader left off.
+
+    Each line names keys, never their values: the same lines the server log carries.
+    """
+
+    warnings: list[str]
+
+
+class PreflightCheck(BaseModel):
+    """One `immich-memories preflight` row."""
+
+    name: str
+    status: Literal["ok", "warning", "error", "skipped"]
+    message: str
+    details: str | None
 
 
 class SettingsForm(BaseModel):

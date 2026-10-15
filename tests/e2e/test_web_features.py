@@ -207,6 +207,23 @@ def test_settings_names_each_source_locks_file_and_environment_values_and_masks_
     assert fake_immich_server.api_key not in page.content()
 
 
+@pytest.mark.feature("web.settings-checks")
+def test_settings_runs_the_preflight_checks_when_asked(page: Page, launch_app_url: str) -> None:
+    page.goto(f"{launch_app_url}/app/settings")
+    checks = page.get_by_role("list", name="Preflight checks")
+    expect(page.get_by_role("button", name="Run the preflight checks")).to_be_visible()
+    expect(checks).to_have_count(0)
+
+    page.get_by_role("button", name="Run the preflight checks").click()
+
+    immich = checks.get_by_role("listitem").filter(has_text="Immich")
+    expect(immich.first).to_be_visible(timeout=60_000)
+    expect(immich.first).to_contain_text("Connected")
+    expect(page.get_by_role("button", name="Run the checks again")).to_be_visible()
+    # The launch config sets nothing old or unknown, so there is nothing to warn about.
+    expect(page.get_by_role("alert", name="Config warnings")).to_have_count(0)
+
+
 @pytest.mark.feature("web.suggestions")
 def test_suggestions_come_back_at_once_and_check_eligibility_makes_no_film(
     page: Page, launch_app_url: str, launch_workspace

@@ -60,6 +60,11 @@ def _loudest_db(film: Path) -> float:
     return -91.0 if peak.group(1) == "-inf" else float(peak.group(1))
 
 
+def _shot_lines(story: str) -> list[str]:
+    """The shot lines of a `runs story` printout: timecode, day, kind."""
+    return re.findall(r"^\s+\d+:\d\d\s+\d{4}-\d\d-\d\d\s+(?:photo|video)\b.*$", story, re.M)
+
+
 # ── runs render: a saved revision, other output options, the same pictures ───
 
 
@@ -137,6 +142,14 @@ def test_runs_render_takes_a_saved_revision_and_changes_only_the_output(
         assert why.returncode == 0, why.explain()
         took_out = "you removed it before rendering" in why.output
         assert took_out == (picture is removed), (picture.asset_id, why.output)
+    # `runs story` prints the cut the film was rendered from: the revision, one still short.
+    cut_story = home.run("runs", "story", cut_id)
+    film_story = home.run("runs", "story", render_id)
+    assert film_story.returncode == 0, film_story.explain()
+    shots = len(shipped_on(DEPARTURE_DAY))
+    assert f"{shots} pictures" in cut_story.output, cut_story.explain()
+    assert f"{shots - 1} pictures" in film_story.output, film_story.explain()
+    assert len(_shot_lines(film_story.output)) == len(_shot_lines(cut_story.output)) - 1
     shown = home.run("runs", "show", render_id)
     assert re.search(r"Title From\s*│\s*override", shown.stdout), shown.explain()
     # No date or place caption is drawn onto any shot, and no sound is left.

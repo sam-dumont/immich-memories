@@ -28,7 +28,7 @@ def report_for_run(
     diagnostics = spans.diagnostics(run.run_id)
     terms = set(diagnostics.get("private_terms", []))
     terms.update(configured_secret_values(config))
-    terms.update(filter(None, (run.person_name, run.output_path, run.delivery_album)))
+    terms.update(filter(None, (*run.people, run.output_path, run.delivery_album)))
     terms.update((str(Path.home()), str(config.output.output_path), str(config.cache.cache_path)))
     ids = set(diagnostics.get("private_ids", []))
     ids.update(filter(None, (run.run_id, run.person_id, run.immich_asset_id)))

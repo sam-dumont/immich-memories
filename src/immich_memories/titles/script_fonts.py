@@ -14,9 +14,14 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -322,13 +327,16 @@ def _sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+# Waits before each retry of a dropped connection; one entry per retry.
+_RETRY_DELAYS: tuple[float, ...] = (1.0, 3.0, 9.0)
+
+
 def _http_fetch(url: str, *, hops: int = 3) -> bytes:
-    import httpx
 
     # WHY: each 3xx hop is followed by hand so it stays on http(s); a library default
     # would follow onto any scheme, and the digest is only checked after the fetch.
     for _ in range(hops):
-        response = httpx.get(url, follow_redirects=False, timeout=120.0)
+        response = _get_with_retries(url)
         if response.status_code not in (301, 302, 303, 307, 308):
             response.raise_for_status()
             return response.content
@@ -338,3 +346,18 @@ def _http_fetch(url: str, *, hops: int = 3) -> bytes:
         if not url.lower().startswith(("http://", "https://")):
             raise ValueError("font download redirected off HTTP(S)")
     raise ValueError("font download redirected too many times")
+
+
+def _get_with_retries(url: str) -> httpx.Response:
+    """GET once, retrying a dropped or timed-out connection; HTTP errors are not retried."""
+    import httpx
+
+    for delay in _RETRY_DELAYS:
+        try:
+            return httpx.get(url, follow_redirects=False, timeout=120.0)
+        except httpx.TransportError as exc:
+            logger.warning(
+                "Font download failed (%s), retrying in %.0fs", type(exc).__name__, delay
+            )
+            time.sleep(delay)
+    return httpx.get(url, follow_redirects=False, timeout=120.0)

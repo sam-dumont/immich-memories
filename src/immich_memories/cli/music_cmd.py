@@ -40,10 +40,10 @@ def register_music_commands(main: click.Group) -> None:
         import asyncio
 
         from immich_memories.audio.music_sources import LocalMusicSource
-        from immich_memories.config import Config
+
+        config = ctx.obj["config"]
 
         async def search():
-            config = Config.from_yaml(Config.get_default_path())
             source = LocalMusicSource(music_dir=config.audio.local_music_path)
             return await source.search(
                 mood=mood,
@@ -64,24 +64,17 @@ def register_music_commands(main: click.Group) -> None:
             console.print(f"Tempo: {tempo}")
         console.print()
 
-        tracks = asyncio.run(search())
+        try:
+            tracks = asyncio.run(search())
+        except Exception as e:  # WHY: CLI error display boundary
+            print_error(f"Search failed: {e}")
+            ctx.exit(1)
 
         if not tracks:
             print_error("No tracks found matching criteria")
-            return
+            ctx.exit(1)
 
-        table = Table(title=f"Found {len(tracks)} tracks")
-        table.add_column("Title", style="cyan")
-        table.add_column("Artist", style="green")
-        table.add_column("Duration", style="yellow")
-        table.add_column("Tags")
-
-        for track in tracks:
-            duration = f"{int(track.duration_seconds // 60)}:{int(track.duration_seconds % 60):02d}"
-            tags = ", ".join(track.tags[:3]) if track.tags else ""
-            table.add_row(track.title, track.artist, duration, tags)
-
-        console.print(table)
+        _print_tracks(tracks)
 
     @music.command("add")
     @click.argument("video_path", type=click.Path(exists=True))
@@ -160,9 +153,22 @@ def register_music_commands(main: click.Group) -> None:
                 progress.update(task, completed=True)
             except Exception as e:  # WHY: CLI error display boundary
                 print_error(f"Failed: {e}")
-                return
+                ctx.exit(1)
 
         print_success(f"Video saved to: {result}")
+
+
+def _print_tracks(tracks: list) -> None:
+    table = Table(title=f"Found {len(tracks)} tracks")
+    table.add_column("Title", style="cyan")
+    table.add_column("Artist", style="green")
+    table.add_column("Duration", style="yellow")
+    table.add_column("Tags")
+    for track in tracks:
+        duration = f"{int(track.duration_seconds // 60)}:{int(track.duration_seconds % 60):02d}"
+        tags = ", ".join(track.tags[:3]) if track.tags else ""
+        table.add_row(track.title, track.artist, duration, tags)
+    console.print(table)
 
 
 def _register_preview(music: click.Group) -> None:

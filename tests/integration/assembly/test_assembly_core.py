@@ -80,10 +80,6 @@ def _make_prober(settings=None):
     return FFmpegProber(settings or _make_settings())
 
 
-def _noop_face_center(_path: Path) -> tuple[float, float] | None:
-    return None
-
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -140,7 +136,7 @@ class TestAssemblyEngineScalable:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         output = tmp_path / "two_clips.mp4"
@@ -162,7 +158,7 @@ class TestAssemblyEngineScalable:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         output = tmp_path / "single.mp4"
@@ -182,7 +178,7 @@ class TestAssemblyEngineScalable:
 
         settings = _make_settings(target_resolution=(1280, 720))
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         output = tmp_path / "res_override.mp4"
@@ -202,7 +198,7 @@ class TestAssemblyEngineScalable:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         with pytest.raises(ValueError, match="No clips"):
@@ -219,7 +215,7 @@ class TestAssemblyEngineScalable:
             predecided_transitions=["cut"],
         )
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         output = tmp_path / "cuts.mp4"
@@ -247,7 +243,7 @@ class TestClipEncoder:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         output = tmp_path / "encoded.mp4"
         clip = _make_clip(test_clip_720p)
@@ -266,7 +262,7 @@ class TestClipEncoder:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         output = tmp_path / "rotated.mp4"
         clip = _make_clip(test_clip_720p, rotation_override=90)
@@ -289,7 +285,7 @@ class TestClipEncoder:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         output = tmp_path / "res.mp4"
         clip = _make_clip(test_clip_720p)
@@ -306,7 +302,7 @@ class TestClipEncoder:
 
         settings = _make_settings(scale_mode="blur")
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         output = tmp_path / "blur.mp4"
         clip = _make_clip(test_clip_portrait)
@@ -566,7 +562,7 @@ class TestTransitionDecisions:
 
         settings = _make_settings(transition=TransitionType.CROSSFADE)
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         clips = [_make_clip(test_clip_720p), _make_clip(test_clip_720p_b)]
@@ -582,7 +578,7 @@ class TestTransitionDecisions:
 
         settings = _make_settings(transition=TransitionType.CUT)
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         clips = [_make_clip(test_clip_720p), _make_clip(test_clip_720p_b)]
@@ -598,7 +594,7 @@ class TestTransitionDecisions:
 
         settings = _make_settings(transition=TransitionType.CUT)
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         clips = [
@@ -616,7 +612,7 @@ class TestTransitionDecisions:
 
         settings = _make_settings(transition_duration=0.5)
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         transitions = ["fade"]
@@ -633,7 +629,7 @@ class TestTransitionDecisions:
 
         settings = _make_settings(predecided_transitions=["cut"])
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         clips = [_make_clip(test_clip_720p), _make_clip(test_clip_720p_b)]
@@ -657,7 +653,7 @@ class TestAssemblyEngineMethods:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
         engine = AssemblyEngine(settings, prober, encoder)
 
         progress_calls = []
@@ -690,7 +686,7 @@ class TestClipEncoderExtra:
 
         settings = _make_settings(normalize_clip_audio=True)
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         output = tmp_path / "title.mp4"
         clip = _make_clip(test_clip_720p, is_title_screen=True)
@@ -707,7 +703,7 @@ class TestClipEncoderExtra:
 
         settings = _make_settings(target_resolution=(1920, 1080))
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         w, h = encoder.resolve_encode_resolution((640, 480))
         assert (w, h) == (640, 480)
@@ -718,7 +714,7 @@ class TestClipEncoderExtra:
 
         settings = _make_settings(target_resolution=(1920, 1080))
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         w, h = encoder.resolve_encode_resolution(None)
         assert (w, h) == (1920, 1080)
@@ -729,7 +725,7 @@ class TestClipEncoderExtra:
 
         settings = _make_settings()
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         clip = _make_clip(test_clip_720p)
         hdr_type, colorspace = encoder.resolve_encode_hdr(clip)
@@ -742,7 +738,7 @@ class TestClipEncoderExtra:
 
         settings = _make_settings(encoding_plan=_hlg_plan())
         prober = _make_prober(settings)
-        encoder = ClipEncoder(settings, prober, _noop_face_center)
+        encoder = ClipEncoder(settings, prober)
 
         clip = _make_clip(test_clip_720p)
         hdr_type, colorspace = encoder.resolve_encode_hdr(clip)

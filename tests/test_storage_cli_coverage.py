@@ -55,7 +55,6 @@ def _make_video_info(
     info.bitrate = 8_000_000
     info.fps = 30.0
     info.codec = "hevc"
-    info.color_space = "bt709"
     info.color_transfer = "smpte2084"
     info.color_primaries = "bt709"
     info.bit_depth = 10

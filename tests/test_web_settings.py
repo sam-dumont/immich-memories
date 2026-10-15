@@ -73,13 +73,36 @@ def test_a_cache_reports_its_size_and_clears_on_request(tmp_path):
     assert after["thumbnail"]["items"] == 0
 
 
+def test_the_prepared_source_cache_reports_its_size_and_clears_on_request(tmp_path):
+    from immich_memories.cache.prepared_source_bank import PreparedSourceBank
+
+    config = config_in(tmp_path)
+    bank = PreparedSourceBank(config.cache.cache_path / "prepared-sources", max_bytes=10**9)
+    for index in range(2):
+        segment = tmp_path / f"segment-{index}.mp4"
+        segment.write_bytes(b"prepared segment bytes" * (index + 1))
+        bank.keep(f"{index:064x}", segment, {"seconds": 3.0})
+    client = api_client(config)
+
+    before = {c["name"]: c for c in client.get("/api/v1/caches").json()}
+    cleared = client.post("/api/v1/caches/prepared_source/clear").json()
+    after = {c["name"]: c for c in client.get("/api/v1/caches").json()}
+
+    assert before["prepared_source"]["items"] == 2
+    assert before["prepared_source"]["bytes"] >= 66
+    assert cleared == {"name": "prepared_source", "removed": 2}
+    assert after["prepared_source"] == {"name": "prepared_source", "items": 0, "bytes": 0}
+    # A cleared bank is a miss, never a broken entry: the next run prepares again.
+    assert bank.take(f"{0:064x}", destination=lambda _facts: tmp_path / "out.mp4") is None
+
+
 def test_only_the_caches_a_run_still_fills_are_listed_and_cleared(tmp_path):
     """The Analysis table and the old players' preview folder hold nothing a run reads (#1508)."""
     client = api_client(config_in(tmp_path))
 
     listed = [c["name"] for c in client.get("/api/v1/caches").json()]
 
-    assert listed == ["video", "thumbnail"]
+    assert listed == ["video", "thumbnail", "prepared_source"]
     for retired in ("analysis", "preview"):
         assert client.post(f"/api/v1/caches/{retired}/clear").status_code == 422
 
@@ -151,3 +174,42 @@ def test_legacy_tier_in_saved_settings_is_refused(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="tier 'nas' is now called 'basic': set tier: basic"):
         Config.from_yaml(path)
     set_config(None)
+
+
+def test_the_settings_page_names_what_loading_the_config_warns_about(tmp_path, monkeypatch):
+    client, _ = _settings_client(
+        tmp_path,
+        monkeypatch,
+        "advanced:\n  analysis:\n    optimal_clip_duration: 5\n  llm:\n    model: served-model\n",
+    )
+
+    warnings = client.get("/api/v1/settings/warnings").json()["warnings"]
+
+    assert any("analysis.optimal_clip_duration is no longer supported" in w for w in warnings)
+    assert any("advanced.llm.enabled is false" in w for w in warnings)
+    assert "served-model" not in str(warnings)
+    set_config(None)
+
+
+def test_preflight_runs_every_check_and_answers_one_row_each(tmp_path, monkeypatch):
+    from immich_memories.preflight import CheckResult, CheckStatus
+
+    rows = [
+        CheckResult("Immich", CheckStatus.ERROR, "Cannot reach Immich", "Check immich.url"),
+        CheckResult("LLM", CheckStatus.SKIPPED, "Not configured"),
+    ]
+    # WHY: the real checks call Immich and the reader over the network.
+    monkeypatch.setattr("immich_memories.preflight.run_preflight_checks", lambda _config: rows)
+    client = api_client(config_in(tmp_path))
+
+    answer = client.get("/api/v1/preflight").json()
+
+    assert answer == [
+        {
+            "name": "Immich",
+            "status": "error",
+            "message": "Cannot reach Immich",
+            "details": "Check immich.url",
+        },
+        {"name": "LLM", "status": "skipped", "message": "Not configured", "details": None},
+    ]

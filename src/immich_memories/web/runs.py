@@ -49,6 +49,7 @@ def _summary(config: Config, record: RunMetadata) -> RunSummary:
         source=record.source,
         created_at=record.created_at,
         memory_type=record.memory_type,
+        people=list(record.people),
         date_range_start=record.date_range_start,
         date_range_end=record.date_range_end,
         preview_asset_ids=_preview(config, record.run_id),

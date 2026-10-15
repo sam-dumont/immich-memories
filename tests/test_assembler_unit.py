@@ -304,7 +304,7 @@ def test_final_assembly_command_uses_the_resolved_software_h264_plan(tmp_path: P
     settings = AssemblySettings(encoding_plan=_software_h264_plan())
     prober = MagicMock()
     prober.estimate_duration.return_value = 5.0
-    encoder = ClipEncoder(settings, prober, lambda _path: None)
+    encoder = ClipEncoder(settings, prober)
     clip = _make_assembly_clip(tmp_path)
     context = AssemblyContext(
         target_w=1920,
@@ -346,7 +346,7 @@ def test_single_clip_reencode_uses_the_same_software_h264_plan(tmp_path: Path) -
     prober = MagicMock()
     prober.has_audio_stream.return_value = False
     prober.probe_framerate.return_value = 30.0
-    encoder = ClipEncoder(settings, prober, lambda _path: None)
+    encoder = ClipEncoder(settings, prober)
     clip = _make_assembly_clip(tmp_path)
 
     with (
@@ -371,9 +371,7 @@ def test_single_clip_hardware_encoder_failure_retries_same_codec_in_software(
     prober = MagicMock()
     prober.has_audio_stream.return_value = False
     prober.probe_framerate.return_value = 30.0
-    encoder = ClipEncoder(
-        AssemblySettings(encoding_plan=_hardware_h264_plan()), prober, lambda _path: None
-    )
+    encoder = ClipEncoder(AssemblySettings(encoding_plan=_hardware_h264_plan()), prober)
     clip = _make_assembly_clip(tmp_path)
 
     with (
@@ -409,9 +407,7 @@ def test_single_clip_hardware_process_exception_retries_same_codec_in_software(
     prober = MagicMock()
     prober.has_audio_stream.return_value = False
     prober.probe_framerate.return_value = 30.0
-    encoder = ClipEncoder(
-        AssemblySettings(encoding_plan=_hardware_h264_plan()), prober, lambda _path: None
-    )
+    encoder = ClipEncoder(AssemblySettings(encoding_plan=_hardware_h264_plan()), prober)
     clip = _make_assembly_clip(tmp_path)
 
     with (
@@ -435,9 +431,7 @@ def test_single_clip_software_process_exception_propagates_after_one_retry(tmp_p
     prober = MagicMock()
     prober.has_audio_stream.return_value = False
     prober.probe_framerate.return_value = 30.0
-    encoder = ClipEncoder(
-        AssemblySettings(encoding_plan=_hardware_h264_plan()), prober, lambda _path: None
-    )
+    encoder = ClipEncoder(AssemblySettings(encoding_plan=_hardware_h264_plan()), prober)
     clip = _make_assembly_clip(tmp_path)
 
     with (
@@ -552,7 +546,7 @@ def test_single_hlg_clip_is_tone_mapped_for_h264_output(tmp_path: Path) -> None:
     prober = MagicMock()
     prober.has_audio_stream.return_value = False
     prober.probe_framerate.return_value = 30.0
-    encoder = ClipEncoder(settings, prober, lambda _path: None)
+    encoder = ClipEncoder(settings, prober)
     clip = _make_assembly_clip(tmp_path)
 
     with (
@@ -590,7 +584,7 @@ def test_single_hdr_clip_fails_when_required_tone_map_is_unavailable(
     prober = MagicMock()
     prober.has_audio_stream.return_value = False
     prober.probe_framerate.return_value = 30.0
-    encoder = ClipEncoder(settings, prober, lambda _path: None)
+    encoder = ClipEncoder(settings, prober)
     clip = _make_assembly_clip(tmp_path)
 
     with (

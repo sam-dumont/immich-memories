@@ -76,6 +76,7 @@ class RunTracker:
         person_name: str | None = None,
         person_id: str | None = None,
         date_range: DateRange | None = None,
+        person_names: tuple[str, ...] = (),
         target_duration_seconds: int = 600,
         memory_type: str | None = None,
         memory_key: str | None = None,
@@ -88,6 +89,7 @@ class RunTracker:
 
         Args:
             person_name: Name of person (if filtering by person).
+            person_names: Every person the run is about, the first included.
             person_id: ID of person (if filtering by person).
             date_range: Date range for the run.
             target_duration_seconds: Target video duration in seconds.
@@ -112,6 +114,7 @@ class RunTracker:
             source=source,
             automation_attempt_id=automation_attempt_id,
             person_name=person_name,
+            person_names=person_names,
             person_id=person_id,
             date_range_start=date_range.start.date() if date_range else None,
             date_range_end=date_range.end.date() if date_range else None,

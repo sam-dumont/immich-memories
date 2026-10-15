@@ -53,7 +53,7 @@ def _assemble(plan, output: Path) -> None:
     # WHY: duration estimation would ffprobe a synthetic lavfi source that has no file.
     prober = MagicMock()
     prober.estimate_duration.return_value = 2.0
-    encoder = ClipEncoder(settings, prober, lambda _path: None)
+    encoder = ClipEncoder(settings, prober)
     context = AssemblyContext(
         target_w=640,
         target_h=360,

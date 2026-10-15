@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-15 06:04+0200\n"
+"POT-Creation-Date: 2026-10-15 08:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -33,7 +33,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "In diesem Monat wurde bereits ein Monatsrückblick erstellt."
 
-#: web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:92
 msgid "API Key"
 msgstr "API-Schlüssel"
 
@@ -237,7 +237,7 @@ msgstr "Unscharfer Hintergrund"
 msgid "Browse the whole pool"
 msgstr "Alle verfügbaren Medien ansehen"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:114 web/routes/settings/+page.svelte:115
 msgid "Caches"
 msgstr "Caches"
 
@@ -310,6 +310,10 @@ msgstr "Videoclips auf verdeckte Linse prüfen"
 msgid "Checking video frames for the family audience"
 msgstr "Videobilder auf Familientauglichkeit prüfen"
 
+#: web/lib/SettingsChecks.svelte:41 web/lib/SettingsChecks.svelte:43
+msgid "Checks"
+msgstr "Prüfungen"
+
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "Album wählen"
@@ -326,7 +330,7 @@ msgstr ""
 "Wähle, was dein Film zeigen soll. Der Befehl unten stellt den Schnitt zusammen; du kannst ihn"
 " prüfen, bevor das Rendern beginnt."
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:120
 msgid "Clear"
 msgstr "Löschen"
 
@@ -338,7 +342,7 @@ msgstr "Sperre aufheben"
 msgid "Clear this hold?"
 msgstr "Diese Sperre aufheben?"
 
-#: web/routes/settings/+page.svelte:70
+#: web/routes/settings/+page.svelte:72
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} Einträge aus {cache} gelöscht."
@@ -360,11 +364,15 @@ msgstr "Abgeschlossen"
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsdatei: {config_path}"
 
+#: web/lib/SettingsChecks.svelte:47
+msgid "Config warnings"
+msgstr "Konfigurationswarnungen"
+
 #: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
 msgid "Configuration"
 msgstr "Konfiguration"
 
-#: web/routes/settings/+page.svelte:59
+#: web/routes/settings/+page.svelte:61
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Verbunden als: {name}"
@@ -537,10 +545,14 @@ msgstr "Hier enden"
 msgid "Ends"
 msgstr "Endet"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:119
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Einträge: {count}"
+
+#: web/lib/SettingsChecks.svelte:21
+msgid "Error"
+msgstr "Fehler"
 
 #: web/lib/PhaseTimeline.svelte:22
 msgid "Estimate based on available measurements. It can change as work progresses."
@@ -556,7 +568,7 @@ msgstr ""
 "und öffne die Vorschau: Deine Auswahl wird genau so in den Film übernommen. „Nie verwenden“ "
 "und „Sperre aufheben“ gelten auch für künftige Läufe."
 
-#: web/routes/settings/+page.svelte:81
+#: web/routes/settings/+page.svelte:83
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -676,11 +688,11 @@ msgstr "Wie die Regeln zu dieser Auswahl geführt haben"
 msgid "How the sentence was read"
 msgstr "Wie der Satz verstanden wurde"
 
-#: web/routes/settings/+page.svelte:84 web/routes/settings/+page.svelte:85
+#: web/routes/settings/+page.svelte:86 web/routes/settings/+page.svelte:87
 msgid "Immich Connection"
 msgstr "Immich-Verbindung"
 
-#: web/routes/settings/+page.svelte:87
+#: web/routes/settings/+page.svelte:89
 msgid "Immich Server URL"
 msgstr "Immich-Server-URL"
 
@@ -804,6 +816,10 @@ msgstr "Live"
 #: web/lib/JobPanel.svelte:95
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "Live-Aktualisierungen unterbrochen. Gespeicherter Auftragsstatus wird geprüft."
+
+#: web/lib/SettingsChecks.svelte:48
+msgid "Loading your config warned about these keys:"
+msgstr "Beim Laden deiner Konfiguration gab es Warnungen zu diesen Schlüsseln:"
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -1000,7 +1016,7 @@ msgstr "Für dieses Bild wurde kein Grund aufgezeichnet."
 msgid "No rule the preview can check would drop a picture."
 msgstr "Keine Regel, die die Vorschau prüfen kann, würde ein Bild aussortieren."
 
-#: web/routes/runs/+page.svelte:121
+#: web/routes/runs/+page.svelte:122
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Keine passenden Läufe. Erstelle eine Erinnerung über Erinnerung oder Vorschläge."
 
@@ -1069,6 +1085,10 @@ msgstr "Notizen"
 #: web/lib/people/RelationshipRows.svelte:62
 msgid "Nothing recorded yet."
 msgstr "Noch nichts aufgezeichnet."
+
+#: web/lib/SettingsChecks.svelte:19
+msgid "OK"
+msgstr "OK"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1158,7 +1178,7 @@ msgid "Pending"
 msgstr "Ausstehend"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:105 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/+page.svelte:107 web/routes/settings/people/+page.svelte:113
 #: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "Personen"
@@ -1244,6 +1264,10 @@ msgstr "Hochformat"
 msgid "Possible"
 msgstr "Möglich"
 
+#: web/lib/SettingsChecks.svelte:55
+msgid "Preflight checks"
+msgstr "Vorabprüfungen"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare pictures"
 msgstr "Bilder vorbereiten"
@@ -1251,6 +1275,10 @@ msgstr "Bilder vorbereiten"
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare selected clips"
 msgstr "Ausgewählte Clips vorbereiten"
+
+#: web/routes/settings/+page.svelte:32
+msgid "Prepared-source cache"
+msgstr "Cache vorbereiteter Quellen"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1413,6 +1441,14 @@ msgstr "Details des Laufs"
 msgid "Run not found. It may have been removed."
 msgstr "Lauf nicht gefunden. Vielleicht wurde er entfernt."
 
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the checks again"
+msgstr "Prüfungen erneut ausführen"
+
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the preflight checks"
+msgstr "Vorabprüfungen ausführen"
+
 #: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "Diesen Vorschlag ausführen"
@@ -1425,6 +1461,10 @@ msgstr "Läuft"
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Läuft auf dem Server: {phase}. Geht weiter, wenn du diese Seite verlässt."
+
+#: web/lib/SettingsChecks.svelte:68
+msgid "Running the preflight checks..."
+msgstr "Vorabprüfungen laufen ..."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
@@ -1448,7 +1488,7 @@ msgstr "Video-Einzelbilder abtasten"
 msgid "Save"
 msgstr "Speichern"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:98
 msgid "Save Config"
 msgstr "Konfiguration speichern"
 
@@ -1460,7 +1500,7 @@ msgstr "Gruppe speichern"
 msgid "Save revision"
 msgstr "Revision speichern"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:92
+#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:94
 msgid "Saved - type a new key to replace it"
 msgstr "Gespeichert: neuen Schlüssel eingeben, um ihn zu ersetzen"
 
@@ -1483,7 +1523,7 @@ msgstr "Hier gespeichert"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Hier gespeichert, aber {name} kann es nicht entschlüsseln: der Standardwert gilt"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:64
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:66
 msgid "Saved to the database"
 msgstr "In der Datenbank gespeichert"
 
@@ -1531,8 +1571,8 @@ msgstr "Gesetzt durch {name} (Umgebung)"
 msgid "Set in config.yaml as {key}"
 msgstr "Gesetzt in config.yaml als {key}"
 
-#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:76
-#: web/routes/settings/+page.svelte:80 web/routes/settings/people/+page.svelte:118
+#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:78
+#: web/routes/settings/+page.svelte:82 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "Einstellungen"
 
@@ -1565,7 +1605,7 @@ msgstr "Abmelden"
 msgid "Sign-in expired. Try again."
 msgstr "Die Anmeldung ist abgelaufen. Versuche es erneut."
 
-#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:34
+#: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
 msgstr "Übersprungen"
 
@@ -1674,7 +1714,7 @@ msgstr "Getauscht"
 msgid "Take out"
 msgstr "Entfernen"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:97
 msgid "Test Connection"
 msgstr "Verbindung testen"
 
@@ -1706,7 +1746,11 @@ msgstr ""
 "Der Kontoname des API-Schlüssels wurde keiner benannten Person zugeordnet. Wähle den Besitzer"
 " oder benenne Personen in Immich und scanne erneut."
 
-#: web/routes/settings/+page.svelte:55
+#: web/lib/SettingsChecks.svelte:70
+msgid "The checks could not be run."
+msgstr "Die Prüfungen konnten nicht ausgeführt werden."
+
+#: web/routes/settings/+page.svelte:57
 msgid "The connection could not be checked."
 msgstr "Die Verbindung konnte nicht geprüft werden."
 
@@ -1828,7 +1872,7 @@ msgstr "Der Bericht konnte nicht geladen werden."
 msgid "The revision could not be saved."
 msgstr "Die Revision konnte nicht gespeichert werden."
 
-#: web/routes/runs/+page.svelte:126
+#: web/routes/runs/+page.svelte:127
 msgid "The runs could not be loaded."
 msgstr "Die Läufe konnten nicht geladen werden."
 
@@ -1883,7 +1927,7 @@ msgstr ""
 "(docker compose logs immich-memories). Mit immich-memories auth reset-password erzeugst du "
 "ein neues."
 
-#: web/routes/settings/+page.svelte:30
+#: web/routes/settings/+page.svelte:31
 msgid "Thumbnail cache"
 msgstr "Miniaturbild-Cache"
 
@@ -1931,7 +1975,7 @@ msgstr "Reiseerkennung fehlgeschlagen."
 msgid "Trips"
 msgstr "Reisen"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "Erneut versuchen"
 
@@ -2006,7 +2050,7 @@ msgstr "Urteil"
 msgid "Video"
 msgstr "Video"
 
-#: web/routes/settings/+page.svelte:29
+#: web/routes/settings/+page.svelte:30
 msgid "Video cache"
 msgstr "Video-Cache"
 
@@ -2030,6 +2074,10 @@ msgstr "In Immich ansehen"
 #: web/lib/RenderPanel.svelte:187
 msgid "Vintage charm"
 msgstr "Nostalgischer Charme"
+
+#: web/lib/SettingsChecks.svelte:20
+msgid "Warning"
+msgstr "Warnung"
 
 #: web/routes/login/+page.svelte:53
 msgid "Watch your memories again, in films you can make your own."
@@ -2081,7 +2129,7 @@ msgstr "Weiß"
 msgid "Who"
 msgstr "Wer"
 
-#: web/routes/settings/+page.svelte:105
+#: web/routes/settings/+page.svelte:107
 msgid "Who is who, their roles and relationships."
 msgstr "Wer wer ist, welche Rollen und Beziehungen es gibt."
 

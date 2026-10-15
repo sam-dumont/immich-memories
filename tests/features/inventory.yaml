@@ -429,11 +429,12 @@ features:
     tests:
       - tests/integration/features/test_runs_and_report.py::test_runs_list_and_show_find_the_finished_film
   - id: runs.list-by-person
-    promise: "runs list --person lists only runs about that person."
+    promise: "runs list --person lists only runs about that person, including runs about several people."
     doc: reference/cli-reference.md#runs-list
     covers: ["cli:runs list --person"]
     tests:
       - tests/integration/features/test_people_commands.py::test_runs_list_person_lists_only_that_persons_runs
+      - tests/integration/features/test_people_commands.py::test_a_run_about_two_people_is_listed_under_either_name
   - id: runs.interrupted
     promise: "A run whose process is gone reads interrupted in list, show and the browser; one still going elsewhere stays running."
     doc: make/cli/runs.md#find-a-run
@@ -624,12 +625,14 @@ features:
     covers: ["cli:music add", "cli:music add --music", "cli:music add --mood", "cli:music add --genre", "cli:music add --volume", "cli:music add --fade-in", "cli:music add --fade-out"]
     tests:
       - tests/integration/features/test_music_commands.py::test_music_add_mixes_a_track_under_a_video_ducked_faded_and_at_the_given_volume
+      - tests/integration/features/test_music_commands.py::test_music_add_exits_non_zero_when_the_mix_fails
   - id: music.search
     promise: "music search finds tracks in the local library by mood, genre, tempo and length."
     doc: reference/output-rendering.md#the-music-commands
     covers: ["cli:music search", "cli:music search --mood", "cli:music search --genre", "cli:music search --tempo", "cli:music search --min-duration", "cli:music search --limit"]
     tests:
       - tests/integration/features/test_music_commands.py::test_music_search_finds_local_tracks_by_mood_genre_tempo_and_length
+      - tests/integration/features/test_music_commands.py::test_music_search_exits_non_zero_when_nothing_matches
   - id: photos.ken-burns
     promise: "A selected still with people in it moves between the whole picture and a close-up: on the person a film is about, on every face of a group (or a pan across a wide one), else the lone face; a still with nobody in it mostly pans gently along its long side."
     doc: make/photos-and-live-photos.md#ken-burns-and-where-the-pan-lands
@@ -655,6 +658,7 @@ features:
     tests:
       - tests/integration/features/test_live_photos.py::test_a_live_photo_plays_as_motion_only_when_its_clip_moves
       - tests/integration/features/test_live_photos.py::test_a_live_photo_clip_counts_the_face_its_still_shows
+      - tests/integration/features/test_detector_heads.py::test_a_live_photo_reads_its_people_off_its_still
       - tests/integration/features/test_live_photos.py::test_nearby_live_photos_stitch_into_one_clip_that_never_rewinds
       - tests/integration/features/test_live_photos.py::test_no_live_photos_keeps_every_live_photo_a_still
   - id: hdr.end-to-end
@@ -1287,6 +1291,12 @@ features:
     covers: ["web:settings"]
     tests:
       - tests/e2e/test_web_features.py::test_settings_names_each_source_locks_file_and_environment_values_and_masks_keys
+  - id: web.settings-checks
+    promise: "Settings shows what loading the config warns about (removed, unknown or unsupported keys) and runs the preflight checks on request, without reading the server log."
+    doc: make/web-ui.mdx#change-settings
+    tests:
+      - tests/integration/features/test_setup_checks.py::test_settings_shows_the_config_warnings_and_the_preflight_rows_the_terminal_prints
+      - tests/e2e/test_web_features.py::test_settings_runs_the_preflight_checks_when_asked
   - id: web.people
     promise: "The People page says whose library it is, names relationships, answers duplicate flags and links a person across accounts."
     doc: make/web-ui.mdx#where-things-are

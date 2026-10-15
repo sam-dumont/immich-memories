@@ -70,7 +70,7 @@ def _plan_for(codec: str) -> EncodingPlan:
 
 def _assemble(plan: EncodingPlan, output: Path) -> list[str]:
     """Run the real final-assembly command and return the video codecs it wrote."""
-    encoder = ClipEncoder(AssemblySettings(encoding_plan=plan), _SyntheticProber(), lambda _p: None)
+    encoder = ClipEncoder(AssemblySettings(encoding_plan=plan), _SyntheticProber())
     context = AssemblyContext(
         target_w=1280,
         target_h=720,

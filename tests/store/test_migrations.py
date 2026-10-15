@@ -124,6 +124,7 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
     scripts = script_directory()
 
     reshaped: set[str] = set()
+    columns = _columns(store, remaining)
     for revision in revision_lineage(head):
         script = scripts.get_revision(revision)
         # WHY: a merge revision only joins two branches, so undoing it drops no table and
@@ -138,15 +139,18 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
             kept = {name: _kept(connection, store, name) for name in surviving}
         now_reshaped = {name for name, (_, digest) in kept.items() if digest is None}
 
-        # A revision that only altered a table undoes that instead of dropping one.
-        undid = surviving < remaining or now_reshaped > reshaped
+        # A revision that only altered a table undoes that instead of dropping one; a table
+        # an earlier step already altered shows it as a change in its columns.
+        now_columns = _columns(store, surviving)
+        altered = any(now_columns[name] != columns[name] for name in surviving)
+        undid = surviving < remaining or now_reshaped > reshaped or altered
         assert surviving == remaining if join else undid
         # An altered table keeps every row; every other table keeps every value too.
         assert kept == {
             name: (before[name][0], None) if name in now_reshaped else before[name]
             for name in surviving
         }
-        remaining, reshaped = surviving, now_reshaped
+        remaining, reshaped, columns = surviving, now_reshaped, now_columns
 
     assert remaining == set()
     upgrade(store)
@@ -170,6 +174,16 @@ def _take_back_revocations(store) -> None:
             sa.delete(meta).where(meta.c.key == "auth.session_generations")
         ).rowcount
     assert removed == 1
+
+
+def _columns(store, names: set[str]) -> dict[str, frozenset[str]]:
+    """The columns each table has in the store right now."""
+    with store.connect() as connection:
+        inspector = sa.inspect(connection)
+        return {
+            name: frozenset(column["name"] for column in inspector.get_columns(name, store.schema))
+            for name in names
+        }
 
 
 def _kept(connection, store, name: str) -> tuple[int, str | None]:

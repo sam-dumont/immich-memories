@@ -61,3 +61,34 @@ def test_titles_test_renders_a_title_preview_film(
     facts = film_facts(output)
     assert (facts.width, facts.height) == size
     assert 1.0 < facts.duration < 10.0
+
+
+@pytest.mark.feature("web.settings-checks")
+def test_settings_shows_the_config_warnings_and_the_preflight_rows_the_terminal_prints(
+    fresh_home: UserHome,
+):
+    import yaml
+
+    from tests.features.served_app import served_app
+
+    config = yaml.safe_load(fresh_home.config_path.read_text())
+    config.setdefault("advanced", {}).setdefault("analysis", {})["optimal_clip_duration"] = 5
+    config["advanced"].setdefault("output", {})["not_a_key"] = 1
+    fresh_home.write_config(config)
+    fresh_home.turn_sign_in_off()  # this test is about the checks, not sign-in
+    terminal = fresh_home.run("preflight")
+
+    with served_app(fresh_home) as app, app.client() as browser:
+        warnings = browser.get("/api/v1/settings/warnings").json()["warnings"]
+        rows = browser.get("/api/v1/preflight").json()
+
+    # A web-only install reads what the container log says about its config.
+    assert any("analysis.optimal_clip_duration is no longer supported" in w for w in warnings)
+    assert any("Ignoring unknown config key" in w and "not_a_key" in w for w in warnings)
+    assert "analysis.optimal_clip_duration" in app.output()
+    # And the same checks `preflight` prints, one row each.
+    assert [row["name"] for row in rows], rows
+    for row in rows:
+        assert row["name"] in terminal.stdout, (row, terminal.explain())
+    immich = next(row for row in rows if row["name"] == "Immich")
+    assert immich["status"] != "error" and immich["message"].startswith("Connected"), immich

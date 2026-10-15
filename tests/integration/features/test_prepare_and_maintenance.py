@@ -237,7 +237,7 @@ def test_clearing_the_caches_keeps_films_runs_people_and_prepared_facts(home: Us
         filled = _caches(port)
         cleared = {
             name: httpx.post(f"http://127.0.0.1:{port}/api/v1/caches/{name}/clear", timeout=30)
-            for name in ("video", "thumbnail")
+            for name in ("video", "thumbnail", "prepared_source")
         }
         emptied = _caches(port)
     runs_after = home.run("runs", "list", "--limit", "50").stdout
@@ -252,9 +252,13 @@ def test_clearing_the_caches_keeps_films_runs_people_and_prepared_facts(home: Us
     assert after_one_day >= one_day
     assert filled["thumbnail"]["items"] >= two_days > after_one_day
     assert filled["video"]["items"] >= 1, filled
+    # The render banked what it prepared, so a re-render would prepare nothing twice.
+    assert filled["prepared_source"]["items"] >= 1, filled
+    assert filled["prepared_source"]["bytes"] > 0, filled
     assert all(answer.status_code == 200 for answer in cleared.values()), cleared
     assert cleared["thumbnail"].json()["removed"] == filled["thumbnail"]["items"]
-    assert emptied["thumbnail"]["items"] == emptied["video"]["items"] == 0, emptied
+    assert cleared["prepared_source"].json()["removed"] == filled["prepared_source"]["items"]
+    assert all(emptied[name]["items"] == 0 for name in cleared), emptied
     # Nothing the user keeps lived in a cache.
     assert film.film.is_file()
     assert runs_after == runs_before

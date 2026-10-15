@@ -11,9 +11,10 @@ Shiqi Yu. The surrounding opencv_zoo repository is Apache-2.0; the model itself
 carries the narrower MIT notice, which is the one reproduced in
 `THIRD_PARTY_NOTICES`.
 
-It is bundled rather than downloaded because it is 227 KB and the smart-zoom
-crop needs it on a machine that may never reach the network — the same reason
-the title fonts ship in `titles/bundled_fonts`.
+It sits here, outside the Python package, because only
+`scripts/build_fixture_library.py` runs it: it finds the faces the fixture
+library pins to its people. The app reads faces from Immich and ships no face
+detector.
 
 `cv2.FaceDetectorYN` runs it. It replaced the Haar cascade because OpenCV 5
 ships neither `cv2.CascadeClassifier` in the main wheel nor any XML in

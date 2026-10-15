@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from itertools import groupby
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -16,14 +16,24 @@ from immich_memories.config_sources import SettingSource, describe_settings
 from immich_memories.settings_edit import SettingRefused, save_settings
 from immich_memories.settings_store import is_bootstrap_key, secret_key_from_env
 from immich_memories.web.dependencies import config_file, current_config
-from immich_memories.web.schemas import SettingRow, SettingsForm, SettingsSection, SettingsView
+from immich_memories.web.schemas import (
+    ConfigWarnings,
+    PreflightCheck,
+    SettingRow,
+    SettingsForm,
+    SettingsSection,
+    SettingsView,
+)
 from immich_memories.web.setting_inputs import describe_input
+
+if TYPE_CHECKING:
+    from immich_memories.cache.prepared_source_bank import PreparedSourceBank
 
 router = APIRouter(prefix="/api/v1", tags=["settings"])
 
 # The caches a run still fills. The Analysis table and the old players' preview folder are
 # written by nothing now (#1508).
-CacheName = Literal["video", "thumbnail"]
+CacheName = Literal["video", "thumbnail", "prepared_source"]
 
 
 class CacheStats(BaseModel):
@@ -136,6 +146,37 @@ def save_settings_form(
     return _settings_view(path)
 
 
+@router.get("/settings/warnings", response_model=ConfigWarnings)
+def read_config_warnings(path: Annotated[Path, Depends(config_file)]) -> ConfigWarnings:
+    """What loading the config warns about, as the server log says it; keys, never values."""
+    from immich_memories.config_warnings import config_warnings
+
+    return ConfigWarnings(warnings=config_warnings(path))
+
+
+@router.get("/preflight", response_model=list[PreflightCheck])
+def read_preflight(config: Annotated[Config, Depends(current_config)]) -> list[PreflightCheck]:
+    """The checks `immich-memories preflight` runs, one row each; this can take a few seconds."""
+    from immich_memories.preflight import run_preflight_checks
+
+    return [
+        PreflightCheck(
+            name=check.name,
+            status=check.status.value,
+            message=check.message,
+            details=check.details,
+        )
+        for check in run_preflight_checks(config)
+    ]
+
+
+def _prepared_sources(config: Config) -> PreparedSourceBank:
+    from immich_memories.cache.prepared_source_bank import PreparedSourceBank
+
+    budget = int(config.analysis.prepared_source_cache_max_size_gb * 1_073_741_824)
+    return PreparedSourceBank(config.cache.cache_path / "prepared-sources", max_bytes=budget)
+
+
 def _stats(config: Config) -> list[CacheStats]:
     from immich_memories.cache import ThumbnailCache, VideoDownloadCache
 
@@ -144,6 +185,7 @@ def _stats(config: Config) -> list[CacheStats]:
         cache_dir=config.cache.cache_path / "thumbnails",
         max_size_mb=config.cache.thumbnail_cache_max_size_mb,
     ).get_stats()
+    prepared = _prepared_sources(config).usage()
     return [
         CacheStats(
             name="video", items=video.get("file_count", 0), bytes=video.get("total_size_bytes", 0)
@@ -153,6 +195,7 @@ def _stats(config: Config) -> list[CacheStats]:
             items=thumbnail.get("file_count", 0),
             bytes=thumbnail.get("total_size_bytes", 0),
         ),
+        CacheStats(name="prepared_source", items=prepared[0], bytes=prepared[1]),
     ]
 
 
@@ -169,6 +212,8 @@ def clear_cache(name: CacheName, config: Annotated[Config, Depends(current_confi
 
     if name == "video":
         removed = VideoDownloadCache(cache_dir=config.cache.video_cache_path).clear()
+    elif name == "prepared_source":
+        removed = _prepared_sources(config).clear()
     else:
         removed = ThumbnailCache(
             cache_dir=config.cache.cache_path / "thumbnails",

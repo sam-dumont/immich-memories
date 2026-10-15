@@ -55,15 +55,24 @@ explains that serving contract.
 
 From the deployment bundle or release checkout:
 
+The overlay stores no credentials, like the base. Create its three Secrets in the cluster first,
+each from its example, filled in outside the checkout:
+
 ```bash
 cd deploy/kubernetes
-cp base/secret.yaml.example base/secret.yaml
-cp overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
-cp overlays/maximalist/maximalist-secret.yaml.example overlays/maximalist/maximalist-secret.yaml
-openssl rand -hex 32
+kubectl apply -f base/namespace.yaml
+openssl rand -hex 32   # the render-worker token
+for example in base/secret.yaml.example \
+    overlays/render-sidecar/render-worker-secret.yaml.example \
+    overlays/maximalist/maximalist-secret.yaml.example; do
+  secret_file=$(mktemp)
+  cat "$example" > "$secret_file"
+  vim "$secret_file" && kubectl apply -f "$secret_file"
+  rm "$secret_file"
+done
 ```
 
-Edit those three Secrets and `overlays/maximalist/config-map.yaml` before applying:
+Fill in those three Secrets, then edit `overlays/maximalist/config-map.yaml`:
 
 | File or setting | Replace or confirm |
 |---|---|

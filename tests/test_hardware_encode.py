@@ -214,7 +214,7 @@ def test_single_clip_encode_runs_on_the_device(tmp_path, plan_factory, backend) 
     prober = MagicMock()
     prober.has_audio_stream.return_value = False
     prober.probe_framerate.return_value = 30.0
-    encoder = ClipEncoder(settings, prober, lambda _path: None)
+    encoder = ClipEncoder(settings, prober)
 
     # WHY: HDR detection and the encode both shell out to FFmpeg; the command is under test.
     with (
@@ -238,7 +238,7 @@ def test_final_assembly_runs_on_the_device(tmp_path) -> None:
     # WHY: duration estimation reads every clip with ffprobe.
     prober = MagicMock()
     prober.estimate_duration.return_value = 5.0
-    encoder = ClipEncoder(settings, prober, lambda _path: None)
+    encoder = ClipEncoder(settings, prober)
     clip = _assembly_clip(tmp_path)
     context = AssemblyContext(
         target_w=640, target_h=360, pix_fmt="yuv420p", hdr_type="sdr",

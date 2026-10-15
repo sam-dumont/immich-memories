@@ -123,7 +123,7 @@ def test_a_live_photo_clip_counts_the_face_its_still_shows(
 
     A film about Kit keeps that Live Photo, and the 3 s clip plays as motion (#2453). The
     hermetic editor reads no annotation store, so this proves the fixture's shape and the
-    person flow; `tests/test_detector_cache_contract.py` guards the clip taking its still's face.
+    person flow; `test_detector_heads.py` guards that a Live Photo's people are its still's.
     """
     directory = tmp_path_factory.mktemp("kit")
     film = render(

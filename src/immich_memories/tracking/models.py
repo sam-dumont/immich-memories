@@ -151,8 +151,9 @@ class RunMetadata:
     last_phase: OperationalPhase | None = None
     phase_events: list[dict[str, Any]] = field(default_factory=list)
 
-    # Input parameters
+    # Input parameters. `person_name` is the first person; `person_names` all of them.
     person_name: str | None = None
+    person_names: tuple[str, ...] = ()
     person_id: str | None = None
     date_range_start: date | None = None
     date_range_end: date | None = None
@@ -191,6 +192,18 @@ class RunMetadata:
         self.memory_people = normalize_memory_people(self.memory_people)
 
     @property
+    def people(self) -> tuple[str, ...]:
+        """Every person the run was about; a record older than `person_names` has its one."""
+        if self.person_names:
+            return self.person_names
+        return (self.person_name,) if self.person_name else ()
+
+    def is_about(self, name: str) -> bool:
+        """Whether `name` is one of the run's people, ignoring case and spacing."""
+        wanted = normalize_memory_people([name])
+        return bool(wanted) and wanted[0] in normalize_memory_people(self.people)
+
+    @property
     def total_duration_seconds(self) -> float:
         """Get total run duration in seconds."""
         if self.completed_at and self.created_at:
@@ -213,6 +226,7 @@ class RunMetadata:
             "last_phase": self.last_phase.value if self.last_phase else None,
             "phase_events": self.phase_events,
             "person_name": self.person_name,
+            "person_names": list(self.person_names),
             "person_id": self.person_id,
             "date_range_start": (
                 self.date_range_start.isoformat() if self.date_range_start else None
@@ -257,6 +271,7 @@ class RunMetadata:
             last_phase=(OperationalPhase(data["last_phase"]) if data.get("last_phase") else None),
             phase_events=data.get("phase_events") or [],
             person_name=data.get("person_name"),
+            person_names=tuple(data.get("person_names") or ()),
             person_id=data.get("person_id"),
             date_range_start=(
                 date.fromisoformat(data["date_range_start"])

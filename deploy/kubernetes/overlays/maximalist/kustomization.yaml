@@ -5,42 +5,48 @@
 # server, geocoding and map tiles on, and cache caps sized to the PVC that
 # holds them.
 #
+# Like the base, this overlay stores no credentials: create its three Secrets
+# from their examples first, then apply it.
+#
 #   cd deploy/kubernetes
-#   cp base/secret.yaml.example base/secret.yaml
-#   cp overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
-#   cp overlays/maximalist/maximalist-secret.yaml.example overlays/maximalist/maximalist-secret.yaml
-#   vim base/secret.yaml overlays/render-sidecar/render-worker-secret.yaml \
-#       overlays/maximalist/maximalist-secret.yaml overlays/maximalist/config-map.yaml
+#   kubectl apply -f base/namespace.yaml
+#   for example in base/secret.yaml.example \
+#       overlays/render-sidecar/render-worker-secret.yaml.example \
+#       overlays/maximalist/maximalist-secret.yaml.example; do
+#     secret_file=$(mktemp); cat "$example" > "$secret_file"
+#     vim "$secret_file" && kubectl apply -f "$secret_file"; rm "$secret_file"
+#   done
+#   vim overlays/maximalist/config-map.yaml
 #   kubectl apply -k overlays/maximalist
 #
 # Walkthrough, hardware needed per piece, and the config keys:
 # docs-site/docs/run/reference/cluster-example.md
 #
-# Composes ../render-sidecar (which itself pulls in ../../base),
-# ../captioner-cuda and ../inference-cuda rather than duplicating any: patching Deployments
-# and reusing a captioner overlay that already exists keeps one definition of
-# "how the sidecar is wired" and one of "how the caption server takes a card".
+# Composes ../../base with the render-sidecar component, ../captioner-cuda and
+# ../inference-cuda rather than duplicating any: patching Deployments and
+# reusing a captioner overlay that already exists keeps one definition of "how
+# the sidecar is wired" and one of "how the caption server takes a card".
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 namespace: immich-memories
 
 resources:
-  - ../render-sidecar   # base + render worker sidecar, on the GPU node
+  - ../../base           # the app; its Secret is created separately
   - ../captioner-cuda    # the caption server the full tier needs, on a card
   - ../inference-cuda    # the picture encoder, heads and detectors, on a card
   - config-map.yaml
   - networkpolicy-maximalist.yaml
-  # cp maximalist-secret.yaml.example maximalist-secret.yaml and fill in.
-  # kustomize refuses to build until the file exists.
-  - maximalist-secret.yaml
+
+components:
+  - ../../components/render-sidecar   # render worker sidecar, on the GPU node
 
 patches:
   - path: deployment-maximalist.yaml
 
-# Keep equal to base's own pin (render-sidecar's overlay already restates
-# this for the same reason: a patch adding a container is not reached by a
-# transformer that ran before the patch existed).
+# Keep equal to base's own pin (the render-sidecar component restates it for
+# the same reason: a patch adding a container is not reached by a transformer
+# that ran before the patch existed).
 images:
   - name: ghcr.io/sam-dumont/immich-memories
     newTag: "1.0.0-rc.10"

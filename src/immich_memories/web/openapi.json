@@ -472,7 +472,8 @@
           "name": {
             "enum": [
               "video",
-              "thumbnail"
+              "thumbnail",
+              "prepared_source"
             ],
             "title": "Name",
             "type": "string"
@@ -526,7 +527,8 @@
           "name": {
             "enum": [
               "video",
-              "thumbnail"
+              "thumbnail",
+              "prepared_source"
             ],
             "title": "Name",
             "type": "string"
@@ -541,6 +543,23 @@
           "removed"
         ],
         "title": "Cleared",
+        "type": "object"
+      },
+      "ConfigWarnings": {
+        "description": "What loading the config warns about: removed, unknown or unsupported keys, a reader left off.\n\nEach line names keys, never their values: the same lines the server log carries.",
+        "properties": {
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "warnings"
+        ],
+        "title": "ConfigWarnings",
         "type": "object"
       },
       "Connection": {
@@ -2260,6 +2279,48 @@
         "title": "PoolItem",
         "type": "object"
       },
+      "PreflightCheck": {
+        "description": "One `immich-memories preflight` row.",
+        "properties": {
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "warning",
+              "error",
+              "skipped"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "message",
+          "details"
+        ],
+        "title": "PreflightCheck",
+        "type": "object"
+      },
       "Relationship": {
         "properties": {
           "kind": {
@@ -3100,6 +3161,13 @@
             ],
             "title": "Output Path"
           },
+          "people": {
+            "items": {
+              "type": "string"
+            },
+            "title": "People",
+            "type": "array"
+          },
           "phases": {
             "items": {
               "$ref": "#/components/schemas/PhaseTiming"
@@ -3140,6 +3208,7 @@
           "source",
           "created_at",
           "memory_type",
+          "people",
           "date_range_start",
           "date_range_end",
           "preview_asset_ids",
@@ -3255,6 +3324,13 @@
             ],
             "title": "Memory Type"
           },
+          "people": {
+            "items": {
+              "type": "string"
+            },
+            "title": "People",
+            "type": "array"
+          },
           "preview_asset_ids": {
             "items": {
               "type": "string"
@@ -3281,6 +3357,7 @@
           "source",
           "created_at",
           "memory_type",
+          "people",
           "date_range_start",
           "date_range_end",
           "preview_asset_ids",
@@ -4641,7 +4718,8 @@
             "schema": {
               "enum": [
                 "video",
-                "thumbnail"
+                "thumbnail",
+                "prepared_source"
               ],
               "title": "Name",
               "type": "string"
@@ -5423,6 +5501,32 @@
         "summary": "Decide",
         "tags": [
           "pool"
+        ]
+      }
+    },
+    "/api/v1/preflight": {
+      "get": {
+        "description": "The checks `immich-memories preflight` runs, one row each; this can take a few seconds.",
+        "operationId": "read_preflight_api_v1_preflight_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PreflightCheck"
+                  },
+                  "title": "Response Read Preflight Api V1 Preflight Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Preflight",
+        "tags": [
+          "settings"
         ]
       }
     },
@@ -6888,6 +6992,28 @@
           }
         },
         "summary": "Save Settings Form",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/settings/warnings": {
+      "get": {
+        "description": "What loading the config warns about, as the server log says it; keys, never values.",
+        "operationId": "read_config_warnings_api_v1_settings_warnings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigWarnings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Config Warnings",
         "tags": [
           "settings"
         ]

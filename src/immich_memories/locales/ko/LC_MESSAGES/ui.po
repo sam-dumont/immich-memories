@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-15 06:04+0200\n"
+"POT-Creation-Date: 2026-10-15 08:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -29,7 +29,7 @@ msgstr "인물 필터에 이름을 붙이면 새 추억 페이지나 generate --
 msgid "A monthly review already finished this month."
 msgstr "이번 달에는 이미 월간 추억 영상을 만들었습니다."
 
-#: web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:92
 msgid "API Key"
 msgstr "API 키"
 
@@ -231,7 +231,7 @@ msgstr "흐린 배경"
 msgid "Browse the whole pool"
 msgstr "후보 소재 전체 보기"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:114 web/routes/settings/+page.svelte:115
 msgid "Caches"
 msgstr "캐시"
 
@@ -304,6 +304,10 @@ msgstr "동영상 클립의 렌즈 가림 확인 중"
 msgid "Checking video frames for the family audience"
 msgstr "동영상 프레임의 가족 시청 적합성 확인 중"
 
+#: web/lib/SettingsChecks.svelte:41 web/lib/SettingsChecks.svelte:43
+msgid "Checks"
+msgstr "점검"
+
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "앨범을 선택하세요"
@@ -318,7 +322,7 @@ msgid ""
 "it before anything renders."
 msgstr "영상에 담고 싶은 내용을 선택하세요. 아래 명령어로 편집본을 만들고, 렌더링 전에 확인할 수 있습니다."
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:120
 msgid "Clear"
 msgstr "지우기"
 
@@ -330,7 +334,7 @@ msgstr "제한 해제"
 msgid "Clear this hold?"
 msgstr "이 제한을 해제할까요?"
 
-#: web/routes/settings/+page.svelte:70
+#: web/routes/settings/+page.svelte:72
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache}에서 {count}개 항목을 지웠습니다."
@@ -352,11 +356,15 @@ msgstr "완료됨"
 msgid "Config file: {config_path}"
 msgstr "설정 파일: {config_path}"
 
+#: web/lib/SettingsChecks.svelte:47
+msgid "Config warnings"
+msgstr "설정 경고"
+
 #: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
 msgid "Configuration"
 msgstr "설정"
 
-#: web/routes/settings/+page.svelte:59
+#: web/routes/settings/+page.svelte:61
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "{name}(으)로 연결됨"
@@ -524,10 +532,14 @@ msgstr "여기서 끝"
 msgid "Ends"
 msgstr "종료"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:119
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "항목: {count}"
+
+#: web/lib/SettingsChecks.svelte:21
+msgid "Error"
+msgstr "오류"
 
 #: web/lib/PhaseTimeline.svelte:22
 msgid "Estimate based on available measurements. It can change as work progresses."
@@ -542,7 +554,7 @@ msgstr ""
 "이번 편집에 사용할 수 있었던 소재를 촬영 순서대로 보여줍니다. 항목을 선택하거나 해제한 뒤 미리 보세요. 다시 선별하지 않고 선택한 그대로 영상에 담습니다. "
 "‘사용하지 않기’와 ‘제한 해제’는 이후 작업에도 적용됩니다."
 
-#: web/routes/settings/+page.svelte:81
+#: web/routes/settings/+page.svelte:83
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -659,11 +671,11 @@ msgstr "규칙에 따라 선별한 과정"
 msgid "How the sentence was read"
 msgstr "문장을 이해한 방식"
 
-#: web/routes/settings/+page.svelte:84 web/routes/settings/+page.svelte:85
+#: web/routes/settings/+page.svelte:86 web/routes/settings/+page.svelte:87
 msgid "Immich Connection"
 msgstr "Immich 연결"
 
-#: web/routes/settings/+page.svelte:87
+#: web/routes/settings/+page.svelte:89
 msgid "Immich Server URL"
 msgstr "Immich 서버 URL"
 
@@ -787,6 +799,10 @@ msgstr "Live"
 #: web/lib/JobPanel.svelte:95
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "실시간 업데이트 연결이 끊겼습니다. 저장된 작업 상태를 확인 중입니다."
+
+#: web/lib/SettingsChecks.svelte:48
+msgid "Loading your config warned about these keys:"
+msgstr "설정을 불러올 때 다음 키에 대한 경고가 있었습니다:"
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -973,7 +989,7 @@ msgstr "이 소재를 선택한 이유가 기록되지 않았습니다."
 msgid "No rule the preview can check would drop a picture."
 msgstr "미리보기에서 확인한 규칙으로 제외될 소재는 없습니다."
 
-#: web/routes/runs/+page.svelte:121
+#: web/routes/runs/+page.svelte:122
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "이 보기에 해당하는 작업이 없습니다. 추억 또는 제안에서 추억을 만드세요."
 
@@ -1041,6 +1057,10 @@ msgstr "메모"
 #: web/lib/people/RelationshipRows.svelte:62
 msgid "Nothing recorded yet."
 msgstr "아직 기록이 없습니다."
+
+#: web/lib/SettingsChecks.svelte:19
+msgid "OK"
+msgstr "정상"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1128,7 +1148,7 @@ msgid "Pending"
 msgstr "대기 중"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:105 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/+page.svelte:107 web/routes/settings/people/+page.svelte:113
 #: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "인물"
@@ -1214,6 +1234,10 @@ msgstr "세로"
 msgid "Possible"
 msgstr "가능"
 
+#: web/lib/SettingsChecks.svelte:55
+msgid "Preflight checks"
+msgstr "사전 점검"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare pictures"
 msgstr "사진 준비"
@@ -1221,6 +1245,10 @@ msgstr "사진 준비"
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare selected clips"
 msgstr "선택한 클립 준비"
+
+#: web/routes/settings/+page.svelte:32
+msgid "Prepared-source cache"
+msgstr "준비된 소스 캐시"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1383,6 +1411,14 @@ msgstr "작업 세부 정보"
 msgid "Run not found. It may have been removed."
 msgstr "실행을 찾을 수 없습니다. 삭제되었을 수 있습니다."
 
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the checks again"
+msgstr "다시 점검"
+
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the preflight checks"
+msgstr "사전 점검 실행"
+
 #: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "이 제안 실행"
@@ -1395,6 +1431,10 @@ msgstr "실행 중"
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "서버에서 실행 중: {phase}. 이 페이지를 떠나도 계속됩니다."
+
+#: web/lib/SettingsChecks.svelte:68
+msgid "Running the preflight checks..."
+msgstr "사전 점검 중..."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
@@ -1418,7 +1458,7 @@ msgstr "동영상 프레임 샘플링 중"
 msgid "Save"
 msgstr "저장"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:98
 msgid "Save Config"
 msgstr "설정 저장"
 
@@ -1430,7 +1470,7 @@ msgstr "그룹 저장"
 msgid "Save revision"
 msgstr "수정본 저장"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:92
+#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:94
 msgid "Saved - type a new key to replace it"
 msgstr "저장됨. 교체하려면 새 키를 입력하세요"
 
@@ -1453,7 +1493,7 @@ msgstr "여기에 저장됨"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "여기에 저장되어 있지만 {name}(으)로 복호화할 수 없어 기본값을 사용 중입니다"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:64
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:66
 msgid "Saved to the database"
 msgstr "데이터베이스에 저장했습니다"
 
@@ -1499,8 +1539,8 @@ msgstr "{name}(환경 변수)로 설정됨"
 msgid "Set in config.yaml as {key}"
 msgstr "config.yaml의 {key}로 설정됨"
 
-#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:76
-#: web/routes/settings/+page.svelte:80 web/routes/settings/people/+page.svelte:118
+#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:78
+#: web/routes/settings/+page.svelte:82 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "설정"
 
@@ -1533,7 +1573,7 @@ msgstr "로그아웃"
 msgid "Sign-in expired. Try again."
 msgstr "로그인 시간이 만료되었습니다. 다시 시도해 주세요."
 
-#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:34
+#: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
 msgstr "건너뜀"
 
@@ -1638,7 +1678,7 @@ msgstr "교체됨"
 msgid "Take out"
 msgstr "빼기"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:97
 msgid "Test Connection"
 msgstr "연결 테스트"
 
@@ -1668,7 +1708,11 @@ msgid ""
 "people in Immich and rescan."
 msgstr "API 키의 계정 이름이 이름이 지정된 인물과 연결되지 않았습니다. 소유자를 선택하거나 Immich에서 인물의 이름을 지정한 뒤 다시 스캔하세요."
 
-#: web/routes/settings/+page.svelte:55
+#: web/lib/SettingsChecks.svelte:70
+msgid "The checks could not be run."
+msgstr "점검을 실행할 수 없습니다."
+
+#: web/routes/settings/+page.svelte:57
 msgid "The connection could not be checked."
 msgstr "연결을 확인할 수 없습니다."
 
@@ -1785,7 +1829,7 @@ msgstr "보고서를 불러오지 못했습니다."
 msgid "The revision could not be saved."
 msgstr "수정본을 저장하지 못했습니다."
 
-#: web/routes/runs/+page.svelte:126
+#: web/routes/runs/+page.svelte:127
 msgid "The runs could not be loaded."
 msgstr "작업 내역을 불러오지 못했습니다."
 
@@ -1833,7 +1877,7 @@ msgstr ""
 "이 서버가 비밀번호를 직접 만들어 로그에 한 번 기록했습니다 (docker compose logs immich-memories). 새 비밀번호는 immich-"
 "memories auth reset-password로 만드세요."
 
-#: web/routes/settings/+page.svelte:30
+#: web/routes/settings/+page.svelte:31
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
 
@@ -1881,7 +1925,7 @@ msgstr "여행 감지에 실패했습니다."
 msgid "Trips"
 msgstr "여행"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "다시 시도"
 
@@ -1952,7 +1996,7 @@ msgstr "판정"
 msgid "Video"
 msgstr "동영상"
 
-#: web/routes/settings/+page.svelte:29
+#: web/routes/settings/+page.svelte:30
 msgid "Video cache"
 msgstr "동영상 캐시"
 
@@ -1976,6 +2020,10 @@ msgstr "Immich에서 보기"
 #: web/lib/RenderPanel.svelte:187
 msgid "Vintage charm"
 msgstr "빈티지 감성으로"
+
+#: web/lib/SettingsChecks.svelte:20
+msgid "Warning"
+msgstr "경고"
 
 #: web/routes/login/+page.svelte:53
 msgid "Watch your memories again, in films you can make your own."
@@ -2024,7 +2072,7 @@ msgstr "흰색"
 msgid "Who"
 msgstr "누구"
 
-#: web/routes/settings/+page.svelte:105
+#: web/routes/settings/+page.svelte:107
 msgid "Who is who, their roles and relationships."
 msgstr "누가 누구인지, 역할과 관계입니다."
 

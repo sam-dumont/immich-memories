@@ -74,3 +74,74 @@ def test_both_weights_of_every_script_are_pinned() -> None:
     bold = {font.file.replace("-Bold.", ".") for font in SCRIPT_FONTS if font.bold}
 
     assert regular == bold
+
+
+@pytest.fixture
+def drops_first_request():
+    """A loopback font host that hangs up on the first request, then serves the pin."""
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from threading import Thread
+
+    attempts: list[str] = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802 -- stdlib server interface
+            attempts.append(self.path)
+            if len(attempts) == 1:
+                # A peer reset: the socket closes before any response line.
+                self.close_connection = True
+                self.connection.close()
+                return
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(_BODY)))
+            self.end_headers()
+            self.wfile.write(_BODY)
+
+        def log_message(self, *_args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}/{_PIN.file}", attempts
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.usefixtures("one_pin")
+def test_a_dropped_connection_is_retried_and_the_pin_still_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, drops_first_request: tuple[str, list[str]]
+) -> None:
+    url, attempts = drops_first_request
+    # WHY: point the pin at the loopback host and skip the real backoff wait.
+    monkeypatch.setattr(ScriptFont, "url", property(lambda _self: url))
+    monkeypatch.setattr(script_fonts, "_RETRY_DELAYS", (0.0, 0.0, 0.0))
+    written = install_script_fonts(tmp_path)
+
+    assert written == [_PIN.file]
+    assert (tmp_path / _PIN.file).read_bytes() == _BODY
+    assert len(attempts) == 2
+
+
+@pytest.mark.usefixtures("one_pin")
+def test_a_host_that_keeps_dropping_fails_after_the_retries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import httpx
+
+    calls: list[str] = []
+
+    def _always_reset(url: str, **_kwargs: object) -> httpx.Response:
+        calls.append(url)
+        raise httpx.ReadError("Connection reset by peer")
+
+    # WHY: the network boundary; a host that never answers is what this test is about.
+    monkeypatch.setattr(httpx, "get", _always_reset)
+    monkeypatch.setattr(script_fonts, "_RETRY_DELAYS", (0.0, 0.0, 0.0))
+
+    with pytest.raises(httpx.ReadError):
+        install_script_fonts(tmp_path)
+
+    assert len(calls) == 4
+    assert not any(tmp_path.iterdir())

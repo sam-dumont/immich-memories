@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-15 06:04+0200\n"
+"POT-Creation-Date: 2026-10-15 08:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -29,7 +29,7 @@ msgstr "为这组人物筛选条件命名，方便在“新建回忆”页面或
 msgid "A monthly review already finished this month."
 msgstr "本月已经制作过一部月度回顾影片。"
 
-#: web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:92
 msgid "API Key"
 msgstr "API 密钥"
 
@@ -231,7 +231,7 @@ msgstr "模糊背景"
 msgid "Browse the whole pool"
 msgstr "浏览全部候选素材"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:114 web/routes/settings/+page.svelte:115
 msgid "Caches"
 msgstr "缓存"
 
@@ -304,6 +304,10 @@ msgstr "正在检查视频片段是否存在镜头遮挡"
 msgid "Checking video frames for the family audience"
 msgstr "正在检查视频帧是否适合家庭观看"
 
+#: web/lib/SettingsChecks.svelte:41 web/lib/SettingsChecks.svelte:43
+msgid "Checks"
+msgstr "检查"
+
 #: web/routes/create/+page.svelte:364
 msgid "Choose an album"
 msgstr "请选择相册"
@@ -318,7 +322,7 @@ msgid ""
 "it before anything renders."
 msgstr "选择影片要讲述的内容。下方命令会生成剪辑，你可以先检查，再开始渲染。"
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:120
 msgid "Clear"
 msgstr "清除"
 
@@ -330,7 +334,7 @@ msgstr "解除限制"
 msgid "Clear this hold?"
 msgstr "解除此限制？"
 
-#: web/routes/settings/+page.svelte:70
+#: web/routes/settings/+page.svelte:72
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "已从 {cache} 中清除 {count} 条记录。"
@@ -352,11 +356,15 @@ msgstr "已完成"
 msgid "Config file: {config_path}"
 msgstr "配置文件：{config_path}"
 
+#: web/lib/SettingsChecks.svelte:47
+msgid "Config warnings"
+msgstr "配置警告"
+
 #: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
 msgid "Configuration"
 msgstr "配置"
 
-#: web/routes/settings/+page.svelte:59
+#: web/routes/settings/+page.svelte:61
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "已以 {name} 身份连接"
@@ -522,10 +530,14 @@ msgstr "在此结束"
 msgid "Ends"
 msgstr "结束方式"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:119
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "记录：{count}"
+
+#: web/lib/SettingsChecks.svelte:21
+msgid "Error"
+msgstr "错误"
 
 #: web/lib/PhaseTimeline.svelte:22
 msgid "Estimate based on available measurements. It can change as work progresses."
@@ -538,7 +550,7 @@ msgid ""
 "across every run."
 msgstr "本次剪辑可选的全部素材，按拍摄顺序排列。勾选或取消勾选后预览，影片将直接使用你的选择，不再重新筛选。“永不使用”和“解除限制”也会应用于之后的任务。"
 
-#: web/routes/settings/+page.svelte:81
+#: web/routes/settings/+page.svelte:83
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -653,11 +665,11 @@ msgstr "规则如何得出这一结果"
 msgid "How the sentence was read"
 msgstr "这句话是如何被理解的"
 
-#: web/routes/settings/+page.svelte:84 web/routes/settings/+page.svelte:85
+#: web/routes/settings/+page.svelte:86 web/routes/settings/+page.svelte:87
 msgid "Immich Connection"
 msgstr "Immich 连接"
 
-#: web/routes/settings/+page.svelte:87
+#: web/routes/settings/+page.svelte:89
 msgid "Immich Server URL"
 msgstr "Immich 服务器地址"
 
@@ -781,6 +793,10 @@ msgstr "Live"
 #: web/lib/JobPanel.svelte:95
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "实时更新已断开。正在检查已保存的任务状态。"
+
+#: web/lib/SettingsChecks.svelte:48
+msgid "Loading your config warned about these keys:"
+msgstr "加载配置时，以下键出现警告："
 
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
@@ -967,7 +983,7 @@ msgstr "未记录选择此素材的原因。"
 msgid "No rule the preview can check would drop a picture."
 msgstr "预览中检查的规则不会排除任何素材。"
 
-#: web/routes/runs/+page.svelte:121
+#: web/routes/runs/+page.svelte:122
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "没有符合筛选条件的任务。请从“回忆”或“建议”创建回忆。"
 
@@ -1033,6 +1049,10 @@ msgstr "备注"
 #: web/lib/people/RelationshipRows.svelte:62
 msgid "Nothing recorded yet."
 msgstr "尚无记录。"
+
+#: web/lib/SettingsChecks.svelte:19
+msgid "OK"
+msgstr "正常"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1120,7 +1140,7 @@ msgid "Pending"
 msgstr "等待中"
 
 #: web/routes/+layout.svelte:24 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:105 web/routes/settings/people/+page.svelte:113
+#: web/routes/settings/+page.svelte:107 web/routes/settings/people/+page.svelte:113
 #: web/routes/settings/people/+page.svelte:119
 msgid "People"
 msgstr "人物"
@@ -1206,6 +1226,10 @@ msgstr "竖屏"
 msgid "Possible"
 msgstr "可以"
 
+#: web/lib/SettingsChecks.svelte:55
+msgid "Preflight checks"
+msgstr "预检"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare pictures"
 msgstr "准备图片"
@@ -1213,6 +1237,10 @@ msgstr "准备图片"
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Prepare selected clips"
 msgstr "准备选中的片段"
+
+#: web/routes/settings/+page.svelte:32
+msgid "Prepared-source cache"
+msgstr "已准备素材缓存"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1375,6 +1403,14 @@ msgstr "任务详情"
 msgid "Run not found. It may have been removed."
 msgstr "找不到该运行，可能已被删除。"
 
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the checks again"
+msgstr "重新检查"
+
+#: web/lib/SettingsChecks.svelte:44
+msgid "Run the preflight checks"
+msgstr "运行预检"
+
 #: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "运行此建议"
@@ -1387,6 +1423,10 @@ msgstr "运行中"
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
+
+#: web/lib/SettingsChecks.svelte:68
+msgid "Running the preflight checks..."
+msgstr "正在运行预检..."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
 #: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
@@ -1410,7 +1450,7 @@ msgstr "正在采样视频帧"
 msgid "Save"
 msgstr "保存"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:98
 msgid "Save Config"
 msgstr "保存配置"
 
@@ -1422,7 +1462,7 @@ msgstr "保存分组"
 msgid "Save revision"
 msgstr "保存修订"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:92
+#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:94
 msgid "Saved - type a new key to replace it"
 msgstr "已保存，输入新密钥可替换它"
 
@@ -1445,7 +1485,7 @@ msgstr "在此保存"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:64
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:66
 msgid "Saved to the database"
 msgstr "已保存到数据库"
 
@@ -1491,8 +1531,8 @@ msgstr "由 {name} 设置（环境变量）"
 msgid "Set in config.yaml as {key}"
 msgstr "在 config.yaml 中设为 {key}"
 
-#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:76
-#: web/routes/settings/+page.svelte:80 web/routes/settings/people/+page.svelte:118
+#: web/routes/+layout.svelte:25 web/routes/settings/+page.svelte:78
+#: web/routes/settings/+page.svelte:82 web/routes/settings/people/+page.svelte:118
 msgid "Settings"
 msgstr "设置"
 
@@ -1525,7 +1565,7 @@ msgstr "退出登录"
 msgid "Sign-in expired. Try again."
 msgstr "登录已过期。请重试。"
 
-#: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:34
+#: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
 msgstr "已跳过"
 
@@ -1630,7 +1670,7 @@ msgstr "已替换"
 msgid "Take out"
 msgstr "移除"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:97
 msgid "Test Connection"
 msgstr "测试连接"
 
@@ -1660,7 +1700,11 @@ msgid ""
 "people in Immich and rescan."
 msgstr "API 密钥的账户名称尚未匹配到已命名的人物。请选择所有者，或在 Immich 中为人物命名后重新扫描。"
 
-#: web/routes/settings/+page.svelte:55
+#: web/lib/SettingsChecks.svelte:70
+msgid "The checks could not be run."
+msgstr "无法运行检查。"
+
+#: web/routes/settings/+page.svelte:57
 msgid "The connection could not be checked."
 msgstr "无法检查连接。"
 
@@ -1771,7 +1815,7 @@ msgstr "无法加载报告。"
 msgid "The revision could not be saved."
 msgstr "无法保存修订。"
 
-#: web/routes/runs/+page.svelte:126
+#: web/routes/runs/+page.svelte:127
 msgid "The runs could not be loaded."
 msgstr "无法加载任务记录。"
 
@@ -1819,7 +1863,7 @@ msgstr ""
 "此服务器已自动生成密码，并在日志中输出过一次 (docker compose logs immich-memories)。运行 immich-memories auth reset-"
 "password 可生成新密码。"
 
-#: web/routes/settings/+page.svelte:30
+#: web/routes/settings/+page.svelte:31
 msgid "Thumbnail cache"
 msgstr "缩略图缓存"
 
@@ -1867,7 +1911,7 @@ msgstr "旅行检测失败。"
 msgid "Trips"
 msgstr "旅行"
 
-#: web/routes/runs/+page.svelte:127 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
 msgid "Try again"
 msgstr "重试"
 
@@ -1938,7 +1982,7 @@ msgstr "结论"
 msgid "Video"
 msgstr "视频"
 
-#: web/routes/settings/+page.svelte:29
+#: web/routes/settings/+page.svelte:30
 msgid "Video cache"
 msgstr "视频缓存"
 
@@ -1962,6 +2006,10 @@ msgstr "在 Immich 中查看"
 #: web/lib/RenderPanel.svelte:187
 msgid "Vintage charm"
 msgstr "复古韵味"
+
+#: web/lib/SettingsChecks.svelte:20
+msgid "Warning"
+msgstr "警告"
 
 #: web/routes/login/+page.svelte:53
 msgid "Watch your memories again, in films you can make your own."
@@ -2010,7 +2058,7 @@ msgstr "白色"
 msgid "Who"
 msgstr "谁"
 
-#: web/routes/settings/+page.svelte:105
+#: web/routes/settings/+page.svelte:107
 msgid "Who is who, their roles and relationships."
 msgstr "谁是谁，以及他们的角色和关系。"
 

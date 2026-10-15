@@ -123,6 +123,8 @@ done
 This needs the standalone `kustomize` CLI; `kubectl kustomize` can build but cannot edit.
 The loop changes every root, including `render-sidecar`, `postgres` and `maximalist`, so their
 Secrets move with their Deployments and the maximalist namespace does not override your choice.
+The Secrets you `kubectl apply -f` yourself (the base's, and the three the maximalist overlay
+reads) skip that loop: set `metadata.namespace` in each copy before applying it.
 It also renames the Namespace object that `base/` creates. Render each root you use before applying.
 
 Update `-n immich-memories` in commands and cross-namespace addresses such as
