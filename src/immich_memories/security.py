@@ -72,6 +72,27 @@ def write_secret_file(path: Path, text: str) -> None:
         raise
 
 
+def create_secret_file(path: Path, text: str) -> bool:
+    """Create an owner-only file, complete, only if `path` does not exist yet; True when it did.
+
+    Like `write_secret_file`, the text goes to a 0600 temp file first. Hard-linking that into
+    place fails when `path` already exists, so of several processes creating the same file
+    exactly one wins, and nobody overwrites the winner's file.
+    """
+    create_private_directory(path.parent)
+    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    tmp = Path(temp_name)
+    try:
+        with os.fdopen(fd, "w") as handle:
+            handle.write(text)
+        os.link(tmp, path)
+    except FileExistsError:
+        return False
+    finally:
+        tmp.unlink(missing_ok=True)
+    return True
+
+
 def _assert_private(path: Path) -> None:
     """Refuse a path someone else could have prepared for us."""
     info = path.lstat()

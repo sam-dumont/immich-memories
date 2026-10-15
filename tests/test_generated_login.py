@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 
 import pytest
@@ -165,3 +166,70 @@ def test_config_output_never_carries_the_password(state_dir, monkeypatch, caplog
 
     assert shown.exit_code == 0, shown.output
     assert password not in shown.output
+
+
+# A worker process: say it is ready, wait for the go file so every worker starts together,
+# then do what a server start does, with the log on stderr.
+_WORKER = """
+import logging, os, sys, time
+from pathlib import Path
+from immich_memories.config.models.auth import AuthConfig
+from immich_memories.web.generated_login import announce_generated_login
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+state_dir, go = Path(sys.argv[1]), Path(sys.argv[2])
+(go.parent / f"ready-{os.getpid()}").touch()
+while not go.exists():
+    time.sleep(0.001)
+announce_generated_login(AuthConfig(), state_dir)
+"""
+
+
+def test_workers_starting_together_share_one_password_and_only_one_logs_it(tmp_path):
+    import subprocess
+    import sys
+
+    from immich_memories.config.models.auth import AuthConfig
+    from immich_memories.web.generated_login import generated_credentials_match, login_path
+
+    state_dir, go = tmp_path / "state", tmp_path / "go"
+    state_dir.mkdir(mode=0o700)
+    workers = [
+        subprocess.Popen(
+            [sys.executable, "-c", _WORKER, str(state_dir), str(go)],
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(6)
+    ]
+    deadline = time.monotonic() + 60
+    while len(list(tmp_path.glob("ready-*"))) < len(workers) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    go.touch()
+    logs = [worker.communicate(timeout=60)[1] for worker in workers]
+
+    assert all(worker.returncode == 0 for worker in workers), logs
+    shown = [log.split("password: ")[1].split()[0] for log in logs if "password: " in log]
+    assert len(shown) == 1, logs
+    assert generated_credentials_match("admin", shown[0], AuthConfig(), login_path(state_dir))
+
+
+def test_an_unreadable_login_file_is_kept_aside_and_the_warning_says_so(
+    state_dir, monkeypatch, caplog
+):
+    caplog.set_level(logging.INFO)
+    (state_dir / LOGIN_FILE).write_text('{"salt": "truncat')
+
+    client = server_client(monkeypatch, Config())
+
+    password = _shown_password(caplog)
+    kept = list(state_dir.glob(f"{LOGIN_FILE}.corrupt-*"))
+    assert len(kept) == 1
+    assert kept[0].read_text() == '{"salt": "truncat'
+    warning = next(r for r in caplog.records if "could not be read" in r.getMessage())
+    assert warning.levelno == logging.WARNING
+    said = warning.getMessage()
+    assert kept[0].name in said
+    assert "new password" in said
+    assert "immich-memories auth reset-password" in said
+    assert password not in said
+    assert _sign_in(client, password).status_code == 200
