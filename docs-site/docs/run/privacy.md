@@ -23,7 +23,7 @@ your own hardware or outside your network.
 
 | Feature | What it receives |
 |---|---|
-| Text reader | Candidate annotations, dates, places, people/relationship and album names, plus your memory brief. On Full, one card per story in the cut for the film summary. A special day's title prompt (a trip's too with `--llm-title`); never a title for a year, month, season, person, couple, birthday, holiday or on-this-day film |
+| Text reader | Candidate annotations, dates, places, people/relationship and album names, plus your memory brief. On Full, the period's account and one card per story in the cut (what it was, first names, what its shots show people doing) for the film summary. A special day's title prompt (a trip's too with `--llm-title`); never a title for a year, month, season, person, couple, birthday, holiday or on-this-day film |
 | Caption server | Small picture tiles and video-frame strips |
 | LLM captions | Pictures, only with explicit `caption_provider: llm` |
 | Inference service | Previews and sampled frames for classification; generated WAV music for stem separation |

@@ -15,6 +15,7 @@ from immich_memories.analysis.editorial_film_summary import (
     plain_summary,
     read_summary,
     summarise_the_film,
+    what_the_shots_show,
 )
 from immich_memories.analysis.editorial_story_names import home_name
 from immich_memories.analysis.editorial_story_reading import PeriodStory
@@ -197,24 +198,43 @@ def test_the_full_summary_comes_through_the_prompt_and_names_the_birthday_and_th
     assert "road north" in summary
 
 
-def test_the_full_prompt_is_fed_the_stories_their_days_people_occasions_and_the_trip_legs():
+ACCOUNT = (
+    "In July 2025 Kit had a birthday party at home with cake (f485a659…), then the family "
+    "drove north to Nordkapp."
+)
+
+
+def test_the_full_prompt_is_fed_the_periods_account_and_what_each_story_was():
+    judge = ScriptedJudge(_reply(FULL_REPLY))
+
+    read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en", account=ACCOUNT)
+
+    prompt = judge.prompts[0]
+    for expected in (BIRTHDAY.title, "Nordkapp and Lofoten", "Kit", "birthday", "cake"):
+        assert expected in prompt
+    assert "a month film, 2025-07" in prompt
+
+
+def test_the_account_reaches_the_model_without_the_ids_its_readings_cite():
+    judge = ScriptedJudge(_reply(FULL_REPLY))
+
+    read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en", account=ACCOUNT)
+
+    assert "f485a659" not in judge.prompts[0]
+    assert "party at home with cake, then" in judge.prompts[0]
+
+
+def test_the_stories_reach_the_model_without_their_days_or_places():
+    # WHY: fed each story's dated title, days and places, the model wrote the summary as a
+    # list of them (#2575).
     judge = ScriptedJudge(_reply(FULL_REPLY))
 
     read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en")
 
-    prompt = judge.prompts[0]
-    for expected in (
-        BIRTHDAY.title,
-        TRIP.title,
-        "Nordkapp and Lofoten",
-        "Kit",
-        "birthday",
-        "2025-07-05",
-        "a month film, 2025-07",
-        "which stories mattered",
-    ):
-        assert expected in prompt
-    assert "navigation" not in prompt.lower()
+    stories = judge.prompts[0].split("STORIES\n", 1)[1]
+    assert "2025-07-05" not in stories
+    assert '"places"' not in stories
+    assert '"days"' not in stories
 
 
 @pytest.mark.parametrize(
@@ -257,26 +277,69 @@ def test_weeks_at_home_one_after_another_reach_the_model_as_one_story():
     read_summary(judge, _home_weeks(), scope="a month film, 2026-09", locale="en")
 
     cards = [json.loads(line) for line in judge.prompts[0].split("STORIES\n", 1)[1].splitlines()]
-    assert [card["name"] for card in cards] == ["Days at home, 2–13 September"]
-    assert cards[0]["days"] == ["2026-09-02", "2026-09-13"]
+    assert [card["what"] for card in cards] == ["Days at home"]
     assert cards[0]["people"] == ["Kit"]
 
 
-def test_the_model_is_asked_to_name_each_story_once_unquoted():
+def test_the_model_is_asked_what_happened_without_titles_dates_or_places():
     judge = ScriptedJudge(_reply(FULL_REPLY))
 
     read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en")
 
-    assert "Name a story at most once" in judge.prompts[0]
-    assert "without quotation marks" in judge.prompts[0]
+    asked = " ".join(judge.prompts[0].split())
+    assert "Never write a story's title, a date" in asked
+    assert "Name no place, except where a trip went" in asked
 
 
-def test_a_summary_naming_one_story_twice_is_refused():
-    name = BIRTHDAY.title
-    judge = ScriptedJudge(_reply(f"July was {name} and the road north; {name} mattered most."))
+def test_the_model_is_asked_to_name_the_people_rather_than_say_the_people():
+    # WHY: a holiday summary said "Les personnes ont passé du temps ensemble" while its stories
+    # named everyone in it.
+    judge = ScriptedJudge(_reply(FULL_REPLY))
+
+    read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en")
+
+    asked = " ".join(judge.prompts[0].split())
+    assert 'When the account or the stories name people, name them: never "the people"' in asked
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "July was Lyon, Annecy and Chambéry.",
+        "July 2025 was Kit's birthday.",
+        "July was Kit's birthday (f485a659).",
+    ],
+    ids=["a list of places", "a year", "an id"],
+)
+def test_a_summary_the_title_or_a_viewer_has_no_use_for_is_refused(reply):
+    stories = [
+        _story("S1", "Les Alpes", "major", days=["2025-07-02"] * 2, places=["Lyon", "Annecy"]),
+        _story("S2", "Retour", "major", days=["2025-07-20"] * 2, places=["Chambéry"]),
+    ]
+    judge = ScriptedJudge(_reply(reply))
 
     with pytest.raises(ValueError, match="summary"):
-        read_summary(judge, demo_stories(), scope="a month film, 2025-07", locale="en")
+        read_summary(judge, stories, scope="a month film, 2025-07", locale="en")
+
+
+def test_the_shots_say_what_each_story_shows_people_doing():
+    stories = [_story("S1", "Les Alpes", "major", days=["2025-07-02"] * 2)]
+    carriers = [
+        {"story_episode": "S1", "line": "at Lyon | activity=eating-drinking, people=two"},
+        {"story_episode": "S1", "line": "at Lyon | activity=posing, venue=water"},
+        {"story_episode": "S1", "line": "at Lyon | activity=eating-drinking"},
+    ]
+    judge = ScriptedJudge(_reply(FULL_REPLY))
+
+    read_summary(
+        judge,
+        what_the_shots_show(stories, carriers),
+        scope="a month film, 2025-07",
+        locale="en",
+    )
+
+    card = json.loads(judge.prompts[0].split("STORIES\n", 1)[1])
+    assert card["doing"] == ["a meal", "by the water"]
 
 
 def test_a_story_named_inside_a_longer_name_is_not_a_repeat():
@@ -538,13 +601,13 @@ def test_a_refined_film_asks_the_model_for_its_summary_not_the_drafts_basic_line
 def test_a_model_summary_listing_a_place_twice_says_it_once():
     stories = [
         _story("S1", "Les Alpes", "major", days=["2025-07-02"] * 2, places=["Lyon", "Annecy"]),
-        _story("S2", "Retour", "major", days=["2025-07-20"] * 2, places=["Lyon", "Chambéry"]),
+        _story("S2", "Retour", "major", days=["2025-07-20"] * 2, places=["Lyon"]),
     ]
-    judge = ScriptedJudge(_reply("Juillet à Lyon, Annecy, Lyon et Chambéry, puis à Lyon."))
+    judge = ScriptedJudge(_reply("Juillet à Lyon, Annecy et Lyon, puis à Lyon."))
 
     text = read_summary(judge, stories, scope="a month film, 2025-07", locale="fr")
 
-    assert text == "Juillet à Lyon, Annecy et Chambéry, puis à Lyon."
+    assert text == "Juillet à Lyon et Annecy, puis à Lyon."
 
 
 def test_a_summary_records_the_language_it_was_written_in():
@@ -584,3 +647,52 @@ def test_the_plan_keeps_the_summarys_language_for_a_later_render():
     )
 
     assert selection.record()["thesis_locale"] == "en"
+
+
+def test_a_full_film_is_summarised_from_its_periods_account():
+    judge = ScriptedJudge(_reply(FULL_REPLY))
+    stories = demo_stories()
+    story = _period(stories)
+
+    summarise_the_film(
+        _source(),
+        SimpleNamespace(thin=object(), judge=judge),
+        SimpleNamespace(story=story),
+        _carriers(stories),
+        record={}.__setitem__,
+        account=ACCOUNT,
+    )
+
+    assert story.thesis == FULL_REPLY
+    assert "birthday party at home with cake" in judge.prompts[0]
+
+
+def test_a_holiday_film_is_summarised_from_its_holiday_and_the_years_it_shows():
+    stories = [
+        _story("S1", "Les Alpes", "major", days=["2004-08-15"] * 2),
+        _story("S2", "Retour", "major", days=["2026-08-15"] * 2),
+    ]
+    source = _source(product="holiday")
+    source.case.occasion = "Assumption"
+    judge = ScriptedJudge(_reply("Kit and Pat visit a castle."))
+    story = _period(stories)
+
+    summarise_the_film(
+        source,
+        SimpleNamespace(thin=object(), judge=judge),
+        SimpleNamespace(story=story),
+        _carriers(stories),
+        record={}.__setitem__,
+    )
+
+    assert "THE OCCASION: Assumption, 2004–2026." in judge.prompts[0]
+    assert story.thesis == "Assumption, 2004–2026. Kit and Pat visit a castle."
+
+
+def test_the_prompts_own_labels_said_back_void_the_summary():
+    judge = ScriptedJudge(_reply("THE OCCASION Assumption. Kit and Pat visit a castle."))
+
+    with pytest.raises(ValueError, match="summary"):
+        read_summary(
+            judge, demo_stories(), scope="a holiday film", locale="en", occasion="Assumption"
+        )

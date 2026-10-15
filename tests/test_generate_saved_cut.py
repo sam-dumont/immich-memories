@@ -23,7 +23,7 @@ RUN = RunMetadata(
 )
 
 
-def _render(params, attempt, monkeypatch, request: CutRenderRequest):
+def _render(params, attempt, monkeypatch, request: CutRenderRequest, run: RunMetadata = RUN):
     handed = {}
 
     def generate_memory(given):
@@ -35,7 +35,7 @@ def _render(params, attempt, monkeypatch, request: CutRenderRequest):
     render_saved_cut(
         config=params.config,
         client=None,
-        run=RUN,
+        run=run,
         attempt_dir=attempt,
         revision=None,
         request=request,
@@ -89,6 +89,29 @@ def test_the_render_keeps_the_title_and_memory_generate_worked_out_for_the_cut(c
     assert (handed.title, handed.subtitle) == ("Le marathon", "1 janvier 2016")
     assert handed.title_source == TitleSource.OCCASION.value
     assert handed.memory_preset_params == {"trip_start": day(2016, 1, 1), "location_name": "Bruges"}
+
+
+@pytest.mark.parametrize("kept", [None, {"hemisphere": "north"}], ids=["no-titles", "no-holiday"])
+def test_an_old_holiday_cut_renders_its_holiday_title(cut, monkeypatch, kept):  # noqa: F811
+    # WHY: a holiday cut made before cuts kept their holiday re-rendered as "From December 2021
+    # to December 2025" (#2573); the holiday is read back from the window it was built around.
+    from immich_memories.processing.render_inputs import write_cut_titles
+
+    params, attempt = cut
+    if kept is not None:
+        write_cut_titles(attempt, title=None, subtitle=None, source=None, preset_params=kept)
+    christmas = replace(
+        RUN,
+        memory_type="holiday",
+        date_range_start=date(2021, 12, 23),
+        date_range_end=date(2025, 12, 27),
+    )
+
+    handed = _render(params, attempt, monkeypatch, CutRenderRequest(), run=christmas)
+
+    assert handed.title.startswith("Christmas · ")
+    assert handed.subtitle is None
+    assert handed.memory_preset_params["holiday"] == "christmas"
 
 
 def test_a_title_typed_at_render_still_wins(cut, monkeypatch):  # noqa: F811

@@ -63,3 +63,18 @@ def test_the_birthdays_film_names_the_birthday_not_the_day_after_it():
 )
 def test_no_other_film_claims_a_birthday(memory_type, preset):
     assert _context(memory_type, preset).celebrated_birthday is None
+
+
+@pytest.mark.parametrize(
+    ("memory_type", "preset", "occasion"),
+    [
+        ("person_spotlight", {"birthday": True}, "Jo's birthday"),
+        ("holiday", {"holiday": "christmas", "country": "US"}, "Christmas"),
+        ("trip", {"location_name": "Nordkapp"}, "Nordkapp"),
+        ("monthly_highlights", {}, ""),
+    ],
+    ids=["birthday", "holiday", "trip", "period"],
+)
+def test_the_editor_knows_what_the_film_is_the_occasion_of(memory_type, preset, occasion):
+    # WHY: the film's summary leads with its occasion (#2575).
+    assert _context(memory_type, preset).occasion == occasion

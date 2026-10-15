@@ -6,7 +6,7 @@ title: Add a text reader
 
 Installing Full from scratch? Select its tab in [Quick start](../get-started/quick-start.md), or use [native Mac](../run/uv-pip.md#apple-silicon). This page sets up the reader those routes need.
 
-A reader names special days (and trips with `--llm-title`) and picks the music mood on any tier. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title. On Full it also writes the film's one-line summary. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
+A reader names special days (and trips with `--llm-title`) and picks the music mood on any tier. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title. On Full it also writes the film's short summary. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
 
 Use a model with a 32k context and valid structured replies. The app can run its local default, or call an API server you already use.
 

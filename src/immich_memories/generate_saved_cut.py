@@ -27,6 +27,7 @@ from immich_memories.filename_builder import (
     name_after_recipe,
 )
 from immich_memories.generate import GenerationParams, generate_memory
+from immich_memories.memory_types.holiday_params import with_the_cuts_holiday
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.operations.revision_render import RenderUnavailable, project_revision
 from immich_memories.processing.editorial_timing import timing_policy_for_params
@@ -200,7 +201,13 @@ def _apply_request(
         config.title_screens = config.title_screens.model_validate(
             config.title_screens.model_dump() | {"style_mode": request.title_style}
         )
-    params.memory_preset_params = dict(saved.preset_params) if saved is not None else {}
+    params.memory_preset_params = with_the_cuts_holiday(
+        saved.preset_params if saved is not None else {},
+        memory_type=run.memory_type,
+        start=run.date_range_start,
+        end=run.date_range_end,
+        config=config,
+    )
     params.transition = request.transition or params.transition
     params.output_resolution = request.output_resolution
     params.output_orientation = request.output_orientation

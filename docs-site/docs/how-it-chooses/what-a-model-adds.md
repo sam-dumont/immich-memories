@@ -4,7 +4,9 @@ title: What a model changes
 
 # What a model changes
 
-A text model can refine the film after the rules editor has made its draft. It reads descriptions and library facts, looks for shots that add little, and tries replacements. Each replacement still has to pass the film’s checks. Once the cut is settled, it writes the film's one-line summary from the stories the film shows; without a model, the summary is those stories' names in order.
+A text model can refine the film after the rules editor has made its draft. It reads descriptions and library facts, looks for shots that add little, and tries replacements. Each replacement still has to pass the film’s checks. Once the cut is settled, it writes the film's short summary from the stories the film shows; without a model, the summary is those stories' names in order.
+
+That summary says what happened and who it was with, from the period's account and what the film's shots show people doing, with no list of places and no dates. A holiday, trip or birthday film's summary starts with its occasion.
 
 Your favourites and close family have protections. The model does not decide sharing: picture classifiers, rules and the local Laya classifier do that. The selection reader (a text model) receives text, including names and places, so a hosted reader sends that information outside your network.
 

@@ -35,7 +35,15 @@ def register_render_command(runs: click.Group) -> None:
     )
     @click.option("--title", default=None, help="Title card text (default: as generate decides)")
     @click.option("--subtitle", default=None, help="Title card subtitle")
-    @click.option("--llm-title/--no-llm-title", default=None, help="Let the model name the film")
+    @click.option(
+        "--llm-title/--no-llm-title",
+        default=None,
+        help=(
+            "Title the film again instead of keeping the cut's title: a period, people, "
+            "birthday, holiday or on-this-day film from its facts, any other film by the "
+            "model. --no-llm-title titles it again without the model"
+        ),
+    )
     @click.option(
         "--transition",
         type=click.Choice(["smart", "crossfade", "cut", "none"]),

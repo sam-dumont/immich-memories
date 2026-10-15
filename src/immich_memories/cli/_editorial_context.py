@@ -103,6 +103,7 @@ def build_editorial_context(
         duration_source=duration_source,
         hemisphere=resolved.preset_params.get("hemisphere", "north"),
         celebrated_birthday=_celebrated_birthday(product, resolved, date_range),
+        occasion=_occasion(product, resolved, date_range, config, person_names),
         forwarded_stand_ins=forwarded_stand_ins,
         window_origin=resolved.preset_params.get("window_origin"),
         render_timing=build_editorial_timing_policy(
@@ -151,6 +152,38 @@ def _celebrated_birthday(
     from immich_memories.memory_types.date_builders import celebrated_day
 
     return celebrated_day(date_range.end, resolved.preset_params).strftime("%m-%d")
+
+
+def _occasion(
+    product: str,
+    resolved: ResolvedRunInputs,
+    date_range: DateRange,
+    config: Config,
+    person_names: list[str],
+) -> str:
+    """What the film is the occasion of, in the film's language, for its summary to lead with:
+    the holiday's name, the trip's destination, or whose birthday it is."""
+    from immich_memories.i18n import resolve_film_locale
+
+    params = resolved.preset_params
+    locale = resolve_film_locale(config.title_screens.locale)
+    if product == "holiday" and params.get("holiday"):
+        from immich_memories.memory_types.factory import holiday_label
+
+        return holiday_label(
+            params["holiday"],
+            date_range.end.year,
+            locale,
+            country=params.get("country") or "US",
+            own_name=params.get("holiday_name"),
+        )
+    if product == "trip":
+        return str(params.get("location_name") or "")
+    if _celebrated_birthday(product, resolved, date_range) and person_names:
+        from immich_memories.titles.film_title import birthday_words
+
+        return birthday_words(person_names[0].split()[0], locale)
+    return ""
 
 
 def _person_match(resolved: ResolvedRunInputs) -> Literal["and", "or"]:

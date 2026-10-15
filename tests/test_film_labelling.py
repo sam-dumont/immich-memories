@@ -289,6 +289,34 @@ def test_a_holiday_film_is_described_by_the_years_its_cut_shows(tmp_path):
     ]
 
 
+def test_an_old_holiday_cut_is_described_by_its_holiday(tmp_path):
+    # WHY: a holiday cut made before cuts kept their holiday was described by a date span
+    # (#2573); its window says which holiday it was built around.
+    config = Config()
+    store = open_store(config)
+    attempt = tmp_path / "attempt"
+    attempt.mkdir()
+    episodes = [
+        {"title": f"25 December {y}", "chosen": ["M"], "days": [f"{y}-12-25"] * 2}
+        for y in (2021, 2025)
+    ]
+    (attempt / PLAN_FILE).write_text(json.dumps({"story": {"episodes": episodes}}))
+    write_cut_titles(attempt, title=None, subtitle=None, source=None, preset_params={})
+    run = RunMetadata(
+        run_id="20251230_000000_abcd",
+        created_at=datetime(2025, 12, 30, tzinfo=UTC),
+        memory_type="holiday",
+        date_range_start=date(2021, 12, 23),
+        date_range_end=date(2025, 12, 27),
+    )
+    record_run_attempt(run.run_id, attempt, tmp_path / "film.mp4", store=store)
+
+    label = label_for_run(config, run, store=store)
+
+    assert label is not None
+    assert label.description == "Christmas · 2021–2025"
+
+
 def test_a_cut_with_no_plan_still_gets_its_type_and_year(tmp_path):
     label = label_for_cut(
         _tagging(),

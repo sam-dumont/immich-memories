@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.api.film_label import FilmLabel, film_label, years_shown
+from immich_memories.memory_types.holiday_params import with_the_cuts_holiday
 from immich_memories.operations.storyboard import PLAN_FILE
 
 if TYPE_CHECKING:
@@ -190,6 +191,13 @@ def label_for_cut(
         story = _read_plan_story(attempt_dir)
         episodes = [e for e in story.get("episodes") or () if isinstance(e, Mapping)]
         kept = read_cut_titles(attempt_dir) if attempt_dir is not None else None
+        params = with_the_cuts_holiday(
+            _preset_params(preset_params, kept),
+            memory_type=memory_type,
+            start=start,
+            end=end,
+            config=config,
+        )
         screen = _title_of_the_cut(
             config,
             title=title,
@@ -198,12 +206,12 @@ def label_for_cut(
             start=start,
             end=end,
             person_name=person_name,
-            preset_params=preset_params,
+            preset_params=params,
             # The years the cut shows, as the title screen read them: a holiday's span.
             years=years_shown(episodes, start, end),
         )
         label = film_label(
-            title=_ordinary_case(screen, memory_type, _preset_params(preset_params, kept), locale),
+            title=_ordinary_case(screen, memory_type, params, locale),
             summary=_summary_in(story, locale),
             type_label=memory_type_label(memory_type, locale),
             date_start=start,
