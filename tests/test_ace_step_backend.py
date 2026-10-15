@@ -105,7 +105,7 @@ class TestACEStepConfig:
         cfg = ACEStepConfig()
         assert cfg.mode == "api"
         assert cfg.api_url == "http://localhost:8000"
-        assert cfg.model_variant == "turbo"
+        assert cfg.model_variant == "auto"
         assert cfg.timeout_seconds == 3600
 
     def test_custom_config(self):
@@ -180,6 +180,9 @@ class TestACEStepBackendV15Library:
 
         class FakeHandler:
             def initialize_service(self, **kwargs):
+                captured.setdefault("dit_attempts", []).append(kwargs["config_path"])
+                if kwargs["config_path"] in captured.get("refuse", ()):
+                    return "weights rejected", False
                 captured["dit_init"] = kwargs
                 captured["checkpoint_dir"] = os.environ["ACESTEP_CHECKPOINTS_DIR"]
                 return "DiT ready", True
@@ -396,6 +399,63 @@ class TestACEStepBackendV15Library:
             backend._init_pipeline()
 
         assert captured["dit_init"]["config_path"] == "acestep-v15-xl-turbo"
+
+    @staticmethod
+    def _load(tmp_path, captured, variant, *, unified_gib=128.0, available_gib=512):
+        modules, _ = TestACEStepBackendV15Library._fake_v15_modules(tmp_path, captured)
+        backend = ACEStepBackend(ACEStepConfig(mode="lib", model_variant=variant, use_lm=False))
+        # WHY: replaces the ACE-Step package, the host OS, and the two host-memory probes
+        with (
+            swapped_modules(modules),
+            patch.dict(os.environ, {"ACESTEP_CHECKPOINTS_DIR": str(tmp_path / "checkpoints")}),
+            patch("platform.system", return_value="Darwin"),
+            patch(
+                "immich_memories.audio.generators.ace_step_model_choice._unified_memory_gib",
+                return_value=unified_gib,
+            ),
+            patch(
+                "immich_memories.audio.generators.memory_budget.available_memory_bytes",
+                return_value=available_gib * 1024**3,
+            ),
+        ):
+            backend._init_pipeline()
+        return backend
+
+    @pytest.mark.parametrize(("unified_gib", "expected"), [(128.0, "xl"), (32.0, "")])
+    def test_auto_loads_xl_on_a_mac_that_holds_it(self, tmp_path, unified_gib, expected):
+        captured: dict = {}
+
+        backend = self._load(tmp_path, captured, "auto", unified_gib=unified_gib)
+
+        model = f"acestep-v15-{expected}-turbo" if expected else "acestep-v15-turbo"
+        assert captured["dit_attempts"] == [model]
+        assert backend._pipeline.dit_model == model
+
+    def test_auto_falls_back_to_2b_when_xl_fails_to_load(self, tmp_path, caplog):
+        captured: dict = {"refuse": {"acestep-v15-xl-turbo"}}
+
+        with caplog.at_level("WARNING"):
+            backend = self._load(tmp_path, captured, "auto")
+
+        assert captured["dit_attempts"] == ["acestep-v15-xl-turbo", "acestep-v15-turbo"]
+        assert backend._pipeline.dit_model == "acestep-v15-turbo"
+        assert "falling back to the 2B turbo model" in caplog.text
+
+    def test_auto_falls_back_to_2b_when_xl_does_not_fit_in_free_memory(self, tmp_path):
+        captured: dict = {}
+
+        backend = self._load(tmp_path, captured, "auto", available_gib=12)
+
+        assert captured["dit_attempts"] == ["acestep-v15-turbo"]
+        assert backend._pipeline.dit_model == "acestep-v15-turbo"
+
+    def test_a_written_xl_that_fails_to_load_is_an_error_not_a_quiet_2b(self, tmp_path):
+        captured: dict = {"refuse": {"acestep-v15-xl-turbo"}}
+
+        with pytest.raises(RuntimeError, match="weights rejected"):
+            self._load(tmp_path, captured, "xl-turbo")
+
+        assert captured["dit_attempts"] == ["acestep-v15-xl-turbo"]
 
     @staticmethod
     def _fake_mlx_modules(captured: dict) -> dict:
@@ -620,6 +680,7 @@ class TestACEStepBackendV15Library:
         ("variant", "expected_model", "expected_steps", "expected_shift"),
         [
             ("turbo", "acestep-v15-turbo", 8, 3.0),
+            ("xl-turbo", "acestep-v15-xl-turbo", 8, 3.0),
             ("base", "acestep-v15-base", 50, 1.0),
         ],
     )
@@ -670,6 +731,7 @@ class TestACEStepBackendV15Library:
         assert result.audio_path == request.output_dir / "ace_step_v2.wav"
         assert result.audio_path.exists()
         assert result.metadata["infer_step"] == expected_steps
+        assert result.metadata["model_variant"] == expected_model
 
 
 class TestMlxDecoderPrecision:
@@ -882,8 +944,9 @@ class TestACEStepBackendAPIGeneration:
         assert "lyrics" in captured_payload
         assert captured_payload["instrumental"] is True
         assert "bpm" in captured_payload
-        assert "keyscale" in captured_payload
-        assert "timesignature" in captured_payload
+        # One take: key and meter are the model's to pick.
+        assert "keyscale" not in captured_payload
+        assert "timesignature" not in captured_payload
         assert captured_payload["duration"] == 30
 
     def test_generate_api_multi_scene(self):

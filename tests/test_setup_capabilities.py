@@ -268,3 +268,24 @@ def test_verify_local_never_calls_an_enabled_reader_disabled(monkeypatch):
     )
     assert result.exit_code == 0, result.output
     assert "configured but disabled" not in result.output
+
+
+def test_auto_offers_the_model_this_host_would_load(monkeypatch, tmp_path):
+    from immich_memories.setup_capabilities import music_capabilities
+
+    # WHY: host memory and the separately installed audio runtime are external state.
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: 64 * 2**30
+    )
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_isolated.isolated_python",
+        lambda: tmp_path / "python",
+    )
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_model_choice._unified_memory_gib", lambda: 128.0
+    )
+
+    rows = music_capabilities(Config())
+
+    assert rows[0].name == "ACE-Step xl-turbo / no planner"

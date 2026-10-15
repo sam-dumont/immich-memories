@@ -8,6 +8,12 @@ Start with [Generate music](../better/music.md) for the supported backend choice
 
 ## Memory and disk
 
+`model_variant: auto`, the default, picks the generator from the machine: the 4B XL turbo model
+on a Mac with 64 GB or more of unified memory or an NVIDIA GPU with 16 GB or more, the 2B turbo
+model everywhere else. XL sounds brighter and gets stuck in a loop less often. If XL fails to
+load, or doesn't fit in the memory free at that moment, the render loads 2B and logs a warning.
+A model you write yourself (`turbo`, `base`, `xl-turbo`) is used as written, with no fallback.
+
 `lib` mode checks free memory against the weights the profile has to keep resident, and refuses
 with a named shortfall rather than letting macOS kill the process mid-render. A refusal is an
 ordinary backend failure: MusicGen is next, then a bundled track.
@@ -117,8 +123,8 @@ the substitution.
   Music is never dropped for it.
 - **One film, one piece of music.** One generator makes the whole soundtrack, planned from the assembled film's length, so a
   100 s photo film gets about 100 s of music. Up to
-  240 s that is one take. Past it, up to 3
-  takes share one caption, style, tempo, key and seed, and are cut on bar lines and joined with a
+  240 s that is one take, and ACE-Step picks its key and time signature. Past it, up to 3
+  takes share one caption, style, tempo, key, time signature and seed, and are cut on bar lines and joined with a
   0.3 s crossfade, matched in level. Each take ends a few seconds early, before its outro, and the
   next starts on its first downbeat.
 - **Four stems.** The track is split with Demucs: vocals duck most under the clips' sound, drums

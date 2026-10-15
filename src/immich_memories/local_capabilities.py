@@ -51,7 +51,6 @@ def local_capabilities(config: Config) -> list[Capability]:
 def _music_capability(config: Config) -> Capability:
     from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
     from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
-    from immich_memories.audio.generators.memory_budget import memory_shortfall
 
     if not config.ace_step.enabled:
         return Capability("Local music", "disabled", "ACE-Step generation is disabled")
@@ -61,14 +60,32 @@ def _music_capability(config: Config) -> Capability:
         )
     if isolated_python() is None and not is_ace_step_importable():
         return Capability("Local music", "missing", install_hint())
-    planner = config.ace_step.lm_model_size if config.ace_step.use_lm else None
-    if shortfall := memory_shortfall(config.ace_step.model_variant, planner):
+    if shortfall := _music_shortfall(config):
         return Capability("Local music", "blocked", str(shortfall))
     return Capability(
         "Local music",
         "unverified",
         "Installed and configured locally; weights and generation have not been tested",
     )
+
+
+def _music_shortfall(config: Config):
+    """The memory gap of the model a render would load, after its automatic 2B fallback."""
+    from immich_memories.audio.generators.ace_step_model_choice import (
+        BASE_VARIANT,
+        is_auto,
+        resolve_model_variant,
+    )
+    from immich_memories.audio.generators.ace_step_runtime import _dit_model_name
+    from immich_memories.audio.generators.memory_budget import memory_shortfall
+
+    settings = config.ace_step
+    planner = settings.lm_model_size if settings.use_lm else None
+    variant = resolve_model_variant(settings.model_variant)
+    shortfall = memory_shortfall(_dit_model_name(variant), planner)
+    if shortfall and is_auto(settings.model_variant) and variant != BASE_VARIANT:
+        return memory_shortfall(_dit_model_name(BASE_VARIANT), planner)
+    return shortfall
 
 
 async def verify_local_capabilities(config: Config, *, verifier=None) -> list[Capability]:
@@ -161,15 +178,15 @@ def _check_audio_assets(config: Config) -> None:
     import os
 
     from immich_memories.audio.generators.ace_step_checkpoints import missing_pinned_components
+    from immich_memories.audio.generators.ace_step_model_choice import resolve_model_variant
     from immich_memories.audio.generators.ace_step_runtime import _dit_model_name, _lm_model_name
 
     root = Path(
         os.environ.get("ACESTEP_CHECKPOINTS_DIR", str(Path.home() / ".cache/ace-step/checkpoints"))
     ).expanduser()
     planner = _lm_model_name(config.ace_step.lm_model_size) if config.ace_step.use_lm else None
-    missing = missing_pinned_components(
-        root, _dit_model_name(config.ace_step.model_variant), planner
-    )
+    variant = resolve_model_variant(config.ace_step.model_variant)
+    missing = missing_pinned_components(root, _dit_model_name(variant), planner)
     if missing:
         raise RuntimeError(
             f"Local ACE weights missing ({', '.join(missing)}); generate one film with music "

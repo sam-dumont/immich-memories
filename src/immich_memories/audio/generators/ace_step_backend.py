@@ -53,7 +53,7 @@ class ACEStepConfig:
 
     mode: str = "api"  # "api" (default, no Python version constraints) or "lib"
     api_url: str = "http://localhost:8000"
-    model_variant: str = "turbo"
+    model_variant: str = "auto"
     lm_model_size: str = "1.7B"
     use_lm: bool = False
     disable_offload: bool = False
@@ -130,6 +130,34 @@ def _take_seed(request: GenerationRequest) -> int | None:
     if request.seed is None:
         return None
     return (request.seed + request.variation_index) % (2**31)
+
+
+def _pinned_key_and_meter(request: GenerationRequest, caption) -> tuple[str, str]:
+    """Key and meter to send ACE-Step: empty, so it picks them, unless takes must agree.
+
+    One take sounds best with key and meter left to the model, as ACE-Step's own guides
+    advise and as the approved reference renders did. A film joined from several takes
+    pins both, or each take picks its own and every seam changes key (#2472).
+    """
+    if request.joined_take:
+        return caption.key_scale, caption.time_signature
+    return "", ""
+
+
+def _planner_switches(use_lm: bool) -> dict[str, bool]:
+    """The 5Hz planner fields of an API request: on only when `use_lm` asks for the planner.
+
+    The server defaults `use_cot_caption` and `use_cot_language` to true, so a server with
+    a planner loaded rewrote the app's caption before generating unless told not to.
+    Current servers set `use_cot_metas` themselves; it is sent for those that read it.
+    Language detection stays off: every track is instrumental, as in library mode.
+    """
+    return {
+        "thinking": use_lm,
+        "use_cot_caption": use_lm,
+        "use_cot_metas": use_lm,
+        "use_cot_language": False,
+    }
 
 
 def _take_duration(request: GenerationRequest) -> float:
@@ -285,23 +313,21 @@ class ACEStepBackend(MusicGenerator):
                 "generating", 0, {"caption": caption_result.caption, "duration": duration}
             )
 
-        # ACE-Step 1.5 base = 50 steps; turbo = 8 distilled steps.
-        is_turbo = self.config.model_variant.endswith("turbo")
-        infer_step = 8 if is_turbo else 50
-        timestep_shift = 3.0 if is_turbo else 1.0
-
         runtime = self._pipeline
         assert isinstance(runtime, ACEStepV15Runtime)
+        # ACE-Step 1.5 base = 50 steps; turbo = 8 distilled steps. The loaded model
+        # decides, since `auto` and its 2B fallback only resolve at load time.
+        is_turbo = runtime.dit_model.endswith("turbo")
+        infer_step = 8 if is_turbo else 50
+        timestep_shift = 3.0 if is_turbo else 1.0
+        key_scale, time_signature = _pinned_key_and_meter(request, caption_result)
         params = runtime.generation_params_type(
             caption=caption_result.caption,
             lyrics="[Instrumental]",
             instrumental=True,
             bpm=caption_result.bpm,
-            # WHY: ACE-Step's guides suggest leaving key and meter to the model, but a
-            # long film's takes must agree on them or their seams change key (#2472).
-            # API mode has always pinned both.
-            keyscale=caption_result.key_scale,
-            timesignature=caption_result.time_signature,
+            keyscale=key_scale,
+            timesignature=time_signature,
             duration=duration,
             inference_steps=infer_step,
             guidance_scale=1.0 if is_turbo else 7.0,
@@ -359,10 +385,11 @@ class ACEStepBackend(MusicGenerator):
                 "caption": caption_result.caption,
                 "lyrics": caption_result.lyrics,
                 "bpm": caption_result.bpm,
-                "key_scale": caption_result.key_scale,
+                "key_scale": key_scale,
+                "time_signature": time_signature,
                 "infer_step": infer_step,
                 "timestep_shift": timestep_shift,
-                "model_variant": self.config.model_variant,
+                "model_variant": runtime.dit_model,
                 "mode": "lib",
             },
         )
@@ -395,7 +422,7 @@ class ACEStepBackend(MusicGenerator):
             timeout=httpx.Timeout(connect=30.0, read=120.0, write=30.0, pool=None),
             headers=headers,
         ) as client:
-            task_payload = {
+            task_payload: dict[str, Any] = {
                 "caption": caption_result.caption,
                 "lyrics": caption_result.lyrics,
                 "duration": duration,
@@ -403,9 +430,11 @@ class ACEStepBackend(MusicGenerator):
                 "audio_format": "wav",
                 "instrumental": True,
                 "bpm": caption_result.bpm,
-                "keyscale": caption_result.key_scale,
-                "timesignature": caption_result.time_signature,
             }
+            task_payload |= _planner_switches(self.config.use_lm)
+            key_scale, time_signature = _pinned_key_and_meter(request, caption_result)
+            if key_scale:
+                task_payload |= {"keyscale": key_scale, "timesignature": time_signature}
             if (seed := _take_seed(request)) is not None:
                 task_payload |= {"use_random_seed": False, "seed": seed}
 
@@ -436,8 +465,8 @@ class ACEStepBackend(MusicGenerator):
                 "caption": caption_result.caption,
                 "lyrics": caption_result.lyrics,
                 "bpm": caption_result.bpm,
-                "key_scale": caption_result.key_scale,
-                "time_signature": caption_result.time_signature,
+                "key_scale": key_scale,
+                "time_signature": time_signature,
                 "mode": "api",
                 "task_id": task_id,
             },

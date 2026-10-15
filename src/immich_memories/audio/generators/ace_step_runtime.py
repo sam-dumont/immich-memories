@@ -19,10 +19,16 @@ import logging
 import os
 from contextlib import suppress
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any
 
 from immich_memories.audio.generators.ace_step_checkpoints import pinned_checkpoints
+from immich_memories.audio.generators.ace_step_model_choice import (
+    BASE_VARIANT,
+    is_auto,
+    resolve_model_variant,
+)
 from immich_memories.audio.generators.memory_budget import memory_shortfall
 from immich_memories.tracking.system_info import _get_ram_gb as _physical_memory_gb
 
@@ -297,99 +303,132 @@ def build_v15_runtime(
     disable_offload: bool,
     cpu_offload: bool,
 ) -> ACEStepV15Runtime:
-    """Initialize the pinned ACE-Step 1.5 direct-library runtime."""
+    """Initialize the pinned ACE-Step 1.5 direct-library runtime.
+
+    `auto` loads the model this host's memory holds (`ace_step_model_choice`). When that
+    is XL and it does not load, or does not fit in the memory free right now, the 2B
+    turbo model loads instead. A variant written in the config is never swapped.
+    """
+    chosen = resolve_model_variant(model_variant)
+    load = partial(
+        _load_v15_runtime,
+        lm_model_size=lm_model_size,
+        use_lm=use_lm,
+        disable_offload=disable_offload,
+        cpu_offload=cpu_offload,
+    )
     try:
-        import acestep  # type: ignore[import-not-found]
-        from acestep.handler import AceStepHandler  # type: ignore[import-not-found]
-        from acestep.inference import (  # type: ignore[import-not-found]
-            GenerationConfig as V15GenerationConfig,
-        )
-        from acestep.inference import (  # type: ignore[import-not-found]
-            GenerationParams as V15GenerationParams,
-        )
-        from acestep.inference import generate_music as generate_v15_music
-        from acestep.llm_inference import LLMHandler  # type: ignore[import-not-found]
-        from acestep.model_downloader import ensure_lm_model  # type: ignore[import-not-found]
-
-        os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-        # WHY: tqdm bars were the reason stderr used to be redirected to
-        # /dev/null; upstream honours this switch, so stderr stays visible.
-        os.environ.setdefault("ACESTEP_DISABLE_TQDM", "1")
-        os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
-        os.environ.setdefault(
-            "ACESTEP_CHECKPOINTS_DIR",
-            str(Path.home() / ".cache" / "ace-step" / "checkpoints"),
-        )
-
-        package_file = getattr(acestep, "__file__", None)
-        if not package_file:
-            raise RuntimeError("Cannot locate the installed ACE-Step 1.5 package")
-        project_root = Path(package_file).resolve().parent.parent
-        checkpoint_dir = Path(os.environ["ACESTEP_CHECKPOINTS_DIR"]).expanduser()
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
-
-        device, lm_backend, use_mlx_dit = _local_runtime_target()
-        mlx_vae_chunk = _bound_mlx_memory() if use_mlx_dit else None
-        dit_model = _dit_model_name(model_variant)
-        lm_model = _lm_model_name(lm_model_size) if use_lm else None
-        offload = cpu_offload and not (device == "mps" or disable_offload)
-
-        logger.info(
-            "Initializing ACE-Step 1.5 locally: model=%s device=%s lm_backend=%s",
-            dit_model,
-            device,
-            lm_backend if lm_model else "disabled",
-        )
-
-        shortfall = memory_shortfall(dit_model, lm_model)
-        if shortfall is not None:
-            raise RuntimeError(
-                f"{shortfall}. Loading it anyway is what gets the process SIGKILLed by "
-                "the OS mid-render. Free memory, use a smaller model_variant, or set "
-                "use_lm: false."
-            )
-
-        with pinned_checkpoints(checkpoint_dir, dit_model, lm_model) as pinned_dir:
-            dit_handler = _initialize_dit_handler(
-                AceStepHandler,
-                project_root=project_root,
-                dit_model=dit_model,
-                device=device,
-                offload=offload,
-                use_mlx_dit=use_mlx_dit,
-                mlx_vae_chunk=mlx_vae_chunk,
-                owned_mlx_checkpoint=(
-                    pinned_dir / dit_model / "model.safetensors"
-                    if use_mlx_dit and not lm_model and dit_model == "acestep-v15-turbo"
-                    else None
-                ),
-            )
-            llm_handler = _initialize_lm_handler(
-                LLMHandler,
-                ensure_lm_model,
-                checkpoint_dir=pinned_dir,
-                lm_model=lm_model,
-                lm_backend=lm_backend,
-                device=device,
-                offload=offload,
-            )
-
-        runtime = ACEStepV15Runtime(
-            dit_handler=dit_handler,
-            llm_handler=llm_handler,
-            generation_params_type=V15GenerationParams,
-            generation_config_type=V15GenerationConfig,
-            generate_music=generate_v15_music,
-            device=device,
-            lm_backend=lm_backend,
-            dit_model=dit_model,
-            lm_model=lm_model,
-        )
-        logger.info("ACE-Step 1.5 local runtime initialized")
-        return runtime
+        return load(chosen)
+    except Exception as e:  # WHY: plugin boundary — ACE-Step init can fail in many ways
+        if not is_auto(model_variant) or chosen == BASE_VARIANT:
+            logger.error(f"Failed to initialize ACE-Step pipeline: {e}")
+            raise
+        logger.warning("ACE-Step XL did not load (%s); falling back to the 2B turbo model", e)
+    release_runtime_memory()
+    try:
+        return load(BASE_VARIANT)
     except Exception as e:  # WHY: plugin boundary — ACE-Step init can fail in many ways
         logger.error(f"Failed to initialize ACE-Step pipeline: {e}")
         raise
+
+
+def _load_v15_runtime(
+    model_variant: str,
+    *,
+    lm_model_size: str,
+    use_lm: bool,
+    disable_offload: bool,
+    cpu_offload: bool,
+) -> ACEStepV15Runtime:
+    """Load one concrete DiT variant (never `auto`) and its optional planner."""
+    import acestep  # type: ignore[import-not-found]
+    from acestep.handler import AceStepHandler  # type: ignore[import-not-found]
+    from acestep.inference import (  # type: ignore[import-not-found]
+        GenerationConfig as V15GenerationConfig,
+    )
+    from acestep.inference import (  # type: ignore[import-not-found]
+        GenerationParams as V15GenerationParams,
+    )
+    from acestep.inference import generate_music as generate_v15_music
+    from acestep.llm_inference import LLMHandler  # type: ignore[import-not-found]
+    from acestep.model_downloader import ensure_lm_model  # type: ignore[import-not-found]
+
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    # WHY: tqdm bars were the reason stderr used to be redirected to
+    # /dev/null; upstream honours this switch, so stderr stays visible.
+    os.environ.setdefault("ACESTEP_DISABLE_TQDM", "1")
+    os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
+    os.environ.setdefault(
+        "ACESTEP_CHECKPOINTS_DIR",
+        str(Path.home() / ".cache" / "ace-step" / "checkpoints"),
+    )
+
+    package_file = getattr(acestep, "__file__", None)
+    if not package_file:
+        raise RuntimeError("Cannot locate the installed ACE-Step 1.5 package")
+    project_root = Path(package_file).resolve().parent.parent
+    checkpoint_dir = Path(os.environ["ACESTEP_CHECKPOINTS_DIR"]).expanduser()
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    device, lm_backend, use_mlx_dit = _local_runtime_target()
+    mlx_vae_chunk = _bound_mlx_memory() if use_mlx_dit else None
+    dit_model = _dit_model_name(model_variant)
+    lm_model = _lm_model_name(lm_model_size) if use_lm else None
+    offload = cpu_offload and not (device == "mps" or disable_offload)
+
+    logger.info(
+        "Initializing ACE-Step 1.5 locally: model=%s device=%s lm_backend=%s",
+        dit_model,
+        device,
+        lm_backend if lm_model else "disabled",
+    )
+
+    shortfall = memory_shortfall(dit_model, lm_model)
+    if shortfall is not None:
+        raise RuntimeError(
+            f"{shortfall}. Loading it anyway is what gets the process SIGKILLed by "
+            "the OS mid-render. Free memory, use a smaller model_variant, or set "
+            "use_lm: false."
+        )
+
+    with pinned_checkpoints(checkpoint_dir, dit_model, lm_model) as pinned_dir:
+        dit_handler = _initialize_dit_handler(
+            AceStepHandler,
+            project_root=project_root,
+            dit_model=dit_model,
+            device=device,
+            offload=offload,
+            use_mlx_dit=use_mlx_dit,
+            mlx_vae_chunk=mlx_vae_chunk,
+            owned_mlx_checkpoint=(
+                pinned_dir / dit_model / "model.safetensors"
+                if use_mlx_dit and not lm_model and dit_model == "acestep-v15-turbo"
+                else None
+            ),
+        )
+        llm_handler = _initialize_lm_handler(
+            LLMHandler,
+            ensure_lm_model,
+            checkpoint_dir=pinned_dir,
+            lm_model=lm_model,
+            lm_backend=lm_backend,
+            device=device,
+            offload=offload,
+        )
+
+    runtime = ACEStepV15Runtime(
+        dit_handler=dit_handler,
+        llm_handler=llm_handler,
+        generation_params_type=V15GenerationParams,
+        generation_config_type=V15GenerationConfig,
+        generate_music=generate_v15_music,
+        device=device,
+        lm_backend=lm_backend,
+        dit_model=dit_model,
+        lm_model=lm_model,
+    )
+    logger.info("ACE-Step 1.5 local runtime initialized")
+    return runtime
 
 
 def run_v15_generation(

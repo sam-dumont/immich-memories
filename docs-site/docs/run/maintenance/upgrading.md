@@ -202,6 +202,22 @@ no-longer-supported keys) and the preflight results, the same lines the server l
 **Caches** also lists the prepared-source cache, so it can be cleared from there instead of by
 deleting `<cache.directory>/prepared-sources` by hand.
 
+### Generated music picks its model
+
+`advanced.ace_step.model_variant` now defaults to `auto`. Local music (`mode: lib`) loads the 4B
+XL turbo model on a Mac with 64 GB or more of unified memory or an NVIDIA GPU with 16 GB or more,
+and the 2B turbo model below that. If XL fails to load or doesn't fit in the memory free at the
+time, the render uses 2B and logs a warning. XL needs about 20 GB more disk for its weights, which
+the first render downloads.
+
+A config that already sets `model_variant` keeps that model. To stay on 2B everywhere, set
+`model_variant: turbo`.
+
+A single take now leaves its key and time signature to ACE-Step; only a film long enough to need
+several takes pins them, so the takes meet in one key. In `api` mode the app asks the server to
+skip its planner unless `use_lm: true`, so a server with a planner loaded no longer rewrites the
+caption.
+
 ### The maximalist Kubernetes overlay holds no Secrets
 
 `deploy/kubernetes/overlays/maximalist` no longer lists `render-worker-secret.yaml` or

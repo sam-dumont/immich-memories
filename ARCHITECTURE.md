@@ -838,6 +838,7 @@ src/immich_memories/
 │       ├── ace_step_backend.py # ACE-Step lib/API (mode choice, captions, REST protocol)
 │       ├── ace_step_checkpoints.py # Immutable Hugging Face revisions and isolated checkpoint cache
 │       ├── ace_step_runtime.py # ACE-Step in-process handlers: device, MLX/torch memory, one render
+│       ├── ace_step_model_choice.py # `model_variant: auto`: XL on 64 GB Macs / 16 GB GPUs, else 2B
 │       ├── ace_step_isolated.py # Local subprocess using the installer's separate audio environment
 │       ├── ace_step_captions.py # Dense caption templates
 │       ├── inference_demucs.py # Owned inference HTTP stems, optional local fallback
