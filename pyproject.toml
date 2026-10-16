@@ -114,7 +114,7 @@ demucs = [
 editorial = [
     "onnxruntime>=1.28",
     "tokenizers>=0.22",
-    "huggingface-hub>=1.29",
+    "huggingface-hub>=2.2.0",
     "kaldi-native-fbank>=1.20",
 ]
 # The same seats on a CUDA host. Split by device rather than by feature, the way
@@ -129,7 +129,7 @@ editorial-cuda = [
     # 1.27+ requires CUDA 13; the supported image uses CUDA 12 / cuDNN 9.
     "onnxruntime-gpu>=1.26,<1.27; sys_platform == 'linux'",
     "tokenizers>=0.22",
-    "huggingface-hub>=1.29",
+    "huggingface-hub>=2.2.0",
     "kaldi-native-fbank>=1.20",
 ]
 
