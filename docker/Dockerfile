@@ -13,7 +13,7 @@ RUN npm run build
 
 # Stage 1: Build dependencies
 # WHY: pinned to digest to prevent supply-chain attacks via tag mutation
-FROM python:3.11-slim@sha256:b1b81d67b8df73bf6067191790c233ef9e598b863fc1ccf447956138ca466d99 AS builder
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170 AS builder
 
 # A failing command inside a pipe (the dependency pin filter below) fails the build.
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -122,7 +122,7 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir=/wheels ./services/render-wor
 
 
 # Stage 2: Runtime image
-FROM python:3.11-slim@sha256:b1b81d67b8df73bf6067191790c233ef9e598b863fc1ccf447956138ca466d99
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
 
 WORKDIR /app
 
