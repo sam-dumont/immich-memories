@@ -29,3 +29,7 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    # The app's dependencies don't support a newer Python yet; 3.11.x patches still come.
+    ignore:
+      - dependency-name: "python"
+        versions: [">=3.12"]
