@@ -145,7 +145,7 @@ jobs:
           "
 
       - name: Compare against baseline
-        uses: benchmark-action/github-action-benchmark@a60cea5bc7b49e15c1f58f411161f99e0df48372 # v1
+        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1
         with:
           tool: customSmallerIsBetter
           output-file-path: tests/benchmark-results.json
@@ -232,7 +232,7 @@ jobs:
           "
 
       - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@a60cea5bc7b49e15c1f58f411161f99e0df48372 # v1
+        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1
         with:
           tool: customSmallerIsBetter
           output-file-path: tests/benchmark-results.json
