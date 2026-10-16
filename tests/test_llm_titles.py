@@ -470,11 +470,10 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
     title would show for the same memory, derived through the renderer's own
     dispatch (`infer_selection_type` then `generate_title`) — not a fixed list.
 
-    The template shows no year for "on this day", a person spotlight spanning
-    several years (it opens on the name alone) and a holiday (named off
+    The template shows no year for "on this day" and a holiday (named off
     `holiday_label`, never dated). Every other shape — a calendar year, a
-    season, a single-year person spotlight or multi-person film, a plain
-    date range, a trip — carries its year, and the model must too.
+    season, a person spotlight or multi-person film over one year or several,
+    a plain date range, a trip — carries its year, and the model must too.
     """
 
     @staticmethod
@@ -519,6 +518,7 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
             ("season", "2024-06-01", "2024-08-31", {}),
             ("year_in_review", "2024-01-01", "2024-12-31", {}),
             ("person_spotlight", "2024-01-01", "2024-06-01", {"person_names": ["Mila"]}),
+            ("person_spotlight", "2015-01-01", "2024-06-01", {"person_names": ["Mila"]}),
             ("multi_person", "2024-01-01", "2024-12-31", {}),
             ("album", "2024-03-01", "2024-04-15", {}),
             ("trip", "2024-06-01", "2024-06-07", {}),
@@ -527,6 +527,7 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
             "season",
             "calendar_year",
             "single_year_person_spotlight",
+            "multi_year_person_spotlight",
             "multi_person_with_a_year",
             "plain_date_range",
             "trip",
@@ -550,9 +551,8 @@ class TestATitleKeepsTheYearTheTemplateWouldShow:
         ("memory_type", "start_date", "end_date", "kwargs"),
         [
             ("on_this_day", "2015-06-17", "2024-06-17", {}),
-            ("person_spotlight", "2015-01-01", "2024-06-01", {"person_names": ["Mila"]}),
         ],
-        ids=["on_this_day", "multi_year_person_spotlight"],
+        ids=["on_this_day"],
     )
     async def test_a_yearless_title_is_kept_when_the_template_also_shows_none(
         self, memory_type, start_date, end_date, kwargs
@@ -836,7 +836,7 @@ class TestTheRequiredYearIsAFactNotARuleOfItsOwn:
         assert result.title == "Ada et Grace, 2024-26"
 
     @pytest.mark.asyncio
-    async def test_a_multi_year_spotlight_prompt_states_no_year_is_needed(self):
+    async def test_a_multi_year_spotlight_prompt_states_the_first_and_last_year(self):
         from immich_memories.titles.llm_titles import build_title_prompt
 
         prompt = build_title_prompt(
@@ -847,7 +847,7 @@ class TestTheRequiredYearIsAFactNotARuleOfItsOwn:
             duration_days=3440,
             person_names=["Mila"],
         ).text
-        assert "Year(s) the title or subtitle must show: none" in prompt
+        assert "Year(s) the title or subtitle must show: 2015 and 2024" in prompt
 
 
 @pytest.mark.parametrize("place,country", [("Norway", "Norway"), ("Brittany", "France")])

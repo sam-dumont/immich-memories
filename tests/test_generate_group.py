@@ -125,7 +125,7 @@ def test_saved_canonical_people_are_named_in_the_film_title(tmp_path, names):
     title_name = build_title_person_name(
         "multi_person", kwargs["memory_preset_params"], None, use_first_name_only=False
     )
-    expected = " · ".join(name.strip() for name in names if name.strip()) or None
+    expected = " & ".join(name.strip() for name in names if name.strip()) or None
     assert title_name == expected
     assert kwargs["person_names"] == [first, second]
     assert kwargs["memory_preset_params"]["person_names"] == [first, second]

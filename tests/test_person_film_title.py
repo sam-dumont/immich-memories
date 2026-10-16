@@ -1,4 +1,4 @@
-"""A person film over years opens on the person, not on "Your Year with" or a birth month."""
+"""A person film over years is titled by the person and its span, never "Your Year with"."""
 
 from datetime import date
 
@@ -10,12 +10,11 @@ def title_of(start, end, *, person_name="Riley", memory_type="person_spotlight")
     return generate_title(kind, start_date=start, end_date=end, person_name=person_name)
 
 
-def test_a_person_film_from_a_birth_date_to_today_is_titled_by_the_person():
+def test_a_person_film_from_a_birth_date_to_today_is_titled_by_the_person_and_its_span():
+    """The period a dateless multi-person film shows; the name alone said nothing of when."""
     title = title_of(date(1989, 12, 3), date(2026, 9, 23))
 
-    assert title.main_title == "Riley"
-    assert "Year" not in (title.subtitle or "")
-    assert "1989" not in f"{title.main_title} {title.subtitle}"
+    assert (title.main_title, title.subtitle) == ("December 1989 to September 2026", "Riley")
 
 
 def test_a_person_film_of_one_calendar_year_keeps_the_year_title():
