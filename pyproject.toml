@@ -161,7 +161,7 @@ dev = [
     "mypy>=2.4.0",
     "ruff>=0.1",
     "pre-commit>=3.0",
-    "commitizen>=3.0",
+    "commitizen>=4.19.2",
     "python-semantic-release>=9.0",
     "types-PyYAML>=6.0",
     # Advanced quality gates
