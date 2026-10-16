@@ -100,7 +100,7 @@ when set (the key, never its value); in 2.0 they stop being read. Delete them to
 | `photos.burst_hash_threshold` | nothing: fixed at 8 bits |
 | `title_screens.map_move_min_seconds` | nothing: fixed at 6 s |
 | `title_screens.map_move_max_seconds` | nothing: fixed at 8 s |
-| `audio.music_block_seconds` | nothing: fixed at 240 s |
+| `audio.music_block_seconds` | nothing: fixed at 30 s |
 | `audio.max_music_blocks` | nothing: fixed at 3 |
 | `automation.burst_threshold` | nothing: fixed at 2.0 |
 | `editorial.preparation.batch_size` | nothing: fixed at 32 |
@@ -263,10 +263,11 @@ the first render downloads.
 A config that already sets `model_variant` keeps that model. To stay on 2B everywhere, set
 `model_variant: turbo`.
 
-A single take now leaves its key and time signature to ACE-Step; only a film long enough to need
-several takes pins them, so the takes meet in one key. In `api` mode the app asks the server to
-skip its planner unless `use_lm: true`, so a server with a planner loaded no longer rewrites the
-caption.
+A film longer than 30 seconds is joined from short ACE-Step takes, at most 30 s each. One long
+take per film sounded flat and kept tripping the loop check. Joined takes share one key and time
+signature; only a film short enough for one take leaves both to ACE-Step. In `api` mode the app
+asks the server to skip its planner unless `use_lm: true`, so a server with a planner loaded no
+longer rewrites the caption.
 
 ### The maximalist Kubernetes overlay holds no Secrets
 

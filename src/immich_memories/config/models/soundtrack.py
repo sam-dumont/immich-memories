@@ -46,13 +46,15 @@ class AudioConfig(BaseModel):
             "repetitive 'tick' by the cheap quality gate; the best-scored take is kept"
         ),
     )
+    # Short takes joined on bar lines are the production recipe; one long take per
+    # film sounded bland and loop-flagged (#2617).
     music_block_seconds: int = Field(
-        default=240,
+        default=30,
         ge=30,
         le=300,
         description=(
             "Longest single ACE-Step take before auto mode joins several. A film "
-            "longer than this gets takes that share one caption, tempo and key, "
+            "longer than this gets short takes that share one caption, tempo and key, "
             "joined on bar lines"
         ),
     )

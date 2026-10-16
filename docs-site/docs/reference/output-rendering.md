@@ -364,10 +364,10 @@ nearest of the three: jazz on acoustic, orchestral and classical on piano, rock,
 on electronic. The other styles in the caption matrix (jazz trio, indie rock, orchestral, ambient,
 metal) are never picked automatically.
 
-A generated soundtrack is one piece. One backend makes all of it, and a film up to 4 minutes
-(240 seconds per take, 300 at most) is a single ACE-Step take. A longer film
-gets up to 3 takes that share one caption, tempo and key, joined
-on a bar line with a 0.3 s crossfade. The music is planned to the film's real length.
+A generated soundtrack is one piece. One backend makes all of it, and a film up to 30 seconds
+is a single ACE-Step take. A longer film
+gets up to 3 takes of at most 30 seconds that share one caption, tempo and key, joined
+on a bar line with a 0.3 s crossfade and repeated to the film's length. The music is planned to the film's real length.
 
 A generator that fails falls through to a bundled track, and the swap comes back as a warning on the finished
 video and in any completion notification, so a dead backend never passes for working music.
