@@ -94,7 +94,9 @@ def test_profile_harness_requires_an_isolated_explicit_output_directory(tmp_path
         capture_output=True,
         text=True,
         env=environment,
-        timeout=30,
+        # WHY: a hang guard, not a speed check. Three runs take about 8 s alone and passed
+        # 30 s next to every xdist worker in the pre-commit hook.
+        timeout=180,
     )
 
     assert help_result.returncode == 0
