@@ -54,16 +54,12 @@ def generate_person_spotlight_title(
 ) -> TitleInfo:
     """Title a person spotlight: a year with the person, or the person over several years.
 
-    A film over several years opens on the person's name alone. Its span usually starts at a
-    birth date and ends today, and a date over a whole life so far says nothing the name does
-    not. With no name to show, the span's own dates title it.
+    A film over several years, usually from a birth date to today, is titled by its span
+    under the person's name ("Kit · March 2019 to October 2026"), the period a dateless
+    film of several people shows too.
     """
     if year is None and start_date is not None and end_date is not None:
-        if not person_name:
-            return generate_date_range_title(start_date, end_date, None, locale)
-        return TitleInfo(
-            main_title=person_name, subtitle=None, selection_type=SelectionType.PERSON_SPOTLIGHT
-        )
+        return generate_date_range_title(start_date, end_date, person_name, locale)
     if year is None:
         raise ValueError("Year required for person spotlight selection")
     subtitle = None

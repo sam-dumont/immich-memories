@@ -392,10 +392,9 @@ def requiring_the_year(
 ) -> TitleSuggestion | None:
     """The suggestion, unless it drops a year the template title would show.
 
-    The template shows no year for a holiday, "on this day", or a person
-    spotlight spanning several years (it opens on the name alone); every
-    other span must carry its year, in the title or the subtitle, or the
-    template names this memory instead.
+    The template shows no year for a holiday or "on this day"; every other
+    span must carry its year, in the title or the subtitle, or the template
+    names this memory instead.
     """
     if suggestion is None:
         return suggestion

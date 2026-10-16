@@ -124,10 +124,10 @@ def build_title_person_name(
         Formatted person name string, or None.
     """
     names = _title_cast_names(preset_params, use_first_name_only)
-    if preset_params.get("person_expression") is not None:
-        return " · ".join(names) or None
-    if memory_type == "multi_person" and len(names) >= 2:
-        # A film of pictures with either person is still about both of them.
+    grouped = preset_params.get("person_expression") is not None
+    if (memory_type == "multi_person" or grouped) and len(names) >= 2:
+        # A film of pictures with either person is still about both of them. A group or
+        # an expression names its cast the same way: "·" is what comes before the period.
         return cast_list(names, locale)
     if names:
         return names[0]

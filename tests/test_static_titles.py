@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config.loader import Config
 from immich_memories.config.models.llm import LLMConfig
 from immich_memories.timeperiod import DateRange
@@ -62,6 +63,20 @@ TYPED = {
     "either_person": (date(2025, 1, 1), date(2025, 12, 31),
                       {"person_names": ["Kit", "Pat"], "person_match": "or"}, ("Kit", "Pat"), (),
                       "Kit & Pat · 2025", "Kit & Pat · 2025"),
+    # No dates: from the birth date to today, the period the dateless multi_person film shows.
+    "all_time_person": (date(2019, 3, 14), date(2026, 10, 16), {}, ("Kit",), (),
+                        "Kit · March 2019 to October 2026", "Kit · De mars 2019 à octobre 2026"),
+    "all_time_people": (date(2019, 3, 14), date(2026, 10, 16), {"person_names": ["Kit", "Lou"]},
+                        ("Kit", "Lou"), (), "Kit & Lou · March 2019 to October 2026",
+                        "Kit & Lou · De mars 2019 à octobre 2026"),
+    "expression": (date(2024, 2, 3), date(2026, 10, 16), {"person_expression": PersonExpression
+                   .parse('("Kit Example" OR "Pat") AND "Lou"').to_dict()}, (), (),
+                   "Kit, Pat & Lou · February 2024 to October 2026",
+                   "Kit, Pat & Lou · De février 2024 à octobre 2026"),
+    "group": (date(2025, 1, 1), date(2025, 12, 31), {"person_expression": PersonExpression
+              .parse('"id-kit" OR "id-pat"').to_dict(), "person_display_names":
+              {"id-kit": "Kit Example", "id-pat": "Pat"}}, (), (), "Kit & Pat · 2025",
+              "Kit & Pat · 2025"),
     "holiday": (date(2004, 12, 23), date(2025, 12, 27), {"holiday": "christmas"}, (),
                 (date(2019, 12, 25), date(2025, 12, 25)), "Christmas · 2019–2025",
                 "Noël · 2019–2025"),
@@ -71,7 +86,9 @@ TYPED = {
 }  # fmt: skip
 _MEMORY_TYPE = {"birthday": "person_spotlight", "birthdays": "person_spotlight",
                 "one_birthday_shown": "person_spotlight", "person_month": "monthly_highlights",
-                "either_person": "multi_person"}  # fmt: skip
+                "either_person": "multi_person", "all_time_person": "person_spotlight",
+                "all_time_people": "multi_person", "expression": "multi_person",
+                "group": "multi_person"}  # fmt: skip
 
 
 def _titled(kind: str, *, locale: str = "en", model: bool = True, enabled=None, subtitle=None):

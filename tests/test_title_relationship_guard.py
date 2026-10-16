@@ -184,11 +184,7 @@ def test_grandchildren_plural_is_refused_for_a_single_grandchild():
 
 
 def test_a_recorded_relation_between_the_films_own_people_is_kept():
-    """Over several years a person spotlight opens on the name alone, no year
-
-    required, so this isolates the relationship guard: a backed relation word
-    must survive untouched.
-    """
+    """A backed relation word survives untouched; the span's years sit in the subtitle."""
     store = seed_people(
         {
             "owner": {"person_id": "person-owner", "name": "Zed Example"},
@@ -207,7 +203,7 @@ def test_a_recorded_relation_between_the_films_own_people_is_kept():
             ],
         }
     )
-    raw = _reply("Nora et sa grand-mère")
+    raw = _reply("Nora et sa grand-mère", "2020–2024")
 
     with patch("immich_memories.titles.llm_titles.query_llm") as mock_query:
         mock_query.return_value = raw

@@ -116,7 +116,7 @@ class TestBuildTitlePersonName:
             build_title_person_name(
                 "multi_person", {"person_expression": expression.to_dict()}, None
             )
-            == "Alex · Maya · Jules"
+            == "Alex, Maya & Jules"
         )
 
     def test_multi_person_two_names(self):
