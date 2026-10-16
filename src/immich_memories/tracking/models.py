@@ -155,6 +155,8 @@ class RunMetadata:
     person_name: str | None = None
     person_names: tuple[str, ...] = ()
     person_id: str | None = None
+    # The release that made the run; None on runs recorded before it was kept.
+    app_version: str | None = None
     date_range_start: date | None = None
     date_range_end: date | None = None
     target_duration_seconds: int = 600
@@ -227,6 +229,7 @@ class RunMetadata:
             "phase_events": self.phase_events,
             "person_name": self.person_name,
             "person_names": list(self.person_names),
+            "app_version": self.app_version,
             "person_id": self.person_id,
             "date_range_start": (
                 self.date_range_start.isoformat() if self.date_range_start else None
@@ -272,6 +275,7 @@ class RunMetadata:
             phase_events=data.get("phase_events") or [],
             person_name=data.get("person_name"),
             person_names=tuple(data.get("person_names") or ()),
+            app_version=data.get("app_version"),
             person_id=data.get("person_id"),
             date_range_start=(
                 date.fromisoformat(data["date_range_start"])

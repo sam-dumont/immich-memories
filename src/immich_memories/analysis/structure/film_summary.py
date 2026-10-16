@@ -12,6 +12,9 @@ writes none, so this module writes it once the cut is settled:
   answer by its prompt, never hands a person, season or year film a month's summary;
 - with no model (Basic), or when that answer is unusable, one line made only of the names of
   the stories that matter, in the film's language. Nothing in it is invented.
+
+All of it is opt-in while model-written text is experimental (`title_screens.llm_titles`,
+#2594): off, which is the default, the film has no summary and nothing is asked.
 """
 
 from __future__ import annotations
@@ -266,11 +269,19 @@ def summarise_the_film(
 ) -> None:
     """Write the film's summary on its story, unless a model synthesis already wrote one.
 
+    Only with `title_screens.llm_titles` on: off, the film has no summary.
+
     Read from the stories the finished cut shows and the period's `account` the polish read.
     With a model (`ports.thin`) the model writes it; with none, or when its answer is
     unusable, the story names make the line.
     """
     story = selection.story
+    if not source.config.title_screens.llm_titles:
+        # Model-written text is opt-in while it is experimental (#2594), and the story-name
+        # line reads as a list of places and dates: off, the film has no summary at all.
+        story.thesis = ""
+        record("film-summary", {"version": SUMMARY_VERSION, "tier": "off", "summary": ""})
+        return
     if story.thesis:
         return
     stories = what_the_shots_show(_shown(story.stories, carriers), carriers)

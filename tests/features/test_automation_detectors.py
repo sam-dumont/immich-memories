@@ -63,11 +63,11 @@ def test_the_year_just_ended_waits_until_15_january(tmp_path: Path) -> None:
 # ── birthday ─────────────────────────────────────────────────────────────
 
 BORN = date(2015, 3, 10)
-BIRTHDAY_FILM = "2025-03-11 to 2026-03-10"
+BIRTHDAY_FILM = "2025-03-10 to 2026-03-10"
 
 
 def _birthday_library(pictures: int = 50, days: int = 3) -> Library:
-    """A child whose year up to the 2026 birthday holds ``pictures`` over ``days`` days."""
+    """A child whose year from the 2025 birthday to the 2026 one holds ``pictures`` over ``days`` days."""
     library = Library().person("p-kid", "Kid", birth=BORN)
     party_days = [date(2025, 7, 1), date(2025, 12, 24), date(2026, 3, 10)][:days]
     for index in range(pictures):

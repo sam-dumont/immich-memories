@@ -58,7 +58,7 @@ def scope_options(command: FC) -> FC:
             flag_value="auto",
             default=None,
             help=(
-                "Run the year up to a birthday; with --years-back, only the birthdays "
+                "Run the year from one birthday to the next; with --years-back, only the birthdays "
                 "(reads Immich's birth date, or override with MM-DD, e.g. 03-15)"
             ),
         ),
@@ -364,11 +364,11 @@ def run_options(command: FC) -> FC:
             "--llm-title/--no-llm-title",
             default=None,
             help=(
-                "Period, people, birthday, holiday and on-this-day films get a title the "
-                "app writes from their facts, never the model's, and an album film takes "
-                "its album's name. Special days are named by the model when a reader is "
-                "configured; --llm-title adds trips, --no-llm-title keeps the app's own "
-                "title everywhere (--title still wins)"
+                "Experimental, off by default (title_screens.llm_titles): --llm-title lets "
+                "the configured reader name a special day or a trip and write the film's "
+                "summary for this run; --no-llm-title keeps the app's own title and no "
+                "summary. Period, people, birthday, holiday and on-this-day films always get "
+                "the app's title, an album film its album's name (--title still wins)"
             ),
         ),
         click.option(

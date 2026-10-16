@@ -42,6 +42,7 @@ def _save_pending_auto_run(
     run_id: str = "pending-run",
     delivery_album: str | None = "Original Album",
     source: str = "auto",
+    app_version: str | None = None,
 ) -> RunMetadata:
     output_path = tmp_path / f"{run_id}.mp4"
     output_path.write_bytes(b"validated-memory")
@@ -56,6 +57,7 @@ def _save_pending_auto_run(
         output_path=str(output_path),
         delivery_status=DeliveryStatus.PENDING,
         delivery_album=delivery_album,
+        app_version=app_version,
     )
     runner.db.save_run(run)
     return run
@@ -716,3 +718,25 @@ def test_incomplete_upload_retry_preserves_film_and_distinguishes_missing_scopes
         assert saved.immich_asset_id == "partial-film"
         assert saved.delivery_attempts == 1
         assert runner.db.get_oldest_pending_delivery(source="auto").run_id == saved.run_id
+
+
+def test_a_retried_delivery_tags_the_film_with_the_release_and_day_that_made_it(
+    tmp_path: Path,
+) -> None:
+    runner = AutoRunner(_config(tmp_path), execute=MagicMock())
+    pending = _save_pending_auto_run(runner, tmp_path, app_version="1.0.0-rc.9")
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.__exit__.return_value = False
+    client.upload_memory.return_value = {"asset_id": "asset-retried"}
+
+    # WHY: Immich is the boundary; the upload is the write whose label we read.
+    with patch("immich_memories.api.immich.SyncImmichClient", return_value=client):
+        runner.run_one(cooldown_hours=24)
+
+    tags = client.upload_memory.call_args.kwargs["label"].tags
+    made_on = pending.completed_at.astimezone().date().isoformat()
+    assert tags == (
+        "immich-memories/version/1.0.0-rc.9",
+        f"immich-memories/generated-on/{made_on}",
+    )

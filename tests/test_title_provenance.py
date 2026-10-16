@@ -142,7 +142,9 @@ def test_a_special_days_catalogue_title_is_never_shown_as_a_ready_override_in_fr
 
 def test_a_title_the_model_wrote_is_the_models():
     config = Config(
-        tier="full", llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"}
+        tier="full",
+        llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"},
+        title_screens={"llm_titles": True},  # model-written titles are opt-in
     )
 
     title, _subtitle, source = _resolve(memory_type="special_day", config=config)

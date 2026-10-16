@@ -114,6 +114,62 @@ def test_an_old_holiday_cut_renders_its_holiday_title(cut, monkeypatch, kept):  
     assert handed.memory_preset_params["holiday"] == "christmas"
 
 
+@pytest.mark.parametrize(
+    "kept_title",
+    [None, ("Été 2022-2026", "model"), ("Été 2022-2026", "fallback")],
+    ids=["no-title", "model-title", "template-title"],
+)
+def test_an_old_multi_year_holiday_cut_renders_its_holiday_over_the_years_it_shows(
+    cut,  # noqa: F811
+    monkeypatch,
+    kept_title,
+):
+    # WHY: an Assumption Day cut made by automation before cuts kept their holiday, over
+    # several yearly windows, re-rendered as "Été 2022-2026": its kept title was a season,
+    # and its parameters said no holiday. The window says which holiday it was built around.
+    from immich_memories.processing.render_inputs import write_cut_titles
+
+    params, attempt = cut
+    params.config.title_screens.locale = "fr"
+    title, source = kept_title or (None, None)
+    write_cut_titles(attempt, title=title, subtitle=None, source=source, preset_params={})
+    # WHY: the home country comes from Immich's geodata, the one network boundary here.
+    monkeypatch.setattr(
+        "immich_memories.memory_types.holiday_params.home_country", lambda _config: "BE"
+    )
+    assumption = replace(
+        RUN,
+        memory_type="holiday",
+        date_range_start=date(2022, 8, 13),
+        date_range_end=date(2026, 8, 17),
+    )
+
+    handed = _render(params, attempt, monkeypatch, CutRenderRequest(), run=assumption)
+
+    # The cut's clips were taken from 2020 to 2023: the years it shows, with an en dash.
+    assert handed.title == "Assomption · 2020\u20132023"
+    assert handed.memory_preset_params["holiday"] == "Assumption Day"
+
+
+def test_a_typed_title_on_an_old_holiday_cut_stands(cut, monkeypatch):  # noqa: F811
+    from immich_memories.processing.render_inputs import write_cut_titles
+
+    params, attempt = cut
+    write_cut_titles(
+        attempt, title="Our Augusts", subtitle=None, source="override", preset_params={}
+    )
+    assumption = replace(
+        RUN,
+        memory_type="holiday",
+        date_range_start=date(2021, 12, 23),
+        date_range_end=date(2025, 12, 27),
+    )
+
+    handed = _render(params, attempt, monkeypatch, CutRenderRequest(), run=assumption)
+
+    assert handed.title == "Our Augusts"
+
+
 def test_a_title_typed_at_render_still_wins(cut, monkeypatch):  # noqa: F811
     from immich_memories.processing.render_inputs import write_cut_titles
 

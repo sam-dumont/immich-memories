@@ -186,7 +186,7 @@ class GenerationRequest:
                 return ["--year", str(self.start.year), *self._person_args()]
             case CandidateCategory.BIRTHDAY:
                 # WHY end and not start: --year names the birthday being celebrated, and
-                # a birthday memory is the year *leading up to* it -- so the year the
+                # a birthday memory is the year from the one before up to it -- so the year the
                 # window ends in is the one to ask for.
                 return [
                     "--year",

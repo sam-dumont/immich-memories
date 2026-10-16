@@ -41,8 +41,11 @@ class PolishJudge(FilmJudge):
 
 
 def film(tmp_path):
+    # The film's summary is opt-in (`title_screens.llm_titles`); these films turn it on.
     days = [*home_days(date(2030, 5, 1), 4), *trip_days(date(2030, 5, 6), 6)]
-    return film_source(tmp_path, days, seconds=60, span=MAY, pictures=2)
+    source = film_source(tmp_path, days, seconds=60, span=MAY, pictures=2)
+    source.config.title_screens.llm_titles = True
+    return source
 
 
 def run(source, judge, *, account):

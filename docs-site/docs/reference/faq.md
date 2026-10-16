@@ -10,7 +10,7 @@ If something is broken, start with [Troubleshooting](./troubleshooting.md).
 
 **Does it change my Immich library?**
 
-Ordinary selection reads your library. When delivery is enabled (`--upload-to-immich`, `upload.enabled`, or the web UI's upload switch), it uploads the finished film, creates the `immich-memories/generated` tag if needed, tags the asset and writes the film's title and story summary into its Immich description. With `upload.film_tags: true` it also tags the film by memory type, year and story (`immich-memories/type/...`, `/year/...`, `/story/...`). It can also create the requested album and add the film to it. A re-render into the same album moves the app's superseded copy to Immich's trash; it does not hard-delete it. [What Immich sees](../run/privacy.md#what-immich-sees) lists these writes.
+Ordinary selection reads your library. When delivery is enabled (`--upload-to-immich`, `upload.enabled`, or the web UI's upload switch), it uploads the finished film, creates the `immich-memories/generated` tag if needed, tags the asset with it and with the release and day that made the film (`immich-memories/version/...`, `/generated-on/...`), and writes the film's title into its Immich description (with its story summary when the experimental `title_screens.llm_titles` is on). With `upload.film_tags: true` it also tags the film by memory type, year and story (`immich-memories/type/...`, `/year/...`, `/story/...`). It can also create the requested album and add the film to it. A re-render into the same album moves the app's superseded copy to Immich's trash; it does not hard-delete it. [What Immich sees](../run/privacy.md#what-immich-sees) lists these writes.
 
 **What leaves my network?**
 

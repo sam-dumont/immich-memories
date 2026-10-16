@@ -315,7 +315,7 @@ immich-memories generate [OPTIONS]
 | `--start` | text | - | Start date (YYYY-MM-DD) |
 | `--end` | text | - | End date (use with --start) |
 | `--period` | text | - | Period from start date (e.g., 6m, 1y, 2w) |
-| `--birthday`, `-b` | text | - | Run the year up to a birthday; with --years-back, only the birthdays (reads Immich's birth date, or override with MM-DD, e.g. 03-15) |
+| `--birthday`, `-b` | text | - | Run the year from one birthday to the next; with --years-back, only the birthdays (reads Immich's birth date, or override with MM-DD, e.g. 03-15) |
 | `--from-album` | text | - | Generate from an Immich album (name or ID) instead of a date range |
 | `--subject` | text | - | With --from-album: what the album was curated for, in your words. Every picture then stands on that subject, a loaf in a bread album included, and every year the album holds gets a shot. Needs a model reader |
 | `--ask` | text | - | Highly experimental: the film in a sentence, e.g. "our cat along the years". Read by the configured model reader against your prepared library; the translation is printed first. Needs tier: full |
@@ -357,7 +357,7 @@ immich-memories generate [OPTIONS]
 | `--keep-intermediates` | boolean | false | Keep intermediate files for debugging |
 | `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
 | `--title` | text | - | Override video title text |
-| `--llm-title`, `--no-llm-title` | boolean | - | Period, people, birthday, holiday and on-this-day films get a title the app writes from their facts, never the model's, and an album film takes its album's name. Special days are named by the model when a reader is configured; --llm-title adds trips, --no-llm-title keeps the app's own title everywhere (--title still wins) |
+| `--llm-title`, `--no-llm-title` | boolean | - | Experimental, off by default (title_screens.llm_titles): --llm-title lets the configured reader name a special day or a trip and write the film's summary for this run; --no-llm-title keeps the app's own title and no summary. Period, people, birthday, holiday and on-this-day films always get the app's title, an album film its album's name (--title still wins) |
 | `--subtitle` | text | - | Override video subtitle text |
 | `--include-live-photos`, `--no-live-photos` | boolean | - | Include Live Photo clips: one plays as motion when its clip (merged when burst-captured) lasts at least 2.5 s and moves |
 | `--include-photos`, `--no-photos` | boolean | - | Include photos as animated Ken Burns clips (blur background, face-aware pan) |
@@ -853,7 +853,7 @@ immich-memories runs render [OPTIONS] [RUN_ID]
 | `--revision` | integer | - | Render this saved revision of the cut |
 | `--title` | text | - | Title card text (default: as generate decides) |
 | `--subtitle` | text | - | Title card subtitle |
-| `--llm-title`, `--no-llm-title` | boolean | - | Title the film again instead of keeping the cut's title: a period, people, birthday, holiday or on-this-day film from its facts, any other film by the model. --no-llm-title titles it again without the model |
+| `--llm-title`, `--no-llm-title` | boolean | - | Title the film again instead of keeping the cut's title: a period, people, birthday, holiday or on-this-day film from its facts, any other film by the model (experimental). --no-llm-title titles it again without the model |
 | `--transition` | choice: `smart` \| `crossfade` \| `cut` \| `none` | - | Transition style (default: saved cut) |
 | `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
 | `--title-style` | choice: `auto` \| `random` \| `modern_warm` \| `elegant_minimal` \| `vintage_charm` \| `playful_bright` \| `soft_romantic` | - | Title style for this render (default: title_screens.style_mode) |

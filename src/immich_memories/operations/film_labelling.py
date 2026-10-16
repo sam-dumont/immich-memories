@@ -16,8 +16,9 @@ from datetime import date, datetime, time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.api.film_label import FilmLabel, film_label, years_shown
-from immich_memories.memory_types.holiday_params import with_the_cuts_holiday
+from immich_memories import __version__
+from immich_memories.api.film_label import FilmLabel, film_label, provenance_tags, years_shown
+from immich_memories.memory_types.holiday_params import kept_title_stands, with_the_cuts_holiday
 from immich_memories.operations.storyboard import PLAN_FILE
 
 if TYPE_CHECKING:
@@ -63,6 +64,18 @@ def memory_type_label(memory_type: str | None, locale: str = "en") -> str | None
     return _sentence(name) if locale == "en" or translated == name else translated
 
 
+def film_type_label(
+    memory_type: str | None, preset_params: Mapping[str, Any], locale: str = "en"
+) -> str | None:
+    """The type a film is filed under: a birthday or birthdays film is a birthday, in the
+    film's language, not one more person film; every other film is its memory type."""
+    if memory_type == "person_spotlight" and preset_params.get("birthday"):
+        from immich_memories.i18n import film_text
+
+        return film_text("film_type.birthday", locale)
+    return memory_type_label(memory_type, locale)
+
+
 def _sentence(text: str) -> str:
     return text[:1].upper() + text[1:].lower()
 
@@ -71,14 +84,17 @@ def _as_date(value: date | datetime | None) -> date | None:
     return value.date() if isinstance(value, datetime) else value
 
 
-def _summary_in(story: Mapping[str, Any], locale: str) -> str:
+def _summary_in(story: Mapping[str, Any], locale: str, *, model_text: bool) -> str:
     """The plan's summary when it is in the film's language, else none (#2535).
+
+    None either while model-written text is off (`title_screens.llm_titles`): the description
+    is then the title alone, for a cut summarised before the setting existed as well.
 
     A cut rendered again in another language, or one made before the summary recorded its
     language, would describe a French film in English: the description is then its title.
     Places a summary lists more than once are said once.
     """
-    if story.get("thesis_locale") != locale:
+    if not model_text or story.get("thesis_locale") != locale:
         return ""
     from immich_memories.analysis.structure.film_summary import one_place_once
 
@@ -138,7 +154,11 @@ def _title_of_the_cut(
     kept = read_cut_titles(attempt_dir) if attempt_dir is not None else None
     if title:
         return title
-    if kept and kept.title:
+    if (
+        kept
+        and kept.title
+        and kept_title_stands(kept.preset_params, memory_type=memory_type, source=kept.source)
+    ):
         return _screen(kept.title, kept.subtitle)
     if start is None or end is None:
         return None
@@ -180,8 +200,14 @@ def label_for_cut(
     title: str | None = None,
     person_name: str | None = None,
     preset_params: Mapping[str, Any] | None = None,
+    made_with: str | None = None,
+    made_on: date | None = None,
 ) -> FilmLabel | None:
-    """The label for one film, or None when it cannot be built: a label never stops an upload."""
+    """The label for one film, or None when it cannot be built: a label never stops an upload.
+
+    `made_with` and `made_on` are the release that made the film and the day it was made: they
+    tag every upload, whether or not the install opted into the film tags.
+    """
     from immich_memories.i18n import resolve_film_locale
     from immich_memories.processing.render_inputs import read_cut_titles
 
@@ -212,14 +238,16 @@ def label_for_cut(
         )
         label = film_label(
             title=_ordinary_case(screen, memory_type, params, locale),
-            summary=_summary_in(story, locale),
-            type_label=memory_type_label(memory_type, locale),
+            summary=_summary_in(story, locale, model_text=config.title_screens.llm_titles),
+            type_label=film_type_label(memory_type, params, locale),
             date_start=start,
             date_end=end,
             episodes=episodes,
         )
-        # The type, year and story tags are opt-in (`upload.film_tags`); the description is not.
-        return label if config.upload.film_tags else replace(label, tags=())
+        # The type, year and story tags are opt-in (`upload.film_tags`); the description and
+        # the provenance tags are not.
+        kept_tags = label.tags if config.upload.film_tags else ()
+        return replace(label, tags=(*kept_tags, *provenance_tags(made_with, made_on)))
     except Exception as exc:  # WHY: the film is finished; a label we cannot build must not fail it
         logger.warning("Uploading without a description and tags: %s", type(exc).__name__)
         return None
@@ -237,6 +265,9 @@ def label_for_params(params: Any) -> FilmLabel | None:
             title=params.title,
             person_name=params.person_name,
             preset_params=params.memory_preset_params,
+            # This process made the film, today.
+            made_with=__version__,
+            made_on=date.today(),
         )
     except Exception as exc:  # WHY: a label we cannot build must not fail a finished film
         logger.warning("Uploading without a description and tags: %s", type(exc).__name__)
@@ -258,4 +289,8 @@ def label_for_run(config: Config, run: RunMetadata, *, store: Store) -> FilmLabe
         date_end=run.date_range_end,
         attempt_dir=attempt_dir,
         person_name=run.person_name,
+        # The run's own release and day, not the uploader's: a retry or a later upload of an
+        # old run still says what made it. The server's local day, as its clock read it.
+        made_with=run.app_version,
+        made_on=(run.completed_at or run.created_at).astimezone().date(),
     )

@@ -392,8 +392,10 @@ def _source(product="monthly_highlights", ranges=(("2025-07-01", "2025-07-31"),)
             ranges=tuple(SimpleNamespace(start=start, end=end) for start, end in ranges),
             people=people,
         ),
+        # Model-written text turned on (`title_screens.llm_titles`), as the tests below need.
         config=SimpleNamespace(
-            title_screens=SimpleNamespace(locale="en"), editorial=SimpleNamespace()
+            title_screens=SimpleNamespace(locale="en", llm_titles=True),
+            editorial=SimpleNamespace(),
         ),
     )
 
@@ -414,6 +416,30 @@ def _summarise(source, *, thin, judge=None, story=None):
         record=records.__setitem__,
     )
     return story, records
+
+
+@pytest.mark.parametrize("thin", [True, False], ids=["full", "basic"])
+def test_a_film_has_no_summary_until_model_text_is_turned_on(thin):
+    # WHY: model-written summaries are experimental (#2594), and the story-name line reads as
+    # a list of places and dates: with the setting off a film has no summary at all.
+    source = _source()
+    source.config.title_screens.llm_titles = False
+    judge = ScriptedJudge(_reply(FULL_REPLY))
+
+    story, records = _summarise(source, thin=thin, judge=judge)
+
+    assert story.thesis == ""
+    assert judge.prompts == []
+    assert records["film-summary"]["tier"] == "off"
+
+
+def test_a_synthesis_thesis_is_not_kept_with_model_text_off():
+    source = _source()
+    source.config.title_screens.llm_titles = False
+
+    story, _ = _summarise(source, thin=True, story=_period(demo_stories(), thesis="A model's line"))
+
+    assert story.thesis == ""
 
 
 def test_a_basic_film_states_the_story_names_as_its_summary():

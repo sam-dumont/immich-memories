@@ -238,9 +238,10 @@ upload:
   album_name: "Memories"
 ```
 
-Off by default. The web Render panel has its own upload choice. An uploaded film gets its title
-and story summary as its Immich description. `film_tags: true` also tags it with its memory type,
-years and stories. [Privacy](./privacy.md#what-immich-sees) lists every write.
+Off by default. The web Render panel has its own upload choice. An uploaded film gets its title as
+its Immich description (and its story summary, when the experimental `title_screens.llm_titles` is
+on), and tags naming the release that made it and the day. `film_tags: true` also tags it with
+its memory type, years and stories. [Privacy](./privacy.md#what-immich-sees) lists every write.
 
 ## Outside calls
 

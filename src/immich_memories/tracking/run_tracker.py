@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
+from immich_memories import __version__
 from immich_memories.operations.phases import PhaseEvent
 from immich_memories.tracking.models import PhaseStats, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
@@ -118,6 +119,7 @@ class RunTracker:
             date_range_start=date_range.start.date() if date_range else None,
             date_range_end=date_range.end.date() if date_range else None,
             target_duration_seconds=target_duration_seconds,
+            app_version=__version__,
         )
 
         self._save_new_run(run)

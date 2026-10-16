@@ -177,8 +177,9 @@ def build_birthday_windows(
 ) -> list[DateRange]:
     """The windows of a film anchored on a birthday, most recent first.
 
-    Two films, never mixed. The birthday film is the rolling year, the twelve months
-    ending on the birthday being celebrated, and nothing from earlier years. With
+    Two films, never mixed. The birthday film is the year from the previous birthday
+    through the one being celebrated, both parties included, and nothing from earlier
+    years. With
     ``years_back``, the birthdays film instead: that birthday and each of the
     ``years_back`` before it, ±1 day, the shape On This Day builds (leap day
     included), and no rolling year.
@@ -218,7 +219,7 @@ def birthdays_params(birthday: object, years_back: int | None) -> dict[str, int]
 def celebrated_day(end: date, preset_params: dict) -> date:
     """The birthday a film celebrates, read off the end of its span.
 
-    The birthday film's year ends on the party; the birthdays film's last window is the
+    The birthday film's year ends on the party (and starts on the one before); the birthdays film's last window is the
     party ±1 day, so its span ends the day after.
     """
     return end - timedelta(days=1) if preset_params.get("birthday_years_back") else end

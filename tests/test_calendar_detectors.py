@@ -311,14 +311,31 @@ class TestBirthdayDetector:
         assert len(result) == 1
         assert result[0].memory_type == "person_spotlight"
         assert result[0].category is CandidateCategory.BIRTHDAY
-        assert result[0].date_range_start == date(2025, 3, 2)
+        assert result[0].date_range_start == date(2025, 3, 1)
         assert result[0].date_range_end == date(2026, 3, 1)
         assert result[0].memory_key == make_memory_key(
             "person_spotlight",
-            date(2025, 3, 2),
+            date(2025, 3, 1),
             date(2026, 3, 1),
             ["ada"],
         )
+
+    def test_a_birthday_filmed_before_the_window_held_both_parties_is_not_proposed_again(self):
+        # Before 1.0.0 the year started the day after the previous birthday; a film already
+        # made under that key is the same birthday's film.
+        person = _make_person("Ada", birth_date=date(2000, 3, 1))
+        filmed = make_memory_key("person_spotlight", date(2025, 3, 2), date(2026, 3, 1), ["ada"])
+
+        result = BirthdayDetector().detect(
+            {},
+            [person],
+            {filmed},
+            _make_config(),
+            date(2026, 3, 10),
+            person_asset_counts={person.id: 100},
+        )
+
+        assert result == []
 
     def test_uses_existing_leap_day_birthday_rule(self):
         person = _make_person("Leap", birth_date=date(2000, 2, 29))
@@ -333,7 +350,7 @@ class TestBirthdayDetector:
         )
 
         assert len(result) == 1
-        assert result[0].date_range_start == date(2024, 3, 1)
+        assert result[0].date_range_start == date(2024, 2, 29)
         assert result[0].date_range_end == date(2025, 2, 28)
 
     def test_uses_previous_year_occurrence_just_after_new_year(self):
@@ -350,11 +367,11 @@ class TestBirthdayDetector:
 
         assert len(result) == 1
         candidate = result[0]
-        assert candidate.date_range_start == date(2025, 1, 1)
+        assert candidate.date_range_start == date(2024, 12, 31)
         assert candidate.date_range_end == date(2025, 12, 31)
         assert candidate.memory_key == make_memory_key(
             "person_spotlight",
-            date(2025, 1, 1),
+            date(2024, 12, 31),
             date(2025, 12, 31),
             ["new year eve"],
         )

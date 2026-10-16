@@ -121,7 +121,7 @@ Partner accounts need the read set only.
 |---|---|
 | `asset.upload` | Uploading the film and checking for duplicate uploads |
 | `tag.create` | Creating or finding the app's generated-film tag |
-| `tag.asset` | Attaching that tag to the film, and its type, year and story tags when `upload.film_tags` is on |
+| `tag.asset` | Attaching that tag to the film, its release and day tags, and its type, year and story tags when `upload.film_tags` is on |
 | `asset.update` | Writing the film's description (its title and story summary). Without it the film uploads and replaces its earlier render as before, just with no description |
 | `album.create` | Creating the destination album |
 | `albumAsset.create` | Adding the film to the album |

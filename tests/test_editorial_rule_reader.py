@@ -79,6 +79,8 @@ def test_rules_finish_product_selection_without_constructing_inference(tmp_path,
     )
     # Rules-only component coverage keeps model acquisition outside this fixture.
     config.editorial.preparation.tier = "metadata_only"
+    # The film's summary is opt-in (`title_screens.llm_titles`); this checks the Basic one.
+    config.title_screens.llm_titles = True
 
     def forbidden(*args, **kwargs):
         pytest.fail("rules reader constructed an inference transport")

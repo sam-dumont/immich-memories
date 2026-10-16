@@ -785,7 +785,14 @@ title_screens:
   animated_background: true      # Animated titles and smooth map flights
   show_month_dividers: true      # When the video spans several months (all-or-none)
   use_first_name_only: true      # "Riley" instead of "Riley Smith" in titles
+  llm_titles: false              # Experimental: the reader names special days and writes the summary
 ```
+
+`llm_titles` is experimental and off by default. With a [text reader](../better/reader.md)
+configured and this on, the reader names special days and writes the film's summary, the second
+half of its Immich description. The results miss too often for now: the
+[planned rework](https://github.com/sam-dumont/immich-memories/issues/2594) tracks it. Off, every film gets the app's own title, no summary,
+and its Immich description is the title. `--llm-title` and `--no-llm-title` decide for one run.
 
 `fade_color` chooses the opening and closing fade. `animated_background` controls movement;
 the colour palette and custom fonts are not configurable today.
