@@ -168,7 +168,7 @@ dev = [
     "refurb>=2.0",
     "import-linter>=2.15",
     "grimp>=3.0",
-    "deptry>=0.20",
+    "deptry>=0.25.1",
     "diff-cover>=10.6.0",
     "oidc-provider-mock>=0.3",
     # E2E browser tests
