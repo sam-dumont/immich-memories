@@ -46,9 +46,13 @@ With upload off (the default), it does not write to the library.
 With delivery enabled:
 
 1. Upload the finished film as a new asset.
-2. Tag it `immich-memories/generated`, so it is not selected as source footage later.
-3. Describe it: the description is the film's title and subtitle, then its story summary, for
-   example `July 2025 · Kit's birthday, then Lou and Pat's visit, then The road north`. With
+2. Tag it `immich-memories/generated`, so it is not selected as source footage later, plus
+   `immich-memories/version/<release>` and `immich-memories/generated-on/<YYYY-MM-DD>`: the
+   release that made the film and the day it finished, on the server's clock. A film's dates end
+   on its last picture, so these say when it was made. A run older than 1.0.0 has no recorded
+   release and gets no version tag.
+3. Describe it: the description is the film's title and subtitle, for example `July 2025`. With
+   `title_screens.llm_titles: true` (experimental) its story summary follows. With
    `upload.film_tags: true`, also tag it `immich-memories/type/<film type>`,
    `immich-memories/year/<year>` for each year its stories in the cut cover and
    `immich-memories/story/<name>` for each birthday, visit or trip it shows. People get no tag; Immich's faces already say who is in a

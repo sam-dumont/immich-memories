@@ -212,21 +212,17 @@ def birthday_year(
     birthday: date | datetime,
     year: int | None = None,
 ) -> DateRange:
-    """The year of a person's life that ends on one of their birthdays.
+    """A yearly review of a person's life, from one birthday through the next.
 
     ``year`` names the birthday being celebrated, not a calendar year to run
-    forward from: the window starts the day *after* the previous birthday and
-    ends on this one. A birthday memory is about the year leading up to the
-    party, and the party itself belongs in it.
-
-    Running forward instead put the celebrated birthday outside its own memory
-    and last year's inside it, and made the twelve months you got depend on
-    which year number the request happened to name rather than on the event
-    (#719).
+    forward from: the window starts on the previous birthday and ends on this
+    one, both days included. A birthday film is a yearly review starting from
+    the birthdate (owner ruling), so last year's party opens it and this
+    year's closes it.
 
     Example:
         birthday_year(date(1990, 2, 7), 2026)
-        -> Feb 8, 2025 to Feb 7, 2026
+        -> Feb 7, 2025 to Feb 7, 2026
     """
     if year is None:
         year = datetime.now().year
@@ -234,7 +230,7 @@ def birthday_year(
     celebrated = same_day_in_year(birthday, year)
     previous = same_day_in_year(birthday, year - 1)
 
-    start = datetime.combine(previous + timedelta(days=1), time.min)
+    start = datetime.combine(previous, time.min)
     end = datetime.combine(celebrated, time(23, 59, 59))
     return DateRange(start=start, end=end)
 

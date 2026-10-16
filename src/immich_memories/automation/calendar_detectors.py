@@ -7,7 +7,7 @@ monthly highlights, yearly reviews, and person spotlights.
 from __future__ import annotations
 
 import calendar
-from datetime import date
+from datetime import date, timedelta
 
 from immich_memories.automation.candidates import (
     CandidateCategory,
@@ -357,8 +357,7 @@ class BirthdayDetector:
             start, end, celebrated = window
             name_lower = person.name.lower()
             mem_key = make_memory_key("person_spotlight", start, end, [name_lower])
-
-            if mem_key in generated_keys:
+            if _birthday_filmed(start, end, name_lower, generated_keys):
                 continue
 
             asset_count = counts.get(person.id, 0)
@@ -438,6 +437,19 @@ class BirthdayDetector:
         if not busiest or not pictures:
             return self.BASE_SCORE * weight
         return self.BASE_SCORE * weight * max(self.MATERIAL_FLOOR, min(1.0, pictures / busiest))
+
+
+def _birthday_filmed(start: date, end: date, name: str, generated_keys: set[str]) -> bool:
+    """Whether this birthday's film was made, under its key or the one used before 1.0.0.
+
+    Before 1.0.0 the year began the day after the previous birthday: a film made then under
+    that key is this birthday's film, never a new one.
+    """
+    keys = (
+        make_memory_key("person_spotlight", first, end, [name])
+        for first in (start, start + timedelta(days=1))
+    )
+    return any(key in generated_keys for key in keys)
 
 
 def _completed_birthday_window(bday: date, today: date) -> tuple[date, date, date] | None:

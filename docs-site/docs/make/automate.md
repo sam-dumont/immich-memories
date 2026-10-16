@@ -28,7 +28,7 @@ Change the time there, then recreate the container:
 docker compose up -d
 ```
 
-The time uses the container's timezone (`TZ`). Upload is a separate choice: `upload.enabled: true` turns on delivery for manual and automatic films alike, and `upload.album_name` names the one destination album. An uploaded film carries its title and story summary as its Immich description; `upload.film_tags: true` also tags it with its type, years and stories. Leave `upload.enabled` false to keep films on disk. A key missing an upload permission still gets a completed film, kept locally with the reason named; [upload permissions and retries](../reference/automation-contract.md#docker-switch-on-the-built-in-timer) covers what happens next.
+The time uses the container's timezone (`TZ`). Upload is a separate choice: `upload.enabled: true` turns on delivery for manual and automatic films alike, and `upload.album_name` names the one destination album. An uploaded film carries its title as its Immich description and is tagged with the release that made it and the day; `upload.film_tags: true` also tags it with its type, years and stories. Leave `upload.enabled` false to keep films on disk. A key missing an upload permission still gets a completed film, kept locally with the reason named; [upload permissions and retries](../reference/automation-contract.md#docker-switch-on-the-built-in-timer) covers what happens next.
 
 Or omit those Compose lines and save **Settings > Automation > enabled** and
 **daily_at**. Settings also holds the other automation options; file and environment values win.
@@ -101,7 +101,7 @@ For a safe preview:
 immich-memories auto run --dry-run
 ```
 
-Automatic birthday films cover the completed birthday-to-birthday year. Their title names
+Automatic birthday films cover the completed birthday-to-birthday year, both birthdays included. Their title names
 the birthday being celebrated: "Kit's birthday · 2026". A film of the birthdays themselves, across
 the years, is [asked for by hand](../reference/film-types.mdx#birthdays).
 

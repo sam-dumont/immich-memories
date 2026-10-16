@@ -47,3 +47,17 @@ def with_the_cuts_holiday(
     if holiday is None:
         return kept
     return holiday_params_for(memory_type, holiday, config) | kept | {"holiday": holiday}
+
+
+def kept_title_stands(
+    kept_params: Mapping[str, Any], *, memory_type: str | None, source: str | None
+) -> bool:
+    """Whether a cut's kept title still names the film on a later render or upload.
+
+    A holiday cut that did not keep its holiday was titled before the app titled holidays
+    itself: by the model or the date template, as a season ("Été 2022-2026") or a span of
+    months. Its holiday is read back from its window instead (`with_the_cuts_holiday`), and
+    the title is the holiday's. A title somebody typed always stands.
+    """
+    stale = memory_type == "holiday" and not kept_params.get("holiday")
+    return not stale or source == "override"

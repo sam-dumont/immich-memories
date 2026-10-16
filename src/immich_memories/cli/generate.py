@@ -127,10 +127,17 @@ def _resolved_ask_scope(
             progress_file.unlink(missing_ok=True)
 
 
-def _apply_run_overrides(config, sharing: str | None, fade_color: str | None) -> None:
-    """Apply film-specific choices and refuse unsupported sharing before fetching media."""
+def _apply_run_overrides(
+    config, sharing: str | None, fade_color: str | None, llm_title: bool | None = None
+) -> None:
+    """Apply film-specific choices and refuse unsupported sharing before fetching media.
+
+    `--llm-title/--no-llm-title` decides the model's summary as well as its title.
+    """
     if fade_color is not None:
         config.title_screens.fade_color = fade_color
+    if llm_title is not None:
+        config.title_screens.llm_titles = llm_title
     if sharing:
         config.defaults.sharing = sharing
     refusal = sharing_refusal(config)
@@ -263,7 +270,7 @@ def register_generate_commands(main: click.Group) -> None:
             format_override=output_format,
         )
 
-        _apply_run_overrides(config, sharing, fade_color)
+        _apply_run_overrides(config, sharing, fade_color, llm_title)
 
         # CLI quality flag overrides config
         if quality:

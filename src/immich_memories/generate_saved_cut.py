@@ -27,7 +27,7 @@ from immich_memories.filename_builder import (
     name_after_recipe,
 )
 from immich_memories.generate import GenerationParams, generate_memory
-from immich_memories.memory_types.holiday_params import with_the_cuts_holiday
+from immich_memories.memory_types.holiday_params import kept_title_stands, with_the_cuts_holiday
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.operations.revision_render import RenderUnavailable, project_revision
 from immich_memories.processing.editorial_timing import timing_policy_for_params
@@ -227,7 +227,12 @@ def _apply_request(
     params.upload_album = request.album or config.upload.album_name
     # The title `generate` gave the cut stands (a special day's catalogue name, a trip's place)
     # unless this render names the film itself or asks the model again.
-    if saved is not None and saved.title and request.title is None is request.llm_title:
+    if (
+        saved is not None
+        and saved.title
+        and request.title is None is request.llm_title
+        and kept_title_stands(saved.preset_params, memory_type=run.memory_type, source=saved.source)
+    ):
         params.title, params.subtitle, params.title_source = (
             saved.title,
             request.subtitle or saved.subtitle,

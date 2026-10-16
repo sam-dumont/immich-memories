@@ -70,7 +70,8 @@ def _told(film: EditedFilm) -> dict[str, str]:
 def home(tmp_path: Path, fake_immich: FakeImmichServer, outbound_trap: OutboundTrap) -> UserHome:
     home = home_on(tmp_path / "home", fake_immich, outbound_trap.env())
     config = yaml.safe_load(home.config_path.read_text())
-    config["title_screens"] = {"locale": "fr"}
+    # The summary is model-written, which is opt-in.
+    config["title_screens"] = {"locale": "fr", "llm_titles": True}
     home.write_config(config)
     document = tmp_path / "household.yaml"
     document.write_text(yaml.safe_dump(household_people(lambda name: f"person-{name.lower()}")))

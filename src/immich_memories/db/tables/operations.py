@@ -65,6 +65,8 @@ pipeline_runs = Table(
     Column("film_timeline", JSON, nullable=True),
     # Every person the run was about, as given; NULL on rows older than the column.
     Column("person_names", JSON, nullable=True),
+    # The release that made the run, as uploaded films are tagged; NULL on older rows.
+    Column("app_version", String(), nullable=True),
     Index(None, "delivery_status", "source", "status"),
 )
 

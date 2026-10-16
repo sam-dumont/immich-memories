@@ -67,6 +67,7 @@ def _config(locale: str = "en", *, model: bool = True) -> Config:
     config = Config()
     config.title_screens = config.title_screens.model_copy(update={"locale": locale})
     if model:
+        config.title_screens.llm_titles = True  # model-written titles are opt-in
         config.llm = LLMConfig(
             enabled=True,
             provider="openai-compatible",

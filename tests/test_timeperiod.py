@@ -192,11 +192,11 @@ class TestCalendarYear:
 
 
 class TestBirthdayYear:
-    """The year of someone's life that ends on the birthday the year names."""
+    """A yearly review from the previous birthday through the one the year names, both parties in."""
 
     def test_birthday_year_basic(self):
         dr = birthday_year(date(1990, 2, 7), 2024)
-        assert dr.start == datetime(2023, 2, 8, 0, 0, 0)
+        assert dr.start == datetime(2023, 2, 7, 0, 0, 0)
         assert dr.end == datetime(2024, 2, 7, 23, 59, 59)
 
     def test_birthday_year_not_calendar_year(self):
@@ -208,6 +208,12 @@ class TestBirthdayYear:
         """A 29 February birthday is celebrated on the 28th in an ordinary year."""
         dr = birthday_year(date(2000, 2, 29), 2023)
         assert dr.end == datetime(2023, 2, 28, 23, 59, 59)
+
+    def test_birthday_year_starts_on_the_leap_day_itself(self):
+        """The year after a leap year starts on the 29th that was celebrated."""
+        dr = birthday_year(date(2000, 2, 29), 2025)
+        assert dr.start == datetime(2024, 2, 29, 0, 0, 0)
+        assert dr.end == datetime(2025, 2, 28, 23, 59, 59)
 
     def test_birthday_year_datetime_input(self):
         """Test with datetime input."""
@@ -331,15 +337,15 @@ class TestDateRangeEdgeCases:
         assert dr.contains(datetime(2025, 1, 1, 0, 0, 0)) is False
 
     def test_birthday_year_jan_1_birthday(self):
-        """A New Year's Day birthday ends the memory on the first of the year."""
+        """A New Year's Day birthday runs from one first of January to the next."""
         dr = birthday_year(date(2000, 1, 1), 2024)
-        assert dr.start == datetime(2023, 1, 2, 0, 0, 0)
+        assert dr.start == datetime(2023, 1, 1, 0, 0, 0)
         assert dr.end == datetime(2024, 1, 1, 23, 59, 59)
 
     def test_birthday_year_dec_31_birthday(self):
-        """A 31 December birthday makes the memory a calendar year exactly."""
+        """A 31 December birthday holds last year's party and this year."""
         dr = birthday_year(date(2000, 12, 31), 2024)
-        assert dr.start == datetime(2024, 1, 1, 0, 0, 0)
+        assert dr.start == datetime(2023, 12, 31, 0, 0, 0)
         assert dr.end == datetime(2024, 12, 31, 23, 59, 59)
 
     def test_custom_range_single_day_has_one_day(self):

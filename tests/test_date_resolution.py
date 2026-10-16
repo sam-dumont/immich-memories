@@ -402,7 +402,7 @@ class TestBackwardCompatibility:
             )
         )
 
-        assert result.start == datetime(2024, 3, 2)
+        assert result.start == datetime(2024, 3, 1)
         assert result.end == datetime(2025, 3, 1, 23, 59, 59)
 
     def test_slash_birthdays_are_rejected_not_guessed(self):
@@ -448,7 +448,7 @@ class TestBackwardCompatibility:
             )
         )
 
-        assert result.start == datetime(2024, 11, 21)
+        assert result.start == datetime(2024, 11, 20)
         assert result.end == datetime(2025, 11, 20, 23, 59, 59)
 
     def test_birthday_detected_from_immich_round_trips_into_the_window(self):
@@ -493,7 +493,7 @@ class TestBackwardCompatibility:
             )
         )
 
-        assert result.start == datetime(2023, 3, 1)
+        assert result.start == datetime(2023, 2, 28)
         assert result.end == datetime(2024, 2, 29, 23, 59, 59)
 
     def test_no_options_raises_usage_error(self):

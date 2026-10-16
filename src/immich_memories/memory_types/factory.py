@@ -174,8 +174,8 @@ def _person_spotlight(
 ) -> MemoryPreset:
     """A year with one person — a calendar one, or the one between two birthdays.
 
-    Anchored on a birthday it is a different memory: the rolling year ending on
-    the party, long enough to be a story rather than a montage, which is why it
+    Anchored on a birthday it is a different memory: the year from the previous
+    birthday through the party, long enough to be a story rather than a montage, which is why it
     asks for ten minutes where the calendar year asks for two. With years back it
     is the birthdays film instead, the party and the earlier ones, ±1 day each.
     """

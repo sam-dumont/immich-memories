@@ -133,6 +133,12 @@ automatic birthday films already were. The earlier birthdays are their own film:
 the web app the checkbox is **Birthday to birthday**, and the years field under it makes the
 birthdays film. `--years-back 5` gives you the five earlier birthdays the old default looked at.
 
+The year now starts on the previous birthday instead of the day after it, so both parties are in
+the film: `--birthday 07-21 --year 2025` runs 21 July 2024 to 21 July 2025. The pictures of last
+year's party are in last year's film and in this one. A birthday film's file name and its
+automation key start one day earlier (`person_spotlight_20240721-20250721.mp4`). Automation
+recognises a birthday filmed under the old key and doesn't propose it again.
+
 ### Scratch and past cuts clean up after themselves
 
 A run killed mid-way (out of memory, a pod restart) used to leave its scratch folder behind for
@@ -166,8 +172,9 @@ comma. Film file names don't change.
 
 A film's type tag is in the film's language now, like its story tags: a French month film is
 `immich-memories/type/Moments du mois`, not `.../Monthly highlights`. An English film's tags don't
-change. A trip film's description starts with its title in ordinary case instead of the title
-card's capitals, and a summary names each place once.
+change. A birthday or birthdays film is filed under the birthday type (`.../type/Anniversaire`,
+`.../type/Birthday`), no longer under the person spotlight type. A trip film's description starts
+with its title in ordinary case instead of the title card's capitals, and a summary names each place once.
 
 `runs render` in another language than the cut was made in, or of a cut made before 1.0.0, uploads
 the film with its title as the description and no summary, so the description never mixes two
@@ -183,8 +190,10 @@ automatic films) sends the same file, which Immich recognises, and writes the la
 
 A holiday cut made before cuts saved their holiday used to come back from `runs render` (or an
 upload from the run page) titled by its dates: "December 2021 to December 2025". The holiday is
-now read back from the days the cut covers, so it renders as "Christmas · 2022–2025" again. Holiday
-cuts made today aren't affected.
+now read back from the days the cut covers, so it renders as "Christmas · 2022–2025" again. That
+also holds for a cut over several years whose saved title was a season or a span of months
+("Summer 2022-2026"): it renders and uploads with the holiday's title. A title somebody typed
+stays. Holiday cuts made today aren't affected.
 
 ### The film summary says what happened
 
@@ -195,6 +204,26 @@ say about the period and what the film's shots show people doing. A holiday, tri
 film starts with its occasion ("Assumption, 2004–2026."). No list of places, no
 dates: the title already has those. Without a reader the summary is still the story names.
 Stored cuts keep the summary they have: cut again to get a new one.
+
+### Model-written titles and summaries are off
+
+On Full, the reader named special days and wrote the film's summary, the second half of its
+Immich description. Both miss too often, so they are experimental now and off by default; the
+[planned rework](https://github.com/sam-dumont/immich-memories/issues/2594) tracks the fix. After
+the upgrade a special day is named after its place, a film has no summary, and its Immich
+description is its title alone. Selection still uses the reader as before.
+
+To get them back, set `title_screens.llm_titles: true`, or pass `--llm-title` for one run
+(`--no-llm-title` turns them off for one run). `--llm-title` still adds a model title for a trip.
+
+### Films say which release made them
+
+A film's span ends on its last picture, so its dates never said when it was made. Every uploaded
+film is now tagged with the release that made it and the day it finished, on the server's clock:
+`immich-memories/version/1.0.0` and `immich-memories/generated-on/2026-10-16`. These come on top of
+`immich-memories/generated`, need the same `tag.create` and `tag.asset` permissions, and don't
+wait for `upload.film_tags`. Runs now record their release; a run made before this one has none,
+so uploading it later adds the day tag only. The store gains one column on its first start.
 
 ### Landscapes drift instead of zooming
 

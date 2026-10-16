@@ -110,7 +110,8 @@ def make_source(tmp_path, *, seconds=60, occasions=4, pictures=3):
     return StructurePlanningInput(
         case=case,
         intent=build_editorial_intent(case.product, case.ranges, brief=case.brief),
-        config=Config(tier="gpu"),
+        # The film's summary is opt-in (`title_screens.llm_titles`); this checks it is kept.
+        config=Config(tier="gpu", title_screens={"llm_titles": True}),
         wall_bytes=wall.text.encode(),
         moment_asset_ids={
             alias: group.candidate_ids for alias, group in zip(wall.aliases, groups, strict=True)

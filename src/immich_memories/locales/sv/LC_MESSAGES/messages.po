@@ -198,3 +198,7 @@ msgstr[1] "{names} kommer på besök"
 # The word a birthday film's title must carry, or the stem every form of it shares.
 msgid "title.birthday_word"
 msgstr "födelsedag"
+
+# The film type a birthday or birthdays film is filed under, as a tag.
+msgid "film_type.birthday"
+msgstr "Födelsedag"

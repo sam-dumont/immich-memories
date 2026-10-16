@@ -332,6 +332,15 @@ class TitleScreenConfig(BaseModel):
         default=True,
         description="Use only the first name for titles (e.g., 'John' instead of 'John Smith')",
     )
+    # Experimental: small readers wrote titles and summaries that missed too often (#2594).
+    llm_titles: bool = Field(
+        default=False,
+        description=(
+            "Experimental: let the configured LLM name special days and write the film's "
+            "summary (the second half of its Immich description). Off: the app titles every "
+            "film and the description is the title. --llm-title/--no-llm-title decides per run"
+        ),
+    )
 
     @model_validator(mode="after")
     def order_map_move_seconds(self) -> TitleScreenConfig:

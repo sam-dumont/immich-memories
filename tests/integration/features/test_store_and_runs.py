@@ -300,11 +300,14 @@ def test_a_delivered_film_carries_its_title_and_summary_as_description_and_its_y
     ).json()
 
     assert result.returncode == 0, result.explain()
-    # The title it opens on, then its one-line story summary.
-    assert asset["exifInfo"]["description"].startswith("July 2025 · "), asset
+    # Model-written summaries are opt-in (`title_screens.llm_titles`): by default the
+    # description is the film's title alone.
+    assert asset["exifInfo"]["description"] == "July 2025", asset
     tags = {tag["value"] for tag in asset["tags"]}
     assert "immich-memories/generated" in tags
     assert "immich-memories/year/2025" in tags, tags
+    assert any(tag.startswith("immich-memories/version/") for tag in tags), tags
+    assert any(tag.startswith("immich-memories/generated-on/") for tag in tags), tags
     assert all(
         tag.startswith("immich-memories/") and tag.count("/") == 2
         for tag in tags - {"immich-memories/generated"}

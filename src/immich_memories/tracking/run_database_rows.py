@@ -38,6 +38,7 @@ def run_to_row(run: RunMetadata) -> dict[str, Any]:
         "phase_events": run.phase_events.copy(),
         "person_name": run.person_name,
         "person_names": list(run.person_names) or None,
+        "app_version": run.app_version,
         "person_id": run.person_id,
         "date_range_start": _iso_date(run.date_range_start),
         "date_range_end": _iso_date(run.date_range_end),
@@ -80,6 +81,7 @@ def row_to_run(row: Mapping[Any, Any]) -> RunMetadata:
         last_phase=OperationalPhase(row["last_phase"]) if row["last_phase"] else None,
         person_name=row["person_name"],
         person_names=tuple(row["person_names"] or ()),
+        app_version=row["app_version"],
         person_id=row["person_id"],
         date_range_start=(
             date.fromisoformat(row["date_range_start"]) if row["date_range_start"] else None

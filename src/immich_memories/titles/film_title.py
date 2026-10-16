@@ -278,9 +278,16 @@ def _model_suggested_title(
     return suggestion.title, subtitle, TitleSource.MODEL
 
 
-def _asks_the_model(*, enabled: bool | None, memory_type: str | None, configured: bool) -> bool:
-    """Whether this run should put the question to the reader at all."""
-    if enabled is False:
+def _asks_the_model(
+    *, enabled: bool | None, opted_in: bool, memory_type: str | None, configured: bool
+) -> bool:
+    """Whether this run should put the question to the reader at all.
+
+    ``enabled`` is the run's own `--llm-title/--no-llm-title`; without one, model titles
+    follow `title_screens.llm_titles` (``opted_in``), off by default while they are
+    experimental. Opted in, a special day asks the model and a trip waits for the flag.
+    """
+    if enabled is False or (enabled is None and not opted_in):
         return False
     if not configured:
         if enabled:
@@ -385,6 +392,7 @@ def resolve_film_title(
     llm_config = config.llm
     if not _asks_the_model(
         enabled=enabled,
+        opted_in=config.title_screens.llm_titles,
         memory_type=memory_type,
         configured=bool(llm_config.enabled and llm_config.model),
     ):

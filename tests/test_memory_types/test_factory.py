@@ -119,7 +119,7 @@ class TestCreatePresetPersonSpotlight:
         assert preset.date_ranges[0].end == datetime(2024, 12, 31, 23, 59, 59)
 
     def test_birthday_range_when_enabled(self) -> None:
-        """With use_birthday=True, the year runs up to the birthday --year names."""
+        """With use_birthday=True, the year runs from the previous birthday to the one --year names."""
         preset = create_preset(
             MemoryType.PERSON_SPOTLIGHT,
             year=2024,
@@ -127,7 +127,7 @@ class TestCreatePresetPersonSpotlight:
             use_birthday=True,
             birthday=date(1990, 3, 15),
         )
-        assert preset.date_ranges[0].start == datetime(2023, 3, 16, 0, 0, 0)
+        assert preset.date_ranges[0].start == datetime(2023, 3, 15, 0, 0, 0)
         assert preset.date_ranges[0].end == datetime(2024, 3, 15, 23, 59, 59)
 
     def test_birthday_spotlight_also_looks_at_earlier_birthdays(self) -> None:

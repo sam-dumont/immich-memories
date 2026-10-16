@@ -31,7 +31,7 @@ from immich_memories.timeperiod import DateRange
 
 
 class TestRollingYear:
-    """The recent window is the year that ends on the birthday."""
+    """The recent window is the year from the previous birthday through the one celebrated."""
 
     def test_february_birthday_runs_february_to_february(self):
         """The bug that named the issue: a 7 February birthday, a July window.
@@ -41,7 +41,7 @@ class TestRollingYear:
         """
         windows = build_birthday_windows(date(2018, 2, 7), year=2026)
 
-        assert windows[0].start == datetime(2025, 2, 8)
+        assert windows[0].start == datetime(2025, 2, 7)
         assert windows[0].end == datetime(2026, 2, 7, 23, 59, 59)
 
     def test_the_birthday_being_celebrated_is_inside_the_memory(self):
@@ -49,11 +49,12 @@ class TestRollingYear:
 
         assert windows[0].contains(datetime(2026, 2, 7, 12, 0))
 
-    def test_the_previous_birthday_belongs_to_the_previous_memory(self):
-        """The rolling year starts the day after, so last year's party is history."""
+    def test_the_previous_birthday_opens_the_memory(self):
+        """A yearly review starting from the birthdate: last year's party is its first day."""
         windows = build_birthday_windows(date(2018, 2, 7), year=2026)
 
-        assert not windows[0].contains(datetime(2025, 2, 7, 12, 0))
+        assert windows[0].contains(datetime(2025, 2, 7, 12, 0))
+        assert not windows[0].contains(datetime(2025, 2, 6, 12, 0))
 
     def test_no_year_celebrates_the_most_recent_birthday(self):
         """A run in August is still about February's birthday, not next year's."""
@@ -83,13 +84,13 @@ class TestRollingYear:
 
 
 class TestTheBirthdayFilmIsTheYear:
-    """A birthday film holds the year up to the birthday and no earlier birthday."""
+    """A birthday film holds the year from one birthday to the next and no earlier birthday."""
 
     def test_a_birthday_film_is_the_rolling_year_alone(self):
         windows = build_birthday_windows(date(2018, 2, 7), year=2026)
 
         assert windows == [
-            DateRange(start=datetime(2025, 2, 8), end=datetime(2026, 2, 7, 23, 59, 59))
+            DateRange(start=datetime(2025, 2, 7), end=datetime(2026, 2, 7, 23, 59, 59))
         ]
 
     def test_no_years_back_is_the_same_film(self):
@@ -109,7 +110,8 @@ class TestTheBirthdayFilmIsTheYear:
 
         assert isinstance(windows, list)
         assert len(windows) == 1
-        assert windows[0].start == datetime(2025, 8, 31)
+        # The pictures of last year's party, on the 30th itself, are in the film.
+        assert windows[0].start == datetime(2025, 8, 30)
 
 
 class TestTheBirthdaysFilm:

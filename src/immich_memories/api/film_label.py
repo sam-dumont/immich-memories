@@ -84,6 +84,20 @@ def _story_names(episodes: Iterable[Mapping[str, Any]]) -> list[str]:
     return list(dict.fromkeys(names))
 
 
+def provenance_tags(version: str | None, made_on: date | None) -> tuple[str, ...]:
+    """Which release made a film, and the day it was made, beside the `generated` tag.
+
+    A film's dates end on its last picture, so they never say when it was made or by which
+    release. A run recorded before its release was kept gets no version tag.
+    """
+    tags = []
+    if release := _name(version):
+        tags.append(f"{TAG_ROOT}/version/{release}")
+    if made_on is not None:
+        tags.append(f"{TAG_ROOT}/generated-on/{made_on.isoformat()}")
+    return tuple(tags)
+
+
 def film_label(
     *,
     title: str | None,

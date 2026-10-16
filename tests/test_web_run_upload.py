@@ -21,6 +21,7 @@ class FakeImmich:
 
     def __init__(self, result: dict | None = None):
         self.uploads: list[tuple[Path, str | None]] = []
+        self.labels: list = []
         self.result = result or {
             "asset_id": "asset-42",
             "album_id": "album-1",
@@ -31,15 +32,16 @@ class FakeImmich:
 
     def upload_memory(self, video_path, album_name=None, *, captured_at=None, label=None):
         self.uploads.append((video_path, album_name))
+        self.labels.append(label)
         return self.result
 
 
-def _setup(tmp_path, *, missing=(), film=True, immich=None):
+def _setup(tmp_path, *, missing=(), film=True, immich=None, **run_fields):
     config = config_in(tmp_path)
     path = tmp_path / "finished.mp4"
     if film:
         path.write_bytes(b"synthetic finished film")
-    save_run(config, RUN, cut=False, status="completed", output_path=str(path))
+    save_run(config, RUN, cut=False, status="completed", output_path=str(path), **run_fields)
     client = api_client(config)
     fake = immich or FakeImmich()
     # WHY: Immich is the external boundary; the upload is the WRITE, the key scope is its check.
@@ -136,3 +138,18 @@ def test_an_immich_failure_never_puts_the_server_address_in_the_answer(tmp_path)
 
     assert response.status_code == 502
     assert "immich.internal.example" not in response.text
+
+
+def test_an_old_run_uploaded_from_its_page_carries_the_release_and_day_that_made_it(tmp_path):
+    from datetime import UTC, datetime
+
+    finished = datetime(2026, 10, 12, 12, 0, tzinfo=UTC)
+    _, client, fake, _ = _setup(tmp_path, app_version="1.0.0-rc.9", completed_at=finished)
+
+    response = client.post(f"/api/v1/runs/{RUN}/upload", json={})
+
+    assert response.status_code == 200
+    tags = fake.labels[0].tags
+    # The run's own release, not the one uploading it now.
+    assert "immich-memories/version/1.0.0-rc.9" in tags
+    assert f"immich-memories/generated-on/{finished.astimezone().date().isoformat()}" in tags

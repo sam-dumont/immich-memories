@@ -50,9 +50,12 @@ def _clip_in(city: str) -> VideoClipInfo:
 _RANGE = DateRange(start=datetime(2025, 7, 1), end=datetime(2025, 7, 14))
 
 
-def _config_with_llm() -> Config:
+def _config_with_llm(*, opted_in: bool = True) -> Config:
+    """A reader configured, and model-written titles turned on (`title_screens.llm_titles`)."""
     return Config(
-        tier="full", llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"}
+        tier="full",
+        llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"},
+        title_screens={"llm_titles": opted_in},
     )
 
 
@@ -65,6 +68,45 @@ def _answers(title: str = "Ada and her grandparents", subtitle: str | None = Non
         return SimpleNamespace(title=title, subtitle=subtitle)
 
     return ask, seen
+
+
+def test_model_titles_are_off_until_asked_for_even_with_a_reader() -> None:
+    # WHY: model-written titles are experimental (#2594); a configured reader alone no longer
+    # names a special day.
+    ask, seen = _answers(title="Une journée au bowling")
+
+    title, _subtitle, source = resolve_film_title(
+        enabled=None,
+        title_override=None,
+        clips=[make_clip("clip-1")],
+        config=_config_with_llm(opted_in=False),
+        memory_type="special_day",
+        date_range=_RANGE,
+        person_names=[],
+        ask=ask,
+    )
+
+    assert seen == {}
+    assert source is None or source.value != "model"
+    assert title != "Une journée au bowling"
+
+
+def test_llm_title_asks_the_model_for_one_run_with_the_setting_off() -> None:
+    ask, seen = _answers(title="Bowling night")
+
+    title, _subtitle, source = resolve_film_title(
+        enabled=True,
+        title_override=None,
+        clips=[make_clip("clip-1")],
+        config=_config_with_llm(opted_in=False),
+        memory_type="special_day",
+        date_range=_RANGE,
+        person_names=[],
+        ask=ask,
+    )
+
+    assert title == "Bowling night"
+    assert source is not None and source.value == "model"
 
 
 def test_no_llm_title_pins_the_template() -> None:
@@ -185,7 +227,7 @@ def _config_with_llm_locale(locale: str) -> Config:
     return Config(
         tier="full",
         llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"},
-        title_screens={"locale": locale},
+        title_screens={"locale": locale, "llm_titles": True},
     )
 
 

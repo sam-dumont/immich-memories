@@ -1106,9 +1106,9 @@ class TestBirthdayFlagNamesTheWindowItRenders:
             )
 
         assert result.exit_code == 0, result.output
-        # --year names the birthday celebrated, so the film is the year that
-        # ends on 15 March 2025, and nothing earlier.
-        assert captured["output_path"].name == "person_a_person_spotlight_20240316-20250315.mp4"
+        # --year names the birthday celebrated, so the film is the year from the
+        # 15 March 2024 party through the 15 March 2025 one, and nothing earlier.
+        assert captured["output_path"].name == "person_a_person_spotlight_20240315-20250315.mp4"
 
     def test_a_person_with_no_birth_date_is_told_where_to_put_one(self, tmp_path: Path) -> None:
         """Refuse over fake, and make the refusal teach the Immich workflow."""

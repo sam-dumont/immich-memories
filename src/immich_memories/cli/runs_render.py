@@ -41,7 +41,7 @@ def register_render_command(runs: click.Group) -> None:
         help=(
             "Title the film again instead of keeping the cut's title: a period, people, "
             "birthday, holiday or on-this-day film from its facts, any other film by the "
-            "model. --no-llm-title titles it again without the model"
+            "model (experimental). --no-llm-title titles it again without the model"
         ),
     )
     @click.option(
