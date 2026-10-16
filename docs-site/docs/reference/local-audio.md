@@ -123,9 +123,9 @@ the substitution.
   Music is never dropped for it.
 - **One film, one piece of music.** One generator makes the whole soundtrack, planned from the assembled film's length, so a
   100 s photo film gets about 100 s of music. Up to
-  240 s that is one take, and ACE-Step picks its key and time signature. Past it, up to 3
-  takes share one caption, style, tempo, key, time signature and seed, and are cut on bar lines and joined with a
-  0.3 s crossfade, matched in level. Each take ends a few seconds early, before its outro, and the
+  30 s that is one take, and ACE-Step picks its key and time signature. Past it, up to 3
+  takes of at most 30 s share one caption, style, tempo, key, time signature and seed, and are cut on bar lines and joined with a
+  0.3 s crossfade, matched in level, then repeated if the film is longer still. Each take ends a few seconds early, before its outro, and the
   next starts on its first downbeat.
 - **Four stems.** The track is split with Demucs: vocals duck most under the clips' sound, drums
   keep their rhythm. Local Demucs uses Metal on Apple Silicon (`immich-memories[demucs]` alone);
