@@ -35,7 +35,7 @@ classifiers = [
 dependencies = [
     "httpx>=0.27,<1",  # 1.0 is still a dev line (no stable release); it drops TimeoutException (#2081)
     "pydantic>=2.0",
-    "pydantic-settings>=2.14.2",
+    "pydantic-settings>=2.16.0",
     "fastapi>=0.143.0",  # the server the web client talks to (#1395)
     "uvicorn>=0.54.0",  # runs it: `immich-memories ui`
     "itsdangerous>=2.2",  # signs the session cookie (Starlette's SessionMiddleware)
@@ -89,7 +89,7 @@ mac = [
 ]
 # OIDC authentication (only needed for SSO login)
 auth = [
-    "authlib>=1.9.0",
+    "authlib>=1.9.1",
 ]
 # Local Demucs stem separation (in-process, no API server needed)
 # Model cache: ~/.cache/torch/hub/ (~80MB for htdemucs)
