@@ -35,6 +35,6 @@ A stay away is a trip only by your own trip settings: at least `trips.min_distan
 
 ## Chapters and pacing
 
-A trip that changes where it stays can become separate chapters. A long film about a person spreads its shots across the years it covers. In a film about a person, no story takes more than a quarter of the shots (half for the one the editor weighs dominant): when the other days run out of pictures, the film goes short rather than fill up on one wedding. A period with little worth showing stays short.
+A trip that changes where it stays can become separate chapters. A long film about a person spreads its shots across the years it covers. In a film about a person, no story takes more than a quarter of the shots (half for the one the editor weighs dominant), a small day keeps the two shots its weight gives it, and a moment the film shows gets one shot. When the other days run out of pictures, the film goes short rather than fill up on one wedding or one party night. A period with little worth showing stays short.
 
 Want to steer those choices? [Review and adjust](./overrule-it.md). Want the thresholds, event rules and shot allocation? [Grouping and allocation reference](../reference/selection-internals/moments-and-stories.md).

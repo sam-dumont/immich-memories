@@ -161,7 +161,9 @@ The film's slot count is its content budget (target minus title and ending cards
 
 Slots are handed out in order: one for each `major` story, then one `minor` per day, then `major`
 stories up to their ceiling, the remaining `minor` stories, one `glimpse` per day, and whatever is
-left deepens the heavier stories one moment at a time.
+left deepens the heavier stories one moment at a time. In a person film that last step stops at
+each weight's ceiling (a trip keeps the depth it reserved): the slots a sparse life can't fill stay
+empty, and the film is shorter.
 
 A deeper frame of a moment already shown has to pass the same scene check the final duplicate
 review uses, so a near-copy never takes a slot only to be removed later. A slot that review does

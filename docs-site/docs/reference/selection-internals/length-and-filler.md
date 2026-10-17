@@ -127,7 +127,9 @@ The draft tries to reach its length before it gives up the seconds:
   those already in. Every one must stand and must not look like its neighbours. The fill stops
   once the film's content seconds reach the budget, minus the usual 15% tolerance; when distinct
   shots run out first, the run logs how many distinct shots it found and how many seconds short
-  of the budget the film landed. A film of one repeated scene stays short.
+  of the budget the film landed. A film of one repeated scene stays short. A person film never takes a further frame of a
+  moment it already shows, whatever the spacing or the size of the group, and no story of it
+  deepens past what its weight grants (`story_shares`).
 - **Readmission.** A frame refused for looking like another, or for crowding its place, comes back
   when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner.
   While the film has a free slot it takes that one and nobody leaves. Once the film is full, it comes
