@@ -31,6 +31,7 @@ def test_the_matrix_covers_every_mood_with_every_style():
         "orchestral",
         "piano",
         "metal",
+        "lofi",
     }
 
 
@@ -43,10 +44,11 @@ class TestEveryCombinationIsUsable:
         assert STYLE_PROFILES[style].genre_for(mood) in result.caption
         assert MOOD_PROFILES[mood].word in result.caption
 
-    def test_combination_states_bpm_in_tags_and_field(self, mood, style):
+    def test_combination_keeps_tempo_out_of_the_caption(self, mood, style):
         result = build_ace_caption_structured(mood, style=style)
 
-        assert f"{result.bpm} bpm" in result.caption
+        assert result.bpm > 0
+        assert "bpm" not in result.caption.lower()
 
     def test_combination_fits_the_api_limit(self, mood, style):
         assert len(build_ace_caption_structured(mood, style=style).caption) < 512
@@ -89,12 +91,12 @@ def test_an_unknown_style_falls_back_instead_of_failing():
     result = build_ace_caption_structured("happy", style="klezmer-polka")
 
     assert result.caption
-    assert f"{result.bpm} bpm" in result.caption
+    assert "bpm" not in result.caption
 
 
-# The maintainer's listening tests (#308, #2471) kept acoustic, electronic and solo piano; jazz
-# trio, rock, orchestral and metal sounded wrong on real films. The app picks only those three.
-_VALIDATED = {"acoustic", "electronic", "piano"}
+# The maintainer's listening tests (#308, #2471) kept acoustic, electronic and solo piano and
+# rated lo-fi best; jazz trio, rock, orchestral and metal sounded wrong on real films.
+_VALIDATED = {"acoustic", "electronic", "piano", "lofi"}
 
 
 def test_with_no_style_set_every_automatic_pick_is_a_validated_style():
@@ -154,3 +156,43 @@ def test_a_model_caption_with_no_style_set_never_names_an_opt_in_genre():
             *STYLE_PROFILES["electronic"].genre_by_mood.values(),
             STYLE_PROFILES["electronic"].genre,
         }, genres
+
+
+def test_solo_piano_caption_is_the_one_rated_best_and_has_no_mood_production_tags():
+    result = build_ace_caption_structured("calm", style="piano")
+
+    assert (
+        result.caption == "solo piano, serene, felt piano, gentle melody, soft room reverb, hi-fi"
+    )
+
+
+def test_lofi_caption_is_the_one_rated_best_and_has_no_mood_production_tags():
+    result = build_ace_caption_structured("nostalgic", style="lofi")
+
+    assert result.caption == (
+        "lo-fi hip hop, wistful, dusty drums, warm electric piano, mellow bass, "
+        "vinyl crackle, tape saturation"
+    )
+
+
+@pytest.mark.parametrize("mood", MOODS)
+def test_lofi_tempo_stays_in_its_band(mood):
+    assert 70 <= build_ace_caption_structured(mood, style="lofi").bpm <= 98
+
+
+@pytest.mark.parametrize("genre", ["lofi", "lo-fi", "lo fi", "chillhop"])
+def test_the_readers_lofi_genres_land_on_the_lofi_style(genre):
+    from immich_memories.audio.generators.ace_step_captions import pick_style
+
+    assert pick_style(genres=[genre]) == "lofi"
+
+
+def test_a_specific_style_caption_keeps_tempo_out_too():
+    from immich_memories.audio.mood_analyzer import VideoMood
+
+    result = build_ace_caption_structured(
+        "happy", mood_detail=VideoMood(primary_mood="happy", specific_style="1920s swing")
+    )
+
+    assert result.caption.startswith("1920s swing")
+    assert "bpm" not in result.caption

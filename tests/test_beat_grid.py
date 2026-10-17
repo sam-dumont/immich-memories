@@ -105,14 +105,16 @@ class TestCaptionTempoFollowsTheCadence:
         assert aligned.bpm != natural.bpm
 
     def test_the_stated_tempo_matches_the_one_we_ask_the_model_for(self):
-        """The caption text conditions the model; a mismatch would fight itself."""
+        """The cadence nudges the tempo field, which is where the model reads it."""
         from immich_memories.audio.generators.ace_step_captions import (
             build_ace_caption_structured,
         )
 
         result = build_ace_caption_structured("happy", style="electronic", cadence_seconds=4.0)
 
-        assert f"{result.bpm} bpm" in result.caption
+        beats = 4.0 / (60.0 / result.bpm)
+        assert abs(beats - round(beats)) < 0.05
+        assert "bpm" not in result.caption
 
     def test_no_cadence_leaves_the_mood_tempo_untouched(self):
         from immich_memories.audio.generators.ace_step_captions import (

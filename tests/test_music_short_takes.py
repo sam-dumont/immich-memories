@@ -48,7 +48,6 @@ async def test_a_two_minute_film_asks_ace_step_for_short_takes_and_joins_them(
     assert len(ace.requests) > 1
     assert all(r.duration_seconds <= SHORT_TAKE_SECONDS for r in ace.requests)
     assert all(r.duration_limit_seconds <= SHORT_TAKE_SECONDS for r in ace.requests)
-    assert all(r.joined_take for r in ace.requests), "joined takes pin one key and meter"
     assert len(joined) == 1
     assert len(joined[0]["takes"]) == len(ace.requests)
     assert joined[0]["target"] == pytest.approx(128.0, abs=1.5)
@@ -67,4 +66,3 @@ async def test_a_film_within_one_short_take_is_one_take(
         )
 
     assert len(ace.requests) == 1
-    assert not ace.requests[0].joined_take

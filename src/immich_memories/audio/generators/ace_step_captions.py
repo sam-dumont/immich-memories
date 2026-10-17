@@ -1,10 +1,10 @@
 """ACE-Step caption templates and prompt building.
 
-Dense caption templates with genre, instruments, key, BPM, and time signature
-for high-quality ACE-Step 1.5 music generation.
+Dense caption templates with genre, mood and instruments for ACE-Step 1.5.
 
-BPM, key_scale, and time_signature are returned separately so they can be
-sent as explicit API parameters (not buried in the caption text).
+BPM, key_scale, and time_signature are returned separately and sent as explicit
+parameters. The caption never carries tempo: ACE-Step's own guide says metadata
+belongs in the dedicated fields, and removing "N bpm" was neutral by ear.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 # Dense caption templates for ACE-Step.
 # Each template uses a descriptive sentence (not just tags) for better LLM guidance.
-# BPM, key, and time_signature are sent as separate API params.
+# BPM, key, and time_signature are sent as separate params, never in the caption.
 # WHY: ACE-Step's metadata vocabulary is a bare beat count (2 for 2/4, 3 for 3/4,
 # 4 for 4/4, 6 for 6/8) — acestep.constants.VALID_TIME_SIGNATURES. Its constrained
 # decoder injects whatever it is given straight into the LM's chain-of-thought
@@ -81,6 +81,10 @@ class StyleProfile:
     instruments: str
     tempo_range: tuple[int, int] = (70, 150)
     genre_by_mood: Mapping[str, str] = field(default_factory=dict)
+    # WHY: a style whose instrument list already carries its own room and texture words
+    # ("soft room reverb", "vinyl crackle") sounded better without the mood's production
+    # words stacked on top; the piano with them turned into background fill.
+    own_production: bool = False
 
     def genre_for(self, mood_key: str) -> str:
         return self.genre_by_mood.get(mood_key, self.genre)
@@ -178,8 +182,17 @@ STYLE_PROFILES: dict[str, StyleProfile] = {
     ),
     "piano": StyleProfile(
         genre="solo piano",
-        instruments="grand piano, felt piano, upright bass, light strings",
+        instruments="felt piano, gentle melody, soft room reverb, hi-fi",
         tempo_range=(60, 140),
+        own_production=True,
+    ),
+    # The best-rated style in the listening tests. An electronic sub-style, so it sits
+    # in the automatic pool beside electronic.
+    "lofi": StyleProfile(
+        genre="lo-fi hip hop",
+        instruments="dusty drums, warm electric piano, mellow bass, vinyl crackle, tape saturation",
+        tempo_range=(70, 98),
+        own_production=True,
     ),
     # Added for event memories that name the genre directly (a festival day),
     # so the reader can say "metal" and have it mean metal, not smooth jazz (#1007).
@@ -211,6 +224,10 @@ _GENRE_TO_STYLE: dict[str, str] = {
     "orchestral": "orchestral",
     "classical": "orchestral",
     "piano": "piano",
+    "lofi": "lofi",
+    "lo-fi": "lofi",
+    "lo fi": "lofi",
+    "chillhop": "lofi",
 }
 
 # The reader states energy and tempo as words, not numbers; both map onto the
@@ -219,9 +236,10 @@ _ENERGY_LEVELS: dict[str, float] = {"low": 0.0, "medium": 0.5, "high": 1.0}
 _TEMPO_ENERGY: dict[str, float] = {"slow": 0.0, "medium": 0.5, "fast": 1.0}
 
 # The styles the app picks by itself. The maintainer's listening tests (#308, again on real
-# films in #2471) kept acoustic, electronic and solo piano; jazz trio, indie rock, orchestral,
-# ambient and metal sounded wrong unasked. They stay in the matrix for an explicit `style` only.
-AUTOMATIC_STYLES = ("acoustic", "electronic", "piano")
+# films in #2471) kept acoustic, electronic and solo piano, and rated lo-fi (an electronic
+# sub-style) best of all; jazz trio, indie rock, orchestral, ambient and metal sounded wrong
+# unasked. They stay in the matrix for an explicit `style` only.
+AUTOMATIC_STYLES = ("acoustic", "electronic", "piano", "lofi")
 # A reader's genre yield whose style is opt-in lands on the automatic style nearest in feel:
 # jazz keeps its upright bass and brushed drums in acoustic; orchestral and cinematic keep their
 # slower, wide register in piano; rock, metal and ambient keep their drive or pads in electronic.
@@ -335,11 +353,10 @@ def compose_caption(
     if cadence_seconds:
         bpm = beat_aligned_bpm(bpm, cadence_seconds, style.tempo_range)
     key_scale = f"{_key_root(mood_key, style_key)} {profile.mode}"
-    caption = (
-        f"{style.genre_for(mood_key)}, {profile.word}, {style.instruments}, "
-        f"{profile.production}, {bpm} bpm"
-    )
-    return caption, bpm, key_scale
+    parts = [style.genre_for(mood_key), profile.word, style.instruments]
+    if not style.own_production:
+        parts.append(profile.production)
+    return ", ".join(parts), bpm, key_scale
 
 
 def _key_root(mood_key: str, style_key: str) -> str:
@@ -393,7 +410,7 @@ def build_ace_caption_structured(
         energy = profile.energy if energy is None else energy
         bpm = _specific_style_bpm(energy, cadence_seconds)
         key_scale = f"{_key_root(mood_key, 'acoustic')} {profile.mode}"
-        caption = f"{specific}, {profile.word}, {profile.production}, {bpm} bpm"
+        caption = f"{specific}, {profile.word}, {profile.production}"
     else:
         genres = mood_detail.genre_suggestions if mood_detail else None
         style_key = pick_style(memory_type=memory_type, style=style, genres=genres, rng=rng)

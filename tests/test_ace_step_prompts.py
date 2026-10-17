@@ -132,12 +132,11 @@ class TestMoodVariety:
 # =============================================================================
 
 
-def test_structured_caption_carries_bpm_in_both_places():
-    """The guides say to state BPM in the tags and as the field."""
+def test_structured_caption_keeps_tempo_in_the_field_only():
     result = build_ace_caption_structured("happy")
 
     assert result.bpm > 0
-    assert f"{result.bpm} bpm" in result.caption
+    assert "bpm" not in result.caption
 
 
 def test_key_is_stated_so_combinations_do_not_share_a_tonality():
@@ -185,7 +184,6 @@ def test_unknown_memory_type_still_produces_a_caption():
     result = build_ace_caption_structured("calm", memory_type="not_a_memory_type")
 
     assert "serene" in result.caption
-    assert f"{result.bpm} bpm" in result.caption
 
 
 class TestReaderJudgmentDrivesTheCaption:

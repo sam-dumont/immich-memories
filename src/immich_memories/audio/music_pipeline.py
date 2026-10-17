@@ -343,7 +343,6 @@ class MusicPipeline:
                 duration_seconds=length,
                 duration_limit_seconds=length,
                 variation_index=index,
-                joined_take=count > 1,
             )
             result = await _run(gen, take, progress)
             if result is None:

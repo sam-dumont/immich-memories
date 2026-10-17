@@ -944,9 +944,9 @@ class TestACEStepBackendAPIGeneration:
         assert "lyrics" in captured_payload
         assert captured_payload["instrumental"] is True
         assert "bpm" in captured_payload
-        # One take: key and meter are the model's to pick.
-        assert "keyscale" not in captured_payload
-        assert "timesignature" not in captured_payload
+        # Pinned on a single take too: empty, the DiT reads "keyscale: N/A".
+        assert captured_payload["keyscale"]
+        assert captured_payload["timesignature"] == "4"
         assert captured_payload["duration"] == 30
 
     def test_generate_api_multi_scene(self):
