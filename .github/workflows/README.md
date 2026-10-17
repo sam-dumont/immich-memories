@@ -71,6 +71,12 @@ Runs when dispatched (`stable` or `rc`) and when `nightly.yml` calls it (`nightl
 - `production` - For minor/patch releases
 - `production-major` - For major releases (add approval requirement)
 
+**Secret required:** `RELEASE_TAG_TOKEN`, a fine-grained token on this repository only with Contents and Workflows read/write. GitHub refuses a tag the workflow's own token writes when the tagged commit's workflow files differ from `main`'s at push time, which happens whenever a workflow change merges during the two-hour run. Only the two steps that push a tag (`Push release tag` and `Move the nightly tag to this commit`) read it, through `scripts/push_release_ref.sh`; every other step uses `GITHUB_TOKEN`. When it is missing or expired, those steps fail naming the secret, before any GitHub Release or PyPI upload.
+
+### `dependabot-notices.yml` - Dependabot notices
+
+Runs on Dependabot pull requests that change `uv.lock`. One job installs the PR's dependencies and runs `make notices` with a read-only token; a second job, which runs no PR code, commits the regenerated `THIRD_PARTY_NOTICES` to the PR branch. The CI runs that push starts wait for "Approve workflows to run" on the PR, since a `GITHUB_TOKEN` push never starts CI unattended.
+
 ### `nightly.yml` - Nightly Build
 
 Runs daily and on demand (`force` builds an unchanged `main`). It builds only when `main` has commits since the last nightly, read from the `Commit:` line of the rolling `nightly` prerelease (`scripts/nightly.py`). That check is all `nightly.yml` holds: the build is `release.yml` called with channel `nightly`, the same jobs in the same order as a stable or rc release. Where a nightly differs, it is an `if:` in `release.yml`: it runs CI and the Immich gate in full like every release, but skips the approval environment, rebuilds the inference images only when their inputs changed, tags `:nightly` and `:nightly-YYYYMMDD` instead of a version, moves the `nightly` tag instead of a `v*` tag, replaces the rolling `nightly` prerelease (wheel, sdist, provenance and Compose files, never "Latest") instead of creating a versioned release, and skips PyPI. The docs deploy lands it at `/dev/`. A **Release** dispatch offers only `stable` and `rc`; a nightly runs through **Nightly**, so it always passes the check.
