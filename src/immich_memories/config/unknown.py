@@ -52,6 +52,7 @@ _PROCESS_KEYS = frozenset(
         "LOG_FILE",
         "LOG_FORMAT",
         "LOG_LEVEL",
+        "MUSIC_DIR",
         "OWNER",
         "RENDER_WORKER_DIRECTORY",
         "RENDER_WORKER_GEOCODING_URL",

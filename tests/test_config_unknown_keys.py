@@ -130,3 +130,22 @@ def test_database_test_controls_do_not_hide_real_configuration_typos(tmp_path, m
     assert "E2E_DATABASE_URL" not in caplog.text
     assert "secret-sentinel" not in caplog.text
     assert "secret-typo-value" not in caplog.text
+
+
+def test_every_variable_the_images_set_is_recognized(tmp_path, monkeypatch):
+    # A variable baked into an image reaches every install: none may read as a typo.
+    import re
+    from pathlib import Path
+
+    docker = Path(__file__).resolve().parents[1] / "docker"
+    variables = {
+        name: value
+        for dockerfile in ("Dockerfile", "Dockerfile.inference")
+        for name, value in re.findall(
+            r"^ENV (IMMICH_MEMORIES_\w+)=(\S*)", (docker / dockerfile).read_text(), re.MULTILINE
+        )
+    }
+    assert "IMMICH_MEMORIES_MUSIC_DIR" in variables
+    for name, value in variables.items():
+        monkeypatch.setenv(name, value)
+    assert Config.from_yaml(tmp_path / "missing.yaml", stored={}).unknown_keys == ()
