@@ -332,14 +332,14 @@ jobs:
         run: python3 scripts/nightly.py notes "$NEXT_VERSION" "$GITHUB_SHA" "$IMAGE_TAG" > release_notes.md
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist-release
           path: dist/
 
       - name: Upload release notes and attestations
         if: ${{ !inputs.dry_run }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-assets
           path: |
@@ -972,7 +972,7 @@ jobs:
       # The wheel is in the release already (from dist-release); only the new
       # setup and evidence assets travel.
       - name: Upload deployment files
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: deployment-assets
           path: |
