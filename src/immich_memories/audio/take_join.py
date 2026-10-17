@@ -1,4 +1,4 @@
-"""Join one film's generated takes into one piece of music (#2472).
+"""Join one film's generated takes into one piece of music (#2472), or loop one track.
 
 A long film's soundtrack is several takes of one caption, BPM and key. They used
 to be folded with a two-second blind crossfade at whatever sample a take ended
@@ -8,6 +8,9 @@ downbeat before its outro, the next starts on its own downbeat, and the two meet
 in a short equal-power crossfade centred on that shared bar line, the next take
 matched to the level of the one before. The bar grid then runs straight on
 across the seam, and only a fraction of a beat ever has both takes sounding.
+
+A library track (bundled, or from your music folder) shorter than its film is looped
+the same way, onto itself: ``loop_track``.
 
 Beat tracking is numpy over an ffmpeg decode, like ``track_tempo``: librosa is not
 a dependency of this project. The tempo is the one the takes were asked for,
@@ -40,6 +43,9 @@ _MAX_GAIN_DB = 6.0
 _SILENCE = 10 ** (-45 / 20)
 _FALLBACK_BPM = 120.0
 _FADE_OUT_SECONDS = 2.0
+# A loop's end is matched on what its next few seconds sound like.
+_MATCH_SECONDS = 3.0
+_MATCH_BANDS = 24
 
 
 @dataclass(frozen=True)
@@ -74,6 +80,67 @@ def join_takes(
     return output_path
 
 
+def loop_track(track: Path, target_duration: float, output_path: Path) -> Path:
+    """Write ``target_duration`` seconds of one track, looped onto itself.
+
+    Each repeat starts on the track's first downbeat after its lead-in. The pass
+    before it ends, ahead of the outro, at the point whose next few seconds sound
+    most like what follows that downbeat, so the bars, chords and beat carry on
+    across the seam. A shipped track's tempo is measured, not known, and a misread
+    tempo would cut mid-bar. A track that never repeats itself still loops at its
+    closest match, in the same short crossfade. The level is the track's own on
+    every pass.
+    """
+    take = _take(track, None)
+    if take is None:
+        raise ValueError("loop_track needs a track with sound")
+    take = _matched_end(take)
+    target = round(target_duration * RATE)
+    looped = _sequence([take], target, onto_itself=True)[:target]
+    _finish(looped)
+    _write_wav(looped, output_path)
+    return output_path
+
+
+def _matched_end(take: _Take) -> _Take:
+    """``take`` with its end moved to where the music best repeats its start."""
+    bands = _band_energies(take.audio.mean(axis=1))
+    window = int(_MATCH_SECONDS * RATE / _HOP)
+    start = take.start // _HOP
+    # The tail guard already keeps the latest end that far before the last sound.
+    latest = min(take.end // _HOP, bands.shape[0] - window)
+    earliest = start + (latest - start) // 2
+    if latest <= earliest or start + window > bands.shape[0]:
+        return take
+    reference = bands[start : start + window]
+    scores = np.array(
+        [_similarity(reference, bands[end : end + window]) for end in range(earliest, latest + 1)]
+    )
+    best = int(np.argmax(scores))
+    return _Take(take.audio, take.start, (earliest + best) * _HOP)
+
+
+def _band_energies(mono: np.ndarray) -> np.ndarray:
+    """Log energy per hop in a few log-spaced bands: rhythm and harmony, cheaply."""
+    frame = 4 * _HOP
+    count = max((mono.size - frame) // _HOP + 1, 0)
+    if count == 0:
+        return np.zeros((0, _MATCH_BANDS), dtype=np.float32)
+    index = np.arange(frame)[None, :] + _HOP * np.arange(count)[:, None]
+    spectrum = np.abs(np.fft.rfft(mono[index] * np.hanning(frame), axis=1))
+    edges = np.unique(np.geomspace(2, spectrum.shape[1], _MATCH_BANDS + 1).astype(int))
+    bands = np.add.reduceat(spectrum, edges[:-1], axis=1)
+    features = np.log1p(100 * bands)
+    return (features - features.mean(axis=0)).astype(np.float32)
+
+
+def _similarity(first: np.ndarray, second: np.ndarray) -> float:
+    """Correlation of two equal stretches of band energies, 1 for the same music."""
+    a, b = first.ravel(), second.ravel()
+    denominator = float(np.linalg.norm(a) * np.linalg.norm(b))
+    return float(a @ b) / denominator if denominator else 0.0
+
+
 def _take(path: Path, bpm: float | None) -> _Take | None:
     audio = _decode(path)
     if audio.size == 0 or np.abs(audio).max() < _SILENCE:
@@ -97,7 +164,7 @@ def _bar_span(audio: np.ndarray, downbeats: np.ndarray) -> tuple[int, int]:
     return lead_in, last_sound
 
 
-def _sequence(takes: list[_Take], target: int) -> np.ndarray:
+def _sequence(takes: list[_Take], target: int, *, onto_itself: bool = False) -> np.ndarray:
     """Takes in order, repeated until ``target`` samples, each seam on a shared bar line."""
     half = _half_fade()
     first = takes[0]
@@ -106,16 +173,28 @@ def _sequence(takes: list[_Take], target: int) -> np.ndarray:
     queue = cycle(takes)
     next(queue)
     while joined.shape[0] < target + half:
-        joined = _append(joined, next(queue), half)
+        joined = _append(joined, next(queue), half, onto_itself=onto_itself)
     return joined
 
 
-def _append(joined: np.ndarray, take: _Take, half: int) -> np.ndarray:
-    """Crossfade ``take`` in, its first downbeat on the bar line ``half`` before the end."""
+def _append(joined: np.ndarray, take: _Take, half: int, *, onto_itself: bool) -> np.ndarray:
+    """Crossfade ``take`` in, its first downbeat on the bar line ``half`` before the end.
+
+    Two takes are different audio, so they meet in an equal-power crossfade, the next
+    one matched to the level of the one before. A track looped onto itself meets the
+    same music at its matched end: an equal-power fade would add 3 dB at every seam,
+    so it fades linearly, at the track's own level.
+    """
     head = _padded(take.audio, take.start - half, take.start + half)
-    gain = _level_match(joined[: joined.shape[0] - half], take.audio[take.start :])
-    angle = np.linspace(0, np.pi / 2, 2 * half, dtype=np.float32)[:, None]
-    seam = joined[-2 * half :] * np.cos(angle) + head * gain * np.sin(angle)
+    if onto_itself:
+        gain = 1.0
+        rise = np.linspace(0, 1, 2 * half, dtype=np.float32)[:, None]
+        fade_out, fade_in = 1 - rise, rise
+    else:
+        gain = _level_match(joined[: joined.shape[0] - half], take.audio[take.start :])
+        angle = np.linspace(0, np.pi / 2, 2 * half, dtype=np.float32)[:, None]
+        fade_out, fade_in = np.cos(angle), np.sin(angle)
+    seam = joined[-2 * half :] * fade_out + head * gain * fade_in
     body = take.audio[take.start + half : take.end + half] * gain
     return np.concatenate([joined[: -2 * half], seam, body])
 

@@ -42,7 +42,7 @@ def test_soundtrack_cadence_uses_the_finished_films_frame_rate(
 
     def bundled(_mood, **kwargs):
         seen.append(("bundled", kwargs["cadence_seconds"]))
-        return []
+        return None
 
     async def generated(**kwargs):
         seen.append(("generated", kwargs["photo_cadence_seconds"]))
@@ -50,7 +50,7 @@ def test_soundtrack_cadence_uses_the_finished_films_frame_rate(
 
     # WHY: stop at the installed-track and model backends; no library or model is needed
     # to observe the timing request. The music phase, probing and provider routing are real.
-    monkeypatch.setattr("immich_memories.audio.bundled_music.bundled_playlist_for_mood", bundled)
+    monkeypatch.setattr("immich_memories.audio.bundled_music.bundled_track_for_mood", bundled)
     monkeypatch.setattr("immich_memories.audio.music_generator.generate_music_for_video", generated)
     config = Config()
     config.ace_step.enabled = provider == "generated"

@@ -269,6 +269,13 @@ signature; only a film short enough for one take leaves both to ACE-Step. In `ap
 asks the server to skip its planner unless `use_lm: true`, so a server with a planner loaded no
 longer rewrites the caption.
 
+### Library music loops one track
+
+A film without generated music plays one track for its whole length: a bundled one, or one from your
+music folder. A film longer than the track loops it onto itself, cut where the track repeats its own
+opening, instead of crossfading into other tracks from the same folder. Nothing to change in your config.
+To hear different music in a long film, put a longer track in your music folder.
+
 ### The maximalist Kubernetes overlay holds no Secrets
 
 `deploy/kubernetes/overlays/maximalist` no longer lists `render-worker-secret.yaml` or

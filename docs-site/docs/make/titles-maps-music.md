@@ -143,7 +143,7 @@ Put your own tracks in `audio.local_music_dir` (`~/Music/Memories` unless you ch
   tender/     lullaby.opus
 ```
 
-Automatic then picks from your folder instead of the bundled tracks, by the film's mood, the same way: a beat that fits the photo cadence first, and a playlist from one folder for a long film. Folder names are moods: calm, peaceful, tender, nostalgic, playful, happy, exciting, energetic, and the rarer ones (sad, romantic, dramatic, mysterious, inspiring, melancholic, uplifting). A playful film without a `playful` folder takes `happy`; peaceful takes `calm`, exciting `energetic` and romantic `tender`, as the bundled music does.
+Automatic then picks from your folder instead of the bundled tracks, by the film's mood, the same way: a beat that fits the photo cadence first, and one track per film, looped onto itself when the film is longer. Folder names are moods: calm, peaceful, tender, nostalgic, playful, happy, exciting, energetic, and the rarer ones (sad, romantic, dramatic, mysterious, inspiring, melancholic, uplifting). A playful film without a `playful` folder takes `happy`; peaceful takes `calm`, exciting `energetic` and romantic `tender`, as the bundled music does.
 
 A mood your folder lacks plays the bundled tracks for it. A mood neither has (a year in review starts as `inspiring`) picks from all of your folder. An empty or missing folder leaves the bundled music in charge, and the log says so without printing the path. A configured generator still comes first; your folder replaces the bundled fallback, not the generator. In Docker, mount the folder and point `audio.local_music_dir` at the mount.
 
@@ -156,7 +156,7 @@ audio:
 
 Films then render without music on every surface: `generate`, `runs render`, the daily timer and triggered runs, and the web **Render** panel, which opens on **No music**. A run can still ask for music: `--music FILE`, `--music auto`, or picking **Automatic** or a track in the panel. `--no-music` turns it off for one film when the config leaves it on.
 
-Temporary files used to join and master bundled tracks are removed after mixing, including
+Temporary files used to loop and master bundled tracks are removed after mixing, including
 when the mix fails.
 
 On the CLI:

@@ -429,7 +429,7 @@ def _complete_music_failure(
 
 
 def _assembled_video_timing(result_path: Path) -> tuple[float | None, float]:
-    """Read the playlist length and cadence clock from the finished film.
+    """Read the film's length (the music target) and cadence clock from the finished film.
 
     A failed probe preserves the optional-music fallback and the default frame rate.
     """

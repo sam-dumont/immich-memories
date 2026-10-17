@@ -11,11 +11,8 @@ bundle's place for every mood it has a folder for.
 from __future__ import annotations
 
 import logging
-import math
 import random
 from pathlib import Path
-
-from immich_memories.audio.mixer import get_audio_duration
 
 logger = logging.getLogger(__name__)
 
@@ -101,96 +98,6 @@ def bundled_track_for_mood(
     chosen = _fitting_track(candidates, cadence_seconds) or random.choice(candidates)
     logger.info("Using music track: %s/%s", chosen.parent.name, chosen.name)
     return chosen
-
-
-def bundled_playlist_for_mood(
-    mood: str | None,
-    total_duration: float,
-    library: Path | None = None,
-    cadence_seconds: float | None = None,
-    seed: int | None = None,
-) -> list[Path]:
-    """Order several mood-matched bundled tracks to cover ``total_duration``.
-
-    A long film used to loop one ~30 s bundled track up to 20 times (#2070):
-    one short phrase, repeated, for the whole runtime. This instead walks the
-    mood's pool picking a track at random each step, excluding whichever
-    track was just used whenever the pool has another to offer, until the
-    picks add up to the target length. ``assemble_music`` (mixer.py) then
-    crossfades the sequence into one track.
-
-    Returns a single-entry list when one candidate is already long enough —
-    the short-film case is unaffected by this — and an empty list when there
-    is no bundled library to draw from.
-    """
-    root = library if library is not None else bundled_library()
-    if root is None or not root.is_dir():
-        return []
-
-    candidates = _mood_candidates(mood, root)
-    if not candidates:
-        return []
-    candidates = _one_family(candidates, cadence_seconds, seed)
-
-    durations = {track: get_audio_duration(track) for track in candidates}
-    if sum(durations.values()) <= 0:
-        # Every candidate's duration is unreadable (corrupt or a test fixture
-        # with no real audio) — degrade to a single random pick rather than
-        # spin the covering loop below forever on zero-length steps.
-        logger.warning("Bundled tracks for %r have no readable duration", mood)
-        return [random.Random(seed).choice(candidates)]
-
-    fitting = _fitting_track(candidates, cadence_seconds)
-    if fitting is not None and durations[fitting] >= total_duration:
-        return [fitting]
-
-    longest = max(candidates, key=lambda track: durations[track])
-    if durations[longest] >= total_duration:
-        return [longest]
-
-    return _covering_playlist(candidates, durations, total_duration, seed)
-
-
-def _covering_playlist(
-    candidates: list[Path],
-    durations: dict[Path, float],
-    total_duration: float,
-    seed: int | None,
-) -> list[Path]:
-    """Random walk over ``candidates``, no back-to-back repeat when avoidable."""
-    rng = random.Random(seed)
-    longest_duration = max(durations.values())
-    # A finite bound even if every pick landed on the pool's shortest track.
-    max_picks = max(4, math.ceil(total_duration / max(longest_duration, 0.1)) * 4)
-
-    playlist: list[Path] = []
-    covered = 0.0
-    previous: Path | None = None
-    while covered < total_duration and len(playlist) < max_picks:
-        choices = [track for track in candidates if track != previous] or candidates
-        track = rng.choice(choices)
-        playlist.append(track)
-        covered += durations[track]
-        previous = track
-    return playlist
-
-
-def _one_family(
-    candidates: list[Path], cadence_seconds: float | None, seed: int | None
-) -> list[Path]:
-    """The candidates of one mood family: a film's playlist never crosses families (#2465).
-
-    A mood's own folder is already one family. Without one, the candidates are the whole
-    library, and a walk over it crossfaded happy into nostalgic into energetic. The film keeps
-    the family of the track whose beat fits its cadence, or one family picked at random, so
-    two films can still sound different.
-    """
-    families = sorted({track.parent for track in candidates})
-    if len(families) <= 1:
-        return candidates
-    fitting = _fitting_track(candidates, cadence_seconds)
-    family = fitting.parent if fitting is not None else random.Random(seed).choice(families)
-    return [track for track in candidates if track.parent == family]
 
 
 def _mood_candidates(mood: str | None, root: Path) -> list[Path]:
