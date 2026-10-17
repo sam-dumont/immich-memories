@@ -16,6 +16,7 @@ from immich_memories.analysis.preparation.detectors import (
 )
 from immich_memories.config.loader import Config
 from immich_memories.model_acquisition import acquisition_plan
+from immich_memories.music_library import installed_music_v1
 from immich_memories.security import credential_fingerprint
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.job_routes import (
@@ -48,11 +49,16 @@ def acquisition_id(config: Config) -> str:
 def model_status(config: Annotated[Config, Depends(current_config)]) -> ModelAcquisitionStatus:
     artifacts = []
     for item in acquisition_plan(config):
-        try:
-            with item.destination.open("rb") as source:
-                ready = hashlib.file_digest(source, "sha256").hexdigest() == item.artifact.sha256
-        except OSError:
-            ready = False
+        if item.unpack:
+            ready = installed_music_v1(item.destination, sha256=item.artifact.sha256) is not None
+        else:
+            try:
+                with item.destination.open("rb") as source:
+                    ready = (
+                        hashlib.file_digest(source, "sha256").hexdigest() == item.artifact.sha256
+                    )
+            except OSError:
+                ready = False
         artifacts.append(
             ModelArtifactView(
                 label=item.artifact.label,

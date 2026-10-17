@@ -271,6 +271,13 @@ signature; only a film short enough for one take leaves both to ACE-Step. In `ap
 asks the server to skip its planner unless `use_lm: true`, so a server with a planner loaded no
 longer rewrites the caption.
 
+### A bigger bundled music library
+
+The image now ships 21 longer tracks in five moods. On a pip install, run `immich-memories models fetch`
+once to download them (32 MB, SHA-256 pinned, kept under `~/.immich-memories/models/music-v1/`). Until
+then films play the older, shorter tracks from the `music` extra, so nothing breaks. `models fetch`
+skips them when `audio.no_music` is on.
+
 ### Library music loops one track
 
 A film without generated music plays one track for its whole length: a bundled one, or one from your

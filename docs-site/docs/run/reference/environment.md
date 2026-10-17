@@ -53,6 +53,7 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | `IMMICH_MEMORIES_LOG_FILE` | Also write logs to this file |
 | `IMMICH_FORCE_CPU` | `1`, `true` or `yes` puts the title renderer on the CPU even with a GPU |
 | `IMMICH_MEMORIES_FONTS_DIR` | Where `titles fonts --install` puts the Noto fonts for other alphabets and where titles look for them (default `~/.immich-memories/fonts/noto`; the image sets its own) |
+| `IMMICH_MEMORIES_MUSIC_DIR` | Where `models fetch` unpacks the bundled `music-v1` library and where films look for it (default `~/.immich-memories/models/music-v1`; the image sets its own) |
 | `IMMICH_MEMORIES_OWNER` | Who "you" is in the people registry, for `people scan` (same as `--owner`) |
 | `ACESTEP_CHECKPOINTS_DIR` | ACE-Step `lib` mode: where checkpoints go (default `~/.cache/ace-step/checkpoints`) |
 | `ACESTEP_MLX_VAE_CHUNK` | ACE-Step `lib` mode on Apple Silicon: VAE decode chunk in latent frames (minimum 192). Lower it if MLX runs out of memory |

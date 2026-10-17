@@ -180,6 +180,12 @@ RUN python -c "import importlib.util; importlib.util.find_spec('demucs') and __i
 ENV IMMICH_MEMORIES_FONTS_DIR=/usr/share/immich-memories/fonts
 RUN python -c "from immich_memories.titles.script_fonts import install_script_fonts; install_script_fonts()"
 
+# The music-v1 library, unpacked at build time: a film never downloads music. The
+# archive is checked against its pinned SHA-256 and a mismatch fails the build.
+# Outside $HOME for the same reason as the fonts.
+ENV IMMICH_MEMORIES_MUSIC_DIR=/usr/share/immich-memories/music-v1
+RUN python -c "from immich_memories.music_library import install_music_v1; install_music_v1()"
+
 # Create non-root user for security. UID/GID 1000 on purpose: it matches the first
 # Linux user on most home servers (bind mounts of ./output and ./config are
 # writable without chown) and the shipped Kubernetes/Terraform manifests

@@ -129,6 +129,38 @@ def test_a_body_over_the_cap_is_refused(tmp_path: Path) -> None:
     assert not destination.exists()
 
 
+@pytest.fixture(autouse=True)
+def music_installs(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    """Record the music-v1 install instead of downloading the 32 MB library.
+
+    WHY: the pinned archive lives on a GitHub release; its unpacking has its own tests.
+    """
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        cli_models,
+        "install_music_v1",
+        lambda dest, **kw: calls.append({"dest": dest, **kw}) or "present",
+    )
+    return calls
+
+
+def test_fetch_installs_music_v1_and_force_reaches_it_unless_music_is_off(
+    music_installs: list[dict], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # WHY: the other artifacts are not under test here and live on the network.
+    monkeypatch.setattr(cli_models, "fetch_pinned_model", lambda **_: "present")
+    assert _invoke(["models", "fetch", "--no-detectors", "--force"], Config()).exit_code == 0
+    assert len(music_installs) == 1
+    assert music_installs[0]["force"] is True
+
+    music_installs.clear()
+    quiet = Config(audio={"no_music": True})
+    result = _invoke(["models", "fetch", "--no-detectors"], quiet)
+    assert result.exit_code == 0
+    assert music_installs == []
+    assert "music" not in result.output
+
+
 def _invoke(args: list[str], config: Config) -> Result:
     runner = CliRunner()
     # WHY: both boundaries reach the developer's own home directory.
