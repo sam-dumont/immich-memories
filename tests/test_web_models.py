@@ -3,11 +3,12 @@
 from tests.web_api_fixtures import api_client, config_in
 
 
-def test_first_start_lists_nas_downloads_without_creating_files_or_jobs(tmp_path):
+def test_first_start_lists_nas_downloads_without_creating_files_or_jobs(tmp_path, monkeypatch):
     config = config_in(tmp_path)
     config.tier = "basic"
     config.triage.encoder = str(tmp_path / "models/encoder.onnx")
     config.free_text.wordnet = str(tmp_path / "models/wordnet.zip")
+    monkeypatch.setenv("IMMICH_MEMORIES_MUSIC_DIR", str(tmp_path / "models/music-v1"))
     client = api_client(config)
 
     response = client.get("/api/v1/models")
@@ -15,9 +16,10 @@ def test_first_start_lists_nas_downloads_without_creating_files_or_jobs(tmp_path
     assert response.status_code == 200
     manifest = response.json()
     assert manifest["ready"] is False
-    encoder, wordnet = manifest["artifacts"]
+    encoder, wordnet, music = manifest["artifacts"]
     assert encoder["host"] == "github.com" and encoder["size"] == "88 MB"
     assert wordnet["host"] == "raw.githubusercontent.com" and wordnet["size"] == "11 MB"
+    assert music["host"] == "github.com" and music["size"] == "32 MB"
     assert all(len(item["sha256"]) == 64 and not item["ready"] for item in manifest["artifacts"])
     assert not (tmp_path / "models").exists()
     assert client.get("/api/v1/jobs/active").json() is None

@@ -20,6 +20,7 @@ from immich_memories.analysis.reading.annotation_lines import AssetAnnotationLin
 from immich_memories.config.models.editorial import EditorialConfig
 from immich_memories.config.models.free_text import FreeTextConfig
 from immich_memories.config.models.llm import LLMConfig
+from immich_memories.config.models.soundtrack import AudioConfig
 from immich_memories.db import open_store
 from tests.editorial_thin_fixtures import PRIVATE, CountingJudge
 
@@ -203,6 +204,7 @@ def _fetch_models(monkeypatch, tmp_path, editorial, *flags):
     config.triage = type("T", (), {"encoder_url": "u", "encoder_path": tmp_path / "e"})()
     config.free_text = FreeTextConfig(wordnet=str(tmp_path / "wordnet.zip"))
     config.llm = LLMConfig(enabled=False)
+    config.audio = AudioConfig(no_music=True)
     config.editorial = editorial
     import click
 

@@ -1,8 +1,9 @@
 """Bundled royalty-free music, used when no generation backend is available.
 
-The tracks ship in the separate ``immich-memories-music`` distribution (the
-``music`` extra) so a plain install stays small, while the Docker image — which
-installs every extra — has music without a GPU or a music server.
+The music-v1 library (``models fetch``, built into the Docker image) plays when it
+is installed. Otherwise the older tracks of the separate ``immich-memories-music``
+distribution (the ``music`` extra) do, so a plain install stays small and the
+Docker image has music without a GPU or a music server.
 
 Your own folder (``audio.local_music_dir``), laid out the same way, takes the
 bundle's place for every mood it has a folder for.
@@ -30,13 +31,26 @@ _MOOD_FOLDERS = {
 
 
 def bundled_library() -> Path | None:
-    """Directory of bundled tracks, or None when the music package is absent."""
+    """Directory of bundled tracks: the music-v1 library when installed, else the 0.1.0 package.
+
+    Reads the disk only. A film never downloads music; ``models fetch`` and the
+    image build put music-v1 in place ahead of time.
+    """
+    from immich_memories.music_library import installed_music_v1
+
+    installed = installed_music_v1()
+    if installed is not None:
+        return installed
     try:
         from immich_memories_music import tracks_dir
     except ImportError:
+        logger.info("music-v1 is not installed and the music package is absent; no bundled music")
         return None
     directory = tracks_dir()
-    return directory if directory.is_dir() else None
+    if not directory.is_dir():
+        return None
+    logger.info("music-v1 is not installed; using the 0.1.0 tracks (run `models fetch`)")
+    return directory
 
 
 def music_library_for_mood(

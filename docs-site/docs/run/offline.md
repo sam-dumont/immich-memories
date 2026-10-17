@@ -38,7 +38,7 @@ docker run --rm \
 Replace `YOUR_RELEASE` with your installed release tag or image digest. The root helper only
 sets ownership on this new model volume; the fetch and running app use UID 1000.
 Basic fetches the digest-pinned DINOv2 ONNX encoder from a GitHub release and WordNet from
-`raw.githubusercontent.com`. The public context heads and bundled music ship in the image.
+`raw.githubusercontent.com`, and the 32 MB bundled music library (`music-v1`) from a GitHub release unless `audio.no_music` is on. The public context heads and the same music ship in the image, so a container never downloads music.
 It does not fetch a reader when `llm.enabled` is false.
 
 `--detectors` additionally fetches the Marqo ONNX export from GitHub and pinned detector

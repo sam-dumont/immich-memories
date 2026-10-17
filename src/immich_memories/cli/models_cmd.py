@@ -10,6 +10,7 @@ import click
 
 from immich_memories.analysis.preparation.detectors import DETECTOR_SNAPSHOTS
 from immich_memories.model_acquisition import acquisition_plan
+from immich_memories.music_library import install_music_v1
 from immich_memories.pinned_models import fetch_pinned_model
 from immich_memories.security import sanitize_error_message
 
@@ -46,6 +47,7 @@ def register_models_commands(cli_group: click.Group) -> None:
         for index, item in enumerate(plan, 1):
             click.echo(f"models: {index}/{total} {item.cli_label or item.artifact.label}")
             _fetch_pinned(
+                unpack=item.unpack,
                 label=item.cli_label or item.artifact.label,
                 url=item.url,
                 destination=item.destination,
@@ -72,12 +74,16 @@ def _fetch_pinned(
     sha256: str,
     force: bool,
     max_bytes: int | None = None,
+    unpack: bool = False,
 ) -> None:
     limit = {} if max_bytes is None else {"max_bytes": max_bytes}
     try:
-        outcome = fetch_pinned_model(
-            url=url, destination=destination, sha256=sha256, force=force, **limit
-        )
+        if unpack:
+            outcome = install_music_v1(destination, url=url, sha256=sha256, force=force, **limit)
+        else:
+            outcome = fetch_pinned_model(
+                url=url, destination=destination, sha256=sha256, force=force, **limit
+            )
     except (OSError, ValueError, urllib.error.URLError) as exc:
         click.echo(f"{label}: {_safe_download_error(exc, url)}")
         raise SystemExit(1) from exc
