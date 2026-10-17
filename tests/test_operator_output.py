@@ -102,6 +102,65 @@ def test_ui_access_log_is_enabled_only_for_verbose_runs(monkeypatch, level, expe
     assert run.call_args.kwargs.get("access_log") is expected
 
 
+def test_a_ui_stopped_while_its_answers_work_ends_without_the_interpreter_teardown(monkeypatch):
+    """Ctrl-C with a suggestion still being worked out exits 0 instead of aborting (#2602).
+
+    Python 3.12 tears the interpreter down under daemon threads, and one waking then can abort
+    the process with SIGABRT. The server ends the process past that teardown, after the exit
+    handlers a normal exit runs.
+    """
+    import threading
+
+    from fastapi.testclient import TestClient
+
+    from immich_memories.config import Config
+    from immich_memories.web import server
+    from tests.web_server_fixtures import SESSION_SECRET
+
+    assert Path.home().parent.name.startswith("immich-memories-pytest-")
+    monkeypatch.setattr(server, "get_config", lambda *_a, **_k: Config())
+    monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", SESSION_SECRET)
+    answer_working = threading.Event()
+    still_working = threading.Thread(target=answer_working.wait, daemon=True)
+    steps: list[str] = []
+
+    def serve_then_ctrl_c(*_args, **_kwargs):
+        still_working.start()
+        with TestClient(server.create_app()):  # the app starts, then stops: its lifespan runs
+            pass
+        raise KeyboardInterrupt  # what uvicorn re-raises after a graceful Ctrl-C
+
+    # WHY: uvicorn.run is the listening server; this one serves no socket, only the lifespan.
+    # WHY: atexit's handlers are the test run's own; the record shows they run before the exit.
+    # WHY: os._exit would end the test run itself.
+    with (
+        patch("uvicorn.run", serve_then_ctrl_c),
+        patch("atexit._run_exitfuncs", lambda: steps.append("exit handlers")),
+        patch("os._exit", lambda code: steps.append(f"exit {code}")),
+    ):
+        server.main(port=0)
+    answer_working.set()
+
+    assert steps == ["exit handlers", "exit 0"]
+
+
+def test_a_ui_that_never_served_returns_to_its_caller(monkeypatch):
+    from immich_memories.config import Config
+    from immich_memories.web import server
+    from tests.web_server_fixtures import SESSION_SECRET
+
+    assert Path.home().parent.name.startswith("immich-memories-pytest-")
+    monkeypatch.setattr(server, "get_config", lambda *_a, **_k: Config())
+    monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", SESSION_SECRET)
+    # WHY: uvicorn.run is the listening server; it returns at once, as a failed reload would.
+    # WHY: os._exit would end the test run itself; the record shows it is never reached.
+    exits: list[int] = []
+    with patch("uvicorn.run"), patch("os._exit", exits.append):
+        server.main(port=0)
+
+    assert exits == []
+
+
 def test_a_taken_ui_port_suggests_a_different_port(monkeypatch, capsys):
     import socket
 

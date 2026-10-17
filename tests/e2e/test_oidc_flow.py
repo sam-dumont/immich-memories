@@ -43,9 +43,7 @@ def oidc_mock_server() -> Iterator[int]:
 
 
 @pytest.fixture(scope="module")
-def oidc_app_url(
-    oidc_mock_server: int, tmp_path_factory, unused_tcp_port_factory, fake_immich_server
-) -> Iterator[str]:
+def oidc_app_url(oidc_mock_server: int, tmp_path_factory, fake_immich_server) -> Iterator[str]:
     root = tmp_path_factory.mktemp("oidc-auth")
     env = _build_launch_environment(root)
     env["IMMICH_URL"] = fake_immich_server.base_url
@@ -56,7 +54,7 @@ def oidc_app_url(
     env["IMMICH_MEMORIES_AUTH__CLIENT_ID"] = "test-client"
     env["IMMICH_MEMORIES_AUTH__CLIENT_SECRET"] = "test-secret"  # noqa: S105
     env["AUTHLIB_INSECURE_TRANSPORT"] = "1"
-    with served_ui(env, unused_tcp_port_factory(), root / "server.log") as url:
+    with served_ui(env, root / "server.log") as url:
         yield url
 
 

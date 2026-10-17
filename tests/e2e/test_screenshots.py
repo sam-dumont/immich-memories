@@ -470,7 +470,6 @@ def test_capture_first_run_model_setup(
 def test_capture_the_sign_in_page(
     page: Page,
     tmp_path_factory,
-    unused_tcp_port_factory,
     fake_immich_server,
     screenshot_dir: Path,
     theme: str,
@@ -489,7 +488,7 @@ def test_capture_the_sign_in_page(
         "IMMICH_MEMORIES_AUTH__USERNAME": "owner",
         "IMMICH_MEMORIES_AUTH__PASSWORD": "screenshot-only",  # noqa: S105 - a throwaway fixture
     }
-    with served_ui(env, unused_tcp_port_factory(), root / "server.log") as url:
+    with served_ui(env, root / "server.log") as url:
         page.set_viewport_size(_VIEWPORT)
         page.goto(f"{url}/app/login")
         set_theme(page, theme)
@@ -498,9 +497,7 @@ def test_capture_the_sign_in_page(
 
 
 @pytest.fixture(scope="module")
-def accounts_app_url(
-    tmp_path_factory, fake_immich_server, unused_tcp_port_factory
-) -> Generator[str, None, None]:
+def accounts_app_url(tmp_path_factory, fake_immich_server) -> Generator[str, None, None]:
     """The hermetic launch with a second account, `partner`, which the fake service also answers."""
     workspace = _launch_workspace(tmp_path_factory.mktemp("accounts-shots"), fake_immich_server)
     config = yaml.safe_load(workspace.config_path.read_text())
@@ -511,7 +508,7 @@ def accounts_app_url(
         }
     }
     workspace.config_path.write_text(yaml.safe_dump(config))
-    yield from _serve_launch(workspace, unused_tcp_port_factory(), models_fetched=True)
+    yield from _serve_launch(workspace, models_fetched=True)
 
 
 @pytest.mark.parametrize("theme", _THEMES)

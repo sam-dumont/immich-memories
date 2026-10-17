@@ -48,6 +48,38 @@ def pytest_configure(config: pytest.Config) -> None:
     )
 
 
+_FAILED = pytest.StashKey[bool]()
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]):
+    report = yield
+    if report.when == "call" and report.failed:
+        item.stash[_FAILED] = True
+    return report
+
+
+@pytest.fixture(autouse=True)
+def _no_job_left_running(request: pytest.FixtureRequest) -> Generator[None]:
+    """Stop the job a failed test left running on the shared launch.
+
+    The launch server runs one job at a time and a brief joins the one running, so a cut a failed
+    test left behind would greet the next test's page instead of the form, and fail it too.
+    """
+    yield
+    if request.node.stash.get(_FAILED, False) and "launch_app_url" in request.fixturenames:
+        _stop_active_job(request.getfixturevalue("launch_app_url"))
+
+
+def _stop_active_job(url: str) -> None:
+    deadline = time.monotonic() + 60
+    while (job := httpx.get(f"{url}/api/v1/jobs/active", timeout=10).json()) is not None:
+        if time.monotonic() > deadline:
+            raise AssertionError(f"job {job['id']} still running after it was cancelled")
+        httpx.post(f"{url}/api/v1/jobs/{job['id']}/cancel", timeout=10)
+        time.sleep(0.5)
+
+
 @dataclass(frozen=True, slots=True)
 class LaunchWorkspace:
     """All disposable state owned by the required launch smoke."""
@@ -174,21 +206,20 @@ from tests.e2e.fake_editorial import install_fake_editorial_route
 
 # WHY 1.5 s per stage: a browser reload takes a second or two, and the reload
 # test has to land while the six stages are still running.
-install_fake_editorial_route(stage_seconds=1.5, models_fetched=sys.argv[4] == "fetched")
+install_fake_editorial_route(stage_seconds=1.5, models_fetched=sys.argv[3] == "fetched")
 # The cuts the web client starts are CLI children: they read the same host from here.
-os.environ["E2E_MODELS"] = sys.argv[4]
+os.environ["E2E_MODELS"] = sys.argv[3]
 os.environ["E2E_STAGE_SECONDS"] = "0.5"
 
 from tests.e2e.fake_automation import install_fake_automation, install_hermetic_web_jobs
 install_fake_automation(config_path, state_dir)
 
-import uvicorn
-
 from immich_memories.web.server import create_app
+from tests.e2e.held_port import serve_on_inherited_socket
 
 app = create_app()
 install_hermetic_web_jobs(app, config_path, state_dir)
-uvicorn.run(app, host="127.0.0.1", port=int(sys.argv[3]), log_config=None)
+serve_on_inherited_socket(app)
 """
 
 _PRODUCTION_SHORTCUT_ENV = frozenset(
@@ -239,10 +270,9 @@ def _build_launch_environment(home: Path | None = None) -> dict[str, str]:
 @pytest.fixture(scope="session")
 def launch_app_url(
     launch_workspace: LaunchWorkspace,
-    unused_tcp_port_factory,
 ) -> Generator[str, None, None]:
     """Run the app against only the fake service and disposable local state."""
-    yield from _serve_launch(launch_workspace, unused_tcp_port_factory(), models_fetched=True)
+    yield from _serve_launch(launch_workspace, models_fetched=True)
 
 
 @pytest.fixture
@@ -276,9 +306,8 @@ def automation_workspace(
 @pytest.fixture
 def automation_app_url(
     automation_workspace: LaunchWorkspace,
-    unused_tcp_port_factory,
 ) -> Generator[str, None, None]:
-    yield from _serve_launch(automation_workspace, unused_tcp_port_factory(), models_fetched=True)
+    yield from _serve_launch(automation_workspace, models_fetched=True)
 
 
 @pytest.fixture(scope="session")
@@ -293,52 +322,31 @@ def first_launch_workspace(
 @pytest.fixture(scope="session")
 def first_launch_app_url(
     first_launch_workspace: LaunchWorkspace,
-    unused_tcp_port_factory,
 ) -> Generator[str, None, None]:
     """The same launch as `launch_app_url`, on that host."""
-    yield from _serve_launch(
-        first_launch_workspace, unused_tcp_port_factory(), models_fetched=False
-    )
+    yield from _serve_launch(first_launch_workspace, models_fetched=False)
 
 
 def _serve_launch(
-    workspace: LaunchWorkspace, port: int, *, models_fetched: bool
+    workspace: LaunchWorkspace, *, models_fetched: bool
 ) -> Generator[str, None, None]:
-    url = f"http://127.0.0.1:{port}"
-    env = _build_launch_environment(workspace.root)
+    from tests.e2e.held_port import serve_on_held_port
 
     venv_python = _REPO_ROOT / ".venv" / "bin" / "python"
-    with workspace.log_path.open("w") as log_file:
-        proc = subprocess.Popen(
-            [
-                str(venv_python),
-                "-c",
-                _LAUNCH_BOOTSTRAP,
-                str(workspace.config_path),
-                str(workspace.root / "state"),
-                str(port),
-                "fetched" if models_fetched else "never-fetched",
-            ],
-            stdout=log_file,
-            stderr=log_file,
-            cwd=_REPO_ROOT,
-            env=env,
-        )
-        try:
-            _wait_for_server(
-                proc,
-                base_url=url,
-                log_path=workspace.log_path,
-            )
-            yield url
-        finally:
-            if proc.poll() is None:
-                proc.send_signal(signal.SIGINT)
-                try:
-                    proc.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait(timeout=5)
+    with serve_on_held_port(
+        [
+            str(venv_python),
+            "-c",
+            _LAUNCH_BOOTSTRAP,
+            str(workspace.config_path),
+            str(workspace.root / "state"),
+            "fetched" if models_fetched else "never-fetched",
+        ],
+        env=_build_launch_environment(workspace.root),
+        cwd=_REPO_ROOT,
+        log_path=workspace.log_path,
+    ) as url:
+        yield url
 
 
 @pytest.fixture(scope="session")
@@ -468,6 +476,12 @@ def _server_is_ready(base_url: str = _BASE_URL) -> bool:
         return False
 
 
+def _announced(log_path: Path | None, line: str | None) -> bool:
+    if line is None or log_path is None:
+        return True
+    return log_path.is_file() and line in log_path.read_text(errors="replace")
+
+
 def _process_log_tail(proc: subprocess.Popen, log_path: Path | None) -> str:  # type: ignore[type-arg]
     """Return bounded startup diagnostics from a log file or captured pipes."""
     if log_path is not None and log_path.exists():
@@ -482,8 +496,13 @@ def _wait_for_server(
     *,
     base_url: str = _BASE_URL,
     log_path: Path | None = None,
+    announced: str | None = None,
 ) -> None:
-    """Wait for one E2E app process or fail with its bounded log tail."""
+    """Wait for one E2E app process or fail with its bounded log tail.
+
+    `announced` is a line the process logs once it holds its port: an answer on the port before
+    that line can be another process's.
+    """
     deadline = time.monotonic() + _STARTUP_TIMEOUT
     while time.monotonic() < deadline:
         if proc.poll() is not None:
@@ -491,7 +510,7 @@ def _wait_for_server(
                 f"UI server exited early with code {proc.returncode}:\n"
                 f"{_process_log_tail(proc, log_path)}"
             )
-        if _server_is_ready(base_url):
+        if _announced(log_path, announced) and _server_is_ready(base_url):
             return
         time.sleep(0.5)
     proc.terminate()

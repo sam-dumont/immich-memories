@@ -76,9 +76,9 @@ def accounts_workspace(tmp_path_factory, fake_immich_server: FakeImmichServer) -
 
 @pytest.fixture
 def accounts_app_url(
-    accounts_workspace: LaunchWorkspace, unused_tcp_port_factory
+    accounts_workspace: LaunchWorkspace,
 ) -> Generator[str, None, None]:
-    yield from _serve_launch(accounts_workspace, unused_tcp_port_factory(), models_fetched=True)
+    yield from _serve_launch(accounts_workspace, models_fetched=True)
 
 
 @pytest.mark.feature("web.people")
