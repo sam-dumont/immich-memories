@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import os
 import signal
+import socket
 import subprocess
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import Page, expect
 
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 from tests.e2e.fake_library import MONTH, YEAR
+
+_PORT_ATTEMPTS = 5
 
 
 def contact_sheet(page: Page):
@@ -96,33 +100,55 @@ def evidence(page: Page, name: str) -> None:
 
 
 @contextmanager
-def served_ui(env: dict[str, str], port: int, log_path: Path) -> Iterator[str]:
-    """`immich-memories ui` as a user starts it, on this port, until the block ends."""
+def served_ui(env: dict[str, str], log_path: Path) -> Iterator[str]:
+    """`immich-memories ui` as a user starts it, on a free port, until the block ends.
+
+    The CLI binds the port itself, so a port probed as free can be taken by a server in another
+    worker before the UI binds it. The UI then exits naming the port in use and a fresh port is
+    tried; it counts as up only once its own log says it listens there, never on an answer that
+    could be the other server's.
+    """
     from tests.e2e.conftest import _REPO_ROOT, _wait_for_server
 
-    url = f"http://127.0.0.1:{port}"
-    with log_path.open("w") as log:
-        proc = subprocess.Popen(
-            [
-                str(_REPO_ROOT / ".venv" / "bin" / "immich-memories"),
-                "ui",
-                "--port",
-                str(port),
-                "--host",
-                "127.0.0.1",
-            ],
-            stdout=log,
-            stderr=log,
-            cwd=_REPO_ROOT,
-            env=env,
-        )
+    for _attempt in range(_PORT_ATTEMPTS):
+        url = f"http://127.0.0.1:{_free_port()}"
+        with log_path.open("w") as log:
+            proc = subprocess.Popen(  # noqa: S603 -- our own CLI, fixed argv
+                [
+                    str(_REPO_ROOT / ".venv" / "bin" / "immich-memories"),
+                    "ui",
+                    "--port",
+                    url.rsplit(":", 1)[1],
+                    "--host",
+                    "127.0.0.1",
+                ],
+                stdout=log,
+                stderr=log,
+                cwd=_REPO_ROOT,
+                env=env,
+            )
         try:
-            _wait_for_server(proc, base_url=url, log_path=log_path)
-            yield url
-        finally:
-            proc.send_signal(signal.SIGINT)
-            try:
-                proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait(timeout=5)
+            _wait_for_server(
+                proc, base_url=url, log_path=log_path, announced=f"Uvicorn running on {url}"
+            )
+            break
+        except pytest.fail.Exception:
+            if proc.poll() is None or "already in use" not in log_path.read_text(errors="replace"):
+                raise
+    else:
+        pytest.fail(f"no free port held for the UI after {_PORT_ATTEMPTS} tries")
+    try:
+        yield url
+    finally:
+        proc.send_signal(signal.SIGINT)
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+
+
+def _free_port() -> int:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])

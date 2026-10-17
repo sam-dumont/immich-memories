@@ -9,17 +9,20 @@ are the ones in web/auth.py, applied by the middleware below in the same order a
 from __future__ import annotations
 
 import asyncio
+import atexit
+import contextlib
 import html
 import logging
 import os
 import secrets
 import socket
 import sys
+import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -308,6 +311,11 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         finally:
             scheduler.cancel()
             logger.info("Application shutting down")
+            _SERVED_AND_STOPPED.set()
+
+
+# Set when this process's app has shut down: the answers it started may still be running.
+_SERVED_AND_STOPPED = threading.Event()
 
 
 def _settle_dead_runs(config: Any) -> None:
@@ -443,14 +451,39 @@ def main(
         )
         sys.exit(1)
     proxy = reverse_proxy_run_kwargs(config, os.environ)
-    uvicorn.run(
-        "immich_memories.web.server:create_app",
-        factory=True,
-        host=host,
-        port=port,
-        reload=reload,
-        proxy_headers=True,
-        forwarded_allow_ips=proxy.get("forwarded_allow_ips"),
-        log_config=None,
-        access_log=logger.isEnabledFor(logging.DEBUG),
-    )
+    _SERVED_AND_STOPPED.clear()
+    # Ctrl-C: uvicorn has already stopped the server the graceful way.
+    with contextlib.suppress(KeyboardInterrupt):
+        uvicorn.run(
+            "immich_memories.web.server:create_app",
+            factory=True,
+            host=host,
+            port=port,
+            reload=reload,
+            proxy_headers=True,
+            forwarded_allow_ips=proxy.get("forwarded_allow_ips"),
+            log_config=None,
+            access_log=logger.isEnabledFor(logging.DEBUG),
+        )
+    if _SERVED_AND_STOPPED.is_set():
+        _exit_past_the_answers_still_working()
+
+
+def _exit_past_the_answers_still_working() -> NoReturn:
+    """End the process once the server has stopped, without tearing the interpreter down.
+
+    The pages' slow answers (suggestions, a year's trips) are worked out on daemon threads that
+    can still be waiting on Immich when Ctrl-C stops the server. Python 3.12 tears the
+    interpreter down under them, and a thread that wakes then is unwound with pthread_exit;
+    that unwinding can abort the whole process (SIGABRT, exit -6) instead of letting it end.
+    Everything a normal exit does first still happens here: other threads joined, exit handlers
+    run (logs flushed, stores closed); only the teardown under live threads is skipped.
+    """
+    for thread in threading.enumerate():
+        if thread is not threading.current_thread() and not thread.daemon:
+            thread.join()
+    atexit._run_exitfuncs()  # noqa: SLF001 -- the handlers a normal exit runs, before os._exit
+    for stream in (sys.stdout, sys.stderr):
+        with contextlib.suppress(OSError, ValueError):
+            stream.flush()
+    os._exit(0)

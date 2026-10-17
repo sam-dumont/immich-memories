@@ -25,7 +25,7 @@ _DEMO = re.compile(r"\bdemo-mode\b")
 
 
 @pytest.fixture(scope="module")
-def auth_server_url(tmp_path_factory, unused_tcp_port_factory, fake_immich_server) -> Iterator[str]:
+def auth_server_url(tmp_path_factory, fake_immich_server) -> Iterator[str]:
     root = tmp_path_factory.mktemp("basic-auth")
     env = _build_launch_environment(root)
     env["IMMICH_URL"] = fake_immich_server.base_url
@@ -35,7 +35,7 @@ def auth_server_url(tmp_path_factory, unused_tcp_port_factory, fake_immich_serve
     env["IMMICH_MEMORIES_AUTH__PROVIDER"] = "basic"
     env["IMMICH_MEMORIES_AUTH__USERNAME"] = _TEST_USER
     env["IMMICH_MEMORIES_AUTH__PASSWORD"] = _TEST_PASS
-    with served_ui(env, unused_tcp_port_factory(), root / "server.log") as url:
+    with served_ui(env, root / "server.log") as url:
         yield url
 
 

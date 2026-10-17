@@ -16,9 +16,7 @@ pytestmark = pytest.mark.e2e
 
 
 @pytest.fixture(scope="module")
-def fresh_server(
-    tmp_path_factory, unused_tcp_port_factory, fake_immich_server
-) -> Iterator[tuple[str, Path]]:
+def fresh_server(tmp_path_factory, fake_immich_server) -> Iterator[tuple[str, Path]]:
     """A server nobody configured a login for, and the log its first start wrote."""
     root = tmp_path_factory.mktemp("fresh-install")
     env = _build_launch_environment(root)
@@ -27,7 +25,7 @@ def fresh_server(
     # The harness turns sign-in off for every other test; this one starts it as a user gets it.
     del env["IMMICH_MEMORIES_AUTH__ENABLED"]
     log = root / "server.log"
-    with served_ui(env, unused_tcp_port_factory(), log) as url:
+    with served_ui(env, log) as url:
         yield url, log
 
 

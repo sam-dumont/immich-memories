@@ -348,11 +348,13 @@ def test_a_reload_mid_cut_joins_the_running_cut_instead_of_starting_another(
     before = _attempts(launch_workspace)
     _brief_for_the_month(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(_progress(page).get_by_role("progressbar")).to_be_visible(timeout=30_000)
+    # Mid-cut is while the panel offers Cancel: from the job's start to its end. A progress bar
+    # shows only in a stage that measures its share, which a busy runner may not reach in time.
+    expect(_progress(page).get_by_role("button", name="Cancel")).to_be_visible(timeout=30_000)
 
     page.reload(wait_until="domcontentloaded", timeout=30_000)
 
-    expect(_progress(page)).to_be_visible(timeout=30_000)
+    expect(_progress(page).get_by_role("button", name="Cancel")).to_be_visible(timeout=30_000)
     page.wait_for_url("**/app/runs/**", timeout=240_000)
     expect(page.get_by_text(THESIS)).to_be_visible()
     assert len(_attempts(launch_workspace) - before) == 1

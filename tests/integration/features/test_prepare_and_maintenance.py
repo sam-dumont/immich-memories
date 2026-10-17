@@ -277,19 +277,26 @@ def _app_owned(home: UserHome) -> set[str]:
     return {entry.name for entry in home.root.iterdir() if not entry.name.startswith("ui-")}
 
 
-def _stop_with_ctrl_c(home: UserHome, port: int) -> int:
-    """`immich-memories ui` started, then stopped the way a terminal stops it."""
-    server = subprocess.Popen(  # noqa: S603 -- our own CLI, fixed argv
-        [sys.executable, "-m", "immich_memories.cli", "ui", "--port", str(port)],
-        env=home.env(),
-        cwd=home.root,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+def _stop_with_ctrl_c(home: UserHome, port: int) -> tuple[int, str]:
+    """`immich-memories ui` started, then stopped the way a terminal stops it.
+
+    Stopped as soon as it answers, while the answers it starts behind the pages (suggestions,
+    this year's and last year's trips) are still being worked out. Returns the exit code and
+    what the process printed, so an abort says where it happened.
+    """
+    log = home.root / f"ui-{port}-ctrl-c.log"
+    with log.open("w") as sink:
+        server = subprocess.Popen(  # noqa: S603 -- our own CLI, fixed argv
+            [sys.executable, "-m", "immich_memories.cli", "ui", "--port", str(port)],
+            env={**home.env(), "PYTHONFAULTHANDLER": "1"},
+            cwd=home.root,
+            stdout=sink,
+            stderr=subprocess.STDOUT,
+        )
     try:
         _wait_live(port, server)
         server.send_signal(signal.SIGINT)
-        return server.wait(timeout=30)
+        return server.wait(timeout=30), log.read_text(errors="replace")
     finally:
         if server.poll() is None:
             server.kill()
@@ -320,7 +327,7 @@ def test_a_native_install_stops_keeping_everything_resets_aside_and_removes_comp
     runs = home.run("runs", "list", "--limit", "50").stdout
 
     # 1. Stop the app: Ctrl-C in the terminal running `ui`, then start it again.
-    stopped = _stop_with_ctrl_c(home, free_port())
+    stopped, stop_output = _stop_with_ctrl_c(home, free_port())
     port = free_port()
     home.turn_sign_in_off()  # this test is about the install's data, not sign-in
     with serve_ui(home, "ui", "--port", str(port), port=port):
@@ -349,7 +356,7 @@ def test_a_native_install_stops_keeping_everything_resets_aside_and_removes_comp
     shutil.rmtree(home.videos)
     left = _app_owned(home)
 
-    assert stopped in (0, -signal.SIGINT, 130), stopped
+    assert stopped in (0, -signal.SIGINT, 130), f"exit {stopped}:\n{stop_output[-4000:]}"
     assert listed.status_code == 200, listed.text
     assert film.run_id in listed.text
     assert film.run_id in runs
