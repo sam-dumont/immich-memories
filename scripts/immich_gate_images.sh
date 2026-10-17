@@ -6,39 +6,19 @@
 #
 # A registry that stalls mid-pull used to hold the gate for its whole timeout
 # (run 36002698337, #1267). CI keeps the tarball in actions/cache, so a warm
-# run never talks to a registry. Each pull attempt has its own timeout, so a
-# stall costs one attempt, not the job. A ref that is still missing after the
-# last attempt exits non-zero: the gate fails, it never runs without Immich.
+# run never talks to a registry. A cold one pulls through docker_pull.sh, which
+# retries a registry's 5xx, resets and stalls with a growing wait. A ref that is
+# still missing after the last attempt exits non-zero: the gate fails, it never
+# runs without Immich.
 set -euo pipefail
 
-PULL_ATTEMPTS=${IMMICH_GATE_PULL_ATTEMPTS:-3}
-# A healthy pull of the biggest set (the v2 server) takes under a minute.
-PULL_TIMEOUT=${IMMICH_GATE_PULL_TIMEOUT:-180}
+here=$(cd "$(dirname "$0")" && pwd)
 
 missing() {
 	local ref
 	for ref in "$@"; do
 		docker image inspect "$ref" >/dev/null 2>&1 || echo "$ref"
 	done
-}
-
-# Refs never contain whitespace, so a space-separated list is safe (and keeps
-# this runnable on macOS's bash 3.2, which has no mapfile).
-pull_missing() {
-	local attempt ref todo
-	for attempt in $(seq 1 "$PULL_ATTEMPTS"); do
-		todo=$(missing "$@")
-		if [ -z "$todo" ]; then return 0; fi
-		echo "pull attempt $attempt/$PULL_ATTEMPTS:" $todo
-		for ref in $todo; do
-			timeout "$PULL_TIMEOUT" docker pull --quiet "$ref" || echo "pull of $ref failed or timed out"
-		done
-		if [ "$attempt" -lt "$PULL_ATTEMPTS" ]; then sleep $((attempt * 10)); fi
-	done
-	todo=$(missing "$@")
-	if [ -z "$todo" ]; then return 0; fi
-	echo "still missing after $PULL_ATTEMPTS attempts:" $todo >&2
-	return 1
 }
 
 cmd=${1:?usage: immich_gate_images.sh fetch|save TARBALL REF...}
@@ -62,7 +42,7 @@ fetch)
 		fi
 		echo "the cached tarball did not provide:" $(missing "$@")
 	fi
-	pull_missing "$@"
+	"$here/docker_pull.sh" "$@"
 	;;
 save)
 	mkdir -p "$(dirname "$tarball")"

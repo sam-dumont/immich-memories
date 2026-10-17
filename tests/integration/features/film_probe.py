@@ -76,19 +76,28 @@ def luma_difference(first: bytes, second: bytes) -> float:
     return sum(abs(x - y) for x, y in zip(first, second, strict=True)) / len(first)
 
 
+# Grey levels a pixel must change by to count as caption. Measured on a captioned film against
+# the same film without captions, both 720p x264: bands no caption ever covers differed by
+# at most 31; every frame of a caption differed by at least 131 somewhere in its band.
+CAPTION_CONTRAST = 64
+
+
 def differing_columns(first: bytes, second: bytes, *, width: int = 160) -> float:
     """The share of the frame's width, from the left, that holds pixels the two frames differ on.
 
     A caption drawn over one of two otherwise identical frames shows up as how far it reaches.
-    Two encodes of the same pictures still differ by a stray pixel here and there, so a pixel
-    counts only beside another that differs too: letters are strokes, encoder noise is not.
+    Two lossy encodes of the same pictures are never identical: a caption anywhere in the film
+    changes the encoder's choices for the frames around it, so a band with no caption differs
+    by up to about 30 grey levels, in clusters along the encoder's block edges. A caption's
+    strokes differ by 130 or more at this scale. A pixel counts when it differs by more than
+    `CAPTION_CONTRAST`, halfway between the two, and beside another that does too.
     """
     height = len(first) // width
     differs = {
         (x, y)
         for y in range(height)
         for x in range(width)
-        if abs(first[y * width + x] - second[y * width + x]) > 24
+        if abs(first[y * width + x] - second[y * width + x]) > CAPTION_CONTRAST
     }
     columns = [x for x, y in differs if {(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)} & differs]
     return (max(columns) + 1) / width if columns else 0.0
