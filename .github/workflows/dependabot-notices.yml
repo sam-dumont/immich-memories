@@ -62,12 +62,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      # The same install as the CI job that runs `make notices-check`.
+      # Every runtime extra, not dev-ci: the generator reads each licence from the
+      # installed package, and a new version of one that isn't installed has nothing
+      # to read (UNKNOWN). Still the PR's own code, still a read-only token.
       - name: Set up uv and Python
         uses: ./.github/actions/setup-uv-python
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          install: dev-ci
+          cache-suffix: notices
+          install: dev-notices
 
       - name: Regenerate
         id: notices
