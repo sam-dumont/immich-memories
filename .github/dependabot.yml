@@ -19,6 +19,10 @@ updates:
     ignore:
       - dependency-name: "huggingface-hub"
         update-types: ["version-update:semver-major"]
+      # 1.27+ needs CUDA 13; the CUDA image stays on CUDA 12 / cuDNN 9 (pyproject's
+      # editorial-cuda pin, guarded by test_cuda_dependency_stays_compatible_with_cuda12).
+      - dependency-name: "onnxruntime-gpu"
+        versions: [">=1.27"]
   - package-ecosystem: npm
     directories:
       - /web

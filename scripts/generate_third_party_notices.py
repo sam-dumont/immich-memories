@@ -7,8 +7,9 @@ reachable from `immich-memories` in uv.lock through the runtime extras (never
 `dev`), with the licence and project URL read from the installed metadata. A
 package the lock knows but this environment does not have installed (a CUDA
 wheel on a Mac, a Mac framework on Linux) reuses its exact name and version
-from the existing inventory, then falls back to the reviewed table below. This
-is cached provenance, not a fresh licence audit. A new version without metadata
+from the existing inventory, then falls back to the reviewed table below, as
+does an installed wheel whose metadata names no licence. This is cached
+provenance, not a fresh licence audit. A new version without metadata
 or a reviewed entry is UNKNOWN, so `make notices-check` fails for review.
 
 Usage:
@@ -161,17 +162,21 @@ def describe(name: str, version: str) -> tuple[str, str]:
             )
             if cached and cached.group(1) != "UNKNOWN":
                 return cached.group(1), cached.group(2) or ""
-        if name.startswith(_NVIDIA_PREFIXES):
-            return _NVIDIA_LICENCE, _NVIDIA_URL
-        licence, url = KNOWN.get(name, ("UNKNOWN", ""))
-        return licence, url
+        return _reviewed(name)
     licence = _licence_from_metadata(dist)
     url = _url_from_metadata(dist)
-    if licence == "UNKNOWN" and name in KNOWN:
-        licence = KNOWN[name][0]
-    if not url and name in KNOWN:
-        url = KNOWN[name][1]
-    return licence, url
+    # Some wheels publish no licence at all (torch's CUDA 13 build pulls
+    # `cuda-toolkit`, which names none), so the reviewed table fills the gap.
+    reviewed_licence, reviewed_url = _reviewed(name)
+    if licence == "UNKNOWN":
+        licence = reviewed_licence
+    return licence, url or reviewed_url
+
+
+def _reviewed(name: str) -> tuple[str, str]:
+    if name.startswith(_NVIDIA_PREFIXES):
+        return _NVIDIA_LICENCE, _NVIDIA_URL
+    return KNOWN.get(name, ("UNKNOWN", ""))
 
 
 def render_inventory() -> str:

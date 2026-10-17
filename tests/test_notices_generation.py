@@ -76,3 +76,30 @@ def test_no_python_runtime_dependency_carries_a_gpl_licence():
     ]
 
     assert gpl == []
+
+
+def test_installed_cuda_wheel_without_licence_metadata_gets_the_nvidia_eula(tmp_path, monkeypatch):
+    """torch's CUDA 13 build installs `cuda-toolkit`, whose wheel metadata names no licence.
+
+    The Dependabot notices job installs every extra on Linux, so the wheel is present
+    there and the generator must still say which licence it carries, not UNKNOWN.
+    """
+    import importlib.util
+
+    dist_info = tmp_path / "cuda_toolkit-99.0.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: cuda-toolkit\nVersion: 99.0.0\n", encoding="utf-8"
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    spec = importlib.util.spec_from_file_location(
+        "generate_third_party_notices", ROOT / "scripts/generate_third_party_notices.py"
+    )
+    assert spec and spec.loader
+    generator = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(generator)
+
+    licence, url = generator.describe("cuda-toolkit", "99.0.0")
+
+    assert licence.startswith("NVIDIA proprietary")
+    assert url == "https://docs.nvidia.com/cuda/eula/"

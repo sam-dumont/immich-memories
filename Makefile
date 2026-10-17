@@ -126,6 +126,15 @@ dev-test-integration:
 dev-test-features:
 	uv sync --extra dev --extra music --locked
 
+# Install every runtime extra `make notices` reads licences from, for the Dependabot
+# notices workflow. A dev-ci install leaves the extras out, and a new version of a
+# package that isn't installed has no metadata and no cached line: UNKNOWN. On Linux
+# `mac` installs nothing and `editorial-cuda` (onnxruntime-gpu) conflicts with `all`;
+# both fall back to the generator's reviewed table.
+.PHONY: dev-notices
+dev-notices:
+	uv sync --extra all --extra mac --locked
+
 # Install with macOS-specific extras (Apple Vision, Metal GPU, etc.)
 dev-mac:
 	uv sync --extra all-mac --extra dev

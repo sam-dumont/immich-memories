@@ -75,7 +75,7 @@ Runs when dispatched (`stable` or `rc`) and when `nightly.yml` calls it (`nightl
 
 ### `dependabot-notices.yml` - Dependabot notices
 
-Runs on Dependabot pull requests that change `uv.lock`. One job installs the PR's dependencies and runs `make notices` with a read-only token; a second job, which runs no PR code, commits the regenerated `THIRD_PARTY_NOTICES` to the PR branch. The CI runs that push starts wait for "Approve workflows to run" on the PR, since a `GITHUB_TOKEN` push never starts CI unattended.
+Runs on Dependabot pull requests that change `uv.lock`. One job installs the PR's dependencies with every runtime extra (`make dev-notices`, so each licence comes from the installed package) and runs `make notices` with a read-only token; a second job, which runs no PR code, commits the regenerated `THIRD_PARTY_NOTICES` to the PR branch. The CI runs that push starts wait for "Approve workflows to run" on the PR, since a `GITHUB_TOKEN` push never starts CI unattended.
 
 ### `nightly.yml` - Nightly Build
 
