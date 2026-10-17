@@ -299,7 +299,7 @@ def test_the_rules_mood_reaches_the_generated_caption_with_its_tempo(tmp_path):
         )
     )
     assert "serene" not in lively.caption
-    assert "mellow" not in lively.caption
+    assert "intimate" not in lively.caption
     assert lively.bpm > quiet.bpm
 
 

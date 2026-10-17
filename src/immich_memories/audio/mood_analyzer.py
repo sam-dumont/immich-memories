@@ -29,6 +29,22 @@ VALID_MOODS = frozenset(
     }
 )
 
+# The music package ships five mood folders; every other mood borrows the nearest one. Bundled
+# tracks and the generator's per-mood style table both read this, so a mood sounds like its
+# neighbour in both places.
+MOOD_FOLDERS = {
+    "playful": "happy",
+    "inspiring": "happy",
+    "uplifting": "happy",
+    "peaceful": "calm",
+    "exciting": "energetic",
+    "dramatic": "energetic",
+    "romantic": "tender",
+    "sad": "nostalgic",
+    "melancholic": "nostalgic",
+    "mysterious": "nostalgic",
+}
+
 VALID_GENRES = frozenset(
     {
         "acoustic",
@@ -46,6 +62,15 @@ VALID_GENRES = frozenset(
         "guitar",
         "metal",
         "lofi",
+        "chillhop",
+        "funk",
+        "post-rock",
+        "postrock",
+        "downtempo",
+        "chill",
+        "neo-soul",
+        "soul",
+        "city pop",
         "upbeat",
         "relaxing",
     }

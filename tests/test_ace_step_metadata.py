@@ -106,7 +106,8 @@ class TestCaptionsFollowTheGuides:
 
     def test_caption_states_the_intended_fidelity(self, mood):
         """Fidelity tags are the documented lever for overall clarity."""
-        caption = build_ace_caption_structured(mood).caption.lower()
+        # Styles with their own production (piano, lofi, the listening-test five) carry none.
+        caption = build_ace_caption_structured(mood, style="electronic").caption.lower()
 
         assert any(t in caption for t in FIDELITY_TAGS), caption
 

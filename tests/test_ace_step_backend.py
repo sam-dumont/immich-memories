@@ -90,10 +90,6 @@ class TestMoodToStructuredPrompt:
         result = _mood_to_structured_prompt("happy", scene_moods=["happy", "calm", "energetic"])
         assert result.caption != ""
 
-    def test_with_memory_type(self):
-        result = _mood_to_structured_prompt("happy", memory_type="trip")
-        assert result.caption != ""
-
 
 # ---------------------------------------------------------------------------
 # ACEStepConfig

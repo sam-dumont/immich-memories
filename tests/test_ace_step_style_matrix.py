@@ -2,8 +2,8 @@
 
 One caption per mood made every memory of that mood sound the same. Mood now
 sets the tempo and emotional register; style picks the genre and instruments,
-so the same mood can arrive in several styles. The app picks acoustic, electronic or
-piano by itself; the others are played only when a style is named explicitly.
+so the same mood can arrive in several styles. The app picks from each mood's Keep/Drop
+table by itself; acoustic, jazz, rock, orchestral, ambient and metal only when named.
 """
 
 from __future__ import annotations
@@ -32,6 +32,11 @@ def test_the_matrix_covers_every_mood_with_every_style():
         "piano",
         "metal",
         "lofi",
+        "downtempo",
+        "neosoul",
+        "postrock",
+        "funk",
+        "citypop",
     }
 
 
@@ -94,68 +99,179 @@ def test_an_unknown_style_falls_back_instead_of_failing():
     assert "bpm" not in result.caption
 
 
-# The maintainer's listening tests (#308, #2471) kept acoustic, electronic and solo piano and
-# rated lo-fi best; jazz trio, rock, orchestral and metal sounded wrong on real films.
-_VALIDATED = {"acoustic", "electronic", "piano", "lofi"}
+# Styles that appear in some mood's Keep/Drop table; everything else is explicit-only.
+_NEVER_AUTOMATIC = {"acoustic", "jazz", "rock", "metal", "orchestral", "ambient"}
 
 
-def test_with_no_style_set_every_automatic_pick_is_a_validated_style():
+def test_with_no_style_set_no_opt_in_style_is_ever_picked():
     import random
 
     from immich_memories.audio.generators.ace_step_captions import pick_style
-    from immich_memories.audio.mood_analyzer import VALID_GENRES
-    from immich_memories.memory_types.registry import MemoryType
 
-    yields: list[list[str] | None] = [None, [], *([genre] for genre in sorted(VALID_GENRES))]
-    kinds = [None, *(kind.value for kind in MemoryType)]
     picks = {
-        pick_style(memory_type=kind, genres=genres, rng=random.Random(seed))
-        for seed in range(40)
-        for kind in kinds
-        for genres in yields
+        pick_style(mood, genres=genres, rng=random.Random(seed))
+        for seed in range(60)
+        for mood in MOODS
+        for genres in (None, ["metal"], ["jazz"], ["rock"], ["orchestral"], ["ambient"], ["folk"])
     }
 
-    assert picks == _VALIDATED
+    assert picks and not picks & _NEVER_AUTOMATIC
+
+
+def test_every_mood_resolves_to_a_non_empty_table():
+    from immich_memories.audio.generators.ace_step_captions import styles_for_mood
+
+    for mood in MOODS:
+        assert styles_for_mood(mood), mood
+
+
+@pytest.mark.parametrize(
+    ("mood", "style", "caption"),
+    [
+        (
+            "calm",
+            "downtempo",
+            "downtempo chill electronica, serene, soft beats, warm synth pads, deep bass",
+        ),
+        (
+            "happy",
+            "citypop",
+            "80s city pop instrumental, joyful, funky bass, clean electric guitar, rhodes",
+        ),
+        (
+            "tender",
+            "neosoul",
+            "neo-soul instrumental, tender, rhodes chords, laid-back drums, round bass",
+        ),
+        (
+            "nostalgic",
+            "postrock",
+            "post-rock instrumental, wistful, clean electric guitars, reverb, building drums",
+        ),
+        ("energetic", "funk", "instrumental funk, driving, tight bassline, wah guitar, live drums"),
+    ],
+)
+def test_new_style_captions_are_short_with_no_production_tags(mood, style, caption):
+    assert build_ace_caption_structured(mood, style=style).caption == caption
+
+
+@pytest.mark.parametrize(
+    ("style", "low", "high"),
+    [
+        ("downtempo", 80, 100),
+        ("neosoul", 75, 95),
+        ("postrock", 80, 120),
+        ("funk", 95, 118),
+        ("citypop", 100, 120),
+    ],
+)
+def test_new_style_tempo_stays_in_its_band(style, low, high):
+    for mood in MOODS:
+        assert low <= build_ace_caption_structured(mood, style=style).bpm <= high
+
+
+@pytest.mark.parametrize(
+    ("mood", "style"),
+    [("energetic", "electronic"), ("happy", "funk"), ("tender", "downtempo")],
+)
+def test_a_style_kept_less_than_four_in_ten_is_never_sampled(mood, style):
+    import random
+
+    from immich_memories.audio.generators.ace_step_captions import pick_style
+
+    picks = {pick_style(mood, rng=random.Random(seed)) for seed in range(500)}
+
+    assert style not in picks and picks
+
+
+def test_a_style_kept_exactly_four_in_ten_stays_in():
+    from immich_memories.audio.generators.ace_step_captions import styles_for_mood
+
+    assert "lofi" in styles_for_mood("tender")
+
+
+def test_picks_follow_the_weights():
+    import random
+
+    from immich_memories.audio.generators.ace_step_captions import pick_style
+
+    rng = random.Random(11)
+    counts = {}
+    for _ in range(6000):
+        style = pick_style("happy", rng=rng)
+        counts[style] = counts.get(style, 0) + 1
+    # happy: piano 2/4, lofi 3/4, electronic 3/4, citypop 4/5 (funk 2/5 excluded)
+    weights = {"piano": 0.5, "lofi": 0.75, "electronic": 0.75, "citypop": 0.8}
+    total = sum(weights.values())
+    for style, weight in weights.items():
+        assert abs(counts[style] / 6000 - weight / total) < 0.03, style
+    assert "funk" not in counts
+
+
+def test_a_mood_without_its_own_folder_uses_its_nearest_folders_table():
+    from immich_memories.audio.generators.ace_step_captions import styles_for_mood
+
+    assert styles_for_mood("playful") == styles_for_mood("happy")
+    assert styles_for_mood("dramatic") == styles_for_mood("energetic")
+
+
+def test_an_explicit_style_wins_even_when_excluded_or_opt_in():
+    from immich_memories.audio.generators.ace_step_captions import pick_style
+
+    assert pick_style("energetic", style="electronic") == "electronic"
+    assert pick_style("calm", style="metal") == "metal"
+
+
+def test_a_genre_suggestion_is_honoured_only_when_the_mood_allows_its_style():
+    import random
+
+    from immich_memories.audio.generators.ace_step_captions import pick_style
+
+    assert pick_style("happy", genres=["city pop"]) == "citypop"
+    assert pick_style("happy", genres=["piano"]) == "piano"
+    # funk is excluded from happy, jazz has no table anywhere: the weighted table decides
+    for genre in ("funk", "jazz"):
+        picks = {pick_style("happy", genres=[genre], rng=random.Random(s)) for s in range(200)}
+        assert picks <= {"piano", "lofi", "electronic", "citypop"}
+        assert len(picks) > 1
+
+
+def test_every_take_of_a_film_shares_one_style():
+    import random
+
+    captions = {
+        build_ace_caption_structured("tender", rng=random.Random(21)).caption for _ in range(8)
+    }
+
+    assert len(captions) == 1
 
 
 @pytest.mark.parametrize(
     ("genre", "style"),
     [
-        ("jazz", "acoustic"),
         ("piano", "piano"),
-        ("orchestral", "piano"),
-        ("classical", "piano"),
-        ("cinematic", "piano"),
-        ("rock", "electronic"),
-        ("indie", "electronic"),
-        ("metal", "electronic"),
-        ("ambient", "electronic"),
+        ("lofi", "lofi"),
+        ("funk", "funk"),
+        ("post-rock", "postrock"),
+        ("postrock", "postrock"),
+        ("downtempo", "downtempo"),
+        ("chill", "downtempo"),
+        ("neo-soul", "neosoul"),
+        ("soul", "neosoul"),
+        ("city pop", "citypop"),
     ],
 )
-def test_a_model_genre_yield_lands_on_a_validated_style(genre, style):
-    from immich_memories.audio.generators.ace_step_captions import pick_style
+def test_the_readers_new_genres_name_their_style(genre, style):
+    from immich_memories.audio.generators.ace_step_captions import _GENRE_TO_STYLE
+    from immich_memories.audio.mood_analyzer import VALID_GENRES
 
-    assert pick_style(genres=[genre]) == style
+    assert _GENRE_TO_STYLE[genre] == style
+    assert genre in VALID_GENRES
 
 
 @pytest.mark.parametrize("style", ["jazz", "metal", "rock", "orchestral", "ambient"])
 def test_an_explicit_style_still_wins(style):
     assert STYLE_PROFILES[style].genre in build_ace_caption_structured("happy", style=style).caption
-
-
-def test_a_model_caption_with_no_style_set_never_names_an_opt_in_genre():
-    from immich_memories.audio.mood_analyzer import VideoMood
-
-    for genres in (["jazz"], ["metal"], ["rock"], ["orchestral"], ["indie"]):
-        caption = build_ace_caption_structured(
-            "happy", mood_detail=VideoMood(primary_mood="happy", genre_suggestions=genres)
-        ).caption
-        assert caption.split(",")[0] in {
-            STYLE_PROFILES["acoustic"].genre,
-            STYLE_PROFILES["piano"].genre,
-            *STYLE_PROFILES["electronic"].genre_by_mood.values(),
-            STYLE_PROFILES["electronic"].genre,
-        }, genres
 
 
 def test_solo_piano_caption_is_the_one_rated_best_and_has_no_mood_production_tags():
@@ -178,13 +294,6 @@ def test_lofi_caption_is_the_one_rated_best_and_has_no_mood_production_tags():
 @pytest.mark.parametrize("mood", MOODS)
 def test_lofi_tempo_stays_in_its_band(mood):
     assert 70 <= build_ace_caption_structured(mood, style="lofi").bpm <= 98
-
-
-@pytest.mark.parametrize("genre", ["lofi", "lo-fi", "lo fi", "chillhop"])
-def test_the_readers_lofi_genres_land_on_the_lofi_style(genre):
-    from immich_memories.audio.generators.ace_step_captions import pick_style
-
-    assert pick_style(genres=[genre]) == "lofi"
 
 
 def test_a_specific_style_caption_keeps_tempo_out_too():

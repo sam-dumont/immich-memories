@@ -112,8 +112,9 @@ the substitution.
 
 ## What generation adds to the mix
 
-- **Four styles.** A generated track is acoustic folk, electronic, solo piano or lo-fi hip hop, the
-  styles that held up in listening tests. The others in the caption matrix are never picked automatically.
+- **A style per mood.** Each mood picks from the styles that were kept most often in listening tests
+  (solo piano, lo-fi, electronic, downtempo, neo-soul, post-rock, funk, city pop). The others in the
+  caption matrix are never picked automatically.
 
 - **Tempo fits the photos.** In a film with photos, the tempo is nudged so a photo lasts a whole
   number of beats, within the genre's range and 15 % of the mood's tempo. Videos are never

@@ -359,10 +359,16 @@ captions of kept pictures) and gets back a mood, an energy, a tempo and up to fi
 lists the moods from most to least energetic and keeps calm for still, quiet films. The season only
 colours the caption ("warm, golden" in autumn); the mood sets the tempo.
 
-A generated track is acoustic folk, electronic, solo piano or lo-fi hip hop. A reader's genre lands
-on the nearest of the four: lo-fi and chillhop on lo-fi, jazz on acoustic, orchestral and classical
-on piano, rock, metal and ambient on electronic. The other styles in the caption matrix (jazz trio, indie rock, orchestral, ambient,
-metal) are never picked automatically.
+A generated track's style comes from a per-mood table of how often each style was kept in listening
+tests. Calm, tender, nostalgic, happy and energetic each have their own list over solo piano, lo-fi
+hip hop, electronic, downtempo, neo-soul, post-rock, funk and city pop; the other moods use the
+nearest of those five (playful, inspiring and uplifting use happy; peaceful uses calm; exciting and
+dramatic use energetic; romantic uses tender; sad, melancholic and mysterious use nostalgic). A
+style is sampled with weight (kept + 1) / (rated + 2), and left out of a mood when it was kept in
+fewer than four takes out of ten. A reader's genre (piano, lo-fi, funk, post-rock, downtempo,
+neo-soul, city pop) is followed when the mood's list allows that style; any other genre is ignored
+and the table decides. Acoustic folk, jazz trio, indie rock, orchestral, ambient and metal are
+never picked automatically.
 
 A generated soundtrack is one piece. One backend makes all of it, and a film up to 30 seconds
 is a single ACE-Step take. A longer film

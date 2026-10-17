@@ -101,8 +101,8 @@ def test_a_mood_neither_library_has_picks_from_your_folder(tmp_path):
     own = _library(tmp_path / "own", "own", ("calm",))
     bundled = _library(tmp_path / "bundled", "bundled", ("happy",))
 
-    assert music_library_for_mood("inspiring", own, bundled) == own
-    assert music_library_for_mood("inspiring", own, None) == own
+    assert music_library_for_mood("sad", own, bundled) == own
+    assert music_library_for_mood("sad", own, None) == own
     assert music_library_for_mood("happy", own, bundled) == bundled
 
 
