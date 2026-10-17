@@ -125,6 +125,14 @@ class MemorySettings(Contract):
     )
     preset_params: dict = Field(default_factory=dict)
 
+    @field_validator("preset_params", mode="before")
+    @classmethod
+    def tagged_dates(cls, value: object) -> object:
+        """Give back the dates and instants the app tagged, such as a special day's run."""
+        from immich_memories.processing.dated_values import decode_dated
+
+        return decode_dated(value) if isinstance(value, dict) else value
+
     @field_validator("preset_params")
     @classmethod
     def trip_calendar_dates(cls, value: dict) -> dict:
@@ -218,6 +226,8 @@ class JobStatus(Contract):
     error: str | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    # How long this job may queue and run; it grows with the film (`render_budget_seconds`).
+    deadline_seconds: float | None = None
     # What the app needs to re-run publish_validated_output on the bytes it gets
     # back, and to mix music against the sequence only the assembler ever saw.
     encoder: str | None = None

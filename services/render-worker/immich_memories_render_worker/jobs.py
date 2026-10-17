@@ -121,21 +121,32 @@ class RenderJobs:
                 raise JobConflict(
                     "The previous render is still finishing; retry after it releases its workspace"
                 )
-            status, fresh = self.store.admit(
-                JobStatus(
-                    job_id=job_id,
-                    memory_key=request.memory_key,
-                    plan_digest=request.timing.sha256,
-                    worker_id=self.worker_id,
-                    submitted_at=_now(),
-                ),
-                fingerprint,
-            )
+            status, fresh = self.store.admit(self.job_status(job_id, request), fingerprint)
             if fresh:
                 rendered = self._pool.submit(self._render, request, job_id)
                 self._renders[job_id] = rendered
                 rendered.add_done_callback(lambda _done: self._finished(job_id))
         return status
+
+    def job_status(self, job_id: UUID, request: RenderRequest) -> JobStatus:
+        """A just-admitted job, with the deadline its film's work needs.
+
+        `job_timeout_seconds` is the least any job gets; a long film gets the budget the
+        app also waits for, so the two give up on it together.
+        """
+        from immich_memories.processing.remote_render_budget import render_budget_seconds
+
+        content = sum(clip.end - clip.start for clip in request.plan.clips)
+        return JobStatus(
+            job_id=job_id,
+            memory_key=request.memory_key,
+            plan_digest=request.timing.sha256,
+            worker_id=self.worker_id,
+            submitted_at=_now(),
+            deadline_seconds=render_budget_seconds(
+                len(request.plan.clips), content, floor=self.settings.job_timeout_seconds
+            ),
+        )
 
     def directory(self, job_id: UUID) -> Path:
         # WHY realpath + startswith rather than Path.resolve().is_relative_to: the
@@ -237,13 +248,15 @@ class RenderJobs:
     def cleanup(self) -> None:
         with self._lock:
             for job_id in self.store.overdue(self.settings.job_timeout_seconds):
+                deadline = self.store.get(job_id).deadline_seconds
+                seconds = round(deadline or self.settings.job_timeout_seconds)
                 self.store.update(
                     job_id,
                     state="failed",
                     phase="failed",
                     finished_at=_now(),
                     error=(
-                        f"Render exceeded {self.settings.job_timeout_seconds}s and was abandoned; "
+                        f"Render exceeded {seconds}s and was abandoned; "
                         "restart the worker if its lane stays busy"
                     ),
                 )

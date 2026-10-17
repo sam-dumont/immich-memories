@@ -278,7 +278,7 @@ def test_a_received_film_that_fails_its_check_here_is_kept(tmp_path, monkeypatch
 @pytest.mark.parametrize(
     "failure", ["version", "not_ready", "redirect", "timeout", "failed", "failed_separate_settings"]
 )
-def test_worker_failures_stop_without_publishing_or_leaking_tokens(tmp_path, failure):
+def test_worker_failures_stop_without_publishing_or_leaking_tokens(tmp_path, monkeypatch, failure):
     import json
     from uuid import uuid4
 
@@ -287,7 +287,20 @@ def test_worker_failures_stop_without_publishing_or_leaking_tokens(tmp_path, fai
     from immich_memories import __version__
     from immich_memories.config.models.render import RenderWorkerConfig
     from immich_memories.generate import GenerationError
+    from immich_memories.processing import remote_render
     from immich_memories.processing.remote_render import RemoteRenderClient
+
+    class Clock:
+        now = 0.0
+
+        def monotonic(self):
+            return self.now
+
+        def sleep(self, seconds):
+            self.now += 60
+
+    # WHY: a job queued past its whole budget, without waiting that budget out.
+    monkeypatch.setattr(remote_render, "time", Clock())
 
     params = manual_params(tmp_path)
     settings = RenderWorkerConfig(

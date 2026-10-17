@@ -152,6 +152,22 @@ def build_on_this_day(
     ]
 
 
+def on_this_day_anniversary(start: date, end: date | None) -> date:
+    """The day an On This Day film looks back to, read off the span it covers.
+
+    The span runs from the day before the anniversary in the earliest year to the day
+    after it in the latest (`day_with_neighbours`), so the anniversary is the day both ends
+    sit one day from. A span that is the anniversary itself, with no day either side, is
+    taken as written.
+    """
+    if end is None:
+        return start
+    before_end = end - timedelta(days=1)
+    after_start = start + timedelta(days=1)
+    padded = (after_start.month, after_start.day) == (before_end.month, before_end.day)
+    return before_end if padded else start
+
+
 def day_with_neighbours(center: date) -> DateRange:
     """The day and the one either side of it, a day remembered across the years."""
     day_before = _subtract_one_day(center)

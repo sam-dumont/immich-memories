@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from immich_memories.titles.film_stories import FilmStories
 
 from immich_memories.i18n import elide_french, film_text, resolve_film_locale
+from immich_memories.titles.title_routing import PEOPLE_MEMORY_TYPES
 from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
@@ -456,6 +457,26 @@ def years_spanned(years: Collection[int]) -> str:
     return str(first) if first == last else f"{first}\u2013{last}"
 
 
+def dateless_people_title(
+    preset_params: dict,
+    memory_type: str | None,
+    person_name: str | None,
+    years: Collection[int] = (),
+) -> tuple[str, str | None] | None:
+    """A people film nobody dated: the years its cut shows, under the people's names.
+
+    With no dates typed, the window opens at a birth date ("January 1988 to October 2026")
+    so no matching picture is missed, but the pictures often start years later. The title
+    names the years the film shows ("Kit · 2003–2026"), the span a holiday film uses. A
+    film with typed dates keeps the dates asked for; before there is a cut, this is None.
+    """
+    if memory_type not in PEOPLE_MEMORY_TYPES or not years:
+        return None
+    if not preset_params.get("window_origin") or preset_params.get("birthday"):
+        return None
+    return years_spanned(years), person_name
+
+
 def birthday_title(
     preset_params: dict,
     memory_type: str | None,
@@ -553,6 +574,8 @@ def template_title(
     )
     if birthday := birthday_title(params, memory_type, date_range.end, name, locale, years):
         return birthday
+    if people := dateless_people_title(params, memory_type, name, years):
+        return people
     # Calendar days, not instants: a season is recognised by its first and last day.
     start, end = date_range.start.date(), date_range.end.date()
     selection = infer_selection_type(start_date=start, end_date=end, memory_type=memory_type)

@@ -106,6 +106,37 @@ def test_trip_calendar_bounds_survive_http_json_and_worker_title_generation(tmp_
     )
 
 
+def test_a_special_day_film_crosses_the_http_boundary_with_its_dates(tmp_path):
+    """The day, its window and its run reach the worker as the same dates and instants."""
+    from datetime import UTC, date, datetime
+
+    from immich_memories.cli.generate_resolution import resolve_special_day
+
+    params = manual_params(tmp_path)
+    params.memory_type = "special_day"
+    params.date_start = date(2024, 2, 7)
+    params.date_end = date(2024, 2, 7)
+    # An uncatalogued day, exactly as `generate --memory-type special_day --day` builds it.
+    params.memory_preset_params = resolve_special_day(date(2024, 2, 7), "special_day")
+    received, _ = round_trip(params, tmp_path)
+    assert received.memory_preset_params == params.memory_preset_params
+
+    # A catalogued day also carries the window and the run, as instants.
+    params.memory_preset_params |= {
+        "window": (datetime(2024, 2, 7, 9, 30), datetime(2024, 2, 7, 17, 0)),
+        "run": (
+            datetime(2024, 2, 7, 8, 0, tzinfo=UTC),
+            datetime(2024, 2, 8, 1, 15, tzinfo=UTC),
+        ),
+    }
+    received, _ = round_trip(params, tmp_path)
+    sent = params.memory_preset_params
+    assert received.memory_preset_params["day"] == date(2024, 2, 7)
+    assert tuple(received.memory_preset_params["window"]) == sent["window"]
+    assert tuple(received.memory_preset_params["run"]) == sent["run"]
+    assert received.editorial_render_timing is not None
+
+
 def test_worker_rejects_invalid_trip_calendar_bounds():
     import pytest
     from immich_memories_render_worker.models import MemorySettings

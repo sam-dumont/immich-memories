@@ -560,6 +560,10 @@ these helper modules:
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material
+- `processing/remote_render_budget.py`: the deadline a film's work earns (clips and seconds), shared
+  by the app's wait and the worker's job deadline, and the stall guard for a render that stops moving
+- `processing/dated_values.py`: JSON tagging that brings preset dates and instants back as such,
+  for the saved cut's titles and the worker request
 - `generate_timeline.py`: final-duration validation and content budget guards
 - `generate_delivery.py`: Immich upload of a finished artifact + delivered/pending/failed run state
 - `delivery_timestamp.py`: the capture instant a film is filed under, and the container tags carrying it

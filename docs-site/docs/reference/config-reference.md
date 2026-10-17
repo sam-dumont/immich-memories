@@ -157,7 +157,7 @@ render:
   worker_base_url: ""
   worker_token: ""             # Or ${RENDER_WORKER_TOKEN}
   allow_insecure_http: false   # Explicitly accept a non-loopback cleartext HTTP worker
-  timeout_seconds: 3600        # Wait for rendering and download (more than 0, at most 86400 s)
+  timeout_seconds: 3600        # Least wait for rendering and download; longer films get more (more than 0, at most 86400 s)
   fallback_to_local: false     # Set true to allow local rendering after a worker failure
 ```
 

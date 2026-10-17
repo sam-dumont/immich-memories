@@ -37,6 +37,7 @@ from immich_memories.processing.hdr_utilities import (
     quality_encoder_preset,
 )
 from immich_memories.processing.map_move_timing import MapMoveTiming
+from immich_memories.titles.title_routing import PEOPLE_MEMORY_TYPES
 from immich_memories.titles.title_source import TitleSource
 from immich_memories.tracking.timed import timed
 
@@ -260,7 +261,11 @@ def build_title_settings(
         )
         settings.show_ending_screen = plan.ending_duration > 0.0
 
-    from immich_memories.titles.film_title import birthday_title, holiday_title
+    from immich_memories.titles.film_title import (
+        birthday_title,
+        dateless_people_title,
+        holiday_title,
+    )
 
     if occasion := holiday_title(
         params.memory_preset_params,
@@ -282,6 +287,14 @@ def build_title_settings(
     ):
         settings.title_override, settings.subtitle_override = birthday
 
+    if people := dateless_people_title(
+        params.memory_preset_params,
+        params.memory_type,
+        title_person_name,
+        _years_shown(params, assembly_clips),
+    ):
+        settings.title_override, settings.subtitle_override = people
+
     # Apply LLM-generated title overrides
     if params.title:
         settings.title_override = params.title
@@ -300,10 +313,14 @@ def build_title_settings(
 def _years_shown(params: GenerationParams, assembly_clips: list[AssemblyClip]) -> set[int]:
     """The years a film across the years shows: its clips' own dates, else its pictures'.
 
-    A holiday film and a birthdays film are titled by the span of these years.
+    A holiday film, a birthdays film and a people film nobody dated are titled by the span
+    of these years.
     """
-    across_years = params.memory_type == "holiday" or params.memory_preset_params.get(
-        "birthday_years_back"
+    preset = params.memory_preset_params
+    across_years = (
+        params.memory_type == "holiday"
+        or preset.get("birthday_years_back")
+        or (params.memory_type in PEOPLE_MEMORY_TYPES and preset.get("window_origin"))
     )
     if not across_years:
         return set()

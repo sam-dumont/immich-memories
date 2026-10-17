@@ -73,23 +73,22 @@ reaches it at `http://127.0.0.1:8093`, loopback, with neither HTTPS nor
 `render.allow_insecure_http` needed. See
 [the Kubernetes page](../run/reference/kubernetes-operations.md#render-worker-as-a-sidecar).
 
-## Give long jobs both deadlines
+## How long a render may take
 
-The app's `render.timeout_seconds` and the worker's
-`IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS` both default to 3,600 seconds. They are separate
-budgets. The app waits for the queue, rendering and result download; the worker bounds its own job.
-Increasing only the app timeout still leaves the worker with a one-hour deadline.
+A worker spends most of its time animating photos and encoding, so a long film takes far longer
+than a short one. On a 4-CPU worker with an entry-level NVIDIA card, a photo takes 20 to 25
+seconds to animate and the encode runs at about a third of real time: a one-minute month film
+takes about 11 minutes, a ten-minute film with 150 clips about an hour and a half.
 
-For a long film, this example gives the worker six hours and the app a little more time:
+Both sides size their deadline from the film itself: 60 seconds per clip plus 10 seconds per
+second of film, capped at 12 hours. The app's `render.timeout_seconds` and the worker's
+`IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS` (both 3,600 seconds by default) are the least
+any film gets, so a short film keeps the hour and a 155-clip, ten-minute film gets about four and
+a half hours. Raise either setting only when your worker is slower than that or its queue is long:
+the app's wait includes the queue and the download.
 
-```yaml
-render:
-  timeout_seconds: 21660
-```
-
-Set `IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS=21600` on the worker as well. Choose deadlines
-for your queue and film size; this example adds 60 seconds for the handoff after the worker budget.
-An app timeout does not cancel an active worker job.
+A render that stops moving fails sooner: when a running job reports no progress for 20 minutes,
+the app stops waiting and says so. An app timeout does not cancel an active worker job.
 
 Active rendering keeps ownership of its scratch workspace after a deadline. A stuck native
 renderer can still require a worker restart. Increasing the deadline does not stop that job.
