@@ -43,9 +43,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# A film longer than this is joined from short takes on bar lines: one long take per
-# film sounded bland and kept tripping the loop check (#2617).
-_SHORT_TAKE_SECONDS = 30
+# A film longer than this is joined from takes on bar lines: one take per film of any
+# length sounded bland and kept tripping the loop check (#2617), while 90 s takes hold
+# together (the bundled music library is made of them).
+_TAKE_SECONDS = 90
 
 
 class MusicPipeline:
@@ -61,7 +62,7 @@ class MusicPipeline:
         generators: list[MusicGenerator],
         stem_separator: StemSeparator | None = None,
         *,
-        block_seconds: int = _SHORT_TAKE_SECONDS,
+        block_seconds: int = _TAKE_SECONDS,
         max_blocks: int = 3,
     ):
         self._generators = generators
@@ -567,10 +568,10 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
 
 
 def _block_seconds(app_config) -> int:
-    """The longest single take before auto mode joins short takes of one identity."""
+    """The longest single take before auto mode joins takes of one identity."""
     audio = getattr(app_config, "audio", None)
     value = getattr(audio, "music_block_seconds", None)
-    return value if isinstance(value, int) and value > 0 else _SHORT_TAKE_SECONDS
+    return value if isinstance(value, int) and value > 0 else _TAKE_SECONDS
 
 
 def _max_blocks(app_config) -> int:

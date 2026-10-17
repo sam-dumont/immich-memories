@@ -100,7 +100,7 @@ when set (the key, never its value); in 2.0 they stop being read. Delete them to
 | `photos.burst_hash_threshold` | nothing: fixed at 8 bits |
 | `title_screens.map_move_min_seconds` | nothing: fixed at 6 s |
 | `title_screens.map_move_max_seconds` | nothing: fixed at 8 s |
-| `audio.music_block_seconds` | nothing: fixed at 30 s |
+| `audio.music_block_seconds` | nothing: fixed at 90 s |
 | `audio.max_music_blocks` | nothing: fixed at 3 |
 | `automation.burst_threshold` | nothing: fixed at 2.0 |
 | `editorial.preparation.batch_size` | nothing: fixed at 32 |
@@ -265,9 +265,10 @@ the first render downloads.
 A config that already sets `model_variant` keeps that model. To stay on 2B everywhere, set
 `model_variant: turbo`.
 
-A film longer than 30 seconds is joined from short ACE-Step takes, at most 30 s each. One long
-take per film sounded flat and kept tripping the loop check. Joined takes share one key and time
-signature; only a film short enough for one take leaves both to ACE-Step. In `api` mode the app
+A film longer than 90 seconds is joined from up to 3 ACE-Step takes, at most 90 s each; a shorter
+film is one take of its own length. One take for a whole film sounded flat and kept tripping the
+loop check, while 90 s takes hold together (the bundled library is made of them). Every take gets
+the mood's key and a 4/4 meter. In `api` mode the app
 asks the server to skip its planner unless `use_lm: true`, so a server with a planner loaded no
 longer rewrites the caption.
 

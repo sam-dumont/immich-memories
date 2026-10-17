@@ -10,7 +10,7 @@ The music reads the season in your home base's hemisphere, the same way titles d
 
 The generator picks a style from the film's mood, and the pick follows what was kept in listening tests on real films. Each mood has its own short list: calm leans on solo piano, downtempo and neo-soul; tender on neo-soul and solo piano; nostalgic on post-rock, neo-soul, lo-fi and piano; happy on city pop, lo-fi, electronic and piano; energetic on funk, post-rock, lo-fi and piano. A style that was kept in fewer than four takes out of ten for a mood is left out of that mood. Acoustic folk, jazz trio, indie rock, orchestral, ambient and metal exist in the caption matrix but the app never picks them by itself.
 
-A generated soundtrack plays as one piece. With ACE-Step, a film up to 30 seconds gets a single take; a longer one joins short takes that share one style, tempo and key, on a bar line. Every take gets a key and a 4/4 meter chosen with the mood, because ACE-Step left to guess did worse in every style.
+A generated soundtrack plays as one piece. With ACE-Step, a film up to 90 seconds gets a single take of its own length; a longer one joins up to 3 takes of at most 90 seconds that share one style, tempo and key, on a bar line, and repeats them past 270 seconds. Every take gets a key and a 4/4 meter chosen with the mood, because ACE-Step left to guess did worse in every style.
 
 Without a generator, a film plays one bundled track, looped onto itself where its own music repeats, so it never jumps to a different piece. The bundled mix is mastered to the same loudness as a generated one.
 
