@@ -93,6 +93,7 @@ def test_an_immich_client_change_runs_the_real_immich_gate(ci_scope):
         "tests/e2e/fake_library.py",
         "tests/immich_fakes.py",
         "scripts/immich_gate_images.sh",
+        "scripts/docker_pull.sh",
     ],
 )
 def test_the_fakes_the_seeding_and_the_gate_suites_run_the_gate(ci_scope, path):

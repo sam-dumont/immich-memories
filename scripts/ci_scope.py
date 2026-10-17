@@ -58,6 +58,7 @@ STORE = (
     "tests/store/*",
     "alembic.ini",
     "scripts/with_throwaway_postgres.sh",
+    "scripts/docker_pull.sh",
 )
 # The Dockerfile copies src/, packages/ and services/render-worker/; a src/
 # change that needs a new dependency also changes pyproject.toml, which runs everything.
@@ -90,6 +91,7 @@ IMMICH = (
     "tests/integration/immich_gate/*",
     "tests/integration/native_sharing/*",
     "scripts/immich_gate_images.sh",
+    "scripts/docker_pull.sh",
     "scripts/with_throwaway_postgres.sh",
 )
 # The worker imports titles and processing, and through them the package's core.

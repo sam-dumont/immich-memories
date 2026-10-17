@@ -417,16 +417,42 @@ IMMICH_GATE_COMPOSE = IMMICH_GATE_SERVER_IMAGE=$(IMMICH_GATE_SERVER_$(IMMICH_GAT
 IMMICH_GATE_IMAGES_TAR ?= $(IMMICH_GATE_DIR)/images/$(IMMICH_GATE_VERSION).tar
 
 .PHONY: test-immich-gate immich-gate-up immich-gate-down immich-gate-logs immich-gate-pull \
-	immich-gate-images immich-gate-fetch immich-gate-save
+	immich-gate-images immich-gate-cache-key immich-gate-fetch immich-gate-save
 immich-gate-pull:  ## Pull the pinned images for IMMICH_GATE_VERSION (v2|v32|v3)
 	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2, v32 or v3"; exit 2; }
 	$(IMMICH_GATE_COMPOSE) pull --quiet
 
+# docker load into the classic image store drops the registry digest, so a loaded
+# `name:tag@sha256:...` ref would not resolve and compose would pull again. The containerd
+# store keeps the digest through save/load. For a CI runner: it restarts the Docker daemon.
+.PHONY: docker-containerd-store
+docker-containerd-store:  ## Switch this host's Docker to the containerd image store (CI runners; restarts dockerd)
+	@[ "$$(uname)" = Linux ] || { echo "docker-containerd-store edits /etc/docker: Linux CI runners only"; exit 2; }
+	@if docker info -f '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then \
+		echo "already on the containerd image store"; \
+	else \
+		conf=/etc/docker/daemon.json; \
+		{ sudo cat "$$conf" 2>/dev/null || echo '{}'; } \
+			| jq '.features["containerd-snapshotter"] = true' | sudo tee "$$conf.new" >/dev/null; \
+		sudo mv "$$conf.new" "$$conf"; \
+		sudo systemctl restart docker; \
+	fi
+	@docker info -f 'docker {{.ServerVersion}}, storage {{.Driver}}'
+
+# The Immich stack's images and the throwaway postgres:16 the PostgreSQL legs and the native
+# sharing gate start: one tarball holds everything a leg runs, so no leg pulls on a warm cache.
 immich-gate-images:  ## Print the pinned image refs for IMMICH_GATE_VERSION, one per line
 	@test -n "$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION))" || { echo "IMMICH_GATE_VERSION must be v2, v32 or v3"; exit 2; }
-	@$(IMMICH_GATE_COMPOSE) config --images | sort
+	@{ $(IMMICH_GATE_COMPOSE) config --images; echo "$(STORE_TEST_POSTGRES_IMAGE)"; } | sort -u
 
-immich-gate-fetch:  ## Load the pinned images from IMMICH_GATE_IMAGES_TAR, pulling (3 tries) whatever it lacks
+# The Actions cache key of IMMICH_GATE_VERSION's tarball: the exact refs and the scripts that
+# write and read it. Not the workflow file, whose every action bump used to start every cache cold.
+immich-gate-cache-key:  ## Print the Actions cache key of IMMICH_GATE_VERSION's image tarball
+	@refs=$$($(MAKE) -s --no-print-directory immich-gate-images) && \
+		printf 'immich-gate-images-%s-%s\n' "$(IMMICH_GATE_VERSION)" \
+		"$$( { echo "$$refs"; cat scripts/immich_gate_images.sh scripts/docker_pull.sh; } | sha256sum | cut -c1-16)"
+
+immich-gate-fetch:  ## Load the pinned images from IMMICH_GATE_IMAGES_TAR, pulling (with retries) whatever it lacks
 	@scripts/immich_gate_images.sh fetch $(IMMICH_GATE_IMAGES_TAR) $$($(MAKE) -s --no-print-directory immich-gate-images)
 
 immich-gate-save:  ## docker save the pinned images for IMMICH_GATE_VERSION into IMMICH_GATE_IMAGES_TAR

@@ -149,10 +149,13 @@ integration folders. `IMMICH_GATE_KEEP=1` leaves the stack running after the tes
 writes the server logs to `.immich-gate/immich-<version>.log` (CI uploads them as an artifact).
 
 In CI the pinned images come from the Actions cache, not the registries: one `docker save` tarball per
-major, keyed on the exact refs. `make immich-gate-fetch` loads it, and pulls whatever it lacks with
-three attempts of three minutes each; `make immich-gate-save` writes it back after a cold run. A
-registry that stalls then costs one attempt instead of the whole job, and an image that never
-arrives still fails the gate.
+major, holding the Immich stack and the throwaway `postgres:16`, keyed on the exact refs
+(`make immich-gate-cache-key`). One job per major fills it before the legs start, so the SQLite
+and PostgreSQL legs never both pull from Docker Hub. `make immich-gate-fetch` loads it and pulls
+whatever it lacks through `scripts/docker_pull.sh`: four attempts of three minutes each, waiting
+10, 20 then 40 seconds between them. A 502 or a stalled registry then costs one attempt instead
+of the whole job, and an image that never arrives still fails the gate. The throwaway
+`postgres:16` that `make test-store` and the launch check start is pulled the same way.
 
 ## The container suite
 

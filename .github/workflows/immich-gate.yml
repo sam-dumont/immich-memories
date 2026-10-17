@@ -56,9 +56,61 @@ jobs:
           BASE: origin/${{ github.base_ref }}
         run: make ci-scope CI_SCOPE_EVENT="$EVENT" CI_SCOPE_BASE="$BASE"
 
+  # One tarball per Immich version (its stack plus the throwaway postgres:16), filled once
+  # before the legs start. The legs used to each fill it on a cold cache: v32 on SQLite and
+  # on PostgreSQL both pulled from Docker Hub, and the second save lost the race for the key.
+  # On a warm cache this job only looks the key up.
+  images:
+    name: Gate images (${{ matrix.immich }})
+    needs: [changes]
+    if: github.repository_id == '1174219883' && needs.changes.outputs.immich == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        immich: [v2, v32, v3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Cache key
+        id: key
+        run: echo "key=$(make -s immich-gate-cache-key IMMICH_GATE_VERSION=${{ matrix.immich }})" >> "$GITHUB_OUTPUT"
+
+      - name: Look up cached images
+        id: images
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .immich-gate/images
+          key: ${{ steps.key.outputs.key }}
+          lookup-only: true
+
+      # docker load into the classic image store drops the registry digest, so
+      # a loaded `name:tag@sha256:...` ref would not resolve and compose would
+      # pull again. The containerd store keeps the digest through save/load.
+      - name: Use the containerd image store
+        if: steps.images.outputs.cache-hit != 'true'
+        run: make docker-containerd-store
+
+      # Pulled with retries (scripts/docker_pull.sh): a registry 5xx costs an attempt, not the run.
+      - name: Pull and save the pinned images
+        if: steps.images.outputs.cache-hit != 'true'
+        run: |
+          make immich-gate-fetch IMMICH_GATE_VERSION=${{ matrix.immich }}
+          make immich-gate-save IMMICH_GATE_VERSION=${{ matrix.immich }}
+
+      # Another run saving the same key first is as good as this save: the legs restore either.
+      - name: Cache images
+        if: steps.images.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .immich-gate/images
+          key: ${{ steps.key.outputs.key }}
+
   immich:
     name: Real Immich (${{ matrix.immich }}, ${{ matrix.database }})
-    needs: [changes]
+    needs: [changes, images]
     if: github.repository_id == '1174219883' && needs.changes.outputs.immich == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -74,36 +126,22 @@ jobs:
       # a loaded `name:tag@sha256:...` ref would not resolve and compose would
       # pull again. The containerd store keeps the digest through save/load.
       - name: Use the containerd image store
-        run: |
-          if docker info -f '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then
-            echo "already on the containerd image store"
-          else
-            conf=/etc/docker/daemon.json
-            { sudo cat "$conf" 2>/dev/null || echo '{}'; } \
-              | jq '.features["containerd-snapshotter"] = true' | sudo tee "$conf.new" >/dev/null
-            sudo mv "$conf.new" "$conf"
-            sudo systemctl restart docker
-          fi
-          docker info -f 'docker {{.ServerVersion}}, storage {{.Driver}}'
+        run: make docker-containerd-store
 
-      # One tarball per Immich version (the v2 and v3 sets share only Postgres),
-      # keyed on the exact pinned refs, so bumping a digest starts a new entry.
-      - name: Pinned image refs
-        id: refs
-        run: |
-          make -s immich-gate-images IMMICH_GATE_VERSION=${{ matrix.immich }} | tee "$RUNNER_TEMP/refs.txt"
-          echo "hash=$(sha256sum "$RUNNER_TEMP/refs.txt" | cut -c1-16)" >> "$GITHUB_OUTPUT"
-
+      # The tarball the images job filled, keyed on the exact pinned refs
+      # (`make immich-gate-cache-key`), so bumping a digest starts a new entry.
+      - name: Image cache key
+        run: echo "IMMICH_GATE_CACHE_KEY=$(make -s immich-gate-cache-key IMMICH_GATE_VERSION=${{ matrix.immich }})" >> "$GITHUB_ENV"
       - name: Restore cached images
-        id: images
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .immich-gate/images
-          key: immich-gate-images-${{ matrix.immich }}-${{ steps.refs.outputs.hash }}-${{ hashFiles('.github/workflows/immich-gate.yml', 'scripts/immich_gate_images.sh') }}
+          key: ${{ env.IMMICH_GATE_CACHE_KEY }}
 
-      # Loaded (warm) or pulled (cold, 3 tries with a timeout each) in the
-      # background while Python and FFmpeg install. The step after the setup
-      # waits for it, so an image that never arrives still fails the job.
+      # Loaded from the tarball in the background while Python and FFmpeg
+      # install; pulled with retries only if the cache let the job down. The
+      # step after the setup waits for it, so an image that never arrives
+      # still fails the job.
       - name: Load or pull pinned Immich images (background)
         run: |
           ( start=$(date +%s)
@@ -132,10 +170,9 @@ jobs:
           key: immich-gate-media-${{ hashFiles('tests/e2e/fixtures/library/**', 'tests/e2e/fake_library.py', 'tests/integration/immich_gate/media.py') }}
 
       # A warm load finishes before the setup does. The limit covers the cold
-      # worst case: 3 pull attempts of 3 min each plus the backoff.
+      # worst case: 4 pull attempts of 3 min each plus 70 s of backoff.
       - name: Wait for the images
-        id: wait
-        timeout-minutes: 11
+        timeout-minutes: 15
         run: |
           until [ -f "$RUNNER_TEMP/pull.status" ]; do sleep 2; done
           cat "$RUNNER_TEMP/pull.log"
@@ -147,21 +184,6 @@ jobs:
       - name: Native shared people (3.3 final, ${{ matrix.database }})
         if: matrix.immich == 'v3'
         run: make test-native-sharing NATIVE_GATE_VERSION=v33-sharing NATIVE_GATE_DATABASE=${{ matrix.database }}
-
-      # Saved after the tests so a cold run's tests do not wait on docker save.
-      # A failed save only costs the next run a pull; it never fails the gate.
-      - name: Save images for the next run
-        if: always() && steps.images.outputs.cache-hit != 'true' && steps.wait.outcome == 'success'
-        continue-on-error: true
-        run: make immich-gate-save IMMICH_GATE_VERSION=${{ matrix.immich }}
-
-      - name: Cache images
-        if: always() && steps.images.outputs.cache-hit != 'true' && steps.wait.outcome == 'success'
-        continue-on-error: true
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .immich-gate/images
-          key: ${{ steps.images.outputs.cache-primary-key }}
 
       - name: Upload Immich logs
         if: failure()
@@ -184,7 +206,7 @@ jobs:
   # feature jobs); each shard starts and seeds its own Immich, about two minutes.
   features:
     name: Feature tests on real Immich (${{ matrix.immich }}, ${{ matrix.shard }}/2)
-    needs: [changes]
+    needs: [changes, images]
     if: github.repository_id == '1174219883' && needs.changes.outputs.immich == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -198,29 +220,17 @@ jobs:
 
       # Same image store and cache as the gate job above: one tarball per major.
       - name: Use the containerd image store
-        run: |
-          if docker info -f '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then
-            echo "already on the containerd image store"
-          else
-            conf=/etc/docker/daemon.json
-            { sudo cat "$conf" 2>/dev/null || echo '{}'; } \
-              | jq '.features["containerd-snapshotter"] = true' | sudo tee "$conf.new" >/dev/null
-            sudo mv "$conf.new" "$conf"
-            sudo systemctl restart docker
-          fi
-          docker info -f 'docker {{.ServerVersion}}, storage {{.Driver}}'
+        run: make docker-containerd-store
 
-      - name: Pinned image refs
-        id: refs
-        run: |
-          make -s immich-gate-images IMMICH_GATE_VERSION=${{ matrix.immich }} | tee "$RUNNER_TEMP/refs.txt"
-          echo "hash=$(sha256sum "$RUNNER_TEMP/refs.txt" | cut -c1-16)" >> "$GITHUB_OUTPUT"
-
+      # The tarball the images job filled, keyed on the exact pinned refs
+      # (`make immich-gate-cache-key`), so bumping a digest starts a new entry.
+      - name: Image cache key
+        run: echo "IMMICH_GATE_CACHE_KEY=$(make -s immich-gate-cache-key IMMICH_GATE_VERSION=${{ matrix.immich }})" >> "$GITHUB_ENV"
       - name: Restore cached images
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .immich-gate/images
-          key: immich-gate-images-${{ matrix.immich }}-${{ steps.refs.outputs.hash }}-${{ hashFiles('.github/workflows/immich-gate.yml', 'scripts/immich_gate_images.sh') }}
+          key: ${{ env.IMMICH_GATE_CACHE_KEY }}
 
       - name: Load or pull pinned Immich images (background)
         run: |
@@ -238,7 +248,7 @@ jobs:
           install: dev-test-features
 
       - name: Wait for the images
-        timeout-minutes: 11
+        timeout-minutes: 15
         run: |
           until [ -f "$RUNNER_TEMP/pull.status" ]; do sleep 2; done
           cat "$RUNNER_TEMP/pull.log"
@@ -263,7 +273,7 @@ jobs:
   # per leg; this folds them into a name that survives adding a version or a backend.
   gate:
     name: Immich Gate
-    needs: [changes, immich, features]
+    needs: [changes, images, immich, features]
     if: always() && github.repository_id == '1174219883'
     runs-on: ubuntu-24.04
     steps:

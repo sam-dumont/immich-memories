@@ -18,6 +18,10 @@ if [ -n "${!var:-}" ]; then
 	exec "$@"
 fi
 
+# Pulled first, with retries: `docker run` pulls once and fails the whole job on
+# one 502 from the registry.
+"$(cd "$(dirname "$0")" && pwd)/docker_pull.sh" "$image"
+
 name="immich-memories-pg-$$"
 docker run -d --rm --name "$name" --tmpfs /var/lib/postgresql/data \
 	-e POSTGRES_PASSWORD=store-test -p 127.0.0.1::5432 "$image" >/dev/null
