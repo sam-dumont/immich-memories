@@ -53,6 +53,14 @@ def test_reference_uses_descriptive_dynamic_defaults() -> None:
     assert "current year" in reference(2026)
 
 
+def test_plain_boolean_flags_document_their_false_default() -> None:
+    # Click 8.5 leaves a bare flag's `default` unset and resolves False at parse time.
+    root = click.Group()
+    root.add_command(click.Command("scan", params=[click.Option(["--dry-run"], is_flag=True)]))
+
+    assert "| `--dry-run` | boolean | false |" in generate_reference(root)
+
+
 def test_reference_includes_global_options_and_real_argument_usage() -> None:
     root = click.Group(params=[click.Option(["--config"], type=click.Path(), help="Config path")])
     root.add_command(

@@ -60,6 +60,9 @@ def _get_options_table(cmd: click.Command) -> str:
         names = ", ".join(f"`{d}`" for d in (*param.opts, *param.secondary_opts))
         param_type = _format_type(param.type)
         default = param.show_default if isinstance(param.show_default, str) else param.default
+        if default is UNSET and param.is_bool_flag:
+            # Click >= 8.5 leaves a bare flag's default unset; it parses as False.
+            default = False
         # Click >= 8.3 uses a Sentinel (UNSET) instead of None for "no default"
         if default is None or default is UNSET:
             default = "-"
