@@ -88,7 +88,6 @@ ACE_TAKE_CAP_SECONDS = 300
 def _mood_to_structured_prompt(
     mood: str,
     scene_moods: list[str] | None = None,
-    memory_type: str | None = None,
     cadence_seconds: float | None = None,
     mood_detail=None,
     rng: random.Random | None = None,
@@ -102,7 +101,6 @@ def _mood_to_structured_prompt(
         season=_detect_season(mood),
         cadence_seconds=cadence_seconds,
         scene_moods=scene_moods,
-        memory_type=memory_type,
         mood_detail=mood_detail,
         rng=rng,
     )
@@ -118,7 +116,6 @@ def _caption_for(request: GenerationRequest):
     return _mood_to_structured_prompt(
         scene_moods[0] if scene_moods else request.prompt,
         scene_moods=scene_moods,
-        memory_type=request.memory_type,
         cadence_seconds=request.photo_cadence_seconds,
         mood_detail=request.mood_detail,
         rng=rng,

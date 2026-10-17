@@ -15,6 +15,8 @@ import logging
 import random
 from pathlib import Path
 
+from immich_memories.audio.mood_analyzer import MOOD_FOLDERS
+
 logger = logging.getLogger(__name__)
 
 _SUFFIXES = (".opus", ".mp3", ".m4a", ".flac", ".ogg", ".wav")
@@ -22,12 +24,6 @@ _SUFFIXES = (".opus", ".mp3", ".m4a", ".flac", ".ogg", ".wav")
 # The package ships five folders; the analyser's mood families are wider than
 # that. A near neighbour is better music for the memory than the flat pool, so
 # the families with no folder of their own borrow the closest one that has.
-_MOOD_FOLDERS = {
-    "playful": "happy",
-    "peaceful": "calm",
-    "exciting": "energetic",
-    "romantic": "tender",
-}
 
 
 def bundled_library() -> Path | None:
@@ -124,7 +120,7 @@ def _mood_folder_tracks(family: str, root: Path) -> list[Path]:
 
     The bundle has no folder for some moods; a library of your own may.
     """
-    for name in dict.fromkeys((family, _MOOD_FOLDERS.get(family, family))):
+    for name in dict.fromkeys((family, MOOD_FOLDERS.get(family, family))):
         folder = root / name
         tracks = _tracks_in(folder) if folder.is_dir() else []
         if tracks:

@@ -155,14 +155,6 @@ def test_caption_leads_with_its_genre_anchor():
     assert result.caption.startswith(STYLE_PROFILES["acoustic"].genre)
 
 
-def test_memory_type_selects_a_style():
-    spotlight = build_ace_caption_structured("happy", memory_type="person_spotlight")
-    on_this_day = build_ace_caption_structured("happy", memory_type="on_this_day")
-
-    assert spotlight.caption.startswith("acoustic folk")
-    assert on_this_day.caption.startswith("future bass")
-
-
 def test_a_style_can_name_a_different_genre_per_mood():
     """Electronic sub-genres are tempo-defined: drum and bass at 70 bpm is not a thing."""
     fast = build_ace_caption_structured("energetic", style="electronic")
@@ -172,31 +164,17 @@ def test_a_style_can_name_a_different_genre_per_mood():
     assert slow.caption.startswith("downtempo electronic")
 
 
-def test_memory_type_does_not_override_the_moods_energy():
-    """A calm spotlight is still calm: it sits low in its style's tempo band."""
-    calm = build_ace_caption_structured("calm", memory_type="person_spotlight")
-    energetic = build_ace_caption_structured("energetic", memory_type="person_spotlight")
-
-    assert calm.bpm < energetic.bpm
-
-
-def test_unknown_memory_type_still_produces_a_caption():
-    result = build_ace_caption_structured("calm", memory_type="not_a_memory_type")
-
-    assert "serene" in result.caption
-
-
 class TestReaderJudgmentDrivesTheCaption:
     """The text mood's energy, tempo and genre yields must reach the caption (#1007)."""
 
     def test_genre_yields_pick_the_style(self):
         from immich_memories.audio.mood_analyzer import VideoMood
 
-        # Jazz is opt-in since the listening test (#308, #2471); its yield plays acoustic.
-        detail = VideoMood(primary_mood="happy", genre_suggestions=["jazz"])
+        # Piano is in happy's listening-test table, so the yield is honoured.
+        detail = VideoMood(primary_mood="happy", genre_suggestions=["piano"])
         result = build_ace_caption_structured("happy", mood_detail=detail)
 
-        assert result.caption.startswith("acoustic folk")
+        assert result.caption.startswith("solo piano")
 
     def test_the_mood_still_sets_the_register_within_the_genre(self):
         from immich_memories.audio.mood_analyzer import VideoMood
@@ -223,28 +201,18 @@ class TestReaderJudgmentDrivesTheCaption:
 
         assert high > low
 
-    def test_genres_win_over_the_memory_type_default(self):
+    def test_an_opt_in_genre_yield_is_not_played(self):
+        import random
+
         from immich_memories.audio.mood_analyzer import VideoMood
 
-        detail = VideoMood(primary_mood="happy", genre_suggestions=["orchestral"])
-        result = build_ace_caption_structured(
-            "happy", memory_type="person_spotlight", mood_detail=detail
-        )
+        for genre in ("orchestral", "jazz", "metal"):
+            detail = VideoMood(primary_mood="energetic", genre_suggestions=[genre])
+            caption = build_ace_caption_structured(
+                "energetic", mood_detail=detail, rng=random.Random(3)
+            ).caption
 
-        # Orchestral is opt-in; its yield plays solo piano, not the type's acoustic default.
-        assert result.caption.startswith("solo piano")
-
-    def test_a_metal_yield_keeps_its_drive_in_electronic(self):
-        """Metal is opt-in (#308, #2471): the reader's yield plays driving electronic."""
-        from immich_memories.audio.mood_analyzer import VideoMood
-
-        detail = VideoMood(
-            primary_mood="energetic", energy_level="high", genre_suggestions=["metal"]
-        )
-        result = build_ace_caption_structured("energetic", mood_detail=detail)
-
-        assert result.caption.startswith("drum and bass")
-        assert "heavy metal" not in result.caption
+            assert not caption.startswith(("cinematic orchestral", "jazz trio", "heavy metal"))
 
     def test_a_specific_style_wins_the_caption_verbatim(self):
         """A style the genre list cannot name still reaches ACE-Step, verbatim."""

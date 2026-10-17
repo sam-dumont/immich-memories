@@ -194,6 +194,38 @@ STYLE_PROFILES: dict[str, StyleProfile] = {
         tempo_range=(70, 98),
         own_production=True,
     ),
+    # The five below came out of the per-mood listening tests (see MOOD_STYLE_TESTS). Short
+    # captions: genre, mood word, three instruments, no tempo and no production tags.
+    "downtempo": StyleProfile(
+        genre="downtempo chill electronica",
+        instruments="soft beats, warm synth pads, deep bass",
+        tempo_range=(80, 100),
+        own_production=True,
+    ),
+    "neosoul": StyleProfile(
+        genre="neo-soul instrumental",
+        instruments="rhodes chords, laid-back drums, round bass",
+        tempo_range=(75, 95),
+        own_production=True,
+    ),
+    "postrock": StyleProfile(
+        genre="post-rock instrumental",
+        instruments="clean electric guitars, reverb, building drums",
+        tempo_range=(80, 120),
+        own_production=True,
+    ),
+    "funk": StyleProfile(
+        genre="instrumental funk",
+        instruments="tight bassline, wah guitar, live drums",
+        tempo_range=(95, 118),
+        own_production=True,
+    ),
+    "citypop": StyleProfile(
+        genre="80s city pop instrumental",
+        instruments="funky bass, clean electric guitar, rhodes",
+        tempo_range=(100, 120),
+        own_production=True,
+    ),
     # Added for event memories that name the genre directly (a festival day),
     # so the reader can say "metal" and have it mean metal, not smooth jazz (#1007).
     # The concrete techniques is what makes ACE-Step render it: a bare "metal,
@@ -228,6 +260,14 @@ _GENRE_TO_STYLE: dict[str, str] = {
     "lo-fi": "lofi",
     "lo fi": "lofi",
     "chillhop": "lofi",
+    "funk": "funk",
+    "post-rock": "postrock",
+    "postrock": "postrock",
+    "downtempo": "downtempo",
+    "chill": "downtempo",
+    "neo-soul": "neosoul",
+    "soul": "neosoul",
+    "city pop": "citypop",
 }
 
 # The reader states energy and tempo as words, not numbers; both map onto the
@@ -235,27 +275,49 @@ _GENRE_TO_STYLE: dict[str, str] = {
 _ENERGY_LEVELS: dict[str, float] = {"low": 0.0, "medium": 0.5, "high": 1.0}
 _TEMPO_ENERGY: dict[str, float] = {"slow": 0.0, "medium": 0.5, "fast": 1.0}
 
-# The styles the app picks by itself. The maintainer's listening tests (#308, again on real
-# films in #2471) kept acoustic, electronic and solo piano, and rated lo-fi (an electronic
-# sub-style) best of all; jazz trio, indie rock, orchestral, ambient and metal sounded wrong
-# unasked. They stay in the matrix for an explicit `style` only.
-AUTOMATIC_STYLES = ("acoustic", "electronic", "piano", "lofi")
-# A reader's genre yield whose style is opt-in lands on the automatic style nearest in feel:
-# jazz keeps its upright bass and brushed drums in acoustic; orchestral and cinematic keep their
-# slower, wide register in piano; rock, metal and ambient keep their drive or pads in electronic.
-_AUTOMATIC_STYLE_FOR = {
-    "jazz": "acoustic",
-    "orchestral": "piano",
-    "rock": "electronic",
-    "metal": "electronic",
-    "ambient": "electronic",
+# (kept, rated) per mood folder and style, from blind/by-ear Keep/Drop listening tests on
+# generated takes. The app only picks automatically among these; acoustic, jazz, rock,
+# orchestral, ambient and metal sounded wrong unasked and stay explicit-only. Update the counts
+# after each listening round.
+MOOD_STYLE_TESTS: dict[str, dict[str, tuple[int, int]]] = {
+    "calm": {"piano": (2, 2), "lofi": (1, 2), "downtempo": (2, 3), "neosoul": (2, 2)},
+    "tender": {"piano": (3, 5), "lofi": (2, 5), "neosoul": (3, 3), "downtempo": (1, 3)},
+    "nostalgic": {"piano": (2, 2), "lofi": (2, 2), "postrock": (2, 3), "neosoul": (2, 3)},
+    "happy": {
+        "piano": (1, 2),
+        "lofi": (2, 2),
+        "electronic": (2, 2),
+        "funk": (1, 3),
+        "citypop": (3, 3),
+    },
+    "energetic": {
+        "piano": (2, 2),
+        "lofi": (2, 2),
+        "electronic": (0, 2),
+        "funk": (2, 3),
+        "postrock": (1, 1),
+    },
 }
+# A style kept less often than this is left out of its mood, however few takes were heard.
+_MIN_KEEP_RATE = 0.4
 
-# Memory types that suggest a style; otherwise the style is sampled for variety.
-_MEMORY_TYPE_TO_STYLE: dict[str, str] = {
-    "person_spotlight": "acoustic",
-    "on_this_day": "electronic",
-}
+
+def styles_for_mood(mood_key: str) -> dict[str, float]:
+    """The styles the app may pick for a mood, with their sampling weights.
+
+    A mood without its own table uses its nearest folder's. Weight is the Laplace-smoothed
+    keep rate, (kept + 1) / (rated + 2), so a style heard twice and kept twice does not
+    crowd out one heard five times.
+    """
+    from immich_memories.audio.mood_analyzer import MOOD_FOLDERS
+
+    table = MOOD_STYLE_TESTS[MOOD_FOLDERS.get(mood_key, mood_key)]
+    return {
+        style: (kept + 1) / (rated + 2)
+        for style, (kept, rated) in table.items()
+        if kept / rated >= _MIN_KEEP_RATE
+    }
+
 
 _MOOD_ALIASES: dict[str, str] = {
     "upbeat": "happy",
@@ -305,28 +367,27 @@ def resolve_mood(mood: str) -> str:
 
 
 def pick_style(
-    memory_type: str | None = None,
+    mood_key: str,
     style: str | None = None,
     genres: list[str] | None = None,
     rng: random.Random | None = None,
 ) -> str:
     """Choose the style for this generation.
 
-    An explicit style wins, any style in the matrix. Otherwise the app picks one of
-    ``AUTOMATIC_STYLES``: the reader's own genre yield, folded onto its nearest automatic
-    style, then a memory type with a natural fit, then a sample, so repeated memories of the
-    same mood still do not all sound alike. ``rng`` makes the sample one film's choice: every
-    take of the film draws the same.
+    An explicit style wins, any style in the matrix. Otherwise the reader's genre yield
+    wins when its style is one the mood's listening tests allow, and else a style is
+    sampled by the mood's keep rates, so repeated memories of the same mood still do not
+    all sound alike. ``rng`` makes the sample one film's choice: every take of the film
+    draws the same.
     """
     if style in STYLE_PROFILES:
         return style
+    allowed = styles_for_mood(mood_key)
     for genre in genres or ():
         chosen = _GENRE_TO_STYLE.get(genre)
-        if chosen in STYLE_PROFILES:
-            return _AUTOMATIC_STYLE_FOR.get(chosen, chosen)
-    if memory_type and memory_type in _MEMORY_TYPE_TO_STYLE:
-        return _MEMORY_TYPE_TO_STYLE[memory_type]
-    return (rng or random).choice(AUTOMATIC_STYLES)
+        if chosen in allowed:
+            return chosen
+    return (rng or random).choices(list(allowed), weights=list(allowed.values()))[0]
 
 
 def compose_caption(
@@ -384,7 +445,6 @@ def build_ace_caption_structured(
     mood: str,
     season: str | None = None,
     scene_moods: list[str] | None = None,
-    memory_type: str | None = None,
     style: str | None = None,
     cadence_seconds: float | None = None,
     mood_detail: VideoMood | None = None,
@@ -413,7 +473,7 @@ def build_ace_caption_structured(
         caption = f"{specific}, {profile.word}, {profile.production}"
     else:
         genres = mood_detail.genre_suggestions if mood_detail else None
-        style_key = pick_style(memory_type=memory_type, style=style, genres=genres, rng=rng)
+        style_key = pick_style(mood_key, style=style, genres=genres, rng=rng)
         caption, bpm, key_scale = compose_caption(
             mood_key, style_key, cadence_seconds, _energy_override(mood_detail)
         )

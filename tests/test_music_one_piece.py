@@ -238,20 +238,21 @@ def test_one_seed_pins_the_caption_even_without_a_genre() -> None:
     from immich_memories.audio.generators.ace_step_captions import build_ace_caption_structured
 
     captions = {
-        build_ace_caption_structured("happy", memory_type="trip", rng=random.Random(7)).caption
-        for _ in range(5)
+        build_ace_caption_structured("happy", rng=random.Random(7)).caption for _ in range(5)
     }
 
     assert len(captions) == 1
 
 
 def test_metal_is_never_a_random_pick() -> None:
-    picks = {ace_step_captions.pick_style(rng=random.Random(seed)) for seed in range(400)}
+    picks = {
+        ace_step_captions.pick_style(mood, rng=random.Random(seed))
+        for seed in range(400)
+        for mood in ace_step_captions.MOOD_PROFILES
+    }
 
     assert "metal" not in picks
-    # A metal yield from the model folds onto electronic; only an explicit style plays metal (#308).
-    assert ace_step_captions.pick_style(genres=["metal"]) == "electronic"
-    assert ace_step_captions.pick_style(style="metal") == "metal"
+    assert ace_step_captions.pick_style("happy", style="metal") == "metal"
 
 
 class TestOneBackendPerFilm:

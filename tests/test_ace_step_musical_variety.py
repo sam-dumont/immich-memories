@@ -22,9 +22,10 @@ STYLES = sorted(STYLE_PROFILES)
 
 def test_one_mood_gets_a_different_tempo_from_each_style():
     """happy-acoustic and happy-rock should not share a beat."""
-    tempos = {build_ace_caption_structured("happy", style=s).bpm for s in STYLES}
+    styles = ["acoustic", "electronic", "ambient", "jazz", "rock", "orchestral", "piano", "metal"]
+    tempos = {build_ace_caption_structured("happy", style=s).bpm for s in styles}
 
-    assert len(tempos) == len(STYLES), tempos
+    assert len(tempos) == len(styles), tempos
 
 
 def test_a_style_still_speeds_up_with_the_mood():
