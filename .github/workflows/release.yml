@@ -384,10 +384,12 @@ jobs:
         with:
           egress-policy: audit
 
+      # No stored credentials: the only pushes here are the two ref steps below, and
+      # they authenticate with RELEASE_TAG_TOKEN themselves.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Configure git
         run: |
@@ -414,11 +416,14 @@ jobs:
 
       # The tag goes out only after every fallible pre-publication step has
       # succeeded (#1010): a stranded tag must stay a resume signal, not the
-      # only evidence that a release completed.
+      # only evidence that a release completed. GITHUB_TOKEN may not write a tag
+      # whose commit's workflow files differ from main's at push time (#2615), so
+      # the push uses RELEASE_TAG_TOKEN, in this step and the nightly's only.
       - name: Push release tag
         if: inputs.channel != 'nightly'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN }}
           NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
         run: |
           if git rev-parse "v$NEXT_VERSION" >/dev/null 2>&1; then
@@ -444,7 +449,7 @@ jobs:
             fi
           else
             git tag -a "v$NEXT_VERSION" -m "Release v$NEXT_VERSION"
-            git push origin "v$NEXT_VERSION"
+            scripts/push_release_ref.sh "refs/tags/v$NEXT_VERSION"
           fi
 
       - name: Create GitHub Release
@@ -465,11 +470,14 @@ jobs:
           make_latest: ${{ needs.analyze.outputs.prerelease == 'true' && 'false' || 'true' }}
 
       # The only tag a nightly moves; version tags are the stable and rc channels'.
+      # RELEASE_TAG_TOKEN for the same reason as above.
       - name: Move the nightly tag to this commit
         if: inputs.channel == 'nightly'
+        env:
+          RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN }}
         run: |
           git tag -f nightly "$GITHUB_SHA"
-          git push --force origin refs/tags/nightly
+          scripts/push_release_ref.sh --force refs/tags/nightly
 
       # One rolling prerelease, never Latest. Deleting first drops last night's files;
       # the tag stays where it was just moved. gh uploads the files before it publishes,

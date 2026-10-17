@@ -1,4 +1,9 @@
 version: 2
+# Minor and patch updates arrive as one pull request per ecosystem per week; a major
+# stays its own pull request. The majors ignored so far with `@dependabot ignore this
+# major version` (huggingface-hub, @sveltejs/kit, @sveltejs/adapter-static) are listed
+# here too, so the rule lives in the repository and not only in a closed PR's comment.
+# A Python bump also needs THIRD_PARTY_NOTICES regenerated: dependabot-notices.yml does it.
 updates:
   - package-ecosystem: uv
     directory: /
@@ -8,27 +13,47 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "huggingface-hub"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directories:
       - /web
       - /docs-site
-    groups:
-      docusaurus:
-        patterns:
-          - "@docusaurus/*"
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      # The Docusaurus packages move together, majors included.
+      docusaurus:
+        patterns:
+          - "@docusaurus/*"
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "@sveltejs/kit"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@sveltejs/adapter-static"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
   - package-ecosystem: docker
     directory: /docker
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      docker-minor-patch:
+        update-types: [minor, patch]
     # The app's dependencies don't support a newer Python yet; 3.11.x patches still come.
     ignore:
       - dependency-name: "python"

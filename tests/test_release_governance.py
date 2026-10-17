@@ -116,7 +116,7 @@ def test_dry_run_uses_boolean_guards_for_publication():
             assert "inputs.dry_run == 'true'" not in condition
     release_steps = workflow["jobs"]["release"]["steps"]
     assert "!inputs.dry_run" in workflow["jobs"]["release"]["if"]
-    assert any("git push" in step.get("run", "") for step in release_steps)
+    assert any("push_release_ref.sh" in step.get("run", "") for step in release_steps)
     for name in ("pypi-publish", "pypi-publish-music", "docker-build", "deploy-docs"):
         assert "!inputs.dry_run" in workflow["jobs"][name]["if"]
 

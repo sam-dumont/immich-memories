@@ -1,0 +1,133 @@
+name: Dependabot notices
+
+# Dependabot edits uv.lock but not THIRD_PARTY_NOTICES, so every Python bump failed
+# `make notices-check`. This regenerates the file with `make notices` and pushes it to
+# the Dependabot branch.
+#
+# Why `pull_request` and two jobs, not `pull_request_target`:
+# - `pull_request_target` runs with a write token and the repository's secrets. Checking
+#   out the PR and installing its lock there would hand both to whatever code the new
+#   dependency versions run at install time.
+# - A Dependabot-triggered `pull_request` run gets no Actions secrets and a read-only
+#   token unless `permissions:` raises it, and only for that run.
+# - `regenerate` installs the PR's dependencies and runs `make notices` with a read-only
+#   token and no stored credentials. It hands over one text file as an artifact.
+# - `push` never runs PR code: it checks out the branch, copies that one file in, and
+#   commits it. A tampered file can only change THIRD_PARTY_NOTICES, which the PR diff shows.
+#
+# A push made with GITHUB_TOKEN starts no workflow run of its own, except `pull_request`
+# runs, which wait for someone with write access to click "Approve workflows to run" on
+# the PR. That click starts CI on the new commit. Without it the required checks wait.
+#
+# Dependabot stops rebasing a PR once someone else's commit is on it; comment
+# `@dependabot recreate` to get a fresh one, and this workflow runs again.
+
+on:
+  pull_request:
+    paths:
+      - uv.lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependabot-notices-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  regenerate:
+    name: Regenerate THIRD_PARTY_NOTICES
+    if: >-
+      github.repository_id == '1174219883' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.notices.outputs.changed }}
+    steps:
+      - name: Audit runner egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      # The branch head, not the merge commit: the file goes back onto this branch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      # The same install as the CI job that runs `make notices-check`.
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          install: dev-ci
+
+      - name: Regenerate
+        id: notices
+        run: |
+          make notices
+          if git diff --quiet -- THIRD_PARTY_NOTICES; then
+            echo "THIRD_PARTY_NOTICES already matches uv.lock"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git --no-pager diff --stat -- THIRD_PARTY_NOTICES
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Hand over the file
+        if: steps.notices.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: third-party-notices
+          path: THIRD_PARTY_NOTICES
+          retention-days: 1
+
+  push:
+    name: Push THIRD_PARTY_NOTICES to the branch
+    needs: regenerate
+    if: >-
+      github.repository_id == '1174219883' &&
+      needs.regenerate.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Audit runner egress
+        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Download the regenerated file
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: third-party-notices
+          path: ${{ runner.temp }}/notices
+
+      # A branch that moved since `regenerate` read it gets its own run; this one stops.
+      - name: Commit and push
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          REGENERATED_FROM: ${{ github.event.pull_request.head.sha }}
+          NOTICES: ${{ runner.temp }}/notices/THIRD_PARTY_NOTICES
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$REGENERATED_FROM" ]; then
+            echo "The branch moved past $REGENERATED_FROM; its newer run regenerates the file."
+            exit 0
+          fi
+          cp "$NOTICES" THIRD_PARTY_NOTICES
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add THIRD_PARTY_NOTICES
+          git commit -m "build(deps): regenerate THIRD_PARTY_NOTICES for the new lock"
+          git push origin "HEAD:refs/heads/$BRANCH"
