@@ -10,7 +10,7 @@ import click
 
 from immich_memories.analysis.preparation.detectors import DETECTOR_SNAPSHOTS
 from immich_memories.model_acquisition import acquisition_plan
-from immich_memories.music_library import install_music_v1
+from immich_memories.music_library import install_music_v2
 from immich_memories.pinned_models import fetch_pinned_model
 from immich_memories.security import sanitize_error_message
 
@@ -79,7 +79,7 @@ def _fetch_pinned(
     limit = {} if max_bytes is None else {"max_bytes": max_bytes}
     try:
         if unpack:
-            outcome = install_music_v1(destination, url=url, sha256=sha256, force=force, **limit)
+            outcome = install_music_v2(destination, url=url, sha256=sha256, force=force, **limit)
         else:
             outcome = fetch_pinned_model(
                 url=url, destination=destination, sha256=sha256, force=force, **limit

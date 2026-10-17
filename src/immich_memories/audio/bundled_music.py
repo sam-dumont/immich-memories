@@ -1,6 +1,6 @@
 """Bundled royalty-free music, used when no generation backend is available.
 
-The music-v1 library (``models fetch``, built into the Docker image) plays when it
+The music-v2 library (``models fetch``, built into the Docker image) plays when it
 is installed. Otherwise the older tracks of the separate ``immich-memories-music``
 distribution (the ``music`` extra) do, so a plain install stays small and the
 Docker image has music without a GPU or a music server.
@@ -31,25 +31,25 @@ _MOOD_FOLDERS = {
 
 
 def bundled_library() -> Path | None:
-    """Directory of bundled tracks: the music-v1 library when installed, else the 0.1.0 package.
+    """Directory of bundled tracks: the music-v2 library when installed, else the 0.1.0 package.
 
     Reads the disk only. A film never downloads music; ``models fetch`` and the
-    image build put music-v1 in place ahead of time.
+    image build put music-v2 in place ahead of time.
     """
-    from immich_memories.music_library import installed_music_v1
+    from immich_memories.music_library import installed_music_v2
 
-    installed = installed_music_v1()
+    installed = installed_music_v2()
     if installed is not None:
         return installed
     try:
         from immich_memories_music import tracks_dir
     except ImportError:
-        logger.info("music-v1 is not installed and the music package is absent; no bundled music")
+        logger.info("music-v2 is not installed and the music package is absent; no bundled music")
         return None
     directory = tracks_dir()
     if not directory.is_dir():
         return None
-    logger.info("music-v1 is not installed; using the 0.1.0 tracks (run `models fetch`)")
+    logger.info("music-v2 is not installed; using the 0.1.0 tracks (run `models fetch`)")
     return directory
 
 
