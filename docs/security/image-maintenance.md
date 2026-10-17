@@ -33,7 +33,7 @@ The CPU and CUDA files at `docker/demucs-*-requirements.txt` are generated from
 `docker/demucs-requirements.in` by `make demucs-locks`. Update the input and regenerate
 both locks together, then run the native image audits. Torch's CUDA wheels constrain
 specific toolkit and NVIDIA library versions; changing one transitive pin can make the
-image impossible to install. For example, the pinned `torch==2.13.0+cu126` requires
+image impossible to install. For example, the pinned `torch==2.14.1+cu126` requires
 `cuda-toolkit==12.6.3`, whose cuSOLVER dependency is `11.7.1.2`.
 
 Dependabot excludes these generated files from individual updates. The source manifest,

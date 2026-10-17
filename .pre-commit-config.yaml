@@ -12,11 +12,13 @@ default_install_hook_types: [pre-commit, commit-msg]
 repos:
   # ~0.1s — Formatting + linting (Rust, fast)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.5
+    rev: v0.17.0
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+        # ruff 0.17 also formats Python blocks inside Markdown; docs keep their snippets as written.
+        types_or: [python, pyi, jupyter]
 
   # ~0.1s — Secrets detection
   - repo: https://github.com/gitleaks/gitleaks
