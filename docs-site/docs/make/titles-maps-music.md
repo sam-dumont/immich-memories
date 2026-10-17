@@ -134,7 +134,7 @@ For the same choice on the CLI, add `--no-original-audio` to `generate` or `runs
 immich-memories runs render RUN_ID --no-original-audio --music ~/Music/track.mp3
 ```
 
-Automatic uses a bundled track by default: 21 generated tracks, each about 90 seconds, in five moods (calm, tender, nostalgic, happy, energetic). The Docker image has them built in; on a pip install, `immich-memories models fetch` downloads them once (32 MB, checked against a pinned SHA-256), and a film never downloads music. Without them a film plays the smaller set of 28 shorter tracks that ships with the `music` extra. `models fetch` skips the download when `audio.no_music` is on. A configured [music generator](../better/music.md) can make an original one and enables **Preview a track** so you can listen first. A failed generator falls back to a bundled track and leaves a warning.
+Automatic uses a bundled track by default: 40 generated tracks, each about 90 seconds, in five moods (calm, tender, nostalgic, happy, energetic) and styles from piano and lo-fi to downtempo, neo-soul, post-rock, funk and city pop. The Docker image has them built in; on a pip install, `immich-memories models fetch` downloads them once (61 MB, checked against a pinned SHA-256), and a film never downloads music. Without them a film plays the smaller set of 28 shorter tracks that ships with the `music` extra. `models fetch` skips the download when `audio.no_music` is on. A configured [music generator](../better/music.md) can make an original one and enables **Preview a track** so you can listen first. A failed generator falls back to a bundled track and leaves a warning.
 
 ### Your own music folder
 

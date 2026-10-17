@@ -57,14 +57,14 @@ LAYA_AUDIENCE_ONNX = PinnedModel(
 LAYA_MAX_BYTES = 1024 * 1024 * 1024
 
 # The generated music library: a plain tar of Opus tracks, one folder per mood. Unpacked by
-# `music_library.install_music_v1` (digest check, path-traversal refusal, atomic install).
-MUSIC_V1 = PinnedModel(
-    "the pinned music-v1 library",
-    "https://github.com/sam-dumont/immich-memories/releases/download/music-v1/"
-    "immich-memories-music-v1-a9d849cd.tar",
-    "a9d849cdcf44d0185e36a4538f0e7598372133c1976fa0118d7efb5c6875acbc",
+# `music_library.install_music_v2` (digest check, path-traversal refusal, atomic install).
+MUSIC_V2 = PinnedModel(
+    "the pinned music-v2 library",
+    "https://github.com/sam-dumont/immich-memories/releases/download/music-v2/"
+    "immich-memories-music-v2-c1421041.tar",
+    "c1421041c641b0322827ccab0aea8712e0f297f48aeabd8b2e9ad61b265e002b",
 )
-MUSIC_V1_MAX_BYTES = 64 * 1024 * 1024
+MUSIC_V2_MAX_BYTES = 96 * 1024 * 1024
 
 _CAPTION_BASE = (
     "https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/resolve/"

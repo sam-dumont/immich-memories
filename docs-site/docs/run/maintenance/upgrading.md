@@ -273,10 +273,13 @@ longer rewrites the caption.
 
 ### A bigger bundled music library
 
-The image now ships 21 longer tracks in five moods. On a pip install, run `immich-memories models fetch`
-once to download them (32 MB, SHA-256 pinned, kept under `~/.immich-memories/models/music-v1/`). Until
+The image now ships 40 longer tracks in five moods. On a pip install, run `immich-memories models fetch`
+once to download them (61 MB, SHA-256 pinned, kept under `~/.immich-memories/models/music-v2/`). Until
 then films play the older, shorter tracks from the `music` extra, so nothing breaks. `models fetch`
 skips them when `audio.no_music` is on.
+
+If you fetched the earlier `music-v1` library, the next `models fetch` downloads this one beside it. The old
+`~/.immich-memories/models/music-v1/` folder is no longer read and is safe to delete.
 
 ### Library music loops one track
 
@@ -370,7 +373,7 @@ It is also off when `cache.video_cache_enabled` is false.
 ### The preview cache holds a whole library
 
 `cache.thumbnail_cache_max_size_mb` now defaults to 30 GB (was 10 GB). A year, a lifetime or a
-captioning pass reads a preview of every picture in scope, about 0.32 MB each, so 10 GB evicted
+captioning pass reads a preview of every picture in scope, about 0.61 MB each, so 10 GB evicted
 previews a library over about 30,000 pictures still needed, and the next film downloaded and
 captioned them again. If you set the key yourself, your value still wins. Plan disk as about
 25 GB plus 0.35 GB per 1,000 pictures and videos.

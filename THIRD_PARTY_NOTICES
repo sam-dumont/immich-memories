@@ -158,12 +158,12 @@ same licence; no NOTICE file accompanies the upstream checkpoints.
 Bundled music (packages/immich-memories-music)
 ----------------------------------------------
 
-28 tracks generated locally with ACE-Step 1.5 (acestep-v15-xl-turbo), plus the 21
-tracks of the music-v1 library (a GitHub release asset that `models fetch` and the
+28 tracks generated locally with ACE-Step 1.5 (acestep-v15-xl-turbo), plus the 40
+tracks of the music-v2 library (a GitHub release asset that `models fetch` and the
 Docker build unpack). Nothing is sampled from or trained on third-party recordings;
 the tracks are released under the project's MIT licence. Model, settings, and
 per-track tempo, key and seed are recorded in packages/immich-memories-music/LICENSE-MUSIC
-and in the LICENSE-MUSIC file inside the music-v1 archive.
+and in the LICENSE-MUSIC file inside the music-v2 archive.
 
 ACE-Step (the generator, not shipped)
   License: Apache-2.0
