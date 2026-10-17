@@ -133,15 +133,14 @@ def _take_seed(request: GenerationRequest) -> int | None:
 
 
 def _pinned_key_and_meter(request: GenerationRequest, caption) -> tuple[str, str]:
-    """Key and meter to send ACE-Step: empty, so it picks them, unless takes must agree.
+    """Key and meter to send ACE-Step on every take, single or joined.
 
-    One take sounds best with key and meter left to the model, as ACE-Step's own guides
-    advise and as the approved reference renders did. A film joined from several takes
-    pins both, or each take picks its own and every seam changes key (#2472).
+    Left empty, the key reaches the DiT as the literal "keyscale: N/A" when the planner is
+    off (our default), so "leave it to the model" does not hold: in listening tests a pinned
+    key and 4/4 beat an empty pair in every style. Joined takes also need them to agree, or
+    each take picks its own and every seam changes key (#2472).
     """
-    if request.joined_take:
-        return caption.key_scale, caption.time_signature
-    return "", ""
+    return caption.key_scale, caption.time_signature
 
 
 def _planner_switches(use_lm: bool) -> dict[str, bool]:
@@ -433,8 +432,7 @@ class ACEStepBackend(MusicGenerator):
             }
             task_payload |= _planner_switches(self.config.use_lm)
             key_scale, time_signature = _pinned_key_and_meter(request, caption_result)
-            if key_scale:
-                task_payload |= {"keyscale": key_scale, "timesignature": time_signature}
+            task_payload |= {"keyscale": key_scale, "timesignature": time_signature}
             if (seed := _take_seed(request)) is not None:
                 task_payload |= {"use_random_seed": False, "seed": seed}
 

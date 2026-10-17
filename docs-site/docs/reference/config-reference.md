@@ -457,7 +457,7 @@ like the titles do; without a home base they read the northern one.
 Generated music is planned from the assembled film's length. A film up to 30 seconds gets one
 ACE-Step take. A longer one gets up to 3 takes of at most 30 seconds that share one caption, style, tempo and key, cut on bar lines and
 joined with a 0.3 s crossfade, then repeated if the film is longer still. No setting chooses the
-style: the app picks acoustic folk, electronic or solo piano. Two takes never play over
+style: the app picks acoustic folk, electronic, solo piano or lo-fi hip hop. Two takes never play over
 each other for longer than that crossfade. MusicGen continues its own audio, so it gets the whole
 film in one request, one scene per chapter.
 

@@ -24,7 +24,7 @@ async def _one_take_film(backend, tmp_path) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["lib", "api"])
-async def test_a_one_take_film_leaves_key_and_meter_to_ace_step(
+async def test_a_one_take_film_pins_key_and_meter(
     mode,
     tmp_path,
     ace_boundary,  # noqa: F811 - pytest fixture
@@ -34,8 +34,8 @@ async def test_a_one_take_film_leaves_key_and_meter_to_ace_step(
     await _one_take_film(backend, tmp_path)
 
     assert len(captured) == 1
-    assert not captured[0].get("keyscale")
-    assert not captured[0].get("timesignature")
+    assert captured[0]["keyscale"]
+    assert captured[0]["timesignature"] == "4"
     assert captured[0]["bpm"], "tempo stays pinned: the photo cuts are on its beat"
 
 

@@ -281,7 +281,11 @@ def test_the_rules_mood_reaches_the_generated_caption_with_its_tempo(tmp_path):
 
     scenes = seen["timeline"].build_scenes()
     request = GenerationRequest(
-        prompt=scenes[0]["mood"], duration_seconds=60, scenes=scenes, memory_type="special_day"
+        prompt=scenes[0]["mood"],
+        duration_seconds=60,
+        scenes=scenes,
+        memory_type="special_day",
+        seed=7,  # one style for both captions, so only the mood differs
     )
     lively = _caption_for(request)
     lively_mood = seen["timeline"].clips[0].mood
@@ -291,6 +295,7 @@ def test_the_rules_mood_reaches_the_generated_caption_with_its_tempo(tmp_path):
             duration_seconds=60,
             scenes=[{**scenes[0], "mood": scenes[0]["mood"].replace(lively_mood, "calm")}],
             memory_type="special_day",
+            seed=7,
         )
     )
     assert "serene" not in lively.caption
@@ -301,16 +306,20 @@ def test_the_rules_mood_reaches_the_generated_caption_with_its_tempo(tmp_path):
 @pytest.mark.parametrize("month", [9, 10, 11])
 def test_no_autumn_caption_is_told_to_be_mellow(month):
     from immich_memories.audio.generators.ace_step_backend import _caption_for
-    from immich_memories.audio.generators.ace_step_captions import MOOD_PROFILES
+    from immich_memories.audio.generators.ace_step_captions import MOOD_PROFILES, STYLE_PROFILES
     from immich_memories.audio.generators.base import GenerationRequest
     from immich_memories.audio.music_generator_models import VideoTimeline
+
+    # WHY: lo-fi's instrument list names a "mellow bass"; the rule is about the mood and season
+    # words a caption tells the model to feel, not an instrument.
+    lofi_instruments = STYLE_PROFILES["lofi"].instruments
 
     for mood in MOOD_PROFILES:
         timeline = VideoTimeline.from_clips([(30.0, mood, month)])
         scenes = timeline.build_scenes()
         caption = _caption_for(
             GenerationRequest(prompt=scenes[0]["mood"], duration_seconds=40, scenes=scenes)
-        ).caption
+        ).caption.replace(lofi_instruments, "")
         assert "mellow" not in caption, mood
 
 

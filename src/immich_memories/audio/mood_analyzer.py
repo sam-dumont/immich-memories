@@ -45,6 +45,7 @@ VALID_GENRES = frozenset(
         "piano",
         "guitar",
         "metal",
+        "lofi",
         "upbeat",
         "relaxing",
     }

@@ -359,9 +359,9 @@ captions of kept pictures) and gets back a mood, an energy, a tempo and up to fi
 lists the moods from most to least energetic and keeps calm for still, quiet films. The season only
 colours the caption ("warm, golden" in autumn); the mood sets the tempo.
 
-A generated track is acoustic folk, electronic or solo piano. A reader's genre lands on the
-nearest of the three: jazz on acoustic, orchestral and classical on piano, rock, metal and ambient
-on electronic. The other styles in the caption matrix (jazz trio, indie rock, orchestral, ambient,
+A generated track is acoustic folk, electronic, solo piano or lo-fi hip hop. A reader's genre lands
+on the nearest of the four: lo-fi and chillhop on lo-fi, jazz on acoustic, orchestral and classical
+on piano, rock, metal and ambient on electronic. The other styles in the caption matrix (jazz trio, indie rock, orchestral, ambient,
 metal) are never picked automatically.
 
 A generated soundtrack is one piece. One backend makes all of it, and a film up to 30 seconds

@@ -55,9 +55,6 @@ class GenerationRequest:
     # backend that samples a style draws the same one, and seeds its takes from it
     # (seed + variation_index): related takes rather than unrelated songs (#2472).
     seed: int | None = None
-    # One of several takes joined into one soundtrack: its key and meter must match the
-    # other takes', so the backend pins them instead of leaving them to the model.
-    joined_take: bool = False
 
     @property
     def is_multi_scene(self) -> bool:

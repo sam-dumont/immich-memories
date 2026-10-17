@@ -112,8 +112,8 @@ the substitution.
 
 ## What generation adds to the mix
 
-- **Three styles.** A generated track is acoustic folk, electronic or solo piano, the styles that
-  held up in listening tests. The others in the caption matrix are never picked automatically.
+- **Four styles.** A generated track is acoustic folk, electronic, solo piano or lo-fi hip hop, the
+  styles that held up in listening tests. The others in the caption matrix are never picked automatically.
 
 - **Tempo fits the photos.** In a film with photos, the tempo is nudged so a photo lasts a whole
   number of beats, within the genre's range and 15 % of the mood's tempo. Videos are never
@@ -123,7 +123,8 @@ the substitution.
   Music is never dropped for it.
 - **One film, one piece of music.** One generator makes the whole soundtrack, planned from the assembled film's length, so a
   100 s photo film gets about 100 s of music. Up to
-  30 s that is one take, and ACE-Step picks its key and time signature. Past it, up to 3
+  30 s that is one take. Every take is sent the mood's key and a 4/4 meter, and the tempo as its own
+  field rather than in the caption. Past it, up to 3
   takes of at most 30 s share one caption, style, tempo, key, time signature and seed, and are cut on bar lines and joined with a
   0.3 s crossfade, matched in level, then repeated if the film is longer still. Each take ends a few seconds early, before its outro, and the
   next starts on its first downbeat.

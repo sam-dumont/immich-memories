@@ -115,11 +115,12 @@ class TestCaptionsFollowTheGuides:
 
         assert not ("hi-fi" in caption and "lo-fi" in caption), caption
 
-    def test_bpm_appears_in_the_caption_as_well_as_the_field(self, mood):
-        """The guides say to set BPM in the tags and as the parameter."""
+    def test_bpm_is_a_field_and_stays_out_of_the_caption(self, mood):
+        """ACE-Step's guide: tempo and key are metadata parameters, not caption text."""
         result = build_ace_caption_structured(mood)
 
-        assert f"{result.bpm} bpm" in result.caption.lower(), result.caption
+        assert result.bpm > 0
+        assert "bpm" not in result.caption.lower(), result.caption
 
     def test_caption_names_enough_instruments_to_sound_full(self, mood):
         """Listening sweep: 2-3 instruments reads as thin; 4+ fills the arrangement.
@@ -128,7 +129,7 @@ class TestCaptionsFollowTheGuides:
         settings that was audibly sparse. Adding arrangement language on top of the
         extra instruments tipped it into incoherence, so we widen instruments only.
         """
-        caption = build_ace_caption_structured(mood).caption.lower()
+        caption = build_ace_caption_structured(mood, style="acoustic").caption.lower()
 
         named = {i for i in INSTRUMENTS if i in caption}
 
