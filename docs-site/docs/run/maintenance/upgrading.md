@@ -180,9 +180,11 @@ with its title in ordinary case instead of the title card's capitals, and a summ
 the film with its title as the description and no summary, so the description never mixes two
 languages. Cut again to get the summary back.
 
-A long film can wait a while in Immich's queue before Immich reads it, and that read wipes a
-description written before it. The upload now waits longer for big files (about four minutes for
-a 1 GB film). If the description or tags still didn't stay, the run says so and the delivery
+A long film used to lose its description, and sometimes its tags, a few seconds after upload.
+Immich reads the whole file again after every tag or description write, and a 10-minute film takes
+long enough that an older read landed after the label and put the old values back. The upload now
+waits for Immich to finish each read, longer for bigger files (about half a minute per write for a
+1 GB film). If the description or tags still didn't stay, the run says so and the delivery
 stays pending and the local film is kept. Uploading again (the automatic retry does it for
 automatic films) sends the same file, which Immich recognises, and writes the label once more.
 

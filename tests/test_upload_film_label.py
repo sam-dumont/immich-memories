@@ -24,7 +24,12 @@ class FakeImmich:
     """Just enough of Immich: an upload, a metadata read that wipes what came before it."""
 
     def __init__(
-        self, *, reads_after: int = 2, sticks: bool = True, sidecar_after: int = 0
+        self,
+        *,
+        reads_after: int = 2,
+        sticks: bool = True,
+        sidecar_after: int = 0,
+        rereads_after: tuple[int, ...] = (),
     ) -> None:
         self.reads_after = reads_after
         self.sticks = sticks
@@ -39,12 +44,31 @@ class FakeImmich:
         # what the first of them wrote (an exiftool rename error in Immich's log).
         self.sidecar_after = sidecar_after
         self.sidecar: tuple[int, set[str], str] | None = None
+        # Immich 3 reads the whole film again after each write (sidecar write, then a metadata
+        # job whose ffprobe scans every packet). The job reads the sidecar as it starts and
+        # writes what it read when it ends, `rereads_after[n]` reads after the n-th write; it
+        # leaves the asset untouched until then. A cold first read of a long film is the
+        # slowest, so a stale read can land after a later one.
+        self.rereads_after = rereads_after
+        self.rereads: list[tuple[int, set[str], str]] = []
+        self.written = 0
         self.updated = 0
 
     def _wrote(self) -> None:
         self.updated += 1
+        if self.rereads_after:
+            delay = self.rereads_after[min(self.written, len(self.rereads_after) - 1)]
+            self.rereads.append((self.gets + delay, set(self.tags), self.description))
+        self.written += 1
         if self.sidecar_after and self.read and self.sidecar is None:
             self.sidecar = (self.gets + self.sidecar_after, set(self.tags), self.description)
+
+    def _rereads_land(self) -> None:
+        landed = sorted((r for r in self.rereads if self.gets >= r[0]), key=lambda r: r[0])
+        for reread in landed:
+            self.rereads.remove(reread)
+            _, self.tags, self.description = reread[0], set(reread[1]), reread[2]
+            self.updated += 1
 
     def _sidecar_read_back(self) -> None:
         if self.sidecar is not None and self.gets >= self.sidecar[0]:
@@ -63,6 +87,7 @@ class FakeImmich:
                 self.tags.clear()
                 self.description = ""
             self._sidecar_read_back()
+            self._rereads_land()
             return {
                 "updatedAt": f"t{self.updated}",
                 "exifInfo": {
@@ -284,5 +309,27 @@ async def test_a_read_later_still_leaves_the_delivery_pending_and_the_retry_labe
     retry = await _service(immich).upload_memory(film, label=LABEL)
 
     assert retry["delivery_complete"] is True
+    assert immich.description == LABEL.description
+    assert immich.tags == {PROVENANCE, *LABEL.tags}
+
+
+# --- Immich reading a long film again after each write (#2540 again) -------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_long_film_keeps_its_label_when_immich_reads_it_again_slowly(year_film):
+    # WHY: on Immich 3 every tag or description write makes Immich read the film again, and a
+    # 1 GB film takes longer to read than the two quiet seconds we called settled. The first,
+    # cold re-read (after the provenance tag) landed after the label was written and checked,
+    # and put back the asset as it was then: no description, only the provenance tag.
+    immich = FakeImmich(reads_after=1, rereads_after=(40, 6))
+
+    result = await _service(immich).upload_memory(year_film, label=LABEL)
+    # Every re-read Immich queued has landed by now.
+    immich.gets += 1_000
+    await immich("GET", "/assets/film")
+
+    assert result["warnings"] == []
+    assert result["delivery_complete"] is True
     assert immich.description == LABEL.description
     assert immich.tags == {PROVENANCE, *LABEL.tags}

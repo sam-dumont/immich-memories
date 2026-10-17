@@ -50,8 +50,13 @@ _READ_WAIT_POLLS_PER_GB = 480
 _READ_WAIT_MAX_POLLS = 1800
 _TAG_ATTEMPTS = 3
 # Reads with the asset unchanged before Immich counts as done rewriting it: each tag or
-# description write makes it write the film's sidecar and read it back.
+# description write makes it write the film's sidecar, then read the whole film again (Immich 3's
+# ffprobe scans every packet) and write back what it read when that read began. The asset stays
+# unchanged while it reads, so the quiet grows with the file: two quiet seconds passed while a
+# 1 GB film was still being read, and the late read took its description and tags back (#2540).
 _SETTLE_POLLS = 4
+_SETTLE_POLLS_PER_GB = 60
+_SETTLE_MAX_POLLS = 240
 # The key right that lets the app write a film's description.
 DESCRIBE = "asset.update"
 
@@ -176,10 +181,24 @@ def _upload_asset_id(data: Any) -> str:
     return asset_id
 
 
-def read_wait_polls(size_bytes: int) -> int:
-    """How many polls to give Immich to read an upload of this size before going on."""
-    extra = int(_READ_WAIT_POLLS_PER_GB * max(size_bytes, 0) / 1_000_000_000)
-    return min(_READ_WAIT_POLLS + extra, _READ_WAIT_MAX_POLLS)
+@dataclass(frozen=True)
+class UploadWaits:
+    """How long to wait on Immich for one upload, in polls: for its first read, and the quiet
+    that counts as done rewriting it after each write. Both grow with the file."""
+
+    read_polls: int = _READ_WAIT_POLLS
+    quiet_polls: int = _SETTLE_POLLS
+
+
+def upload_waits(size_bytes: int) -> UploadWaits:
+    """The waits an upload of this size gets."""
+    gigabytes = max(size_bytes, 0) / 1_000_000_000
+    return UploadWaits(
+        read_polls=min(
+            _READ_WAIT_POLLS + int(_READ_WAIT_POLLS_PER_GB * gigabytes), _READ_WAIT_MAX_POLLS
+        ),
+        quiet_polls=min(_SETTLE_POLLS + int(_SETTLE_POLLS_PER_GB * gigabytes), _SETTLE_MAX_POLLS),
+    )
 
 
 def _upload_media_type(file_path: Path) -> str:
@@ -461,23 +480,24 @@ class AlbumService:
         await self._request("PUT", f"/tags/{tag_id}/assets", json={"ids": [asset_id]})
 
     async def tag_as_generated_once_read(
-        self, asset_id: str, *, read_polls: int = _READ_WAIT_POLLS
+        self, asset_id: str, *, waits: UploadWaits = UploadWaits()
     ) -> bool:
         """Tag a fresh upload as this app's own once Immich has finished reading it.
 
         Tagging sooner loses the tag to Immich's own metadata job, and an untagged
         v3 film is never recognised as ours: it is kept beside its re-render and can
-        come back as source footage. Waits `read_polls` polls for the read (a minute by
-        default; `read_wait_polls` sizes it for a film), then tags and reads the tag back,
-        re-applying it if it did not stick. A tag written before the read is not verified.
+        come back as source footage. Waits for the read (a minute by default; `upload_waits`
+        sizes it for a film), then tags, waits for Immich to finish reading the film again and
+        reads the tag back, re-applying it if it did not stick. A tag written before the read
+        is not verified.
         """
-        if not await self._read_by_immich(asset_id, read_polls):
+        if not await self._read_by_immich(asset_id, waits.read_polls):
             logger.warning("Immich had not read the uploaded film yet; tagging it anyway")
             await self.tag_as_generated(asset_id)
             return False
         for _ in range(_TAG_ATTEMPTS):
             await self.tag_as_generated(asset_id)
-            await self._settled(asset_id)
+            await self._settled(asset_id, waits.quiet_polls)
             if await self._carries_generated_tag(asset_id):
                 return True
         logger.warning("The provenance tag did not stay on the uploaded film")
@@ -490,7 +510,7 @@ class AlbumService:
         *,
         description: bool = True,
         tags: bool = True,
-        read_polls: int = _READ_WAIT_POLLS,
+        waits: UploadWaits = UploadWaits(),
     ) -> list[str]:
         """Give a fresh upload its description and tags once Immich has read it (#2505).
 
@@ -505,7 +525,7 @@ class AlbumService:
         }
         if not any(wanted.values()):
             return []
-        read = await self._read_by_immich(asset_id, read_polls)
+        read = await self._read_by_immich(asset_id, waits.read_polls)
         if not read:
             logger.warning("Immich had not read the uploaded film yet; describing it anyway")
         missing = [name for name, needed in wanted.items() if needed]
@@ -514,12 +534,12 @@ class AlbumService:
             # write, and two rewrites that overlap lose one of them.
             if wanted["tags"]:
                 await self._put_tags(asset_id, label.tags)
-                await self._settled(asset_id)
+                await self._settled(asset_id, waits.quiet_polls)
             if wanted["description"]:
                 await self._request(
                     "PUT", f"/assets/{asset_id}", json={"description": label.description}
                 )
-                await self._settled(asset_id)
+                await self._settled(asset_id, waits.quiet_polls)
             missing = await self._label_not_kept(asset_id, label, wanted)
             if not read:
                 return [name for name, needed in wanted.items() if needed]
@@ -535,17 +555,18 @@ class AlbumService:
             # the rewrites collided (#2505 on a real server: the story tag was lost).
             await self._request("PUT", "/tags/assets", json={"tagIds": ids, "assetIds": [asset_id]})
 
-    async def _settled(self, asset_id: str) -> None:
-        """Wait until Immich has stopped rewriting the asset, a minute at most.
+    async def _settled(self, asset_id: str, quiet_polls: int) -> None:
+        """Wait until Immich has stopped rewriting the asset: `quiet_polls` reads unchanged,
+        within a minute or three quiet windows, whichever is longer.
 
-        A check made sooner passes, then the sidecar read-back that lands after it takes back
-        what was just written.
+        A check made sooner passes, then the read-back that lands after it takes back what
+        was just written.
         """
         last, unchanged = None, 0
-        for _ in range(_READ_WAIT_POLLS):
+        for _ in range(max(_READ_WAIT_POLLS, 3 * quiet_polls)):
             stamp = (await self._request("GET", f"/assets/{asset_id}") or {}).get("updatedAt")
             unchanged = unchanged + 1 if stamp == last else 0
-            if unchanged >= _SETTLE_POLLS:
+            if unchanged >= quiet_polls:
                 return
             last = stamp
             await asyncio.sleep(_POLL_SECONDS)
@@ -628,19 +649,19 @@ class AlbumService:
                 "warnings": ["not uploaded: the key lacks " + ", ".join(missing + label_missing)],
             }
         asset_id = await self.upload_asset(video_path, captured_at=captured_at)
-        read_polls = read_wait_polls(video_path.stat().st_size)
+        waits = upload_waits(video_path.stat().st_size)
         warnings: list[str] = []
         if missing:
             warnings.append("delivery incomplete: the key lacks " + ", ".join(missing))
         allows = capabilities.allows if capabilities else lambda _permission: True
-        await self._tag_delivery(asset_id, allows, warnings, read_polls)
+        await self._tag_delivery(asset_id, allows, warnings, waits)
         # A key that cannot label is reported, never an incomplete delivery: keys made
         # before films had labels lack `asset.update`, and treating that as incomplete
         # would keep every earlier render beside the new one. A label the key may write
         # but that did not stay leaves the delivery pending, so the retry writes it again.
         label_notes: list[str] = []
         if label:
-            await self._label_delivery(asset_id, label, allows, (label_notes, warnings), read_polls)
+            await self._label_delivery(asset_id, label, allows, (label_notes, warnings), waits)
         album_id = await self._album_delivery(asset_id, album_name, allows, warnings)
         complete = not warnings
         warnings.extend(label_notes)
@@ -670,14 +691,14 @@ class AlbumService:
         asset_id: str,
         allows: Callable[[str], bool],
         warnings: list[str],
-        read_polls: int,
+        waits: UploadWaits,
     ) -> None:
         tag_missing = [p for p in ("tag.create", "tag.asset") if not allows(p)]
         if tag_missing:
             warnings.append("uploaded without provenance: the key lacks " + ", ".join(tag_missing))
             return
         try:
-            if not await self.tag_as_generated_once_read(asset_id, read_polls=read_polls):
+            if not await self.tag_as_generated_once_read(asset_id, waits=waits):
                 warnings.append("uploaded without verified provenance: the tag did not stay")
         except Exception as exc:
             warnings.append(f"uploaded without verified provenance: {exc}")
@@ -688,7 +709,7 @@ class AlbumService:
         label: FilmLabel,
         allows: Callable[[str], bool],
         reports: tuple[list[str], list[str]],
-        read_polls: int,
+        waits: UploadWaits,
     ) -> None:
         """Label the film; `reports` are (notes, warnings): a key that cannot label is a
         note, a label that did not stay is a warning that leaves the delivery pending."""
@@ -704,7 +725,7 @@ class AlbumService:
                 label,
                 description=allows(DESCRIBE),
                 tags=not tag_missing,
-                read_polls=read_polls,
+                waits=waits,
             )
         except Exception as exc:
             warnings.append(f"uploaded without a verified description and tags: {exc}")
