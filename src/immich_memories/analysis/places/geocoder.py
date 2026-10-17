@@ -26,6 +26,7 @@ from immich_memories.config.models.network import GEOCODING_HOST
 from immich_memories.db import Store, now_db
 from immich_memories.db.tables import geocoded_places
 from immich_memories.db.upsert import upsert
+from immich_memories.place_names import one_script_name
 from immich_memories.tracking.report_context import private_place_name
 
 if TYPE_CHECKING:
@@ -179,7 +180,7 @@ class PlaceGeocoder:
                 )
             ).scalar_one_or_none()
         if known is not None:
-            return dict(known)
+            return _in_one_script(dict(known), self._language)
         if self._fetch is None:
             return {}
         try:
@@ -205,4 +206,18 @@ class PlaceGeocoder:
                 ],
                 ("cell", "language"),
             )
-        return answer
+        return _in_one_script(answer, self._language)
+
+
+def _in_one_script(address: Address, language: str) -> Address:
+    """Every name in one script, the film's where the name has it (#2637).
+
+    Done on the way out rather than before the store, so an answer cached before
+    this rule reads as cleanly as a fresh one and the store keeps what Nominatim said.
+    A name with nothing left in it is dropped, so the caller keeps Immich's own name.
+    """
+    cleaned = {
+        key: one_script_name(value, language) if isinstance(value, str) else None
+        for key, value in address.items()
+    }
+    return {key: value for key, value in cleaned.items() if value}

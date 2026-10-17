@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+import sqlalchemy as sa
 
 from immich_memories.analysis.places.geocoder import PlaceGeocoder
 
@@ -165,3 +166,34 @@ def test_old_single_language_answers_do_not_mask_translated_names(store):
 
     assert PlaceGeocoder(store, "fr", translated).address(34.74, 32.43) == {"town": "Yeroskipou"}
     assert translated.asked == [(34.74, 32.43)]
+
+
+def test_a_multi_script_name_already_stored_reads_in_one_script(store):
+    """A row cached before #2637 is cleaned on read: no library has to be asked again."""
+    from immich_memories.db import now_db
+    from immich_memories.db.tables import geocoded_places
+
+    stored = {
+        "village": "Ouahat Sidi Brahim واحة سيدي ابراهيم",
+        "suburb": "Medina ⵎⴷⵉⵏⴰ المدينة",
+        "country_code": "ma",
+    }
+    with store.begin() as connection:
+        connection.execute(
+            geocoded_places.insert(),
+            {
+                "cell": "z16-film:31.66,-7.99",
+                "language": "es",
+                "address": stored,
+                "fetched_at": now_db(),
+            },
+        )
+
+    assert PlaceGeocoder(store, "es", _refuse).address(31.66, -7.99) == {
+        "village": "Ouahat Sidi Brahim",
+        "suburb": "Medina",
+        "country_code": "ma",
+    }
+    with store.connect() as connection:
+        kept = connection.execute(sa.select(geocoded_places.c.address)).scalar_one()
+    assert kept == stored  # the store keeps what Nominatim said

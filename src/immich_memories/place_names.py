@@ -13,6 +13,8 @@ module holds the small tables that get there without asking anyone:
   country (Cyprus) need no box, but the ones listed here win over their region.
 - `localise_place_part` gives an English island or region name in the film's
   language, and leaves any name it does not know as it is.
+- `one_script_name` keeps one script of a name OpenStreetMap writes in several
+  ("Medina ⵎⴷⵉⵏⴰ المدينة" -> "Medina" in a Latin-script film).
 
 The bounding boxes are hand-drawn from public coordinates, tight enough that
 the nearest mainland stays outside, and each is also checked against the
@@ -23,6 +25,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections import Counter
 from dataclasses import dataclass
 
 
@@ -157,6 +160,8 @@ _ADMIN_PREFIXES = (
     "municipal unit of ",
     "municipal district of ",
     "région ",
+    # French, from a real Nominatim answer for Marrakesh (#2637): "Arrondissement de Gueliz".
+    "arrondissement de ",
     "provincia di ",
     "provincia de ",
     # German, from a real Nominatim answer for a Greek municipality with no French or
@@ -238,6 +243,74 @@ _AND = {
     "zh-Hans": "和",
     "ko": " 및 ",
 }
+
+
+# The script a film language is written in, by base language. Anything absent is Latin.
+_LANGUAGE_SCRIPTS = {
+    "el": frozenset({"GREEK"}),
+    "ru": frozenset({"CYRILLIC"}),
+    "uk": frozenset({"CYRILLIC"}),
+    "bg": frozenset({"CYRILLIC"}),
+    "sr": frozenset({"CYRILLIC"}),
+    "ar": frozenset({"ARABIC"}),
+    "fa": frozenset({"ARABIC"}),
+    "he": frozenset({"HEBREW"}),
+    "ja": frozenset({"CJK"}),
+    "zh": frozenset({"CJK"}),
+    "ko": frozenset({"HANGUL"}),
+    "th": frozenset({"THAI"}),
+}
+# Kana and Han letters write one Japanese word together; they are one script here.
+_SCRIPT_FAMILIES = {"HIRAGANA": "CJK", "KATAKANA": "CJK", "KATAKANA-HIRAGANA": "CJK"}
+# What joins two scripts in an OSM `name` ("Tanger - طنجة", "Agadir (أكادير)").
+_RUN_EDGES = " \t-\u2013\u2014/,;:|\u00b7()[]"
+
+
+def _script_of_letter(letter: str) -> str:
+    family = unicodedata.name(letter, "").split(" ", 1)[0]
+    return _SCRIPT_FAMILIES.get(family, family)
+
+
+def _script_of_word(word: str) -> str | None:
+    scripts = Counter(_script_of_letter(ch) for ch in word if ch.isalpha())
+    return scripts.most_common(1)[0][0] if scripts else None
+
+
+def _script_runs(name: str) -> list[tuple[str, str]]:
+    """The name cut into runs of consecutive words in one script, in reading order."""
+    runs: list[tuple[str | None, list[str]]] = []
+    for word in name.split():
+        script = _script_of_word(word)
+        if runs and (script is None or runs[-1][0] in (None, script)):
+            # A word with no letters ("-", "2") belongs to the run it sits in.
+            runs[-1] = (runs[-1][0] or script, [*runs[-1][1], word])
+        else:
+            runs.append((script, [word]))
+    return [
+        (script, text)
+        for script, words in runs
+        if script is not None and (text := " ".join(words).strip(_RUN_EDGES))
+    ]
+
+
+def one_script_name(name: str, language: str) -> str | None:
+    """A place name in one script: the film language's own if the name holds it (#2637).
+
+    OpenStreetMap's plain `name` tag, which Nominatim answers with when a place has no
+    name in the asked language, is often written in every local script at once
+    ("Ouahat Sidi Brahim واحة سيدي ابراهيم"; "Medina ⵎⴷⵉⵏⴰ المدينة"). A caption shows one
+    name. The run of words in the film language's script wins ("Medina" in Spanish,
+    "المدينة" in Arabic); with no such run the native name stays native, never
+    translated, but only its first script. A name written in one script is returned
+    untouched; None when nothing in it is a word.
+    """
+    runs = _script_runs(name)
+    if not runs:
+        return None
+    if len({script for script, _ in runs}) == 1:
+        return name.strip()
+    wanted = _LANGUAGE_SCRIPTS.get(language.split("-")[0].casefold(), frozenset({"LATIN"}))
+    return next((text for script, text in runs if script in wanted), runs[0][1])
 
 
 def _is_latin(text: str) -> bool:

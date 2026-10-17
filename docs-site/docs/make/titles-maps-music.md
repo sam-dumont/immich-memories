@@ -93,7 +93,11 @@ script in a French film, not translated or anglicised. A town keeps its name eve
 no translation exists. Administrative words come off: "Limassol District" reads Limassol, "Pärnu linn"
 reads Pärnu. A Latvian, Lithuanian or Finnish municipality name
 comes in the genitive ("Helsingin kaupunki"), so the caption uses the city Immich stored for the
-picture instead ("Helsinki").
+picture instead ("Helsinki"). Some places write their name in several alphabets at once, as
+many Moroccan ones do ("Medina ⵎⴷⵉⵏⴰ المدينة"). The caption keeps one: the part in your film's
+alphabet ("Medina" in a Spanish film), or the first part when none matches. A long place name
+shrinks to fit the frame, portrait included, and only gets cut short with "…" when it still
+doesn't fit at the smaller size.
 
 Near the configured home base, captions can name the district, such as Montmartre in Paris; further
 out, a district needs most of a stay's pictures behind it to keep its name, and excursions keep

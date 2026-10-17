@@ -91,6 +91,21 @@ def shrink_sizes(title_size: int, subtitle_size: int, frame_height: int) -> tupl
     return smaller
 
 
+def shrink_to_width(
+    measure: Callable[[int], float], base_size: int, max_width: int, min_size: int
+) -> int:
+    """The largest size, from `base_size` down in 10% steps, at which `measure` fits `max_width`.
+
+    One line of text that may not wrap (a map pin, a clip's place caption) shrinks
+    instead; `min_size` is the floor, returned even when the text is still too wide
+    there, so the caller decides how to shorten it.
+    """
+    size = base_size
+    while measure(size) > max_width and size > min_size:
+        size = max(min_size, int(size * 0.9))
+    return size
+
+
 MAX_TITLE_LINES = 3
 """Most lines a title may wrap to before its font shrinks instead."""
 

@@ -69,3 +69,54 @@ class TestEscaping:
     def test_a_backslash_is_escaped_before_anything_else(self):
         """Escaping backslash last would double-escape what came before it."""
         assert "\\\\" in _place_filter("a\\b")
+
+
+class TestPlaceFitsTheFrame:
+    """A long place shrinks, then shortens, so it never runs off the frame (#2637)."""
+
+    # Long enough to overflow a portrait frame at the caption size, short enough for landscape.
+    LONG = "Arrondissement de Ménara, Marruecos"
+    # Too long even once shrunk: only an ellipsis keeps it inside a portrait frame.
+    VERY_LONG = "Ouahat Sidi Brahim, Arrondissement de Ménara, Marrakech-Safi, Marruecos"
+
+    @staticmethod
+    def _drawn(text: str, width: int, height: int) -> tuple[str, int]:
+        import re
+
+        from immich_memories.processing.clip_caption import caption_font_path
+
+        (only,) = caption_filters(
+            ClipCaption(place=text), width, height, font_path=caption_font_path()
+        )
+        size = int(re.search(r":fontsize=(\d+)", only).group(1))
+        shown = re.search(r"text='(.*?)'", only).group(1)
+        return shown, size
+
+    @staticmethod
+    def _width(text: str, size: int) -> int:
+        from immich_memories.processing.caption_image import CaptionStyle, text_width
+        from immich_memories.processing.clip_caption import caption_font_path
+
+        return text_width(text, CaptionStyle(caption_font_path(), size, (255, 255, 255), 2, 1))
+
+    def test_a_long_place_shrinks_inside_a_portrait_frame(self):
+        shown, size = self._drawn(self.LONG, 1080, 1920)
+        inset = round(1080 * 0.055)
+
+        assert shown == self.LONG.upper()  # shrunk, not shortened
+        assert size < round(1080 * 0.0444)
+        assert self._width(shown, size) <= 1080 - 2 * inset
+
+    def test_the_same_place_keeps_its_size_in_landscape(self):
+        shown, size = self._drawn(self.LONG, 1920, 1080)
+
+        assert shown == self.LONG.upper()
+        assert size == round(1080 * 0.0444)
+
+    def test_a_place_too_long_to_shrink_is_shortened_last(self):
+        shown, size = self._drawn(self.VERY_LONG, 1080, 1920)
+        inset = round(1080 * 0.055)
+
+        assert shown.endswith("…")
+        assert size == round(round(1080 * 0.0444) * 0.6)
+        assert self._width(shown, size) <= 1080 - 2 * inset
