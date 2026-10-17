@@ -11,6 +11,9 @@ no pick took, then further frames of the chosen moments. Each one is admitted on
 its own shot (`immich_memories.planning.distinct_shots`) and the look-alike check confirms it
 shows something new; nothing unchecked, and no refused variant, ever fills a slot this way.
 When distinct shots run out before the budget does, the film stops and says so in one line.
+
+A person film never takes a second frame of a moment it already shows, and no story of it grows
+past what its weight grants: a sparse life is a short film, not its one dense night shown again.
 """
 
 from __future__ import annotations
@@ -27,7 +30,7 @@ from immich_memories.analysis.selection.picture_admission import PictureAdmissio
 from immich_memories.analysis.selection.places import PlaceShares
 from immich_memories.analysis.selection.standing import WEIGHED_STORY_WEIGHTS, StandingGate
 from immich_memories.analysis.stories.shortlist import DepictedChoice
-from immich_memories.analysis.stories.slots import PartitionedSlots
+from immich_memories.analysis.stories.slots import PartitionedSlots, weight_caps
 from immich_memories.planning.distinct_shots import PICTURES_PER_BEAT, is_new_shot, is_own_beat
 
 
@@ -137,14 +140,16 @@ class DepthFill:
 
     def _story_full(self, s) -> bool:
         """Whether a person film's story already holds its share of the cut: a quarter, half
-        for a dominant one. The film goes short rather than give one day of a person's year
-        the turns the others had no picture for, as an era does in a film about the dates."""
+        for a dominant one, and never more than its weight grants (two for a minor day, one
+        for a glimpse). The film goes short rather than give one day of a person's life the
+        turns the others had no picture for, as an era does in a film about the dates."""
         host = self._host
         if not host.parts.story_shares:
             return False
         held = sum(c["story_episode"] == s["key"] for c in host.carriers)
         share = 2 if s["weight"] == "dominant" else 4
-        return held >= math.ceil((len(host.carriers) + 1) / share)
+        granted = max(weight_caps(host.slots).get(s["weight"], 0), s.get("reserve") or 0)
+        return held >= min(granted, math.ceil((len(host.carriers) + 1) / share))
 
     def _era_of_story(self, s) -> str | None:
         """The era a story's frames lie in, on a film whose eras each take their turn."""
@@ -261,6 +266,10 @@ class DepthFill:
         own look-alike question still calls new against the story it would join."""
         host = self._host
         kept_in_moment = [c for c in host.carriers if c.get("moment") == row.get("moment")]
+        # A person film is the person across their life: a moment it shows has its one shot,
+        # however far apart its frames were taken (#2083 asked it to stop, not deepen repeats).
+        if host.parts.story_shares and kept_in_moment:
+            return False
         if not (
             is_new_shot(row, kept_in_moment)
             or is_own_beat(row, kept_in_moment, self._moment_sequence(s, choice))

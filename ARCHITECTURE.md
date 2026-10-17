@@ -298,7 +298,8 @@ The separate model-planning route can read banked lines or use plain clip facts.
   (`stories/names.py`, `stories/rule_names.py`). Names are in the film's
   language (`story.*` in the film-text catalogues, CLDR dates), with the year when the film
   covers several. In a person film no story deepens past a quarter of the cut, half when
-  dominant (`EditorialIntent.story_shares`, read by the depth fill).
+  dominant, or past its weight's cap, and a moment in the cut gets no second frame
+  (`EditorialIntent.story_shares`, read by the slot allocation and the depth fill).
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
   in context and spaced from the shots already committed (`selection/carriers.py`,
   `facts/carrier_eligibility.py`). A carrier is a shot before it is rendered. A photographed

@@ -169,14 +169,24 @@ def _minor_breadth(plan: _Grants, cap: int) -> None:
         progressed = any(offered)
 
 
-def _deepen(plan: _Grants) -> None:
-    """Leftover slots deepen the weighed stories one moment at a time while they have moments."""
+def _deepen(plan: _Grants, caps: Mapping[str, int] | None = None) -> None:
+    """Leftover slots deepen the weighed stories one moment at a time while they have moments.
+
+    With `caps` (a person film) a story deepens only up to what its weight grants, or the depth
+    a trip reserved: the slots a sparse life cannot fill stay empty and the film goes short,
+    rather than all landing on the one small day that still had moments left.
+    """
     deepen = [s for s in plan.stories if s["weight"] in DEEPENING_WEIGHTS]
     progressed = True
     while plan.remaining > 0 and progressed:
         progressed = False
         for s in deepen:
-            if plan.remaining > 0 and plan.room(s) > 0 and plan.reserved(s):
+            if (
+                plan.remaining > 0
+                and plan.room(s) > 0
+                and plan.reserved(s)
+                and (caps is None or plan.held(s) < max(caps[s["weight"]], s.get("reserve") or 0))
+            ):
                 plan.grant(s)
                 progressed = True
 
@@ -191,6 +201,7 @@ def allocate_slots(
     era_of: Mapping[str, str] | None = None,
     pool_is_subject: bool = False,
     era_share: int | None = None,
+    capped_depth: bool = False,
 ) -> dict[str, int]:
     """Slots per story from its weight, capped by the moments it holds. Stories come in weight
     order. With `era_of` (a story's era, for the stories that lie inside one), every era first
@@ -201,7 +212,8 @@ def allocate_slots(
     (`pool_is_subject`). Stories of one recurring kind name their depth holder in `depth_to`:
     every member keeps one picture, and only the holder deepens, counting the whole kind.
     With `era_share`, no era holds more than that many pictures however its stories weigh: a
-    film about the dates gives each one its turn, not its busiest one the film."""
+    film about the dates gives each one its turn, not its busiest one the film. With
+    `capped_depth` (a person film) the leftover deepening also stops at each weight's cap."""
     counted = dict(already or {})
     plan = _Grants(
         stories, slots, capacity, counted, reserve_slot, era_of=era_of, era_share=era_share
@@ -219,7 +231,7 @@ def allocate_slots(
     plan.take_each("minor", 1)
     _minor_breadth(plan, caps["minor"])
     plan.take_one_per_day("glimpse", caps["glimpse"])
-    _deepen(plan)
+    _deepen(plan, caps if capped_depth else None)
     return plan.granted
 
 
@@ -231,6 +243,7 @@ def allocate_partition_slots(
     limit: int,
     used: Mapping[str | None, int],
     already: Mapping[str, int] | None = None,
+    capped_depth: bool = False,
 ) -> tuple[dict[str, int], dict[str, dict[str | None, int]]]:
     """Reserve physical partition capacity in the existing story priority order."""
     reserved: dict[str | None, int] = dict(used)
@@ -252,7 +265,14 @@ def allocate_partition_slots(
         key: sum(map(len, parts.values())) + (already or {}).get(key, 0)
         for key, parts in choices.items()
     }
-    counts = allocate_slots(stories, slots, capacity, already=already, reserve_slot=reserve)
+    counts = allocate_slots(
+        stories,
+        slots,
+        capacity,
+        already=already,
+        reserve_slot=reserve,
+        capped_depth=capped_depth,
+    )
     return counts, grants
 
 
@@ -275,7 +295,8 @@ class PartitionedSlots:
         story_shares: bool = False,
     ) -> None:
         self._unit_by_asset = unit_by_asset
-        # No story deepens past its share of the cut (a person film); read by the depth fill.
+        # No story deepens past its share of the cut, or past what its weight grants (a person
+        # film): read by the slot allocation and the depth fill.
         self.story_shares = story_shares
         self._partition_of = partition_of
         self.limit = limit
@@ -445,6 +466,7 @@ class PartitionedSlots:
                 era_of=eras,
                 pool_is_subject=self._every_era_speaks,
                 era_share=self._era_share(eras, budget, already, carriers),
+                capped_depth=self.story_shares,
             )
             return counts, {key: {None: count} for key, count in counts.items()}
         used: dict[str | None, int] = {}
@@ -458,4 +480,5 @@ class PartitionedSlots:
             limit=self.limit,
             used=used,
             already=already,
+            capped_depth=self.story_shares,
         )
