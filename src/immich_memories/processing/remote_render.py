@@ -27,6 +27,11 @@ from immich_memories.processing.output_contract import (
     OutputProbe,
     check_output,
 )
+from immich_memories.processing.remote_render_budget import (
+    STALL_SECONDS,
+    StallGuard,
+    render_budget_seconds,
+)
 from immich_memories.processing.remote_render_plan import build_render_request
 
 if TYPE_CHECKING:
@@ -92,7 +97,7 @@ class RemoteRenderClient:
     def render(
         self, params: GenerationParams, output_path: Path, progress: Progress
     ) -> PreparedGeneration:
-        """Send the frozen cut, wait within the configured deadline, then retrieve it.
+        """Send the frozen cut, wait as long as its work needs, then retrieve it.
 
         The film stays staged: music is mixed into it there, and ``publish`` on
         the result decodes it once, or not at all when the worker's decode
@@ -105,7 +110,7 @@ class RemoteRenderClient:
             progress("worker_connect", 0.0, "Checking the render worker")
             self.health()
             request = build_render_request(params)
-            deadline = time.monotonic() + self.settings.timeout_seconds
+            deadline = time.monotonic() + _wait_budget(request, self.settings.timeout_seconds)
             status = self._json("POST", "/jobs", json=request)
             status = self._wait(params, request, status, deadline, progress)
             plan = _encoding_plan(status["encoding_plan"])
@@ -153,6 +158,7 @@ class RemoteRenderClient:
 
     def _wait(self, params, request, status, deadline, progress) -> dict:
         job_id = str(UUID(status["job_id"]))
+        stall = StallGuard(time.monotonic())
         while True:
             if (
                 status["job_id"] != job_id
@@ -160,27 +166,33 @@ class RemoteRenderClient:
                 or status["plan_digest"] != request["timing"]["sha256"]
             ):
                 raise GenerationError("Render worker returned a different cut")
-            message = self._safe_message(str(status.get("message", "")), params)[:500]
-            phase = status.get("phase")
-            phase = (
-                phase
-                if phase in {"download", "extract", "assembly", "check", "done"}
-                else "assembly"
-            )
-            if status["state"] == "queued":
-                progress("worker_queue", 0.0, "Waiting for the render worker")
-            else:
-                progress(
-                    f"worker_{phase}", max(0, min(1, float(status.get("progress", 0)))), message
-                )
+            report = self._report(params, status, progress)
             if status["state"] == "ready":
                 return status
             if status["state"] not in {"queued", "running"}:
                 error = self._safe_message(str(status.get("error") or status["state"]), params)
                 raise GenerationError(f"Render worker failed: {error[:500]}")
+            if stall.stalled(
+                running=status["state"] == "running", progress=report, now=time.monotonic()
+            ):
+                minutes = round(STALL_SECONDS / 60)
+                raise GenerationError(f"Render worker made no progress for {minutes} minutes")
             _check_deadline(deadline)
             time.sleep(min(0.5, max(0, deadline - time.monotonic())))
             status = self._json("GET", f"/jobs/{job_id}")
+
+    def _report(self, params, status: dict, progress: Progress) -> tuple[str, object, str]:
+        """Pass the job's progress on; return what it reported, to tell a stall from a wait."""
+        message = self._safe_message(str(status.get("message", "")), params)[:500]
+        phase = status.get("phase")
+        phase = (
+            phase if phase in {"download", "extract", "assembly", "check", "done"} else "assembly"
+        )
+        if status["state"] == "queued":
+            progress("worker_queue", 0.0, "Waiting for the render worker")
+        else:
+            progress(f"worker_{phase}", max(0, min(1, float(status.get("progress", 0)))), message)
+        return phase, status.get("progress"), message
 
     def _download(
         self, job_id: str, path: Path, deadline: float, progress: Progress
@@ -238,6 +250,13 @@ def _worker_decode(status: dict, probe: OutputProbe, staged: Path) -> OutputProb
     if isinstance(frames, bool) or not isinstance(frames, int) or frames <= 0:
         return None
     return replace(probe, decoded_frames=frames, stamp=FileStamp.of(staged))
+
+
+def _wait_budget(request: dict, configured: float) -> float:
+    """The wait this film's work needs, never less than ``render.timeout_seconds``."""
+    clips = request["plan"]["clips"]
+    content = sum(clip["end"] - clip["start"] for clip in clips)
+    return render_budget_seconds(len(clips), content, floor=configured)
 
 
 def _check_deadline(deadline: float) -> None:

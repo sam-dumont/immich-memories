@@ -91,12 +91,20 @@ def generate_multi_person_title(
 def generate_on_this_day_title(
     start_date: date | None,
     locale: str,
+    end_date: date | None = None,
 ) -> TitleInfo:
-    """Generate title for an On This Day memory."""
+    """Title an On This Day memory by its anniversary ("October 15").
+
+    The film's span is padded by a day either side of the anniversary in every year it
+    searches, so its first day is the day before; the anniversary is read off both ends.
+    """
+    from immich_memories.memory_types.date_builders import on_this_day_anniversary
+
     if start_date is None:
         raise ValueError("Start date required for On This Day selection")
-    forms = month_name_forms(start_date.month, locale)
-    main_title = title_pattern("on_this_day", locale, day=start_date.day, **forms)
+    day = on_this_day_anniversary(start_date, end_date)
+    forms = month_name_forms(day.month, locale)
+    main_title = title_pattern("on_this_day", locale, day=day.day, **forms)
     subtitle = title_pattern("on_this_day_subtitle", locale)
     return TitleInfo(
         main_title=main_title,

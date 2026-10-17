@@ -11,12 +11,12 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
-from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 from immich_memories.analysis.runtime.plan import EditorialSelection
 from immich_memories.api.models import VideoClipInfo
+from immich_memories.processing.dated_values import decode_dated, encode_dated
 from immich_memories.security import write_secret_file
 
 RENDER_INPUTS_FILE = "render-inputs.private.json"
@@ -78,31 +78,6 @@ class CutTitles:
     preset_params: dict[str, Any]
 
 
-def _encode(value: Any) -> Any:
-    # Dates are tagged so they come back as dates: a trip's title counts its days from them.
-    if isinstance(value, datetime):
-        return {"__datetime__": value.isoformat()}
-    if isinstance(value, date):
-        return {"__date__": value.isoformat()}
-    if isinstance(value, Mapping):
-        return {str(k): _encode(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_encode(v) for v in value]
-    return value if value is None or isinstance(value, (str, int, float, bool)) else str(value)
-
-
-def _decode(value: Any) -> Any:
-    if isinstance(value, dict):
-        if set(value) == {"__datetime__"}:
-            return datetime.fromisoformat(value["__datetime__"])
-        if set(value) == {"__date__"}:
-            return date.fromisoformat(value["__date__"])
-        return {k: _decode(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_decode(v) for v in value]
-    return value
-
-
 def write_cut_titles(
     attempt_dir: Path,
     *,
@@ -116,7 +91,7 @@ def write_cut_titles(
         "title": title,
         "subtitle": subtitle,
         "source": getattr(source, "value", source),
-        "preset_params": _encode(dict(preset_params)),
+        "preset_params": encode_dated(dict(preset_params)),
     }
     write_secret_file(Path(attempt_dir) / CUT_TITLES_FILE, json.dumps(record, indent=2))
 
@@ -131,5 +106,5 @@ def read_cut_titles(attempt_dir: Path) -> CutTitles | None:
         title=record.get("title"),
         subtitle=record.get("subtitle"),
         source=record.get("source"),
-        preset_params=_decode(record.get("preset_params") or {}),
+        preset_params=decode_dated(record.get("preset_params") or {}),
     )

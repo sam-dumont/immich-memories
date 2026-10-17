@@ -85,14 +85,16 @@ variables differ by one underscore while meaning opposite things.
 | `PORT` | `8093` | HTTP port |
 | `MAX_JOBS` | `4` | Queued, running and unretrieved jobs combined; maximum 32 |
 | `RETENTION_SECONDS` | `3600` | Terminal job lifetime; 60 to 86400 seconds |
-| `JOB_TIMEOUT_SECONDS` | `3600` | Deadline for queued/running jobs; 30 to 86400 seconds |
+| `JOB_TIMEOUT_SECONDS` | `3600` | Least deadline for queued/running jobs; a longer film gets more; 30 to 86400 seconds |
 
 The app's `render.timeout_seconds` and the worker's `JOB_TIMEOUT_SECONDS` are
-separate deadlines. Both default to one hour. The app's limit includes queue
-time and downloading the result; the worker's running limit includes source
-preparation, titles, encoding and validation. Increase both for a long render,
-with room in the app's limit for queueing and retrieval. Increasing only the
-app's limit does not extend the worker's job deadline. `RETENTION_SECONDS` is
+the least each side gives a job; both default to one hour. A longer film gets
+60 seconds per clip plus 10 seconds per second of film, up to 12 hours, on
+both sides (`processing/remote_render_budget.py`), and the job status reports
+it as `deadline_seconds`. The app's limit includes queue time and downloading
+the result; the worker's includes source preparation, titles, encoding and
+validation. The app also stops waiting when a running job reports no progress
+for 20 minutes. `RETENTION_SECONDS` is
 the lifetime of a terminal result, not a render deadline.
 
 ### What the worker holds

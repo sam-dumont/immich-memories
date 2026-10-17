@@ -177,12 +177,17 @@ class MemoryJobRepository:
             return expired
 
     def overdue(self, deadline_seconds: int) -> tuple[UUID, ...]:
-        """Name every unfinished job past its deadline, measured from submission."""
+        """Name every unfinished job past its deadline, measured from when it started.
+
+        A job admitted with its own `deadline_seconds` is held to that; ``deadline_seconds``
+        here is for one that carries none.
+        """
         with self._lock:
-            cutoff = time.time() - deadline_seconds
+            now = time.time()
             return tuple(
                 key
                 for key, row in self._records.items()
                 if row.status.state in {"queued", "running"}
-                and (row.status.started_at or row.status.submitted_at).timestamp() < cutoff
+                and (row.status.started_at or row.status.submitted_at).timestamp()
+                < now - (row.status.deadline_seconds or deadline_seconds)
             )

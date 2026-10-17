@@ -199,7 +199,7 @@ def _title_multi_person(**kwargs) -> TitleInfo:
 def _title_on_this_day(**kwargs) -> TitleInfo:
     from immich_memories.titles._text_memory_types import generate_on_this_day_title
 
-    return generate_on_this_day_title(kwargs["start_date"], kwargs["locale"])
+    return generate_on_this_day_title(kwargs["start_date"], kwargs["locale"], kwargs["end_date"])
 
 
 _TITLE_DISPATCH: dict[SelectionType, Callable[..., TitleInfo]] = {

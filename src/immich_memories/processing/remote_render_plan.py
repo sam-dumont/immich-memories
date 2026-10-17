@@ -105,12 +105,19 @@ def _calendar_date(value: date | None) -> str | None:
 
 
 def _preset_request(preset_params: dict) -> dict:
-    """Trip bounds are calendar days on the wire, as the top-level bounds are."""
+    """The preset parameters as JSON the worker reads back with their dates intact.
+
+    Trip bounds are calendar days on the wire, as the top-level bounds are. Every other
+    date or instant (a special day, its window and its run) is tagged, so the worker gets
+    the same values the film was cut with instead of a request `json` refuses to encode.
+    """
+    from immich_memories.processing.dated_values import encode_dated
+
     result = preset_params.copy()
     for key in ("trip_start", "trip_end"):
         if isinstance(result.get(key), date):
             result[key] = _calendar_date(result[key])
-    return result
+    return encode_dated(result)
 
 
 def _live_certificate(clip, mode: str, start: float, end: float) -> dict | None:
