@@ -1,8 +1,7 @@
 """run_music_phase tells resolve_music the already-assembled film's length.
 
-#2070: the bundled-music playlist needs the film's duration to decide between
-a single track and a varied, crossfaded sequence. Before this, nothing
-upstream of the bundled branch knew the final runtime at all.
+A library track shorter than the film is looped on its bar lines to the film's
+duration, so the bundled branch needs the final runtime.
 """
 
 from __future__ import annotations

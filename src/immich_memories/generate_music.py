@@ -111,11 +111,11 @@ def resolve_music(
     ``--transition`` overrides the configured default.
 
     ``video_duration`` is the already-assembled film's length. When the caller
-    has it, a bundled fallback that would otherwise loop one short track for
-    the whole film instead plays a varied playlist (#2070), and generated
-    music is planned to its length (#2472). Callers that cannot supply it keep
-    the single-track pick and a length estimated from the clips.
-    ``work_dir`` holds disposable bundled playlist and mastering files until mixing ends.
+    has it, a library track shorter than the film is looped onto itself
+    to that length, and generated music is planned to its length (#2472).
+    Callers that cannot supply it leave the looping to the mixer and get a
+    length estimated from the clips.
+    ``work_dir`` holds disposable looped and mastered library files until mixing ends.
     """
     if no_music:
         return MusicSelection(None)
@@ -213,29 +213,27 @@ def _resolve_bundled_music(
     fps: float = 30,
     from_your_folder: bool = False,
 ) -> MusicSelection:
-    """The library fallback: one track, or a varied playlist for a long film.
+    """The library fallback: one track, looped onto itself when the film outlasts it.
 
     The library is your music folder or the bundle (`_film_music_library`); a warning
-    says which one the track came from, never the folder's path.
+    says which one the track came from, never the folder's path. A film never chains
+    different tracks: one piece plays from the first frame to the last.
     """
+    from immich_memories.audio.bundled_music import bundled_track_for_mood
+
     where = "a track from your music folder" if from_your_folder else "a bundled track"
     cadence = photo_cadence_seconds(assembly_clips, transition_overlap=transition_overlap, fps=fps)
-    # The film's music mood (#2471) picks the bundled family, so a birthday is not
-    # served from the calm folder.
-    bundled_sequence = _bundled_sequence(music_mood, bundled_library, cadence, video_duration)
-    if not bundled_sequence:
+    # The film's music mood (#2471) picks the folder, so a birthday is not served
+    # from the calm one.
+    track = bundled_track_for_mood(music_mood, library=bundled_library, cadence_seconds=cadence)
+    if track is None:
         if warning:
             missing = "no track in your music folder" if from_your_folder else "no bundled track"
             warning = f"{warning}; {missing} available; no music added"
             logger.warning(warning)
         return MusicSelection(None, warning)
-    if len(bundled_sequence) == 1:
-        track = bundled_sequence[0]
-    else:
-        # _bundled_sequence only returns more than one track once video_duration
-        # is known — that is the branch that builds a multi-track sequence at all.
-        assert video_duration is not None  # noqa: S101 - internal invariant, not user input
-        track = _crossfaded_playlist(bundled_sequence, video_duration, run_output_dir)
+    if video_duration is not None:
+        track = _covering(track, video_duration, run_output_dir)
     mastered = _master(track, run_output_dir)
     if warning:
         warning = f"{warning}; used {where} instead"
@@ -243,49 +241,23 @@ def _resolve_bundled_music(
     return MusicSelection(mastered, warning)
 
 
-# A short, fixed crossfade between playlist tracks (#2070): long enough that a
-# seam is never a hard cut, short enough it cannot read as a second song.
-_BUNDLED_PLAYLIST_CROSSFADE_SECONDS = 2.0
+def _covering(track: Path, video_duration: float, run_output_dir: Path) -> Path:
+    """The track, looped onto itself to the film's length when it is shorter.
 
-
-def _bundled_sequence(
-    mood: str | None,
-    bundled_library: Path | None,
-    cadence: float | None,
-    video_duration: float | None,
-) -> list[Path]:
-    """One bundled track, or several when the film is long enough to need more.
-
-    Without a known ``video_duration`` (most existing callers) this keeps the
-    original single-pick behaviour exactly, cadence fit included.
+    A track the loop cannot read is left as it is; the mixer then loops it
+    with a plain crossfade, still the same piece.
     """
-    if video_duration is None:
-        from immich_memories.audio.bundled_music import bundled_track_for_mood
+    from immich_memories.audio.mixer import get_audio_duration
+    from immich_memories.audio.take_join import loop_track
 
-        track = bundled_track_for_mood(mood, library=bundled_library, cadence_seconds=cadence)
-        return [track] if track else []
-
-    from immich_memories.audio.bundled_music import bundled_playlist_for_mood
-
-    return bundled_playlist_for_mood(
-        mood,
-        total_duration=video_duration,
-        library=bundled_library,
-        cadence_seconds=cadence,
-    )
-
-
-def _crossfaded_playlist(sequence: list[Path], video_duration: float, run_output_dir: Path) -> Path:
-    """Fold a varied bundled playlist into one track covering the film."""
-    from immich_memories.audio.mixer import assemble_music
-
+    if get_audio_duration(track) >= video_duration:
+        return track
     run_output_dir.mkdir(parents=True, exist_ok=True)
-    return assemble_music(
-        sequence,
-        video_duration,
-        run_output_dir / "bundled_playlist.wav",
-        crossfade_seconds=_BUNDLED_PLAYLIST_CROSSFADE_SECONDS,
-    )
+    try:
+        return loop_track(track, video_duration, run_output_dir / f"looped_{track.stem}.wav")
+    except (subprocess.SubprocessError, OSError, ValueError):
+        logger.warning("The library track could not be looped onto itself; the mixer crossfades it")
+        return track
 
 
 def _music_evidence(

@@ -16,7 +16,9 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.mark.parametrize("mix_fails", [False, True])
-def test_bundled_playlist_is_mixed_without_leaving_scratch_audio(tmp_path, monkeypatch, mix_fails):
+def test_a_looped_bundled_track_is_mixed_without_leaving_scratch_audio(
+    tmp_path, monkeypatch, mix_fails
+):
     output = tmp_path / "output"
     output.mkdir()
     film = output / "film.mp4"
@@ -54,12 +56,13 @@ def test_bundled_playlist_is_mixed_without_leaving_scratch_audio(tmp_path, monke
         check=True,
     )
     (output / "notes.txt").write_text("keep this file")
-    tracks = [tmp_path / "first.wav", tmp_path / "second.wav"]
-    for path, frequency in zip(tracks, [220, 440], strict=True):
-        _write_tone(path, frequency, amplitude=0.4, duration=4)
+    track = tmp_path / "short.wav"
+    _write_tone(track, 220, amplitude=0.4, duration=3)
 
-    # WHY: the installed bundled library is external; playlist assembly, mastering and mixing run for real.
-    monkeypatch.setattr("immich_memories.generate_music._bundled_sequence", lambda *_args: tracks)
+    # WHY: the installed bundled library is external; looping, mastering and mixing run for real.
+    monkeypatch.setattr(
+        "immich_memories.audio.bundled_music.bundled_track_for_mood", lambda *_a, **_k: track
+    )
     if mix_fails:
 
         def fail_mix(*_args, **_kwargs):
@@ -94,4 +97,4 @@ def test_bundled_playlist_is_mixed_without_leaving_scratch_audio(tmp_path, monke
         )
         assert not audio.stderr
     assert sorted(p.name for p in output.iterdir()) == ["film.mp4", "notes.txt"]
-    assert all(track.exists() for track in tracks)
+    assert track.exists()

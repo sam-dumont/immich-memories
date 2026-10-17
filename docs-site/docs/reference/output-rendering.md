@@ -373,12 +373,14 @@ A generator that fails falls through to a bundled track, and the swap comes back
 video and in any completion notification, so a dead backend never passes for working music.
 
 The bundled tracks come with the `music` extra, which the Docker image and the `all` extra include: 28
-royalty-free tracks in five moods (calm, energetic, happy, nostalgic, tender), about 30 s each, looped with a
-crossfade. They were generated locally with ACE-Step from nothing sampled; tempo, key and seed per track are in
+royalty-free tracks in five moods (calm, energetic, happy, nostalgic, tender), about 30 s each. They were generated locally with ACE-Step from nothing sampled; tempo, key and seed per track are in
 `LICENSE-MUSIC`. A pip install without the extra renders silent unless you pass a file or fill your own music folder. In a film with photos,
-the pick prefers a track whose beat lands within 0.2 beats of the photo cadence. A film longer than one
-track gets a playlist from one mood folder only: the mood's own, or, with no mood, the folder of the
-track that fits the cadence or one picked at random, so the music never jumps from happy to nostalgic mid-film.
+the pick prefers a track whose beat lands within 0.2 beats of the photo cadence. A film plays that one track
+from start to end, never a second one, and a track from your music folder works the same way. When the film is
+longer than the track, the track loops onto itself: each pass starts on its first downbeat, and the pass before
+ends where the next 3 seconds sound most like what follows that downbeat, so the beat and the chords carry
+on across a 0.3 s crossfade. A 30 s track usually loops every 12 to 25 seconds. The music still fades out over
+the film's last 2 seconds.
 
 Ducking is a sidechain compressor keyed on the clips' audio, so speech, laughter and wind all lower the music.
 `--music-volume` (0.0 to 1.0, default 0.5) maps onto -20 dB to 0 dB before ducking. When a generator gave four
