@@ -13,6 +13,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from staticmap import CircleMarker, StaticMap
 
+from immich_memories.titles.text_layout import shrink_to_width
+
 logger = logging.getLogger(__name__)
 
 # Map styling constants
@@ -383,13 +385,12 @@ def fit_pin_label_font(
     pin — so this only shrinks, returning the font and its measured width so
     the caller can also clamp the label's x position inside the frame.
     """
-    size = base_size
-    while True:
-        font = _get_font(size, bold=True)
-        width = int(draw.textbbox((0, 0), text, font=font)[2])
-        if width <= max_width or size <= min_size:
-            return font, width
-        size = max(min_size, int(size * 0.9))
+
+    def width_at(size: int) -> int:
+        return int(draw.textbbox((0, 0), text, font=_get_font(size, bold=True))[2])
+
+    size = shrink_to_width(width_at, base_size, max_width, min_size)
+    return _get_font(size, bold=True), width_at(size)
 
 
 def draw_gradient_band(draw: ImageDraw.ImageDraw, y: int, bh: int, w: int, h: int) -> None:

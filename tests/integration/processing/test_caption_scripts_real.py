@@ -116,3 +116,39 @@ def script_fonts(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.parametrize("place", ["القاهرة، مصر", "東京, 日本"], ids=["arabic", "japanese"])
 def test_an_arabic_or_japanese_place_caption_draws_letters(grey_clip: Path, place: str) -> None:
     _drawn_differs_from_boxes(grey_clip, place)
+
+
+@pytest.fixture(scope="module")
+def portrait_clip(tmp_path_factory) -> Path:
+    out = tmp_path_factory.mktemp("captions") / "portrait.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=gray:size=360x640:rate=10:duration=1",
+         "-c:v", "libx264", "-pix_fmt", "yuv420p", str(out)],
+        check=True,
+        capture_output=True,
+    )  # fmt: skip
+    return out
+
+
+@pytest.mark.parametrize(
+    "place",
+    ["Arrondissement de Ménara, Marruecos", "Περιφερειακή Ενότητα Ηρακλείου, Ελλάδα"],
+    ids=["drawtext", "image"],
+)
+def test_a_long_place_caption_stays_inside_a_portrait_frame(
+    portrait_clip: Path, place: str
+) -> None:
+    """#2637: the caption shrinks to the frame instead of running off its right edge."""
+
+    def frame(caption: ClipCaption | None) -> np.ndarray:
+        decoder = FrameDecoder(
+            portrait_clip, width=360, height=640, fps=10, caption=caption,
+            caption_font=caption_font_path(),
+        )  # fmt: skip
+        return next(iter(decoder)).copy()
+
+    changed = np.argwhere(np.any(frame(None) != frame(ClipCaption(place=place)), axis=-1))
+    inset = round(360 * 0.055)
+
+    assert changed.size, "the caption drew nothing"
+    assert changed[:, 1].max() < 360 - inset // 2, "the place caption ran off the frame"

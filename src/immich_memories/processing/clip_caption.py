@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 from babel import Locale
@@ -22,12 +23,16 @@ from immich_memories.processing.caption_image import (
     text_width,
 )
 from immich_memories.titles.letter_case import display_upper
+from immich_memories.titles.text_layout import shrink_to_width
 
 # Caption metrics as a share of the frame's short side, so the date reads the
 # same on a 4K memory and a 720p one. Captions provide quiet context;
 # title cards carry the large typography.
 _FONT_RATIO = 0.0444
 _MARGIN_RATIO = 0.055
+# How far a long place caption may shrink before it is shortened instead: below
+# this share of the caption size it stops reading as the date's companion line.
+_MIN_PLACE_SCALE = 0.6
 
 # 0xBF is 75% of full range: HLG graphics white. Measured, plain white@0.85
 # draws at 872/1023 in a 10-bit pipe, which glares above the picture's own
@@ -220,43 +225,75 @@ def caption_filters(
     font_size = max(12, round(short_side * _FONT_RATIO))
     inset = round(short_side * _MARGIN_RATIO)
     line = round(font_size * 1.05)
-    colour = _HDR_COLOUR if is_hdr else _SDR_COLOUR
-    common = (
-        f":fontsize={font_size}"
-        f":fontcolor={colour}@0.85"
-        f":borderw={max(1, font_size // 24)}:bordercolor=black@0.45"
-        ":shadowcolor=black@0.35"
-        f":shadowx={max(1, font_size // 32)}:shadowy={max(1, font_size // 32)}"
-    )
     window = ""
     if frame_window is not None:
         start, end = frame_window
         window = f":enable='gte(n,{start})*lt(n,{end})'"
-    drawn = common + window
-    if font_path:
-        drawn = f":fontfile={_filter_path(font_path)}" + drawn
-    style = None
-    if font_path:
-        style = CaptionStyle(
-            font_path,
-            font_size,
-            _HDR_RGB if is_hdr else _SDR_RGB,
-            max(1, font_size // 24),
-            max(1, font_size // 32),
-        )
     filters = []
     place = display_upper(caption.place)
-    if style and needs_image(place, font_path):
+    place_size = font_size
+    if font_path and place and Path(font_path).is_file():
+        place, place_size = _fitted_place(place, font_path, font_size, width - 2 * inset)
+    if font_path and needs_image(place, font_path):
+        style = _style(font_path, place_size, is_hdr)
         filters.append(_overlay("place", place, style, inset, inset, window))
     elif place:
+        drawn = _drawtext_options(place_size, is_hdr, font_path) + window
         filters.append(f"drawtext=text='{_escape(place)}'{drawn}:x={inset}:y={inset}")
     day = display_upper(caption.date)
-    if style and needs_image(day, font_path):
+    if font_path and needs_image(day, font_path):
+        style = _style(font_path, font_size, is_hdr)
         x = width - text_width(day, style) - inset
         filters.append(_overlay("date", day, style, x, height - inset - line, window))
     elif day:
+        drawn = _drawtext_options(font_size, is_hdr, font_path) + window
         filters.append(f"drawtext=text='{_escape(day)}'{drawn}:x=w-tw-{inset}:y=h-{inset}-{line}")
     return filters
+
+
+def _style(font_path: str, font_size: int, is_hdr: bool) -> CaptionStyle:
+    return CaptionStyle(
+        font_path,
+        font_size,
+        _HDR_RGB if is_hdr else _SDR_RGB,
+        max(1, font_size // 24),
+        max(1, font_size // 32),
+    )
+
+
+def _drawtext_options(font_size: int, is_hdr: bool, font_path: str | None) -> str:
+    """drawtext's look at this size: the same colour, outline and shadow `_style` draws."""
+    options = (
+        f":fontsize={font_size}"
+        f":fontcolor={_HDR_COLOUR if is_hdr else _SDR_COLOUR}@0.85"
+        f":borderw={max(1, font_size // 24)}:bordercolor=black@0.45"
+        ":shadowcolor=black@0.35"
+        f":shadowx={max(1, font_size // 32)}:shadowy={max(1, font_size // 32)}"
+    )
+    return f":fontfile={_filter_path(font_path)}{options}" if font_path else options
+
+
+def _fitted_place(place: str, font_path: str, font_size: int, max_width: int) -> tuple[str, int]:
+    """The place caption and the size it fits the frame at: smaller first, shorter last (#2637).
+
+    The same rule as the map pins' labels (`fit_pin_label_font`): a long name shrinks
+    so it never runs off a portrait frame, down to a size that still reads beside the
+    date; only a name too long even there loses its end to an ellipsis.
+    """
+    min_size = max(12, round(font_size * _MIN_PLACE_SCALE))
+    size = shrink_to_width(
+        lambda at: text_width(place, _style(font_path, at, is_hdr=False)),
+        font_size,
+        max_width,
+        min_size,
+    )
+    fitted = _style(font_path, size, is_hdr=False)
+    if text_width(place, fitted) <= max_width:
+        return place, size
+    shortened = place
+    while shortened and text_width(f"{shortened}…", fitted) > max_width:
+        shortened = shortened[:-1].rstrip(" ,")
+    return f"{shortened}…", size
 
 
 def caption_font_path() -> str | None:
