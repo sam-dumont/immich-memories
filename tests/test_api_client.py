@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import threading
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -601,6 +604,46 @@ class TestSyncImmichClient:
         """Playwright's sync API leaves a loop running on the calling thread (#848)."""
         with SyncImmichClient(_TEST_URL, _TEST_KEY, api_version="v2") as client:
             assert client.get_api_version() is ResolvedApiVersion.V2
+
+    def test_several_threads_share_the_client_at_once(self, _mock_config):
+        """Audio spans are read from a thread pool through one client (#2633)."""
+
+        async def slow_range(asset_id: str, start: int, length: int) -> tuple[bytes, int]:
+            await asyncio.sleep(0.02)
+            return f"{asset_id}:{start}".encode(), length
+
+        readers = 4
+        started = threading.Barrier(readers)
+
+        def read(start: int) -> tuple[bytes, int]:
+            started.wait()
+            return client.get_video_playback_range("clip", start, 10)
+
+        with SyncImmichClient(_TEST_URL, _TEST_KEY) as client:
+            client._async_client.get_video_playback_range = slow_range
+            with ThreadPoolExecutor(readers) as pool:
+                spans = list(pool.map(read, range(readers)))
+
+        assert spans == [(f"clip:{start}".encode(), 10) for start in range(readers)]
+
+    def test_closing_waits_for_a_call_running_on_another_thread(self, _mock_config):
+        inside, release = threading.Event(), threading.Event()
+
+        async def held_range(asset_id: str, start: int, length: int) -> tuple[bytes, int]:
+            inside.set()
+            while not release.is_set():
+                await asyncio.sleep(0.005)
+            return b"done", length
+
+        client = SyncImmichClient(_TEST_URL, _TEST_KEY)
+        client._async_client.get_video_playback_range = held_range
+        with ThreadPoolExecutor(2) as pool:
+            reading = pool.submit(client.get_video_playback_range, "clip", 0, 4)
+            assert inside.wait(5)
+            closing = pool.submit(client.close)
+            release.set()
+            assert reading.result(timeout=5) == (b"done", 4)
+            closing.result(timeout=5)
 
 
 _A_YEAR = DateRange(datetime(2024, 1, 1), datetime(2024, 12, 31, 23, 59, 59))
