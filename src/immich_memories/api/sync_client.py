@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import threading
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -39,6 +40,7 @@ class SyncImmichClient:
 
         self._async_client = ImmichClient(*args, **kwargs)
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._loop_lock = threading.Lock()
 
     @property
     def base_url(self) -> str:
@@ -56,11 +58,13 @@ class SyncImmichClient:
         """Drive one coroutine on this wrapper's own loop.
 
         Keeping one loop for the wrapper's whole life lets httpx's AsyncClient
-        reuse TCP connections across calls.
+        reuse TCP connections across calls. A loop runs one caller at a time, so
+        callers on other threads (a pool reading audio spans) wait their turn.
         """
-        if self._loop is None or self._loop.is_closed():
-            self._loop = asyncio.new_event_loop()
-        return self._loop.run_until_complete(coro)
+        with self._loop_lock:
+            if self._loop is None or self._loop.is_closed():
+                self._loop = asyncio.new_event_loop()
+            return self._loop.run_until_complete(coro)
 
     def _run(self, coro):
         """Run an async coroutine synchronously, even under a running loop.
@@ -82,8 +86,9 @@ class SyncImmichClient:
         try:
             self._run(self._async_client.close())
         finally:
-            if self._loop is not None and not self._loop.is_closed():
-                self._loop.close()
+            with self._loop_lock:
+                if self._loop is not None and not self._loop.is_closed():
+                    self._loop.close()
 
     def __enter__(self) -> SyncImmichClient:
         return self
