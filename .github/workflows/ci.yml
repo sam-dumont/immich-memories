@@ -252,7 +252,7 @@ jobs:
           failure-threshold: error
 
       - name: Upload Bandit report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: bandit-report
@@ -316,7 +316,7 @@ jobs:
 
       - name: Upload this shard's coverage data
         if: matrix.coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-data-unit-${{ matrix.shard }}
           path: coverage-data/
@@ -365,7 +365,7 @@ jobs:
         uses: ./.github/actions/install-ffmpeg
       - name: Integration suite (${{ matrix.suite }})
         run: make dev-test-integration test-integration-${{ matrix.suite }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-integration-${{ matrix.suite }}
           path: tests/*-coverage.xml
@@ -581,7 +581,7 @@ jobs:
       - run: make build
       - name: Check package
         run: make build-check
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist-ci
           path: dist/
@@ -650,7 +650,7 @@ jobs:
         run: make test-container CONTAINER_E2E_DATABASE=${{ matrix.database }} CONTAINER_E2E_BUILD=0
       - name: Upload container diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: container-e2e-${{ matrix.database }}
           if-no-files-found: ignore
@@ -757,7 +757,7 @@ jobs:
           IMMICH_MEMORIES_E2E_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres
       - name: Upload launch diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: launch-check-diagnostics-${{ matrix.database }}-${{ matrix.shard }}
           if-no-files-found: ignore
@@ -793,7 +793,7 @@ jobs:
         run: make test-features FEATURE_SHARD=${{ matrix.shard }}/3
       - name: Upload feature diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: feature-diagnostics-${{ matrix.shard }}
           if-no-files-found: ignore
