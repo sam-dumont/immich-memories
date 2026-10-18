@@ -42,23 +42,24 @@ Milestones are named after what they ship:
 
 Work is organised two ways, and they don't overlap:
 
-- **Epics hold the hierarchy.** An epic (label `epic`) is a product area, such as music or the
-  edit. Its sub-issues are features; a feature's sub-issues are its bugs and slices. Epics span
-  releases, so they sit in `Later`, as sub-issues of the `Later` tracking issue.
+- **Epics are GitHub Projects.** Each epic is a project on the maintainer's account, named
+  "Immich Memories: <area>" and linked to this repository. Its README holds the goal, the rulings
+  and what "done" means. Its items are features (issues) and their bugs and slices (sub-issues of
+  the feature). An issue belongs to one epic project; the "Immich Memories roadmap" project shows
+  every open issue across all of them.
 - **Milestones hold the releases.** A feature or bug goes in the milestone it ships in. Each
   milestone has one tracking issue (label `tracking`) that says what the milestone is for and what
-  "done" means, and links its work in a checklist. GitHub gives an issue one parent, and the epic
-  has it, so a tracker links its work instead of parenting it. Opening a milestone means opening
-  its tracking issue too.
+  "done" means, and links its work in a checklist. Opening a milestone means opening its tracking
+  issue too.
 
 An issue whose feasibility is unknown carries `needs-research` and stays in `Later` until the
-research answers it. The GitHub project "Immich Memories roadmap" shows all of it, with a `Size`
-field (XS to XL) for cost; issue #326 points there, so roadmap lists live nowhere else.
+research answers it. Every project has a `Size` field (XS to XL) for cost; issue #326 points to the
+projects, so roadmap lists live nowhere else.
 
 When you file an issue, give it a milestone, one type label (`bug`, `enhancement`, `documentation`,
-`tests`), at least one `area/*` label, and make it a sub-issue of its feature, or of its epic when
-no feature fits. Work the current milestone first. Moving an issue into a release milestone is the
-maintainer's call.
+`tests`), at least one `area/*` label, add it to its epic project and the roadmap project, and make
+it a sub-issue of its feature when one fits. Work the current milestone first. Moving an issue
+into a release milestone is the maintainer's call.
 
 A release candidate is blocked by security problems and by broken or wrong output in flows outside
 experimental features. Free-text requests (`--ask`) carry the `experimental` label and never block.
