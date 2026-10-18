@@ -131,6 +131,9 @@ def crowded_out(
     something their neighbouring days did not, where every day the owner named an occasion wrote
     it in seven in ten or more. A day alone is never thinned, however little stands out: a
     pregnancy test is two pictures of an ordinary day. Nor is a day that stands out from its year.
+
+    A day repeats only the days before it. A birth was thinned because the weeks after it wrote
+    the same baby: the day a crowd starts from is what the crowd repeats, so it stays.
     """
     days = sorted(set(confirmed))
     spared = set(exempt)
@@ -140,7 +143,7 @@ def crowded_out(
         crowd = sum(1 for other in days if other != day and _within(other, day))
         if day in spared or crowd < _CROWD:
             continue
-        if year.local_share(day) < _LOCAL_SHARE:
+        if year.local_share(day, earlier_only=True) < _LOCAL_SHARE:
             thinned.add(day)
     return thinned
 
@@ -164,30 +167,34 @@ class YearWords:
             day: [set(_spelled(text)) for text in texts] for day, texts in said.items()
         }
 
-    def local_words(self, day: date) -> set[str]:
-        """The words a day repeats and at most one of its neighbouring days writes at all."""
+    def local_words(self, day: date, *, earlier_only: bool = False) -> set[str]:
+        """The words a day repeats and at most one of its neighbouring days writes at all.
+
+        With earlier_only, the words a day repeats and no day before it writes.
+        """
         neighbours = [
             set().union(*texts)
             for other, texts in self._written.items()
-            if other != day and _within(other, day)
+            if (other < day if earlier_only else other != day) and _within(other, day)
         ]
         repeated = collections.Counter(itertools.chain.from_iterable(self._written.get(day, [])))
+        shared = 0 if earlier_only else _LOCAL_DAYS
         return {
             word
             for word, count in repeated.items()
-            if count >= _LOCAL_REPEATS and sum(word in seen for seen in neighbours) <= _LOCAL_DAYS
+            if count >= _LOCAL_REPEATS and sum(word in seen for seen in neighbours) <= shared
         }
 
     def names_its_own(self, day: date, text: str) -> bool:
         """Whether a text names one of the day's own unusual words."""
         return bool(self.local_words(day) & set(_spelled(text)))
 
-    def local_share(self, day: date) -> float:
+    def local_share(self, day: date, *, earlier_only: bool = False) -> float:
         """The share of a day's captions that write one of its own unusual words."""
         captions = self._written.get(day, [])
         if not captions:
             return 0.0
-        local = self.local_words(day)
+        local = self.local_words(day, earlier_only=earlier_only)
         return sum(1 for words in captions if words & local) / len(captions)
 
     def moment(

@@ -92,6 +92,21 @@ def test_a_crowd_of_confirmed_days_that_say_what_their_weeks_say_is_thinned():
     assert crowded_out(confirmed, said) == set(confirmed)
 
 
+def test_the_day_a_crowd_starts_from_is_kept():
+    """A birth (10-18): the day the baby arrived was confirmed, then thinned because the weeks
+    after it wrote the same baby. A day only repeats the days before it, never the ones it began."""
+    said = _weeks_of_a_newborn()
+    birth = min(said)
+    for day in sorted(said)[:5]:  # the stay at the maternity ward writes the same as the birth
+        said[day] = said[day] + ["A newborn baby in a hospital bed"] * 6
+    confirmed = sorted(said)[:20]
+
+    thinned = crowded_out(confirmed, said)
+
+    assert birth not in thinned
+    assert thinned == set(confirmed[1:])
+
+
 def test_a_day_in_the_crowd_that_shows_what_its_weeks_do_not_stays():
     said = _weeks_of_a_newborn()
     confirmed = sorted(said)[5:25]
