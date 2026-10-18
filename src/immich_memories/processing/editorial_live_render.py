@@ -154,8 +154,11 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
     hold_ticks = max(tail["duration_ticks"], tail.get("presentation_spacing_ticks", 0))
     overrun = _declared_ticks(tail, entry.end, origin) - (tail["pts"] + tail["duration_ticks"])
     gap = entry.end - tail_end
-    if entry.start >= tail_end or entry.end < tail_start or overrun > hold_ticks:
+    if entry.start >= tail_end or entry.end < tail_start:
         _bind_audio_tail(probes, path, entry, probe, evidence)
+        return
+    if overrun > hold_ticks:
+        _bind_wider_last_frame_hold(probes, path, entry, probe, origin, evidence, tail, gap)
         return
     evidence.update(
         final_packet=tail,
@@ -210,6 +213,35 @@ def _bind_audio_tail(probes, path, entry, probe, evidence) -> None:
     except ProbeError as exc:
         raise _reject(evidence | {"audio_tail_rejection": str(exc)}) from exc
     evidence.update(final_packet=tail, audio_tail_hold=proof, boundary=proof["boundary"])
+
+
+def _bind_wider_last_frame_hold(probes, path, entry, probe, origin, evidence, tail, gap) -> None:
+    """A declared end more than one held frame past the final packet, still in the slot.
+
+    A truncated Live companion publishes a container duration its packets never reach.
+    The decoded audio may still cover the remainder; where it cannot, the declared end is
+    held on the final packet -- the same "the picture stops at the last packet and that
+    frame is held" the one-frame case already uses, only wider, so the slot keeps its
+    declared length and nothing downstream moves.
+    """
+    try:
+        _bind_audio_tail(probes, path, entry, probe, evidence)
+        return
+    except ValueError as exc:
+        if not str(exc).startswith("Editorial Live interval exceeds actual video source"):
+            raise
+    evidence.update(
+        final_packet=tail,
+        source_tail_seconds=gap,
+        declared_end_hold={
+            "selected_end_seconds": entry.end,
+            "final_packet_end_seconds": tail["end_seconds"] - origin,
+            "hold_seconds": gap,
+            "hold_ticks": _declared_ticks(tail, entry.end, origin)
+            - (tail["pts"] + tail["duration_ticks"]),
+        },
+        boundary="container-declared-end-held-on-final-source-frame",
+    )
 
 
 def _hold_last_frame(

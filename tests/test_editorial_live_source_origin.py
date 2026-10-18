@@ -157,13 +157,16 @@ def test_container_over_declaring_a_whole_frame_binds_to_its_final_packet():
     assert evidence["final_packet"] == tail
 
 
-def test_container_over_declaring_more_than_its_final_frame_is_refused():
+def test_container_over_declaring_more_than_its_final_frame_holds_the_last():
+    # 1.966667 s of packets under a 2.033333 s container: the header over-declares by
+    # two frames. The declared end holds on the final packet for the remainder instead
+    # of killing the film; the slot keeps its declared length.
     tail = packet(pts=1160, ticks=20)
     probes = Probes(probe(video=1.966667, container=2.033333, fps=29.0), tail=tail)
-    with pytest.raises(ValueError, match="exceeds actual video source"):
-        renderer._source_timing(
-            probes, Path("companion.mov"), LiveSourceEntry("s", "v", 0.0, 0.0, 2.033)
-        )
+    evidence = renderer._source_timing(
+        probes, Path("companion.mov"), LiveSourceEntry("s", "v", 0.0, 0.0, 2.033)
+    )
+    assert evidence["boundary"] == "container-declared-end-held-on-final-source-frame"
 
 
 def test_container_end_before_the_final_packet_starts_is_refused():
@@ -176,10 +179,30 @@ def test_container_end_before_the_final_packet_starts_is_refused():
 
 
 @pytest.mark.parametrize("container_end", [2.9, 3.0])
-def test_short_reported_sample_does_not_allow_a_tail_beyond_visible_cadence(container_end):
+def test_short_reported_sample_still_holds_a_container_end_past_its_cadence(container_end):
+    # A sample whose reported duration (4 ticks) is shorter than its observed cadence
+    # (20 ticks) still defines the packet end. A container declaring past that end
+    # holds the final packet; the short sample never widens the held interval.
     tail = packet(pts=1700, ticks=4) | {"presentation_spacing_ticks": 20}
     probes = Probes(probe(video=2.84, container=container_end), tail=tail)
-    with pytest.raises(ValueError, match="exceeds actual video source"):
-        renderer._source_timing(
-            probes, Path("short-sample.mov"), LiveSourceEntry("s", "v", 0.0, 0.0, container_end)
-        )
+    evidence = renderer._source_timing(
+        probes, Path("short-sample.mov"), LiveSourceEntry("s", "v", 0.0, 0.0, container_end)
+    )
+    assert evidence["boundary"] == "container-declared-end-held-on-final-source-frame"
+    assert evidence["declared_end_hold"]["hold_seconds"] == pytest.approx(container_end - 1704 / 600)
+
+
+def test_container_declaring_more_than_one_frame_past_its_packets_holds_the_last():
+    # A truncated Live companion whose audio does not reach the declared end either:
+    # the header says 2.986667 s, the packets stop at 2.231667 s (a shortfall far wider
+    # than one frame). The declared end holds on the final packet instead of killing
+    # the whole film; the slot keeps its declared length.
+    source = probe(video=1339 / 600, container=2.986667)
+    source.has_audio = True
+    tail = packet(pts=1314, ticks=25)
+    probes = Probes(source, tail=tail)
+    evidence = renderer._source_timing(
+        probes, Path("truncated.mov"), LiveSourceEntry("s", "v", 0.0, 0.597, 2.986667)
+    )
+    assert evidence["boundary"] == "container-declared-end-held-on-final-source-frame"
+    assert evidence["declared_end_hold"]["hold_seconds"] == pytest.approx(2.986667 - 1339 / 600)
