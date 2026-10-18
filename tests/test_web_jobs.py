@@ -188,3 +188,15 @@ def test_a_live_job_from_before_a_server_restart_can_still_be_cancelled(tmp_path
 
     assert _wait(restarted, job.id).status in {"cancelled", "interrupted"}
     assert runner.get(job.id).status != "running"
+
+
+def test_a_stray_ask_sidecar_beside_the_records_never_blocks_a_job(tmp_path):
+    """#2317: an Ask preparation sidecar (`web-<id>.preparing.json`) once made every list 500."""
+    runner = JobRunner(tmp_path)
+    job = runner.start("render", [sys.executable, "-c", "print('rendered')"])
+    _wait(runner, job.id)
+    (tmp_path / "web-jobs" / f"web-{'a' * 32}.preparing.json").write_text('{"phase": "preparing"}')
+
+    assert [listed.id for listed in runner.jobs()] == [job.id]
+    assert runner.active() is None
+    runner.start("cut", [sys.executable, "-c", "pass"])

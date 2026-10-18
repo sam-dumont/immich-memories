@@ -134,19 +134,27 @@ class JobRunner:
                 )
             return job
 
+    def _record_ids(self) -> list[str]:
+        """Ids of the job records in the folder; any other `*.json` (a sidecar) is not a job."""
+        return [
+            path.stem
+            for path in self._dir.glob("*.json")
+            if re.fullmatch(r"[0-9a-f]{32}", path.stem)
+        ]
+
     def jobs(self) -> list[Job]:
         """Every job this cache remembers, newest first."""
         if not self._dir.is_dir():
             return []
-        found = [self.get(path.stem) for path in self._dir.glob("*.json")]
+        found = [self.get(job_id) for job_id in self._record_ids()]
         return sorted((job for job in found if job), key=lambda job: job.started_at, reverse=True)
 
     def active(self) -> Job | None:
         """The running job, if any: the one a new page should join rather than start another."""
         if not self._dir.is_dir():
             return None
-        for path in sorted(self._dir.glob("*.json"), reverse=True):
-            job = self.get(path.stem)
+        for job_id in sorted(self._record_ids(), reverse=True):
+            job = self.get(job_id)
             if job is not None and job.status == "running":
                 return job
         return None

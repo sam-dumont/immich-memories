@@ -84,12 +84,17 @@ from immich_memories.tracking.run_observations import observed_command, record_c
 
 
 def _ask_progress_file(output: str | None, *, dry_run: bool) -> Path | None:
-    """A sibling of --output: the one path a web job already knows to poll for a warning.
+    """`progress/` beside --output: the one path a web job already knows to poll for a warning.
+
+    A subfolder, so a web job folder's records (`<id>.json`) never share a directory with it.
 
     A dry run films nothing, so there is no `--output` sibling worth writing beside: the
     preview's own warning reaches the page through its JSON response, not this file.
     """
-    return Path(output).with_suffix(".preparing.json") if output and not dry_run else None
+    if not output or dry_run:
+        return None
+    target = Path(output)
+    return target.parent / "progress" / target.with_suffix(".preparing.json").name
 
 
 def _resolved_ask_scope(
@@ -125,6 +130,8 @@ def _resolved_ask_scope(
     finally:
         if progress_file is not None:
             progress_file.unlink(missing_ok=True)
+            with contextlib.suppress(OSError):  # still holds other jobs' files: leave it
+                progress_file.parent.rmdir()
 
 
 def _apply_run_overrides(

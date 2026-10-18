@@ -21,7 +21,8 @@ from dataclasses import dataclass
 
 
 def _fold(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text.lower())
+    # NFKD leaves "ł" whole (it is a letter of its own, not "l" plus a mark): Polish "tłumu".
+    decomposed = unicodedata.normalize("NFKD", text.lower().replace("ł", "l"))
     return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 

@@ -19,7 +19,10 @@ def mark_run(store, config, run_id: str, *, wrong: tuple[str, ...], missing: str
     if record is None:
         raise LookupError(f"Run {run_id} is not a free-text run: nothing to mark")
     pool = record.get("marks_basis", {}).get("pool", [])
-    captions = [p.caption for p in read_library(store, config.editorial, asset_ids=pool).pictures]
+    captions = {
+        p.asset_id: p.caption
+        for p in read_library(store, config.editorial, asset_ids=pool).pictures
+    }
     spans.amend(
         run_id, free_text=marked(record, wrong=wrong, missing=missing, pool_captions=captions)
     )
