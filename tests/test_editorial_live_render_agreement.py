@@ -17,6 +17,7 @@ from immich_memories.config.models.resources import HardwareAccelConfig
 from immich_memories.generate import GenerationParams
 from immich_memories.processing import editorial_live_render as certified
 from immich_memories.processing import live_photo_merger
+from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
 from tests.conftest import make_asset
 
@@ -495,27 +496,55 @@ def test_actual_extraction_uses_certificate_when_optional_segment_map_is_empty(
     assert params.clip_segments == {}
 
 
-@pytest.mark.parametrize("strict", [True, False])
-def test_actual_extraction_missing_source_propagates_only_for_certified_live(
-    source, extraction_config, tmp_path, monkeypatch, strict
+def test_uncertified_burst_whose_source_is_unavailable_plays_its_still(
+    source, extraction_config, tmp_path, monkeypatch
 ):
+    # An uncertified burst whose clip is unavailable, or under the motion floor, plays its
+    # still (#2453). WHY: the Ken Burns render is the boundary; which path is the question.
     clip, _, _ = source
-    if not strict:
-        clip.editorial_live_manifest = None
+    clip.editorial_live_manifest = None
     params = generation_params(clip, extraction_config, tmp_path)
     monkeypatch.setattr(generate_clips, "_download_video_path", lambda *_args: None)
-    if strict:
-        with pytest.raises(ValueError, match="source is unavailable"):
-            generate_clips.extract_clips(params, None, tmp_path)
-    else:
-        # An uncertified burst whose clip is unavailable, or under the motion floor, plays its
-        # still (#2453). WHY: the Ken Burns render is the boundary; which path is the question.
-        photos = []
-        monkeypatch.setattr(
-            generate_clips, "_rendered_photo", lambda _extraction, clip, _d: photos.append(clip)
+    photos = []
+    monkeypatch.setattr(
+        generate_clips, "_rendered_photo", lambda _extraction, clip, _d: photos.append(clip)
+    )
+    assert generate_clips.extract_clips(params, None, tmp_path) == []
+    assert photos == [clip]
+
+
+@pytest.mark.parametrize("still_renders", [True, False])
+def test_certified_live_whose_source_fails_plays_its_still_or_leaves_the_film(
+    source, extraction_config, tmp_path, monkeypatch, still_renders
+):
+    # One source is never a reason to lose the film (#2679). A Live Photo whose certified
+    # motion cannot be prepared holds its still for the same slot; without one it leaves,
+    # and the film is that much shorter.
+    clip, _, _ = source
+    params = generation_params(clip, extraction_config, tmp_path)
+    monkeypatch.setattr(generate_clips, "_download_video_path", lambda *_args: None)
+    holds = []
+
+    def render_still(clip, _params, _output_dir, *, duration_seconds):
+        holds.append(duration_seconds)
+        if not still_renders:
+            return None
+        return AssemblyClip(
+            path=tmp_path / "still.mp4",
+            duration=duration_seconds,
+            asset_id=clip.asset.id,
+            is_photo=True,
         )
-        assert generate_clips.extract_clips(params, None, tmp_path) == []
-        assert photos == [clip]
+
+    monkeypatch.setattr("immich_memories.generate_photos.render_photo_as_clip", render_still)
+    rendered = generate_clips.extract_clips(params, None, tmp_path)
+    assert holds == [1.5]
+    if still_renders:
+        assert [(c.asset_id, c.duration, c.is_photo) for c in rendered] == [("still-a", 1.5, True)]
+        assert params.departed_sources == ()
+    else:
+        assert rendered == []
+        assert params.departed_sources == ("still-a",)
 
 
 def test_actual_prefetch_ignores_stale_local_path_for_certified_companions(source, tmp_path):

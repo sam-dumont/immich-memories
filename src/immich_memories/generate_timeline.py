@@ -98,14 +98,19 @@ def _sample_for_minimum_duration(
     return [clips[index] for index in indices]
 
 
-def _assert_bound_membership(binding: dict, assembly_clips: list[AssemblyClip]) -> None:
-    """Name exactly how a bound selection changed, instead of a bare mismatch."""
+def _assert_bound_membership(
+    binding: dict, assembly_clips: list[AssemblyClip], departed: tuple[str, ...] = ()
+) -> None:
+    """Name exactly how a bound selection changed, instead of a bare mismatch.
+
+    Only a source that preparation saw leave the film may be missing (#2679).
+    """
     from collections import Counter
 
     from immich_memories.processing.editorial_timing import read_editorial_timeline
 
     read_editorial_timeline(binding)
-    expected = binding["source_ids"]
+    expected = [key for key in binding["source_ids"] if key not in departed]
     actual = [clip.asset_id for clip in assembly_clips]
     if actual != expected:
         missing = [key for key in expected if key not in actual]
@@ -119,14 +124,25 @@ def _assert_bound_membership(binding: dict, assembly_clips: list[AssemblyClip]) 
         )
 
 
-def _assert_certified_interval(source, assembly_clips: list[AssemblyClip]) -> None:
+def _plays_certified_motion(
+    source, assembly_clips: list[AssemblyClip], departed: tuple[str, ...]
+) -> bool:
+    """Whether a certified Live source plays its exact certified interval.
+
+    False for one that left the film or plays as its still (#2679): neither has a
+    certified interval left to hold.
+    """
     from immich_memories.processing.editorial_live_render import validate_editorial_live_clip
 
     asset_id = source.asset.id
     validate_editorial_live_clip(source)
     matches = [clip for clip in assembly_clips if clip.asset_id == asset_id]
+    if not matches and asset_id in departed:
+        return False
     if len(matches) != 1:
         raise ValueError("Certified editorial Live source was lost or duplicated before assembly")
+    if matches[0].is_photo:
+        return False
     assert source.editorial_live_manifest is not None
     start, end = source.editorial_live_manifest["selected_interval"]
     rendered = matches[0]
@@ -137,22 +153,28 @@ def _assert_certified_interval(source, assembly_clips: list[AssemblyClip]) -> No
         or rendered.input_seek != 0.0
     ):
         raise ValueError("Certified editorial Live interval changed before assembly")
+    return True
 
 
 def validate_certified_content(
     params: GenerationParams, assembly_clips: list[AssemblyClip]
 ) -> set[str]:
-    """Preserve bound selection membership and every certified Live interval."""
+    """Preserve bound selection membership and every certified Live interval.
+
+    Returns the certified sources that still play their certified interval.
+    """
+    departed = params.departed_sources
     if params.editorial_render_timing is not None:
-        _assert_bound_membership(params.editorial_render_timing, assembly_clips)
+        _assert_bound_membership(params.editorial_render_timing, assembly_clips, departed)
 
     certified = [clip for clip in params.clips if clip.editorial_live_manifest is not None]
-    source_ids = {clip.asset.id for clip in certified}
-    if len(source_ids) != len(certified):
+    if len({clip.asset.id for clip in certified}) != len(certified):
         raise ValueError("Certified editorial Live source is duplicated in the render request")
-    for source in certified:
-        _assert_certified_interval(source, assembly_clips)
-    return source_ids
+    return {
+        source.asset.id
+        for source in certified
+        if _plays_certified_motion(source, assembly_clips, departed)
+    }
 
 
 def apply_final_content_budget(
