@@ -61,9 +61,11 @@ ordinary day an occasion.
 
 A small reader can call a whole run of ordinary days occasions: a newborn's first months came back as
 fifty-five "new beginnings". So a confirmed day with four or more other confirmed days within fifteen days
-of it has to show what its weeks do not: at least half its captions must write a word it repeats and
-that at most one neighbouring day writes at all. A day with nothing around it is never thinned (a
-pregnancy test is two pictures of an ordinary day), nor is a day that stands out from its year.
+of it has to show what the days before it did not: at least half its captions must write a word it
+repeats and that no earlier day within those fifteen days writes. Only earlier days count, so the day a
+run starts from stays: the birth itself writes the same baby as the weeks after it, but nothing before it
+does. A day with nothing around it is never thinned (a pregnancy test is two pictures of an ordinary
+day), nor is a day that stands out from its year.
 
 A picture stored as several files counts once. A shared album keeps the camera's file and a smaller copy
 under the same name at the same instant; discovery reads the full-size one, with a star either file
