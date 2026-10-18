@@ -265,8 +265,9 @@ the first render downloads.
 A config that already sets `model_variant` keeps that model. To stay on 2B everywhere, set
 `model_variant: turbo`.
 
-A film longer than 90 seconds is joined from up to 3 ACE-Step takes, at most 90 s each; a shorter
-film is one take of its own length. One take for a whole film sounded flat and kept tripping the
+A film longer than 82 seconds is joined from up to 3 ACE-Step takes, at most 90 s each; a shorter
+film is one take asked 8 s longer and cut at the last frame. Asked for the film's own length, a
+take ended on its outro and went quiet 3 to 4 seconds before the end. One take for a whole film sounded flat and kept tripping the
 loop check, while 90 s takes hold together (the bundled library is made of them). Every take gets
 the mood's key and a 4/4 meter. In `api` mode the app
 asks the server to skip its planner unless `use_lm: true`, so a server with a planner loaded no

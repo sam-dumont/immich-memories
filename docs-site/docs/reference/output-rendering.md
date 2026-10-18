@@ -370,8 +370,9 @@ neo-soul, city pop) is followed when the mood's list allows that style; any othe
 and the table decides. Acoustic folk, jazz trio, indie rock, orchestral, ambient and metal are
 never picked automatically.
 
-A generated soundtrack is one piece. One backend makes all of it, and a film up to 90 seconds
-is a single ACE-Step take of its own length. A longer film
+A generated soundtrack is one piece. One backend makes all of it, and a film up to 82 seconds
+is a single ACE-Step take, asked 8 seconds longer and cut at the last frame so its outro never
+plays over the ending card. A longer film
 gets up to 3 takes of at most 90 seconds that share one caption, tempo and key, joined
 on a bar line with a 0.3 s crossfade and repeated to the film's length. The music is planned to the film's real length.
 
