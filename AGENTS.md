@@ -38,16 +38,27 @@ Milestones are named after what they ship:
 - `X.Y.Z`: the release itself. A major or minor release starts with a cleanup pass in its
   milestone (security review, dead code, duplication, complexity hot spots, dependency audit,
   docs drift), done before the last candidate is promoted;
-- `Later`: the backlog, organised under epics.
+- `Later`: the backlog.
 
-Each milestone has one tracking issue (label `tracking`) that says what the milestone is for and
-what "done" means, with its work attached as sub-issues. Opening a milestone means opening its
-tracking issue too. The GitHub project "Immich Memories roadmap" shows all of it; issue #326 points
-there, so roadmap lists live nowhere else.
+Work is organised two ways, and they don't overlap:
+
+- **Epics hold the hierarchy.** An epic (label `epic`) is a product area, such as music or the
+  edit. Its sub-issues are features; a feature's sub-issues are its bugs and slices. Epics span
+  releases, so they sit in `Later`, as sub-issues of the `Later` tracking issue.
+- **Milestones hold the releases.** A feature or bug goes in the milestone it ships in. Each
+  milestone has one tracking issue (label `tracking`) that says what the milestone is for and what
+  "done" means, and links its work in a checklist. GitHub gives an issue one parent, and the epic
+  has it, so a tracker links its work instead of parenting it. Opening a milestone means opening
+  its tracking issue too.
+
+An issue whose feasibility is unknown carries `needs-research` and stays in `Later` until the
+research answers it. The GitHub project "Immich Memories roadmap" shows all of it, with a `Size`
+field (XS to XL) for cost; issue #326 points there, so roadmap lists live nowhere else.
 
 When you file an issue, give it a milestone, one type label (`bug`, `enhancement`, `documentation`,
-`tests`), at least one `area/*` label, and attach it to its epic or tracking issue as a sub-issue.
-Work the current milestone first. Moving an issue into a release milestone is the maintainer's call.
+`tests`), at least one `area/*` label, and make it a sub-issue of its feature, or of its epic when
+no feature fits. Work the current milestone first. Moving an issue into a release milestone is the
+maintainer's call.
 
 A release candidate is blocked by security problems and by broken or wrong output in flows outside
 experimental features. Free-text requests (`--ask`) carry the `experimental` label and never block.
