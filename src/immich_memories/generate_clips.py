@@ -260,6 +260,37 @@ def _rendered_photo(extraction: _Extraction, clip, directive: EditorialSelection
     )
 
 
+_PREPARATION_ERRORS = (OSError, subprocess.SubprocessError, RuntimeError, ValueError)
+
+
+def _fallen_source(extraction: _Extraction, clip, name: str, exc: Exception):
+    """What plays when a selected source cannot be prepared: its still, or nothing.
+
+    One source is never a reason to lose the film (#2679). A Live Photo whose certified
+    motion fails is still a photo, so its still holds the same slot. Anything else leaves
+    the film by name, and the film is that much shorter.
+    """
+    from immich_memories.api.models import AssetType
+
+    manifest = clip.editorial_live_manifest
+    if manifest is not None and clip.asset.type == AssetType.IMAGE:
+        from immich_memories.generate_photos import render_photo_as_clip
+
+        start, end = manifest["selected_interval"]
+        try:
+            still = render_photo_as_clip(
+                clip, extraction.params, extraction.output_dir, duration_seconds=end - start
+            )
+        except _PREPARATION_ERRORS as still_exc:
+            logger.warning("%s leaves the film: %s; its still failed too: %s", name, exc, still_exc)
+            return None
+        if still is not None:
+            logger.warning("%s plays as its still: %s", name, exc)
+            return still
+    logger.warning("%s leaves the film: %s", name, exc)
+    return None
+
+
 def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress: float, name: str):
     from immich_memories.processing.clips import extract_clip
 
@@ -444,11 +475,8 @@ def _prepare_in_workers(
                     _prefetch_assets([clip], directives, params.config),
                 ),
             )
-        except (OSError, subprocess.SubprocessError, RuntimeError, ValueError) as exc:
-            if clip.editorial_live_manifest is not None:
-                raise
-            logger.warning("%s leaves the film: %s", name, exc)
-            return None
+        except _PREPARATION_ERRORS as exc:
+            return _fallen_source(extraction, clip, name, exc)
 
     for completed, (index, rendered) in enumerate(
         prepare_sources(
@@ -535,7 +563,7 @@ def _extract_clips_into(
         directives=directives,
     )
     if not any(still):
-        return [clip for _position, clip in prepare(params)]
+        return _note_departed(params, [clip for _position, clip in prepare(params)])
     moving = [i for i, is_still in enumerate(still) if not is_still]
     stills = [i for i, is_still in enumerate(still) if is_still]
     prepared: dict[int, AssemblyClip] = {}
@@ -546,7 +574,16 @@ def _extract_clips_into(
     at_film_rate = replace(params, clips=[params.clips[i] for i in stills], photo_fps=rate)
     for position, clip in prepare(at_film_rate):
         prepared[stills[position]] = clip
-    return [prepared[i] for i in sorted(prepared)]
+    return _note_departed(params, [prepared[i] for i in sorted(prepared)])
+
+
+def _note_departed(params: GenerationParams, prepared: list[AssemblyClip]) -> list[AssemblyClip]:
+    """Record the selected sources that left the film, so its checks expect them gone."""
+    kept = {clip.asset_id for clip in prepared}
+    params.departed_sources = tuple(
+        clip.asset.id for clip in params.clips if clip.asset.id not in kept
+    )
+    return prepared
 
 
 def _prepare_part(
@@ -601,13 +638,9 @@ def _prepare_part(
 
         try:
             rendered = _rendered_clip(extraction, clip, progress, clip_name)
-        except (OSError, subprocess.SubprocessError, RuntimeError, ValueError) as e:
-            if clip.editorial_live_manifest is not None:
-                raise
-            # One source the tools cannot render is not a reason to lose the film.
-            # It leaves by name, and only an empty cut is an error.
-            logger.warning("%s leaves the film — %s", clip_name, e)
-            continue
+        except _PREPARATION_ERRORS as e:
+            # Only an empty cut is an error.
+            rendered = _fallen_source(extraction, clip, clip_name, e)
         if rendered:
             assembly_clips.append((i, rendered))
 

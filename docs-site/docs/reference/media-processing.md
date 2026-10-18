@@ -136,8 +136,10 @@ flowchart TD
    answer is a coin flip, and a still always works where a dead clip does not.
 5. **The subject.** Where the clip's frames were read and the subject is often out of frame (the
    phone already on its way to the pocket), the picture plays as its still.
-6. **The original.** The selected clip must decode with valid frame timing. A damaged clip uses
-   the still. A failed download or missing tool stops the run so it can be fixed and retried.
+6. **The original.** The selected clip must decode with valid frame timing. A damaged or
+   truncated clip, or one that fails to download, uses the still for the same slot. If the still
+   fails too, the picture leaves the film and the film is that much shorter: one picture never
+   costs the whole film.
 
 A clip only ever costs a picture its motion, never its place, favourite or not. A Live Photo that
 plays is offered beside the videos, and a true video always plays whatever its residual.

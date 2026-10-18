@@ -116,14 +116,64 @@ def test_bound_render_rejects_membership_changes_with_a_specific_reason(tmp_path
 
 
 @pytest.mark.parametrize("lost_kind", ["still", "video"])
-def test_actual_extraction_failure_cannot_publish_a_smaller_selected_film(
-    tmp_path, monkeypatch, lost_kind
-):
+def test_a_source_that_cannot_be_prepared_leaves_a_shorter_film(tmp_path, monkeypatch, lost_kind):
+    # One source is never a reason to lose the film (#2679): it leaves, and the film is
+    # one clip shorter.
     params = _bound_params(tmp_path, (lost_kind, "still"))
     prepare_certified_timeline(params)
+    monkeypatch.setattr(
+        "immich_memories.photos.photo_pipeline.render_single_photo",
+        _photo_unless(tmp_path, "source-0"),
+    )
+    monkeypatch.setattr(
+        "immich_memories.generate_photos.detect_photo_resolution", lambda *_: (1920, 1080)
+    )
+    monkeypatch.setattr("immich_memories.generate_clips._download_video_path", lambda *_: None)
+    rendered = extract_clips(params, None, tmp_path)
+    assert [clip.asset_id for clip in rendered] == ["source-1"]
+    assert params.departed_sources == ("source-0",)
+    assert apply_final_content_budget(params, rendered) == rendered
 
+
+@pytest.mark.parametrize("still_renders", [True, False])
+def test_a_certified_live_that_fails_plays_its_still_or_leaves(
+    tmp_path, monkeypatch, still_renders
+):
+    # The production shape of #2679: the companion's header declares more video than its
+    # packets hold, so certification fails. The Live Photo holds its still for the slot;
+    # if the still fails too, the film is one clip shorter.
+    params = _bound_params(tmp_path, ("still", "live-motion"))
+    prepare_certified_timeline(params)
+    monkeypatch.setattr(
+        "immich_memories.photos.photo_pipeline.render_single_photo",
+        _photo_unless(tmp_path, None if still_renders else "source-1"),
+    )
+    monkeypatch.setattr(
+        "immich_memories.generate_photos.detect_photo_resolution", lambda *_: (1920, 1080)
+    )
+
+    def fails_certification(*_args):
+        raise ValueError("Editorial Live interval exceeds actual video source: {}")
+
+    monkeypatch.setattr("immich_memories.generate_clips._download_video_path", fails_certification)
+    rendered = extract_clips(params, None, tmp_path)
+    if still_renders:
+        assert [(clip.asset_id, clip.is_photo) for clip in rendered] == [
+            ("source-0", True),
+            ("source-1", True),
+        ]
+        assert rendered[1].duration == 3.5
+        assert params.departed_sources == ()
+    else:
+        assert [clip.asset_id for clip in rendered] == ["source-0"]
+        assert params.departed_sources == ("source-1",)
+    assert validate_certified_content(params, rendered) == set()
+    assert apply_final_content_budget(params, rendered) == rendered
+
+
+def _photo_unless(tmp_path, failing_id):
     def render(**kwargs):
-        if kwargs["asset"].id == "source-0":
+        if kwargs["asset"].id == failing_id:
             return None
         return AssemblyClip(
             path=tmp_path / "rendered.mp4",
@@ -132,15 +182,7 @@ def test_actual_extraction_failure_cannot_publish_a_smaller_selected_film(
             is_photo=True,
         )
 
-    monkeypatch.setattr("immich_memories.photos.photo_pipeline.render_single_photo", render)
-    monkeypatch.setattr(
-        "immich_memories.generate_photos.detect_photo_resolution", lambda *_: (1920, 1080)
-    )
-    monkeypatch.setattr("immich_memories.generate_clips._download_video_path", lambda *_: None)
-    rendered = extract_clips(params, None, tmp_path)
-    assert [clip.asset_id for clip in rendered] == ["source-1"]
-    with pytest.raises(ValueError, match="missing=\\['source-0'\\]"):
-        apply_final_content_budget(params, rendered)
+    return render
 
 
 def test_standalone_unbound_generation_keeps_its_partial_source_behavior(tmp_path):

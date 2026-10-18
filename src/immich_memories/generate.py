@@ -128,6 +128,8 @@ class GenerationParams:
     target_duration_seconds: float | None = None
     timeline_plan: TimelinePlan | None = None
     editorial_render_timing: dict | None = None
+    # Selected sources preparation could not render, which left the film (#2679).
+    departed_sources: tuple[str, ...] = ()
     editorial_duration_realization: dict | None = None
     # The attempt the cut was selected from, so the run id can find its plan and trace.
     editorial_attempt_dir: Path | None = None
