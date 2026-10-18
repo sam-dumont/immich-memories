@@ -111,7 +111,8 @@ class TestMusicLengthIsTheFilmLength:
             )
 
         assert len(gen.requests) == 1, "a 100 s film never takes the block path"
-        assert gen.requests[0].duration_seconds == pytest.approx(100, abs=2)
+        # Asked past the film's end, so its outro and silence fall after the last frame.
+        assert gen.requests[0].duration_seconds == pytest.approx(108, abs=2)
         assert result.versions[0].duration == pytest.approx(100.0, abs=1.5)
 
     def test_auto_generation_plans_from_the_assembled_film(

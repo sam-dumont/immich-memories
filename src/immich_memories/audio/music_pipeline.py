@@ -35,7 +35,7 @@ from immich_memories.audio.music_generator_models import (
     MusicStems,
     VideoTimeline,
 )
-from immich_memories.audio.take_join import join_takes
+from immich_memories.audio.take_join import join_takes, trim_take
 
 if TYPE_CHECKING:
     from immich_memories.audio.mood_analyzer import VideoMood
@@ -307,8 +307,10 @@ class MusicPipeline:
             if not await _is_ready(gen, progress):
                 continue
             take_seconds = self._take_seconds(gen)
-            if take_seconds is None or total_duration <= take_seconds:
-                made = await _run(gen, request, progress)
+            if take_seconds is None or total_duration + _JOIN_MARGIN_SECONDS <= take_seconds:
+                made = await _run(gen, _past_the_end(request), progress)
+                if made is not None:
+                    made = _cut_to_film(made, total_duration, output_dir, candidate_index)
             else:
                 made = await self._joined_takes(
                     gen, request, total_duration, take_seconds, progress
@@ -421,9 +423,30 @@ class MusicPipeline:
             return None
 
 
-# A take is asked this much longer than its share of the film: the join drops its
-# closing bars (a take ends on an outro) and starts the next take on a downbeat.
+# A take is asked this much longer than its share of the film: it ends on an outro and
+# then silence. The join drops those closing bars and starts the next take on a downbeat;
+# a film's last take runs past the last frame, where the mix cuts and fades it.
 _JOIN_MARGIN_SECONDS = 8
+
+
+def _cut_to_film(
+    made: GenerationResult, total_duration: float, output_dir: Path, candidate_index: int
+) -> GenerationResult:
+    """The take cut at the film's length, its outro left past the last frame."""
+    cut = trim_take(made.audio_path, total_duration, output_dir / f"take_cut_{candidate_index}.wav")
+    return replace(made, audio_path=cut, duration_seconds=total_duration)
+
+
+def _past_the_end(film: GenerationRequest) -> GenerationRequest:
+    """A one-take film's request, asked to run past the film's end.
+
+    Asked for the film's own length, the take went quiet three to four seconds before the
+    last frame and the ending card played over silence.
+    """
+    length = film.duration_seconds + _JOIN_MARGIN_SECONDS
+    return replace(film, duration_seconds=length, duration_limit_seconds=length)
+
+
 # A film's seed leaves room for its takes to step from it without wrapping.
 _SEED_RANGE = 2**30
 

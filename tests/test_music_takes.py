@@ -1,9 +1,11 @@
 """Generated music comes in takes of up to 90 seconds, joined on bar lines.
 
-The music library was generated as 90 s takes and they hold together, so a film up to
-90 s is one take of its own length, and a longer one is joined from takes of at most
-90 s that share one identity (#2617 started with 30 s takes; the library proved longer
-ones fine).
+The music library was generated as 90 s takes and they hold together, so a film that
+fits in one take is one take, and a longer one is joined from takes of at most 90 s
+that share one identity (#2617 started with 30 s takes; the library proved longer ones
+fine). Every take is asked a margin past the music it must cover: a take ends on an
+outro and then silence, and a single take asked for the film's own length went quiet
+three to four seconds before the last frame.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from tests.generated_audio_fixtures import write_audio
 from tests.test_music_one_piece import RecordingGenerator, _fake_join, _photo_film
 
 TAKE_SECONDS = 90
+JOIN_MARGIN = 8
 
 
 def _recording_join(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
@@ -46,7 +49,7 @@ def test_the_default_take_is_ninety_seconds() -> None:
     assert _block_seconds(Config()) == TAKE_SECONDS
 
 
-async def test_a_one_minute_film_is_one_take_of_its_length(
+async def test_a_one_minute_film_is_one_take_that_runs_past_its_end(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     ace = RecordingGenerator("ACE", max_take=ACE_TAKE_CAP_SECONDS)
@@ -59,8 +62,26 @@ async def test_a_one_minute_film_is_one_take_of_its_length(
         )
 
     assert len(ace.requests) == 1
-    assert ace.requests[0].duration_seconds == pytest.approx(60.0, abs=1.5)
+    assert ace.requests[0].duration_seconds == pytest.approx(60.0 + JOIN_MARGIN, abs=1.5)
+    assert ace.requests[0].duration_limit_seconds == ace.requests[0].duration_seconds
     assert joined == []
+
+
+async def test_a_film_whose_margin_would_pass_the_take_length_is_joined(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ace = RecordingGenerator("ACE", max_take=ACE_TAKE_CAP_SECONDS)
+    joined = _recording_join(monkeypatch)
+    pipeline = MusicPipeline(generators=[ace], block_seconds=_block_seconds(Config()))
+
+    async with pipeline:
+        await pipeline.generate_music_for_video(
+            timeline=_photo_film(24, film_seconds=85.0), output_dir=tmp_path, num_versions=1
+        )
+
+    assert len(ace.requests) == 2
+    assert all(r.duration_seconds <= TAKE_SECONDS for r in ace.requests)
+    assert len(joined) == 1
 
 
 async def test_a_150_second_film_is_two_takes_of_at_most_90_seconds_joined(
@@ -158,3 +179,30 @@ async def test_the_owned_mlx_handler_still_makes_every_take_of_a_long_film(
     assert len(runtimes) == 3
     assert len(joined) == 1 and len(joined[0]["takes"]) == 3
     assert result.versions
+
+
+def test_a_take_that_ends_in_silence_is_cut_while_it_still_plays(tmp_path: Path) -> None:
+    """The one-take film's take: 64 s of music and 4 s of silence, cut to a 60 s film."""
+    import wave
+
+    import numpy as np
+
+    from immich_memories.audio.take_join import RATE, trim_take
+
+    rate = 24000
+    music = 0.5 * np.sin(2 * np.pi * 220 * np.arange(64 * rate) / rate)
+    take = np.concatenate([music, np.zeros(4 * rate)])
+    source = tmp_path / "take.wav"
+    with wave.open(str(source), "wb") as audio:
+        audio.setparams((1, 2, rate, 0, "NONE", "not compressed"))
+        audio.writeframes((take * 32767).astype("<i2").tobytes())
+
+    cut = trim_take(source, 60.0, tmp_path / "cut.wav")
+
+    with wave.open(str(cut), "rb") as audio:
+        frames = audio.getnframes()
+        samples = np.frombuffer(audio.readframes(frames), dtype="<i2").reshape(-1, 2)
+    assert frames == 60 * RATE
+    # Sound right up to the closing fade: the take's own silence falls after the cut.
+    before_fade = samples[57 * RATE : 58 * RATE].astype(np.float32) / 32767
+    assert np.sqrt(np.mean(before_fade**2)) > 0.1

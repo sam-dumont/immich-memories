@@ -80,6 +80,18 @@ def join_takes(
     return output_path
 
 
+def trim_take(take_path: Path, target_duration: float, output_path: Path) -> Path:
+    """Write the first ``target_duration`` seconds of one take, with the usual tail fade.
+
+    A one-take film's take is asked to run past the film: it opens as written, and its
+    outro and the silence after it fall beyond the cut.
+    """
+    trimmed = _padded(_decode(take_path), 0, round(target_duration * RATE))
+    _finish(trimmed)
+    _write_wav(trimmed, output_path)
+    return output_path
+
+
 def loop_track(track: Path, target_duration: float, output_path: Path) -> Path:
     """Write ``target_duration`` seconds of one track, looped onto itself.
 
