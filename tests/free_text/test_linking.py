@@ -286,6 +286,8 @@ def test_sans_personne_does_not_cancel_back_to_required(lexicon: Lexicon) -> Non
         "без зрителей",  # ru: without the spectators (genitive plural of "зрители")
         "bez tlumu",  # pl: without the crowd (genitive of "tlum")
         "bez publicznosci",  # pl: without the audience (genitive of "publicznosc")
+        "bez tłumu",  # pl: the same, written with the real ł (#2118): ł has no decomposition
+        "bez publiczności",  # pl: and with ś
     ],
 )
 def test_ru_and_pl_case_forms_of_an_exclusion_noun_are_read(

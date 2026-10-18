@@ -242,11 +242,18 @@ def test_a_measured_whole_cut_estimate_drives_the_bar_over_the_stage(client, tmp
 
 def test_an_unprepared_window_surfaces_its_warning_as_the_cuts_progress(client, tmp_path):
     """#2045: before any attempt exists, a cut's bar shows the preparation warning."""
+    from immich_memories.cli.generate import _ask_progress_file
     from immich_memories.cli.progress_file import write_progress
 
     started = client.post("/api/v1/cuts", json={"ask": "our cat along the years"})
     job_id = started.json()["id"]
-    progress_file = tmp_path / "cache" / "web-jobs" / f"web-{job_id}.preparing.json"
+    # The path the real `generate --ask` child writes for the --output this job was given.
+    deadline = time.monotonic() + 20
+    while not client.recorded.is_file() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    argv = json.loads(client.recorded.read_text())
+    progress_file = _ask_progress_file(argv[argv.index("--output") + 1], dry_run=False)
+    assert progress_file.parent == tmp_path / "cache" / "web-jobs" / "progress"
 
     write_progress(
         progress_file,

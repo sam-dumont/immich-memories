@@ -307,6 +307,75 @@ def test_a_picture_marked_wrong_and_what_is_missing_are_kept_on_the_run_and_chec
     assert [row["stage"] for row in kept["flagged"]] == ["printed text"]
 
 
+def test_a_cut_that_stops_before_rendering_keeps_its_picks_and_a_flagged_pick_shows_its_caption(
+    lexicon: Lexicon, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#2141 and #2142: the cut is the reported run, so its picks and captions must be on it."""
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    from immich_memories.cli import _pipeline_runner, main
+    from immich_memories.config.loader import Config
+    from immich_memories.processing.output_canvas import OutputCanvas
+    from immich_memories.processing.timeline_budget import TimelinePlan
+    from immich_memories.timeperiod import DateRange
+    from tests.conftest import make_clip
+
+    _stored_captions()
+    store = open_store()
+    asked = _asked(lexicon)
+    # WHY: keeping the cut writes a run row of its own; the free-text record is what is under test.
+    monkeypatch.setattr(_pipeline_runner, "_keep_cut_as_run", lambda *_a, **_k: None)
+    with observe_run(store, source="manual", capture_system=False) as tracker:
+        record_run_attempt(tracker.run_id, tmp_path, "", store=store)
+        save_with_run(asked, None, explain(asked), people=_library().people)
+        _pipeline_runner._finish_without_rendering(
+            pipeline_result=SimpleNamespace(
+                selected_clips=[make_clip("ride-0"), make_clip("ride-3")],
+                clip_segments={},
+                stats={},
+            ),
+            timeline_plan=TimelinePlan(
+                target_duration=60.0,
+                content_budget=50.0,
+                title_budget=9.5,
+                title_duration=3.5,
+                ending_duration=4.0,
+                divider_duration=2.0,
+                max_dividers=0,
+                transition_budget=4.0,
+            ),
+            assets=[],
+            photo_assets=[],
+            config=Config(),
+            output_canvas=OutputCanvas(width=1920, height=1080, orientation="landscape"),
+            output_path=tmp_path / "film.mp4",
+            memory_type=None,
+            date_range=DateRange(datetime(2021, 1, 1), datetime(2021, 12, 31, 23, 59, 59)),
+            should_upload=False,
+            album_name=None,
+            music=None,
+            no_music=True,
+            progress=MagicMock(),
+            task=None,
+            title=None,
+            subtitle=None,
+            cut_run={},
+        )
+    run_id = tracker.run_id
+
+    CliRunner().invoke(main, ["report", run_id, "--wrong", "ride-3"])
+    result = CliRunner().invoke(main, ["report", run_id, "--json", "--include-flagged-captions"])
+
+    assert result.exit_code == 0, result.output
+    (row,) = json.loads(result.stdout)["free_text"]["flagged"]
+    assert row["verdict"] == "picked by the engine"
+    assert row["caption"]
+    assert "Thornfield" not in row["caption"]  # the printed word stays redacted
+    plain = CliRunner().invoke(main, ["report", run_id, "--json"])
+    assert "caption" not in json.loads(plain.stdout)["free_text"]["flagged"][0]
+
+
 def test_the_film_rendered_from_a_free_text_cut_reports_its_request_and_picks(
     lexicon: Lexicon,
     tmp_path: Path,

@@ -293,9 +293,10 @@ def _start_cut(
 
     job_id = uuid4().hex
     output = config.cache.cache_path / "web-jobs" / f"web-{job_id}.mp4"
-    # `--ask`'s own progress file: a sibling of --output, so an unprepared window's warning
-    # (count, estimate) reaches the page before any attempt -- and therefore any stage -- exists.
-    progress_file = output.with_suffix(".preparing.json")
+    # `--ask`'s own progress file, in the progress folder beside --output (never among the
+    # job records), so an unprepared window's warning (count, estimate) reaches the page
+    # before any attempt -- and therefore any stage -- exists.
+    progress_file = output.parent / "progress" / output.with_suffix(".preparing.json").name
 
     def found_run(job: Job) -> Job:
         record = read_latest_attempt(_cut_root(config, job.id))

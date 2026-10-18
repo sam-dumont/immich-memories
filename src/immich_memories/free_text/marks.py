@@ -22,41 +22,48 @@ def marked(
     *,
     wrong: Sequence[str] = (),
     missing: str = "",
-    pool_captions: Iterable[str | None] = (),
+    pool_captions: Mapping[str, str | None] | None = None,
 ) -> dict[str, Any]:
     """The run's free-text record with the owner's marks added to those it already holds.
 
-    `record` is what `save_with_run` kept; `pool_captions` are the pool pictures' captions.
+    `record` is what `save_with_run` kept; `pool_captions` maps each pool picture to its caption.
     """
     basis = record.get("marks_basis", {})
     flagged = [*record.get("flagged", [])]
+    captions = pool_captions or {}
     seen = {row["asset_id"] for row in flagged}
     flagged += [
-        _flag(asset_id, record, basis) for asset_id in dict.fromkeys(wrong) if asset_id not in seen
+        _flag(asset_id, record, basis, captions.get(asset_id))
+        for asset_id in dict.fromkeys(wrong)
+        if asset_id not in seen
     ]
     result = {**record, "flagged": flagged}
     if missing:
         result |= {
             "missing": missing,
-            "missing_check": _check(missing, record, basis, pool_captions),
+            "missing_check": _check(missing, record, basis, captions.values()),
         }
     return result
 
 
-def _flag(asset_id: str, record: Mapping[str, Any], basis: Mapping[str, Any]) -> dict[str, str]:
+def _flag(
+    asset_id: str, record: Mapping[str, Any], basis: Mapping[str, Any], caption: str | None
+) -> dict[str, str]:
     if asset_id not in basis.get("pool", ()):
         return {"asset_id": asset_id, "stage": "not from the pool", "verdict": "not in the pool"}
     admitted = basis.get("admitted", {})
     printed = asset_id in basis.get("anchors", ())
     stage = _PRINTED if printed else admitted.get("stage", "pool")
     picked = asset_id in record.get("picks", ())
-    return {
+    row = {
         "asset_id": asset_id,
         "stage": stage,
         "verdict": "picked by the engine" if picked else "in the pool, not picked",
         # The rule that kept it; quoted words make it caption-like, so it shares that opt-in.
         "reason": "OCR read the requested words on it" if printed else admitted.get("reason", ""),
     }
+    # What the picture shows, for the report's caption opt-in (`--include-flagged-captions`).
+    return row | {"caption": caption} if caption else row
 
 
 def _check(

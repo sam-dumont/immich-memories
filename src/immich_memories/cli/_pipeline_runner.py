@@ -120,9 +120,13 @@ def _finish_without_rendering(
         print_cut_ending,
         print_generation_preview,
     )
+    from immich_memories.free_text.trace import save_picks
     from immich_memories.titles.film_title import template_title
 
     selected_clips = pipeline_result.selected_clips
+    # The cut is the run a report reads: without the picks it would say every picture
+    # of the pool was "not picked" (#2141); a later render replaces them with its own.
+    save_picks(clip.asset.id for clip in selected_clips)
     selected_photos = sum(clip.asset.type == AssetType.IMAGE for clip in selected_clips)
     template = template_title(
         config,

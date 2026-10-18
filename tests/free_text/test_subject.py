@@ -265,3 +265,24 @@ def test_picture_quality_does_not_promote_an_adjectives_noun_sense(tmp_path, qua
     assert subject_words(_reading(text, what=(text,)), NOBODY, lexicon).words == ()
     concrete = f"best {quality} otter pictures"
     assert subject_words(_reading(concrete, what=(concrete,)), NOBODY, lexicon).heads == ("otter",)
+
+
+def test_a_negation_word_left_after_the_people_are_taken_out_is_never_the_subject(
+    lexicon: Lexicon,
+) -> None:
+    """#2137: "landscapes without people" left the reading's what-span as "landscapes without"."""
+    without = subject_words(
+        _reading(
+            "landscapes without people",
+            who=("people",),
+            what=("landscapes without",),
+        ),
+        NOBODY,
+        lexicon,
+    )
+    sans = subject_words(
+        _reading("paysages sans gens", who=("gens",), what=("paysages sans",)), NOBODY, lexicon
+    )
+
+    assert without.heads == ("landscapes",)
+    assert sans.heads == ("paysages",)
