@@ -169,6 +169,7 @@ class EvidencePreparation:
         self, prepared: Any, on_stage: Callable[[StageUpdate], None] | None, reach: frozenset[str]
     ) -> Any:
         from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+        from immich_memories.analysis.preparation.scene_prints import scene_prints_path
         from immich_memories.operations.cut_progress import StageProgressWriter
 
         config = self.readings.config
@@ -232,6 +233,10 @@ class EvidencePreparation:
                 inspect_clips=self.inspect_clips,
                 acquire_motion=False,
                 read_workers=config.analysis.download_workers if clients is not None else 1,
+                # The heads pass banks each pack as the print this film's selection reads.
+                scene_prints=scene_prints_path(
+                    config.editorial.resolve_bank_root(config.cache.cache_path)
+                ),
             )
         finally:
             if clients is not None:

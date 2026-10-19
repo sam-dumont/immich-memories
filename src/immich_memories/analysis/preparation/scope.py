@@ -75,6 +75,7 @@ def run_preparation(
     from immich_memories.analysis.facts.subject_framing import face_boxes_of
     from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
     from immich_memories.analysis.preparation.bounded_reads import ThreadClients
+    from immich_memories.analysis.preparation.scene_prints import scene_prints_path
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from immich_memories.db import open_store
     from immich_memories.tracking.timing import active
@@ -122,6 +123,9 @@ def run_preparation(
             read_playback=client.get_video_playback_range,
             progress=report,
             read_workers=config.analysis.download_workers if clients is not None else 1,
+            scene_prints=scene_prints_path(
+                config.editorial.resolve_bank_root(config.cache.cache_path)
+            ),
         )
     finally:
         if clients is not None:

@@ -210,3 +210,83 @@ def test_the_default_budget_holds_a_whole_library_s_previews():
     working_set_mb = measured_preview_bytes * library_items / 1_000_000
 
     assert CacheConfig().thumbnail_cache_max_size_mb >= working_set_mb
+
+
+class TestReadsCostOneFileRead:
+    """A film reads the same previews many times; each read should cost the read (#2710)."""
+
+    @staticmethod
+    def _count_touches(monkeypatch):
+        touched = []
+        real = os.utime
+
+        def counting(path, *args, **kwargs):
+            touched.append(Path(path).name)
+            return real(path, *args, **kwargs)
+
+        # WHY: counts the syscall a read used to pay every time; the touch still happens.
+        monkeypatch.setattr(thumbnail_cache_module.os, "utime", counting)
+        return touched
+
+    def test_an_older_entry_is_touched_once_per_run_however_often_it_is_read(
+        self, tmp_path, monkeypatch
+    ):
+        cache = ThumbnailCache(cache_dir=tmp_path / "thumbnails")
+        _set_age(cache.put("earlier", "preview", b"x" * 10), seconds=3600)
+        cache.begin_run()
+        cache.put("this-run", "preview", b"y" * 10)
+        touched = self._count_touches(monkeypatch)
+
+        for _ in range(3):
+            assert cache.get("earlier", "preview") == b"x" * 10
+            assert cache.get("this-run", "preview") == b"y" * 10
+
+        assert touched == ["earlier_preview.jpg"]
+
+    def test_an_entry_read_once_this_run_still_outlives_an_unread_one(self, tmp_path):
+        cache = ThumbnailCache(cache_dir=tmp_path / "thumbnails", max_size_mb=0.001)
+        payload = b"x" * 600  # two of these overflow the 1 KB budget by one file
+        _set_age(cache.put("kept", "preview", payload), seconds=300)
+        _set_age(cache.put("dropped", "preview", payload), seconds=100)
+        cache.begin_run()
+
+        cache.get("kept", "preview")
+        cache.get("kept", "preview")
+        cache.enforce_budget()
+
+        assert cache.get("kept", "preview") is not None
+        assert cache.get("dropped", "preview") is None
+
+    def test_a_read_resolves_no_path(self, tmp_path, monkeypatch):
+        cache = ThumbnailCache(cache_dir=tmp_path / "thumbnails")
+        cache.put("asset-1", "preview", b"z")
+        resolved = []
+        real = Path.resolve
+
+        def counting(self, *args, **kwargs):
+            resolved.append(self)
+            return real(self, *args, **kwargs)
+
+        # WHY: counts the realpath() walks each read used to make; resolving still works.
+        monkeypatch.setattr(Path, "resolve", counting)
+
+        for _ in range(5):
+            cache.get("asset-1", "preview")
+
+        assert resolved == []
+
+
+@pytest.mark.parametrize("hostile", ["", "..", "../escape", "a/b", "a\\b", "..abc", "a\0b"])
+def test_an_asset_id_that_would_leave_the_cache_is_refused(tmp_path, hostile):
+    cache = ThumbnailCache(cache_dir=tmp_path / "thumbnails")
+
+    with pytest.raises(ValueError, match="escape the thumbnail cache"):
+        cache.get(hostile, "preview")
+    with pytest.raises(ValueError, match="escape the thumbnail cache"):
+        cache.put(hostile, "preview", b"x")
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["thumbnails"]
+
+
+def test_a_namespace_that_would_leave_the_cache_is_refused(tmp_path):
+    with pytest.raises(ValueError, match="escape the thumbnail cache"):
+        ThumbnailCache(cache_dir=tmp_path / "thumbnails", namespace="../other")

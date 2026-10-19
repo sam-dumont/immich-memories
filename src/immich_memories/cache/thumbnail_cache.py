@@ -14,6 +14,14 @@ from immich_memories.security import create_private_directory
 
 logger = logging.getLogger(__name__)
 
+# What a path part may never hold: a separator or a parent step could leave the cache, and
+# NUL ends the name early. Checked on the string, so a read costs no realpath() walk.
+_UNSAFE_PARTS = ("/", "\\", "\0", "..")
+
+
+def _safe_part(part: str) -> bool:
+    return bool(part) and not any(unsafe in part for unsafe in _UNSAFE_PARTS)
+
 
 class ThumbnailCache:
     """Simple file-based cache for Immich thumbnails."""
@@ -26,6 +34,8 @@ class ThumbnailCache:
     def __init__(
         self, cache_dir: Path, max_size_mb: float = 30_000.0, *, namespace: str = ""
     ) -> None:
+        if namespace and not _safe_part(namespace):
+            raise ValueError("a cache namespace would escape the thumbnail cache")
         self.cache_dir = cache_dir
         self._namespace = namespace
         self.max_size_mb = max_size_mb
@@ -83,24 +93,28 @@ class ThumbnailCache:
         # Web requests keep the account set they began with, including late writes after
         # a settings change. Entries still share the same root and eviction budget.
         prefix = f"{self._namespace}-" if self._namespace else ""
-        path = self.cache_dir / subdir / f"{prefix}{asset_id}_{size}.jpg"
-        if not path.resolve().is_relative_to(self.cache_dir.resolve()):
+        if not (_safe_part(asset_id) and _safe_part(size)):
             # WHY: the id came from a server response; the API models refuse a hostile
             # one at the parse, and this keeps every future caller inside the cache too.
             raise ValueError("an asset id would escape the thumbnail cache")
-        return path
+        return self.cache_dir / subdir / f"{prefix}{asset_id}_{size}.jpg"
 
     def get(self, asset_id: str, size: str) -> bytes | None:
         path = self._path(asset_id, size)
         try:
-            data = path.read_bytes()
+            with path.open("rb") as handle:
+                data = handle.read()
+                modified = os.fstat(handle.fileno()).st_mtime
         except OSError:
             return None
         # Eviction is oldest-mtime-first. Without this a thumbnail the run keeps
         # reading still looks as old as the moment it was written, so a working
-        # set larger than the budget evicts its own live entries (#512).
-        with contextlib.suppress(OSError):
-            os.utime(path)
+        # set larger than the budget evicts its own live entries (#512). Within a
+        # run, an entry stamped at or after its start is already spared, so only
+        # the first read of an older one pays for the touch.
+        if self._run_started_at is None or modified < self._run_started_at:
+            with contextlib.suppress(OSError):
+                os.utime(path)
         return data
 
     def put(self, asset_id: str, size: str, data: bytes) -> Path:

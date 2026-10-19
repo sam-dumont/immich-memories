@@ -70,6 +70,6 @@ def test_importing_the_cli_switches_the_runtime_telemetry_off_process_wide():
 
 
 def test_the_detector_worker_inherits_the_telemetry_switch():
-    from immich_memories.analysis.preparation.detectors import _worker_env
+    from immich_memories.analysis.preparation.detectors import worker_env
 
-    assert _worker_env("", allow_downloads=False)["ORT_DISABLE_TELEMETRY"] == "1"
+    assert worker_env("", allow_downloads=False)["ORT_DISABLE_TELEMETRY"] == "1"

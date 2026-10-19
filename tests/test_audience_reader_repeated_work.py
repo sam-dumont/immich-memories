@@ -181,6 +181,9 @@ def onnx_checkpoint(tmp_path, monkeypatch):
         inter_op_num_threads = 0
         graph_optimization_level = None
 
+        def add_session_config_entry(self, _key, _value):
+            pass
+
     # WHY: ONNX Runtime is the native boundary; this counts what the scorer opens on it.
     monkeypatch.setitem(
         sys.modules,

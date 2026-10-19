@@ -71,7 +71,8 @@ def preview():
 
 def successful_ports(calls):
     def heads(**kwargs):
-        calls.append(("heads", tuple(kwargs["asset_ids"])))
+        if kwargs["asset_ids"]:
+            calls.append(("heads", tuple(kwargs["asset_ids"])))
         remember_head_rows(
             kwargs["store"],
             [
@@ -87,6 +88,27 @@ def successful_ports(calls):
                 for head, version in kwargs["head_versions"].items()
             ],
         )
+        obstruction = tuple(kwargs.get("obstruction_ids", ()))
+        if obstruction:
+            calls.append(("obstruction", obstruction))
+        remember_head_rows(
+            kwargs["store"],
+            [
+                {
+                    "asset_id": asset_id,
+                    "head": "obstruction",
+                    "version": "public-obstruction-v1",
+                    "label": "clear",
+                    "confidence": 0.1,
+                    "encoder_key": "test",
+                }
+                for asset_id in obstruction
+            ],
+        )
+        # WHY: the inference boundary banks facts before reporting completed work.
+        count = len({*kwargs["asset_ids"], *obstruction})
+        kwargs["progress"]("public_heads", count, count)
+        return {}
 
     def detectors(**kwargs):
         calls.append(("detectors", tuple(kwargs["pending"])))
@@ -120,37 +142,16 @@ def successful_ports(calls):
             )
         return {}
 
-    def obstruction(**kwargs):
-        calls.append(("obstruction", tuple(kwargs["asset_ids"])))
-        remember_head_rows(
-            kwargs["store"],
-            [
-                {
-                    "asset_id": asset_id,
-                    "head": "obstruction",
-                    "version": "public-obstruction-v1",
-                    "label": "clear",
-                    "confidence": 0.1,
-                    "encoder_key": "test",
-                }
-                for asset_id in kwargs["asset_ids"]
-            ],
-        )
-        # WHY: the inference boundary banks facts before reporting completed work.
-        count = len(kwargs["asset_ids"])
-        kwargs["progress"]("obstruction", count, count)
-        return {}
-
-    def obstruction_frames(**kwargs):
-        calls.append(("obstruction_frames", tuple(kwargs["frame_paths"])))
+    def clip_frames(**kwargs):
+        if kwargs.get("obstruction"):
+            calls.append(("obstruction_frames", tuple(kwargs["obstruction"])))
         return {}
 
     return PreparationPorts(
         captions=captions,
         heads=heads,
         detectors=detectors,
-        obstruction=obstruction,
-        obstruction_frames=obstruction_frames,
+        clip_frames=clip_frames,
     )
 
 
@@ -179,7 +180,7 @@ def refusing_ports(*absent):
     real = successful_ports(calls)
     seams = {
         name: _refuse(name) if name in absent else getattr(real, name)
-        for name in ("captions", "heads", "detectors", "obstruction", "obstruction_frames")
+        for name in ("captions", "heads", "detectors", "clip_frames")
     }
     return PreparationPorts(**seams), calls
 
@@ -200,6 +201,14 @@ def test_cold_full_source_then_warm_has_zero_provider_calls(tmp_path):
     db_path = annotation_store().location.sqlite_path
     assert db_path is not None
     assert stat.S_IMODE(db_path.stat().st_mode) == 0o600
+
+
+def test_the_public_and_obstruction_heads_share_one_encoder_pass(tmp_path):
+    calls = []
+    run(tmp_path, ports=successful_ports(calls), fetch_preview=lambda _: preview())
+
+    encoder_passes = [call for call in calls if call[0] in {"heads", "obstruction"}]
+    assert encoder_passes == [("heads", ("aa1", "bb2")), ("obstruction", ("aa1", "bb2"))]
 
 
 def test_a_warm_captioned_scope_still_reports_the_caption_producer(tmp_path):
@@ -705,7 +714,8 @@ def test_a_run_reports_what_each_stage_cost_and_how_many_pictures_it_saw(tmp_pat
 
     rates = result.stage_rates()
     assert result.pictures_by_stage["previews"] == 2
-    assert set(rates) == {"previews", "pixels", "public_heads", "detectors", "obstruction"}
+    # The obstruction head reads the public heads' encoder call: no stage of its own.
+    assert set(rates) == {"previews", "pixels", "public_heads", "detectors"}
     assert all(seconds >= 0 for seconds in rates.values())
 
 

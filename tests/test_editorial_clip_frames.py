@@ -165,8 +165,9 @@ def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
         # packs it would produce are replaced, everything that reads them is real.
         key = "a" * 64
 
-        def embed(self, batch):
-            return np.zeros((len(batch), pack_dim), dtype=np.float32)
+        def embed_with_patches(self, batch):
+            n = len(batch)
+            return np.zeros((n, pack_dim), np.float32), np.zeros((n, 256, 384), np.float32)
 
     progress = []
 
@@ -196,7 +197,7 @@ def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
     assert rows == [
         ("clip", CLIP_FRAMES_HEAD, "frame_kind-public-v1/8-frames", SUBJECT_OFTEN_MISSING, 0.0)
     ]
-    assert set(failures) == {"unreadable"}
+    assert set(failures) == {"clip_frames:unreadable"}
     assert progress == [("clip_frames", 0, 2), ("clip_frames", 1, 2), ("clip_frames", 2, 2)]
 
 

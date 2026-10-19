@@ -17,10 +17,15 @@ from dataclasses import dataclass
 import httpx
 from pydantic import BaseModel, Field, ValidationError
 
+from immich_memories.analysis.facts.obstruction import HEAD_NAME as OBSTRUCTION_HEAD
+from immich_memories.analysis.facts.obstruction import HEAD_VERSION as OBSTRUCTION_VERSION
 from immich_memories.analysis.preparation.detectors import DETECTOR_VERSIONS
 from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.config.models.inference import InferenceConfig
 from immich_memories.triage.heads import HeadFact
+
+# Every producer but the public heads answers for one head of its own name, at this version.
+SINGLE_HEAD_VERSIONS = DETECTOR_VERSIONS | {OBSTRUCTION_HEAD: OBSTRUCTION_VERSION}
 
 
 class RemoteFactsError(RuntimeError):
@@ -72,7 +77,7 @@ def offloaded_versions(
 
 
 def producer_names(head_versions: Mapping[str, str]) -> tuple[str, ...]:
-    supported = PUBLIC_HEAD_VERSIONS | DETECTOR_VERSIONS
+    supported = PUBLIC_HEAD_VERSIONS | SINGLE_HEAD_VERSIONS
     if any(supported.get(head) != version for head, version in head_versions.items()):
         raise RemoteFactsError("Remote classifiers do not support the requested head versions")
     return tuple(
@@ -108,12 +113,43 @@ def _shared_client(config: InferenceConfig) -> httpx.Client:
         return client
 
 
+_SERVED: dict[str, frozenset[str] | None] = {}
+
+
+def serves_producer(config: InferenceConfig, producer: str) -> bool:
+    """Whether the configured service answers for ``producer``, as its `/health` names them.
+
+    A service older than a producer refuses a request that names it, picture by picture,
+    and the whole pass falls back. Asked once per service per process; a service that
+    cannot be asked is assumed to serve what it is configured for, and the request that
+    follows says otherwise.
+    """
+    if producer not in config.producers:
+        return False
+    url = config.facts_base_url
+    if url not in _SERVED:
+        _SERVED[url] = _health_producers(config)
+    served = _SERVED[url]
+    return served is None or producer in served
+
+
+def _health_producers(config: InferenceConfig) -> frozenset[str] | None:
+    try:
+        response = _shared_client(config).get(f"{config.facts_base_url}/health")
+        response.raise_for_status()
+        producers = response.json().get("producers")
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return None
+    return frozenset(producers) if isinstance(producers, dict) and producers else None
+
+
 def close_shared_clients() -> None:
     """Close the run's pooled clients; the next ask opens fresh ones."""
     with _SHARED_LOCK:
         for client in _SHARED.values():
             client.close()
         _SHARED.clear()
+        _SERVED.clear()
 
 
 class RemoteFactsClient(AbstractContextManager):
@@ -191,7 +227,7 @@ def _validate_contract(
         raise RemoteFactsError("Remote classifiers returned a different set of producers")
     seen: dict[str, str] = {}
     for name, producer in result.items():
-        allowed = PUBLIC_HEAD_VERSIONS if name == "heads" else {name: DETECTOR_VERSIONS[name]}
+        allowed = PUBLIC_HEAD_VERSIONS if name == "heads" else {name: SINGLE_HEAD_VERSIONS[name]}
         for fact in producer.facts:
             if fact.head in seen or allowed.get(fact.head) != fact.version:
                 raise RemoteFactsError(

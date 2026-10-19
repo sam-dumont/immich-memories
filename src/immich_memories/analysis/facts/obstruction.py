@@ -16,10 +16,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import cv2
 import numpy as np
 
 from immich_memories.analysis.facts.subject_framing import FaceBox
+
+# cv2 is imported where it is used: this module also holds the head's name and version,
+# which image build stages without libGL import to key their bank rows.
 
 HEAD_NAME = "obstruction"
 HEAD_VERSION = "public-obstruction-v1"
@@ -60,6 +62,8 @@ class ObstructionReading:
 def _largest_edge_blob(probability_map: np.ndarray) -> np.ndarray | None:
     """The largest connected patch of ``probability_map`` above threshold that touches a
     border of the patch grid; a finger that does not reach the edge is not one."""
+    import cv2
+
     mask = (probability_map >= PROB_THRESHOLD).astype(np.uint8)
     count, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=4)
     best_label, best_area = None, 0
@@ -73,6 +77,8 @@ def _largest_edge_blob(probability_map: np.ndarray) -> np.ndarray | None:
 
 def _region_stats(image_bgr: np.ndarray, patch_mask: np.ndarray) -> tuple[float, float, float]:
     """Area fraction of the frame, mean skin fraction and mean luma inside the blob."""
+    import cv2
+
     pixel_mask = cv2.resize(
         patch_mask.astype(np.uint8), (CROP_SIZE, CROP_SIZE), interpolation=cv2.INTER_NEAREST
     ).astype(bool)
@@ -128,6 +134,8 @@ def denormalized_crop_bgr(chw_normalized: np.ndarray) -> np.ndarray:
     reverses `triage.preprocess.preprocess_image_bytes` instead of decoding the picture a
     second time.
     """
+    import cv2
+
     from immich_memories.triage.preprocess import IMAGENET_MEAN, IMAGENET_STD
 
     rgb = chw_normalized.transpose(1, 2, 0) * IMAGENET_STD + IMAGENET_MEAN

@@ -17,7 +17,7 @@ from immich_memories.analysis.preparation.remote import prepare_remote_facts
 from immich_memories.analysis.preparation.remote_facts import RemoteFactsClient, RemoteFactsError
 from immich_memories.config.models.editorial import EditorialConfig
 from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
-from immich_memories.config.models.inference import InferenceConfig
+from immich_memories.config.models.inference import SERVED_PRODUCERS, InferenceConfig
 from immich_memories.operations.cancellation import PipelineCancelled
 from tests.annotation_rows import annotation_store, read_rows
 from tests.test_editorial_preparation import (
@@ -31,7 +31,7 @@ ENDPOINT = "http://inference.test:8092"
 
 
 def answer(producers):
-    versions = EditorialConfig().head_versions
+    versions = EditorialConfig().head_versions | {"obstruction": "public-obstruction-v1"}
     return {
         "producers": {
             producer: {
@@ -57,11 +57,20 @@ def remote_run(tmp_path, *, inference=None, ports=None, **kwargs):
     )
 
 
-def transport(monkeypatch, handler):
+def transport(monkeypatch, handler, *, serves=SERVED_PRODUCERS):
+    """``handler`` answers `/facts`; `/health` names the producers in ``serves``."""
+
+    def route(request):
+        if request.url.path == "/health":
+            return httpx.Response(
+                200, json={"status": "ok", "producers": dict.fromkeys(serves, {})}
+            )
+        return handler(request)
+
     # WHY: the HTTP boundary is replaced; preparation, validation and SQLite are real.
     client = httpx.Client
     monkeypatch.setattr(
-        httpx, "Client", lambda **kwargs: client(transport=httpx.MockTransport(handler), **kwargs)
+        httpx, "Client", lambda **kwargs: client(transport=httpx.MockTransport(route), **kwargs)
     )
 
 
@@ -86,16 +95,13 @@ def test_cold_offload_then_warm_reuses_all_facts_without_network(monkeypatch, tm
     transport(monkeypatch, handle)
     assert remote_run(tmp_path).complete
     assert len(calls) == 2
-    assert all(set(names) == {"heads", "nsfw_marqo", "doc_docling"} for names in calls)
+    # #2022: the obstruction head rides the same upload as the heads it shares an encoder with.
+    assert all(set(names) == set(SERVED_PRODUCERS) for names in calls)
     rows = banked_rows()
-    # #2022: the obstruction head banks locally (its own encoder pass, no remote path) for
-    # both assets, alongside the 20 rows the remote service answered.
-    obstruction_rows = [row for row in rows if row[0] == "obstruction"]
-    assert len(obstruction_rows) == 2
-    rows = [row for row in rows if row[0] != "obstruction"]
-    assert len(rows) == 20
+    assert len(rows) == 22
+    versions = EditorialConfig().head_versions | {"obstruction": "public-obstruction-v1"}
     for head, version, key in rows:
-        assert version == EditorialConfig().head_versions[head]
+        assert version == versions[head]
         assert key == f"pinned-{'heads' if head in PUBLIC_HEAD_VERSIONS else head}"
     calls.clear()
     assert remote_run(tmp_path).complete
@@ -135,6 +141,7 @@ def test_an_unreachable_service_is_named_and_the_local_producers_take_over(monke
     assert result.complete is False
     assert ENDPOINT in result.failures["remote_facts"]
     assert "local" in result.failures["remote_facts"]
+    # The fallback reads the obstruction head in the heads' own local pass.
     assert {name for name, _ in local_calls} == {"heads", "detectors", "obstruction"}
     assert result.missing_by_producer == {}
 
@@ -153,8 +160,8 @@ def test_without_the_fallback_a_dead_service_leaves_the_facts_missing(monkeypatc
     assert result.complete is False
     assert "HTTP 503" in result.failures["remote_facts"]
     assert ENDPOINT in result.failures["remote_facts"]
-    # #2022: obstruction has no remote path, so it still runs locally here.
-    assert [name for name, _ in local_calls] == ["obstruction"]
+    # #2022: obstruction is offloaded with the heads, so nothing runs locally either.
+    assert local_calls == []
     assert set(result.missing_by_producer) == {
         f"head:{head}@{version}" for head, version in EditorialConfig().head_versions.items()
     }
@@ -172,8 +179,7 @@ def test_a_malformed_answer_banks_nothing(monkeypatch, tmp_path):
         tmp_path, inference=InferenceConfig(facts_base_url=ENDPOINT, fallback_to_local=False)
     )
     assert result.complete is False
-    # #2022: obstruction has no remote path and is unrelated to the malformed answer.
-    assert [row[0] for row in banked_rows()] == ["obstruction", "obstruction"]
+    assert banked_rows() == []
     assert "incompatible" in result.failures["remote_facts"]
 
 
@@ -416,10 +422,72 @@ def test_unreadable_video_frames_use_remote_preview_exposure_and_report_the_fail
 
     assert result.complete
     assert sorted(map(sorted, asked)) == [
-        ["doc_docling", "heads"],
-        ["doc_docling", "heads", "nsfw_marqo"],
+        ["doc_docling", "heads", "nsfw_marqo", "obstruction"],
+        ["doc_docling", "heads", "obstruction"],
         ["nsfw_marqo"],
     ]
-    # #2022: obstruction has no remote path, so it still runs locally here.
-    assert handed == {} and [name for name, _ in local_calls] == ["obstruction"]
+    # #2022: obstruction rides each picture's upload too; nothing runs locally.
+    assert handed == {} and local_calls == []
     assert "detector_frames:vv1" in result.failures
+
+
+def test_a_service_older_than_the_obstruction_head_keeps_it_local(monkeypatch, tmp_path):
+    asked = []
+
+    def handle(request):
+        payload = json.loads(request.content)
+        asked.append(tuple(sorted(payload["producers"])))
+        return httpx.Response(200, json=answer(payload["producers"]))
+
+    transport(monkeypatch, handle, serves=("heads", "nsfw_marqo", "doc_docling"))
+    ports, local_calls = refusing_ports("detectors", "captions")
+
+    result = remote_run(tmp_path, ports=ports)
+
+    assert result.complete and not result.failures
+    # Never named to a service that would refuse the whole picture over it.
+    assert asked == [("doc_docling", "heads", "nsfw_marqo")] * 2
+    assert local_calls == [("obstruction", ("aa1", "bb2"))]
+
+
+def test_a_videos_obstructed_seconds_come_from_the_services_frame_answers(monkeypatch, tmp_path):
+    from immich_memories.analysis.clips.bound_sample import source_metadata_digest
+    from immich_memories.analysis.preparation.obstruction_bank import OBSTRUCTION_FRAME_PRODUCER
+    from immich_memories.store.cut_measurements import banked_motion_residuals
+    from tests.test_editorial_preparation_motion import prepared_video
+    from tests.test_playback_keyframes import encode
+
+    data = encode(tmp_path / "clip.mp4", gop=30)
+    uploads = []
+
+    def handle(request):
+        payload = json.loads(request.content)
+        body = answer(payload["producers"])
+        uploads.append(tuple(sorted(payload["producers"])))
+        for producer in body["producers"].values():
+            for fact in producer["facts"]:
+                if fact["head"] == "obstruction":
+                    fact["label"] = "obstructed"
+        return httpx.Response(200, json=body)
+
+    transport(monkeypatch, handle)
+    video = prepared_video("vv1")
+
+    result = remote_run(
+        tmp_path,
+        assets=[video],
+        ports=refusing_ports("heads", "detectors", "captions", "clip_frames")[0],
+        # WHY: the Immich byte-range endpoint serves a real encoded fixture.
+        read_playback=lambda _key, start, length: (data[start : start + length], len(data)),
+    )
+
+    assert result.complete and not result.failures
+    banked = banked_motion_residuals(
+        annotation_store(), {"vv1": source_metadata_digest(video)}, OBSTRUCTION_FRAME_PRODUCER
+    )
+    # Every sampled frame was flagged, so every one of their seconds is banked: one per
+    # frame upload, which also asked the exposure and frame heads (the preview pass and
+    # the preview's exposure read are the other two uploads).
+    frame_uploads = uploads.count(("heads", "nsfw_marqo", "obstruction"))
+    assert frame_uploads > 1
+    assert len(banked["vv1"]["obstructed_at"]) == frame_uploads

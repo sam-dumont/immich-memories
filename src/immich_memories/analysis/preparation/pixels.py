@@ -1,7 +1,8 @@
 """The accepted pixel-facts-v1 recipe (its JPEG quality is deliberately 85)."""
 
 import io
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import numpy as np
@@ -63,6 +64,37 @@ def pixel_row(asset_id: str, preview: bytes) -> dict[str, Any]:
     row = {"asset_id": asset_id, "producer_key": PRODUCER_KEY, **values, "computed_at": now_db()}
     row["needs_rotation"] = bool(row["needs_rotation"])
     return row
+
+
+# Pictures measured side by side: decoding and the filters release the GIL, and a window
+# this small keeps a stop prompt and the order of the bank unchanged.
+PIXEL_WINDOW = 16
+
+
+def measured_rows(
+    asset_ids: Sequence[str],
+    preview_for: Callable[[str], bytes],
+    *,
+    check: Callable[[], None],
+    workers: int,
+) -> Iterator[tuple[str, dict[str, Any] | Exception]]:
+    """Each picture's pixel row, or why it could not be measured, in ``asset_ids`` order."""
+    with ThreadPoolExecutor(max(1, workers), thread_name_prefix="pixels") as pool:
+        for start in range(0, len(asset_ids), PIXEL_WINDOW):
+            check()
+            window = asset_ids[start : start + PIXEL_WINDOW]
+            futures = [pool.submit(_row_or_error, asset_id, preview_for) for asset_id in window]
+            for asset_id, future in zip(window, futures, strict=True):
+                yield asset_id, future.result()
+
+
+def _row_or_error(asset_id: str, preview_for: Callable[[str], bytes]) -> dict[str, Any] | Exception:
+    try:
+        return pixel_row(asset_id, preview_for(asset_id))
+    except AccountReadFailed:
+        raise
+    except Exception as exc:
+        return exc
 
 
 def remember_pixels(store: Store, rows: Sequence[Mapping[str, Any]]) -> None:
