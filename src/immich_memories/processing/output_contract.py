@@ -12,7 +12,7 @@ import tempfile
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, wait
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
@@ -40,6 +40,8 @@ _DECODED_PIXEL_FORMATS = {
 # WHY: the metadata probe reads the container index and nothing else; two minutes
 # covers a multi-gigabyte film whose index sits at the far end of a slow share.
 _METADATA_TIMEOUT_SECONDS = 2 * 60
+# Reading a film's video packets is disk-bound: about a second per gigabyte.
+_STREAM_DIGEST_TIMEOUT_SECONDS = 10 * 60
 _DECODE_CHECK_FLOOR_SECONDS = 15 * 60
 # WHY 0.25: measured with the decode command below (FFmpeg 7.1, app image), a
 # 1080p HEVC 10-bit film decodes at 3.8x realtime on two Celeron J4125 cores
@@ -470,6 +472,38 @@ def _decoded_probe(
     if not stamp.matches(path):
         raise InvalidOutputArtifact("output artifact changed while it was being checked")
     return _probe_of(metadata, decoded_frames, stamp)
+
+
+def video_stream_digest(path: Path) -> str | None:
+    """A SHA-256 of the first video stream's packets, read without decoding; None if unreadable."""
+    try:
+        result = subprocess.run(  # noqa: S603, S607
+            [
+                "ffmpeg", "-nostdin", "-v", "error", "-i", str(path),
+                "-map", "0:v:0", "-c", "copy", "-f", "streamhash", "-hash", "sha256", "-",
+            ],
+            capture_output=True, text=True, timeout=_STREAM_DIGEST_TIMEOUT_SECONDS, check=False,
+        )  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        return None
+    digest = result.stdout.strip()
+    return digest if result.returncode == 0 and "SHA256=" in digest else None
+
+
+def carried_verification(
+    path: Path, verified: OutputProbe | None, video_digest: str
+) -> OutputProbe | None:
+    """An earlier decode of the film, still vouching for it after a remux that copied its video.
+
+    The decode check reads only the video stream. When its packets are the bytes the
+    earlier decode read (``video_digest``), that decode stands for the new file;
+    anything else is decoded again.
+    """
+    if verified is None or verified.decoded_frames is None:
+        return None
+    if video_stream_digest(path) != video_digest:
+        return None
+    return replace(verified, stamp=FileStamp.of(path))
 
 
 def _naming_the_file(path: Path, check: Callable[[], OutputProbe]) -> OutputProbe:

@@ -62,9 +62,12 @@ def _segment_chain(
     # (common for generated photo clips). AAC rejects those samples with EINVAL.
     # Replace only non-finite output with digital silence, then undo loudnorm's
     # internal high-rate resampling so every transition receives stable 48 kHz.
+    # WHY (#2709): a still's sound is the silence its render generated, which loudnorm
+    # hands back unchanged (measured sample for sample), at the cost of a resample to
+    # 192 kHz and back.
     loudnorm = (
         f",loudnorm=I=-16:TP=-1.5:LRA=11,aeval='if(isnan(val(ch)),0,val(ch))':c=same,{AUDIO_FORMAT}"
-        if normalize_audio
+        if normalize_audio and not getattr(clip, "is_photo", False)
         else ""
     )
     # WHY: lowpass=300 on top of segment-wise reversal creates a warm "mumble" —

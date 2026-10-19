@@ -26,6 +26,10 @@ docker compose exec immich-memories immich-memories hardware
 The app tests a one-frame encode, not just whether FFmpeg lists the codec. During a render, the
 log names the encoder used. Prepared facts do not need rebuilding after an encoder change.
 
+With `advanced.hardware.gpu_decode` on (the default), the render also decodes H.264 and HEVC
+clips on the hardware. The frames are repacked to what the software decoder gives, so the film
+is the same either way; a clip the hardware fails to decode is decoded again in software.
+
 ## Backends
 
 | Hardware | Backend | Setup |

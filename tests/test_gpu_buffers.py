@@ -143,6 +143,29 @@ class TestGPUBuffers:
         result = gpu.frame.to_numpy()
         np.testing.assert_allclose(result, bg, atol=1e-6)
 
+    def test_a_still_background_is_uploaded_once_and_refills_every_frame(self, monkeypatch):
+        """#2709: the same picture went up as a float frame on every frame of a card."""
+        from immich_memories.titles import kernels
+        from immich_memories.titles.kernels import GPUBuffers
+
+        gpu = GPUBuffers(h=4, w=6, hdr=False)
+        bg = np.random.default_rng(7).random((4, 6, 3)).astype(np.float32)
+        uploads = []
+        real_ndarray = kernels.ti.ndarray
+
+        def counting_ndarray(*args, **kwargs):
+            array = real_ndarray(*args, **kwargs)
+            uploads.append(array)
+            return array
+
+        # WHY: counts device allocations for the still, the transfer under test.
+        monkeypatch.setattr(kernels.ti, "ndarray", counting_ndarray)
+        for _ in range(3):
+            gpu.frame.from_numpy(np.zeros((4, 6, 3), np.float32))
+            gpu.load_still_background(bg)
+            np.testing.assert_array_equal(gpu.frame.to_numpy(), bg)
+        assert len(uploads) == 1
+
     def test_read_output_returns_uint8(self):
         from immich_memories.titles.kernels import GPUBuffers
 

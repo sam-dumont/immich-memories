@@ -120,6 +120,9 @@ class KernelTitleConfig:
 
     # HDR output: when True, renderer outputs uint16 (65535 scale) instead of uint8
     hdr: bool = False
+    # An HLG film's conversion: set, the uint16 frames leave the renderer already in
+    # HLG rather than in SDR for FFmpeg to convert on every frame (#2709).
+    hlg: Any | None = None
 
     # Reverse blur: for ending screens — blur increases instead of decreasing
     reverse_blur: bool = False
@@ -286,6 +289,18 @@ class KernelTitleRenderer:
             fade_in = 1.0 - (1.0 - frame_number / fade_in_frames) ** 2
         if fade_out_frames > 0 and frame_number >= fade_out_start:
             fade_out = ((frame_number - fade_out_start) / fade_out_frames) ** 2
+        if cfg.hlg is not None:
+            from immich_memories.titles.hlg_frames import finalize_to_hlg
+
+            finalize_to_hlg(
+                self.gpu.frame,
+                self.gpu.output,
+                cfg.hlg,
+                fade_in=fade_in,
+                fade_out=fade_out,
+                fade_color=fade_color,
+            )
+            return self.gpu.read_output()
         kernels.finalize_to_output(
             self.gpu.frame,
             self.gpu.output,
@@ -318,7 +333,7 @@ class KernelTitleRenderer:
                     return True
 
         if cfg.background_image is not None:
-            self.gpu.load_background(cfg.background_image)
+            self.gpu.load_still_background(cfg.background_image)
         else:
             self._render_gradient(t, progress, cfg)
         return False

@@ -392,6 +392,7 @@ def test_exact_extraction_interval_has_no_buffers_and_warm_skips_probe_and_extra
                 "buffer_start": False,
                 "buffer_end": False,
                 "config": extraction_config,
+                "lossless": True,
             },
         )
     ]

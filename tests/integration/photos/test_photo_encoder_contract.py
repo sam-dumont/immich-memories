@@ -67,11 +67,13 @@ def test_nas_photo_obeys_its_real_encoder_contract(tmp_path, source, hardware):
 @pytest.mark.parametrize(
     ("source", "codec", "hdr_mode", "override", "expected"),
     [
-        (_sdr_photo, "h265", "auto", None, "h264"),
-        (_gain_mapped_photo, "h265", "auto", None, "hevc"),
-        (_gain_mapped_photo, "h265", "sdr", None, "h264"),
-        (_gain_mapped_photo, "h264", "auto", "h265", "hevc"),
-        (_gain_mapped_photo, "h265", "auto", "mp4", "h264"),
+        # In software every photo is a fast x264 intermediate (#2709); the film decides
+        # only whether it keeps HDR.
+        (_sdr_photo, "h265", "auto", None, "sdr"),
+        (_gain_mapped_photo, "h265", "auto", None, "pq"),
+        (_gain_mapped_photo, "h265", "sdr", None, "sdr"),
+        (_gain_mapped_photo, "h264", "auto", "h265", "pq"),
+        (_gain_mapped_photo, "h265", "auto", "mp4", "sdr"),
     ],
 )
 def test_source_and_film_choose_photo_intermediate(
@@ -112,8 +114,9 @@ def test_source_and_film_choose_photo_intermediate(
             ]
         )
     )["streams"][0]
-    assert stream["codec_name"] == expected
-    assert stream["color_transfer"] == ("smpte2084" if expected == "hevc" else "bt709")
+    assert stream["codec_name"] == "h264"
+    assert stream["color_transfer"] == ("smpte2084" if expected == "pq" else "bt709")
+    assert stream["pix_fmt"] == ("yuv420p10le" if expected == "pq" else "yuv420p")
     assert (stream["width"], stream["height"]) == (128, 192)
     assert float(stream["duration"]) == pytest.approx(1, abs=0.001)
     subprocess.run(["ffmpeg", "-v", "error", "-i", str(clip.path), "-f", "null", "-"], check=True)

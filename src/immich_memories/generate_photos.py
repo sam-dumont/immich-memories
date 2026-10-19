@@ -109,6 +109,7 @@ def render_photo_as_clip(
         ),
         scale_mode=normalize_scale_mode(params.scale_mode or params.config.defaults.scale_mode),
         subjects=memory_subjects(params),
+        film_transfer=params.photo_transfer,
     )
     if result is None:
         logger.warning(f"Failed to render photo {clip.asset.id}")

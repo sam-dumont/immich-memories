@@ -144,6 +144,35 @@ def software_fallback_plan(plan: EncodingPlan) -> EncodingPlan:
     )
 
 
+# x264 at its fastest preset and CRF 12 beat both the old intermediates on a still's
+# move at 1080x1920: 55.5 dB against 46.6 (x264 medium CRF 18) in SDR and 58.8
+# against 56.8 (x265 CRF 8) in 10-bit HDR, for 1/9 and 1/22 of their CPU, in files
+# 1.2 to 3 times the size (#2709).
+INTERMEDIATE_CRF = 12
+
+
+def intermediate_encoding_plan(plan: EncodingPlan, *, lossless: bool = False) -> EncodingPlan:
+    """The plan for a file the film decodes again: its transfer and pixel format, encoded cheaply.
+
+    Photo moves, title cards and merged Live Photos used to be encoded at the film's own
+    preset, then decoded and encoded again; on a CPU-only host that was a fifth of the
+    render (#2709). A software plan becomes x264 at its fastest preset, near-lossless,
+    or lossless when the film's encode must be the only lossy step (#2692). A hardware
+    encoder already costs the CPU next to nothing and keeps its plan.
+    """
+    if plan.encoder not in {"libx264", "libx265"}:
+        return plan
+    quality = ("-qp", "0") if lossless else ("-crf", str(INTERMEDIATE_CRF))
+    return replace(
+        plan,
+        codec=OutputCodec.H264,
+        encoder="libx264",
+        encoder_args=("-preset", "ultrafast", *quality),
+        crf=0 if lossless else INTERMEDIATE_CRF,
+        codec_substituted_from=None,
+    )
+
+
 @dataclass(frozen=True)
 class OutputSelection:
     """Codec/container choice with explicit override provenance already applied."""

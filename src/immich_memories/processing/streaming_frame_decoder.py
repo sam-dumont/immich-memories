@@ -42,7 +42,18 @@ logger = logging.getLogger(__name__)
 AUDIO_FINISH_SECONDS = 120.0
 
 if TYPE_CHECKING:
+    from immich_memories.processing.hardware import HWAccelCapabilities
     from immich_memories.processing.probe_cache import VideoProbe
+
+# The 4:2:0 formats hardware decoders hand back as NV12 or P010. A format filter
+# repacks those into exactly the software decoder's frames, so every filter after it
+# sees the same pixels whichever decoder ran (#2709).
+_HARDWARE_DECODED_FORMATS = frozenset({"yuv420p", "yuv420p10le"})
+_HARDWARE_DECODED_CODECS = {"h264": "h264", "hevc": "h265"}
+
+
+class HardwareDecodeFailed(RuntimeError):
+    """A clip's hardware decode failed; decoding it in software may still succeed."""
 
 
 class FrameDecoder:
@@ -72,8 +83,14 @@ class FrameDecoder:
         source_frame_rate: Fraction | None = None,
         frame_limit: int | None = None,
         probe_cache: ProbeCache | None = None,
+        hardware_decode: tuple[tuple[str, ...], str] | None = None,
+        from_seconds: float = 0.0,
     ) -> None:
         self._clip_path = clip_path
+        # FFmpeg's hwaccel arguments and the software format its frames are repacked to.
+        self._hardware_decode = hardware_decode
+        # Frames before this point of the clip are dropped before any costly filter.
+        self._from_seconds = from_seconds
         self._probe_cache = probe_cache or ProbeCache()
         self._source_size = source_size
         self._threads = threads
@@ -165,9 +182,11 @@ class FrameDecoder:
             f"pad={self._width}:{self._height}:(ow-iw)/2:(oh-ih)/2:black",
         ]
 
-    def _build_vf(self) -> str:
-        """Build the -vf filter chain applied to every decoded clip."""
+    def _leading_filters(self) -> list[str]:
+        """Repack, rotation, privacy blur, the PTS reset and a trimmed head."""
         parts: list[str] = []
+        if self._hardware_decode is not None:
+            parts.append(f"format={self._hardware_decode[1]}")
 
         # Rotation (transpose/hflip) — must come before scale
         if self._rotation == 90:
@@ -187,6 +206,16 @@ class FrameDecoder:
 
         # PTS reset — critical for multi-clip concat
         parts.append("setpts=PTS-STARTPTS")
+        if self._from_seconds > 0:
+            # WHY (#2709): the frames kept are the ones a whole decode gives. Timestamps
+            # are not reset after the trim, so the frame-rate filter still places every
+            # later frame on the grid it had; only the earlier frames skip the work.
+            parts.append(f"trim=start={self._from_seconds:.6f}")
+        return parts
+
+    def _build_vf(self) -> str:
+        """Build the -vf filter chain applied to every decoded clip."""
+        parts = self._leading_filters()
 
         # Normalize equal rates before overlay: FFmpeg 6 can lose the final
         # frame duration there, so a later fps filter drops that frame. Higher
@@ -279,9 +308,8 @@ class FrameDecoder:
         """
         return self._iter_frames(reuse_buffer=True, read_ahead=read_ahead)
 
-    def _iter_frames(
-        self, reuse_buffer: bool, read_ahead: bool = False
-    ) -> Generator[np.ndarray, None, None]:
+    def _command(self) -> list[str]:
+        """The FFmpeg command that decodes the clip to the pipe, its audio to a WAV."""
         vf = self._build_vf()
         use_fc = getattr(self, "_use_filter_complex", False)
 
@@ -303,7 +331,7 @@ class FrameDecoder:
 
         threads = self._threads if self._threads is not None else assembly_decoder_threads()
         filter_threads = str(available_cpus())
-        cmd = [
+        return [
             "ffmpeg",
             # WHY (#2345): a software retry decodes into the WAV the failed
             # attempt left behind. Without -y FFmpeg refused to overwrite it and
@@ -318,6 +346,7 @@ class FrameDecoder:
             "-threads",
             str(threads),
             *seek_args,
+            *self._hwaccel_args(),
             "-i",
             str(self._clip_path),
             *audio_inputs,
@@ -328,12 +357,18 @@ class FrameDecoder:
             *filter_args,
             "-s",
             f"{self._width}x{self._height}",
-            "-r",
-            str(self._fps),
+            # The graph's fps filter sets the rate; a trimmed head is dropped rather
+            # than refilled with copies of the first frame kept.
+            *(["-fps_mode", "passthrough"] if self._from_seconds > 0 else ["-r", str(self._fps)]),
             *video_limit,
             "pipe:1",
             *audio_args,
         ]
+
+    def _iter_frames(
+        self, reuse_buffer: bool, read_ahead: bool = False
+    ) -> Generator[np.ndarray, None, None]:
+        cmd = self._command()
         logger.debug(f"FrameDecoder cmd: {' '.join(cmd)}")
         proc = subprocess.Popen(  # noqa: S603, S607
             cmd,
@@ -346,40 +381,46 @@ class FrameDecoder:
         # Popen's positive bufsize gives this binary pipe a BufferedReader.
         pipe = cast(BufferedReader, proc.stdout)
 
-        raw_frames = (
-            _FrameReadAhead(pipe, self._frame_size).frames()
-            if read_ahead
-            else self._raw_frames(pipe, reuse_buffer)
-        )
+        reader = _FrameReadAhead(pipe, self._frame_size) if read_ahead else None
+        raw_frames = reader.frames() if reader is not None else self._raw_frames(pipe, reuse_buffer)
         try:
             with owned_child(proc):
                 for decoded, raw in enumerate(raw_frames, start=1):
-                    frame: np.ndarray
-                    if self._pix_fmt == "yuv420p10le":
-                        # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
-                        # Crossfade blends each sample independently which works for all planes.
-                        # The array retains `raw`; body writes, previews and crossfades
-                        # only read it. Keep the same bytes-backed view as SDR rather
-                        # than copying another 25 MB for every 4K HDR frame.
-                        frame = np.frombuffer(raw, dtype=np.uint16)
-                    elif self._pix_fmt == "yuv420p":
-                        # WHY: SDR stays planar from decoder to encoder, so no RGB
-                        # round trip. Flat uint8: Y plane, then U, then V.
-                        frame = np.frombuffer(raw, dtype=np.uint8)
-                    else:
-                        frame = np.frombuffer(raw, dtype=np.uint8).reshape(
-                            self._height, self._width, 3
-                        )
+                    frame = self._frame_view(raw)
                     frame.setflags(write=False)
                     self._finish_bounded_output(proc, decoded)
                     yield frame
+                self._check_hardware_decode(proc)
         finally:
+            # WHY (#2709): a decoder closed before its last frame leaves FFmpeg blocked
+            # writing to a full pipe, where SIGTERM cannot reach it, so every early stop
+            # waited out the whole terminate grace. A pipe nobody reads is closed first
+            # (the next write fails and FFmpeg exits); a read-ahead reader drains it
+            # instead, since it may still be inside a read.
+            if reader is not None:
+                reader.stop()
+            else:
+                proc.stdout.close()
             # Stop the writer before joining a reader blocked on its pipe.
             stop_owned_process(proc)
             try:
                 raw_frames.close()
             finally:
                 proc.stdout.close()
+
+    def _frame_view(self, raw: bytes | bytearray) -> np.ndarray:
+        if self._pix_fmt == "yuv420p10le":
+            # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
+            # Crossfade blends each sample independently which works for all planes.
+            # The array retains `raw`; body writes, previews and crossfades
+            # only read it. Keep the same bytes-backed view as SDR rather
+            # than copying another 25 MB for every 4K HDR frame.
+            return np.frombuffer(raw, dtype=np.uint16)
+        if self._pix_fmt == "yuv420p":
+            # WHY: SDR stays planar from decoder to encoder, so no RGB
+            # round trip. Flat uint8: Y plane, then U, then V.
+            return np.frombuffer(raw, dtype=np.uint8)
+        return np.frombuffer(raw, dtype=np.uint8).reshape(self._height, self._width, 3)
 
     def _raw_frames(
         self, pipe: BufferedReader, reuse_buffer: bool
@@ -401,6 +442,23 @@ class FrameDecoder:
             yield raw
             index += 1
 
+    def _hwaccel_args(self) -> list[str]:
+        if self._hardware_decode is None:
+            return []
+        # A decode error ends the run, so the clip is decoded again in software rather
+        # than played with the frames a hardware decoder skipped.
+        return ["-xerror", *self._hardware_decode[0]]
+
+    def _check_hardware_decode(self, proc: subprocess.Popen[bytes]) -> None:
+        if self._hardware_decode is None:
+            return
+        try:
+            status = proc.wait(timeout=AUDIO_FINISH_SECONDS)
+        except subprocess.TimeoutExpired:
+            return
+        if status != 0:
+            raise HardwareDecodeFailed(f"Hardware decoding of {self._clip_path.name} failed")
+
     def _finish_bounded_output(self, proc: subprocess.Popen[bytes], decoded: int) -> None:
         # The assembler closes this generator after its last picture.
         # Both outputs are bounded, so let the WAV finish before that
@@ -415,6 +473,8 @@ class FrameDecoder:
                 f"{AUDIO_FINISH_SECONDS:g} s of its last picture"
             ) from None
         if status != 0:
+            if self._hardware_decode is not None:
+                raise HardwareDecodeFailed(f"Hardware decoding of {self._clip_path.name} failed")
             raise RuntimeError("Frame decoder failed before completing clip audio")
 
     def _audio_output_args(self, audio_map: str) -> list[str]:
@@ -464,6 +524,7 @@ def make_decoder(
     caption_window: tuple[int, int] | None = None,
     probe_cache: ProbeCache | None = None,
     planar_sdr: bool = False,
+    from_seconds: float = 0.0,
 ) -> FrameDecoder:
     """Create a FrameDecoder with per-clip normalization filters.
 
@@ -509,6 +570,9 @@ def make_decoder(
 
     source_size, source_frame_rate = _source_properties(clip.path, probe_cache)
     return FrameDecoder(
+        hardware_decode=hardware_decode_for(
+            clip.path, getattr(ctx, "decode_capabilities", None), probe_cache
+        ),
         clip_path=clip.path,
         probe_cache=probe_cache,
         width=width,
@@ -530,7 +594,39 @@ def make_decoder(
         source_size=source_size,
         source_frame_rate=source_frame_rate,
         frame_limit=int(clip.duration * fps) if audio_work_dir is not None else None,
+        from_seconds=from_seconds,
     )
+
+
+def hardware_decode_for(
+    path: Path, capabilities: HWAccelCapabilities | None, probe_cache: ProbeCache
+) -> tuple[tuple[str, ...], str] | None:
+    """The hwaccel arguments for decoding ``path``, and the format its frames are repacked to.
+
+    None decodes in software: no capable hardware, a codec or format the hardware
+    decoders cannot hand back exactly, or a source the probe cannot read.
+    """
+    from immich_memories.processing.hardware import get_ffmpeg_hwaccel_args
+    from immich_memories.processing.probe_cache import ProbeError
+
+    if capabilities is None:
+        return None
+    try:
+        probe = probe_cache.get(path)
+    except (ProbeError, OSError, ValueError):
+        return None
+    codec = _HARDWARE_DECODED_CODECS.get(probe.codec)
+    if codec is None or probe.pixel_format not in _HARDWARE_DECODED_FORMATS:
+        return None
+    supported = (
+        capabilities.supports_h264_decode if codec == "h264" else capabilities.supports_h265_decode
+    )
+    args = get_ffmpeg_hwaccel_args(
+        capabilities, operation="decode", codec=codec, for_software_filters=True
+    )
+    if not supported or not args:
+        return None
+    return tuple(args), str(probe.pixel_format)
 
 
 def _source_properties(
@@ -574,6 +670,10 @@ class _FrameReadAhead:
             except Full:
                 continue
 
+    def stop(self) -> None:
+        """Stop handing out frames; the reader drains the pipe until its writer exits."""
+        self._stopped.set()
+
     def _produce(self) -> None:
         try:
             while not self._stopped.is_set():
@@ -582,13 +682,20 @@ class _FrameReadAhead:
                 except Empty:
                     continue
                 if self._pipe.readinto(slot) != self._frame_size:
-                    break
+                    return
                 self._offer(slot)
+            self._drain()
         except BaseException as exc:
             # Report worker failures on the consuming thread instead of hanging it.
             self._offer(exc)
         finally:
             self._offer(None)
+
+    def _drain(self) -> None:
+        # A writer blocked on a full pipe never sees SIGTERM; reading on keeps it moving.
+        scratch = bytearray(self._frame_size)
+        while self._pipe.readinto(scratch):
+            pass
 
     def frames(self) -> Generator[bytearray, None, None]:
         """Borrow complete frames; the owner must stop its writer before closing."""

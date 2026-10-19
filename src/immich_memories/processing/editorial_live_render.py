@@ -521,6 +521,8 @@ def extract_certified_live(clip, video_path, output_dir, *, extract, config) -> 
         buffer_start=False,
         buffer_end=False,
         config=config,
+        # The film's encode is the only lossy step a Live clip takes (#2692).
+        lossless=True,
     )
     if result != target or not target.is_file():
         raise ValueError("Certified editorial Live extraction failed")

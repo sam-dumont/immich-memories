@@ -556,6 +556,7 @@ def _extract_clips_into(
     A still animated at 30 fps in a 25 fps film loses a frame in six and jitters. Its rate
     is decided before its bank lookup, so a re-render never reuses a still made at another.
     """
+    from immich_memories.generate_settings import still_render_transfer
     from immich_memories.processing.ffmpeg_prober import film_frame_rate, probe_rate
     from immich_memories.processing.output_canvas import resolve_generation_canvas
     from immich_memories.processing.probe_cache import ProbeCache
@@ -591,8 +592,14 @@ def _extract_clips_into(
     for position, clip in prepare(moving_params, counted=(0, overall)):
         prepared[moving[position]] = clip
     cache = probe_cache or ProbeCache()
-    rate = film_frame_rate(list(prepared.values()), partial(probe_rate, cache))
-    at_film_rate = replace(params, clips=[params.clips[i] for i in stills], photo_fps=rate)
+    videos = list(prepared.values())
+    rate = film_frame_rate(videos, partial(probe_rate, cache))
+    at_film_rate = replace(
+        params,
+        clips=[params.clips[i] for i in stills],
+        photo_fps=rate,
+        photo_transfer=still_render_transfer(params, videos, len(stills), probe_cache=cache),
+    )
     for position, clip in prepare(at_film_rate, counted=(len(moving), overall)):
         prepared[stills[position]] = clip
     return _note_departed(params, [prepared[i] for i in sorted(prepared)])

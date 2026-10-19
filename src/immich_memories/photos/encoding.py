@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from immich_memories.processing.encoding_plan import (
@@ -12,6 +11,7 @@ from immich_memories.processing.encoding_plan import (
     HdrMode,
     HdrTransfer,
     OutputCodec,
+    intermediate_encoding_plan,
     resolve_encoding_plan,
     resolve_output_selection,
 )
@@ -64,17 +64,8 @@ def photo_encoding_plan(
         capabilities,
         input_transfer=transfer,
     )
-    if plan.encoder == "libx265":
-        trc = "smpte2084" if transfer is HdrTransfer.PQ else "arib-std-b67"
-        plan = replace(
-            plan,
-            encoder_args=(
-                *plan.encoder_args,
-                "-x265-params",
-                f"hdr-opt=1:repeat-headers=1:colorprim=bt2020:transfer={trc}:colormatrix=bt2020nc",
-            ),
-        )
-    return plan
+    # The film decodes the move again, so it is encoded as an intermediate (#2709).
+    return intermediate_encoding_plan(plan)
 
 
 def _keeps_hdr(

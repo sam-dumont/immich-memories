@@ -60,7 +60,9 @@ Untick **Include Live Photos**, pass `--no-live-photos`, or set `advanced.analys
 
 ## HDR, end to end
 
-Plain photos use an SDR H.264 clip during preparation, with hardware encoding when available. Gain-mapped HDR photos keep HDR only when the film uses HDR H.265; an SDR film tone-maps them during preparation. Software H.264 uses CRF 18 for these clips.
+Plain photos use an SDR H.264 clip during preparation, with hardware encoding when available. Gain-mapped HDR photos keep HDR only when the film uses HDR H.265; an SDR film tone-maps them during preparation. In an HDR film whose videos already decide its transfer (HLG for iPhone footage), every still is prepared in that transfer, so the film plays it without converting each frame. Without a hardware encoder these clips are fast, near-lossless x264 (CRF 12, ultrafast).
+
+Live Photo merges, their final-frame holds and the cut a film takes from them are lossless x264, so the film's own encode is the only lossy step a Live Photo goes through. Expect about 50 MB of scratch space per 3-second Live Photo while the film renders.
 
 On the Basic tier, Live Photo merges are limited to 1080p. With automatic HDR output, a device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation. An explicit HDR output keeps photo HDR through software HEVC.
 

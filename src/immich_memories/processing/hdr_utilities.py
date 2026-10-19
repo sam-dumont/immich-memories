@@ -146,10 +146,9 @@ def detect_color_primaries(
     return None
 
 
-def detect_dominant_hdr_transfer(
-    clips: list, *, probe_cache: ProbeCache | None = None
-) -> HdrTransfer:
-    """Return the exact dominant source transfer, or NONE for all-SDR input."""
+def _transfer_counts(
+    clips: list, probe_cache: ProbeCache | None
+) -> tuple[dict[HdrTransfer, int], dict[HdrTransfer, int]]:
     counts = {HdrTransfer.HLG: 0, HdrTransfer.PQ: 0}
     # Photo animations carry the app's own PQ intermediate; the log says how many *videos* are HDR.
     videos = {HdrTransfer.HLG: 0, HdrTransfer.PQ: 0}
@@ -164,16 +163,33 @@ def detect_dominant_hdr_transfer(
             transfer = HdrTransfer(hdr_type)
             counts[transfer] += 1
             videos[transfer] += not getattr(clip, "is_photo", False)
+    return counts, videos
 
-    if counts[HdrTransfer.PQ] > counts[HdrTransfer.HLG]:
-        if videos[HdrTransfer.PQ]:
-            logger.info("Detected HDR10/PQ format - %d video clips", videos[HdrTransfer.PQ])
+
+def hdr_transfer_votes(clips: list, *, probe_cache: ProbeCache | None = None) -> tuple[int, int]:
+    """How many of ``clips`` are HLG and how many PQ, by their tags."""
+    counts, _videos = _transfer_counts(clips, probe_cache)
+    return counts[HdrTransfer.HLG], counts[HdrTransfer.PQ]
+
+
+def dominant_transfer(hlg: int, pq: int) -> HdrTransfer:
+    """PQ when it outnumbers HLG, else HLG when there is any, else none."""
+    if pq > hlg:
         return HdrTransfer.PQ
-    if counts[HdrTransfer.HLG] > 0:
-        if videos[HdrTransfer.HLG]:
-            logger.info("Detected HLG format - %d video clips", videos[HdrTransfer.HLG])
-        return HdrTransfer.HLG
-    return HdrTransfer.NONE
+    return HdrTransfer.HLG if hlg > 0 else HdrTransfer.NONE
+
+
+def detect_dominant_hdr_transfer(
+    clips: list, *, probe_cache: ProbeCache | None = None
+) -> HdrTransfer:
+    """Return the exact dominant source transfer, or NONE for all-SDR input."""
+    counts, videos = _transfer_counts(clips, probe_cache)
+    transfer = dominant_transfer(counts[HdrTransfer.HLG], counts[HdrTransfer.PQ])
+    if transfer is HdrTransfer.PQ and videos[HdrTransfer.PQ]:
+        logger.info("Detected HDR10/PQ format - %d video clips", videos[HdrTransfer.PQ])
+    elif transfer is HdrTransfer.HLG and videos[HdrTransfer.HLG]:
+        logger.info("Detected HLG format - %d video clips", videos[HdrTransfer.HLG])
+    return transfer
 
 
 def hdr_source_names(clips: list, *, probe_cache: ProbeCache | None = None) -> list[str]:

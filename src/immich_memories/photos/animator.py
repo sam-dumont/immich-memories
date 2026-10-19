@@ -190,6 +190,10 @@ class PreparedPhoto:
     # an iPhone HEIC, so that hardcoding described P3 values as the narrower
     # gamut and desaturated every saturated colour. "smpte432" is P3-D65.
     primaries: str = "bt709"
+    # The prepared picture in RGB when it is kept in memory rather than written to
+    # ``path``: a gain-mapped still's 16-bit linear pixels, which a PNG round trip
+    # gave back unchanged for about half a second of CPU (#2709).
+    pixels: np.ndarray | None = None
 
 
 def prepare_photo_source(
@@ -289,7 +293,6 @@ def _try_ultrahdr_extraction(
 ) -> PreparedPhoto | None:
     """Try to extract UltraHDR gain map from JPEG. Returns None if not UltraHDR."""
     try:
-        import cv2
         import numpy as np
 
         from immich_memories.photos.ultrahdr import (
@@ -334,16 +337,18 @@ def _try_ultrahdr_extraction(
         hdr_norm = np.clip(hdr_linear / max(peak_linear, 1.001), 0, 1)
         hdr_16 = (hdr_norm * 65535).astype(np.uint16)
 
-        out_path = work_dir / f"{source_path.stem}_hdr.png"
-        cv2.imwrite(str(out_path), cv2.cvtColor(hdr_16, cv2.COLOR_RGB2BGR))
-
         peak_nits = int(peak_linear * 203)
         logger.info(
             f"Extracted UltraHDR gain map from {source_path.name} ({w}x{h}), "
             f"peak={peak_linear:.1f}x ({peak_nits} nits)"
         )
         return PreparedPhoto(
-            path=out_path, width=w, height=h, has_gain_map=True, peak_nits=peak_nits
+            path=source_path,
+            width=w,
+            height=h,
+            has_gain_map=True,
+            peak_nits=peak_nits,
+            pixels=hdr_16,
         )
 
     except (ValueError, OSError) as e:
@@ -489,8 +494,9 @@ def _apply_hdr_gain_map(
 
     # WHY: headroom IS the peak multiple of SDR white; npl = peak * 203 nits
     peak_linear = headroom
-    out_path = work_dir / f"{source_path.stem}_hdr.png"
-    cv2.imwrite(str(out_path), _gain_mapped_bgr16(np.asarray(sdr_img), gain, headroom))
+    pixels = cv2.cvtColor(
+        _gain_mapped_bgr16(np.asarray(sdr_img), gain, headroom), cv2.COLOR_BGR2RGB
+    )
 
     peak_nits = int(peak_linear * 203)
     logger.info(
@@ -499,12 +505,13 @@ def _apply_hdr_gain_map(
     )
 
     return PreparedPhoto(
-        path=out_path,
+        path=source_path,
         width=w,
         height=h,
         has_gain_map=True,
         peak_nits=peak_nits,
         primaries=primaries,
+        pixels=pixels,
     )
 
 

@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import logging
 import math
-from collections.abc import Iterator
-from dataclasses import dataclass
+from collections.abc import Callable, Iterator
+from dataclasses import dataclass, replace
 
 import cv2
 import numpy as np
@@ -98,26 +98,39 @@ def _rounded(image: np.ndarray, dtype: np.dtype) -> np.ndarray:
     return np.clip(np.rint(image), info.min, info.max).astype(dtype)
 
 
-def render_ken_burns_streaming(
+@dataclass
+class KenBurnsLayers:
+    """What every frame of a move is cut from: the resampled picture and its blurred fill.
+
+    Both are computed once per still. ``recolored`` puts them through a colour
+    conversion before any frame is cut, so the frames come out in its colour for
+    the price of one conversion instead of one per frame.
+    """
+
+    big: np.ndarray
+    blur: np.ndarray | None
+    viewport: tuple[int, int]
+    window: tuple[int, int, int, int]
+    letterboxed: bool
+    background: tuple[int, int]
+
+    def recolored(self, convert: Callable[[np.ndarray], np.ndarray]) -> KenBurnsLayers:
+        """The same layers in ``convert``'s colour; the blur rounded to the picture's depth first."""
+        blur = None
+        if self.blur is not None:
+            blur = convert(_rounded(self.blur, self.big.dtype)).astype(np.float32)
+        return replace(self, big=convert(self.big), blur=blur)
+
+
+def ken_burns_layers(
     src: np.ndarray,
     vp_w: int,
     vp_h: int,
-    params: KenBurnsParams | None = None,
+    params: KenBurnsParams,
     *,
     scale_mode: str = "blur",
-) -> Iterator[np.ndarray]:
-    """Yield Ken Burns frames one at a time (O(1) memory).
-
-    The photo "window" is a fixed rectangle centered in the viewport.
-    Ken Burns zooms/pans INSIDE that window. With `scale_mode` "blur" the
-    photograph's own blur fills the rest, derived from the same crop content
-    each frame; with "fit" the rest is black, as it is around a fitted video.
-
-    The window position and size NEVER change during the animation.
-    """
-    if params is None:
-        params = KenBurnsParams()
-
+) -> KenBurnsLayers:
+    """Resample the picture for its move, and blur its fill when the window leaves bands."""
     src_h, src_w = src.shape[:2]
 
     # Photo window: fit source aspect into viewport
@@ -155,6 +168,25 @@ def render_ken_burns_streaming(
         # Float from here: the blur averages the resize's rounding away, and the warp
         # then rounds once, so the background stays within a code of a float render.
         big_blur = cv2.GaussianBlur(small.astype(np.float32), (0, 0), sigmaX=40 / BLUR_DOWNSCALE)
+    return KenBurnsLayers(
+        big=big,
+        blur=big_blur,
+        viewport=(vp_w, vp_h),
+        window=(win_x, win_y, win_w, win_h),
+        letterboxed=letterboxed,
+        background=(bg_w, bg_h),
+    )
+
+
+def ken_burns_frames(layers: KenBurnsLayers, params: KenBurnsParams) -> Iterator[np.ndarray]:
+    """Yield the move's frames one at a time (O(1) memory), cut from ``layers``."""
+    big, big_blur = layers.big, layers.blur
+    bh, bw = big.shape[:2]
+    vp_w, vp_h = layers.viewport
+    win_x, win_y, win_w, win_h = layers.window
+    bg_w, bg_h = layers.background
+    bg_shrink = (bg_w / vp_w, bg_h / vp_h)
+    if big_blur is not None:
         blur_scale = (big_blur.shape[1] / bw, big_blur.shape[0] / bh)
 
     n_frames = int(params.fps * params.duration)
@@ -176,7 +208,7 @@ def render_ken_burns_streaming(
             big, m_sharp, (win_w, win_h), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE
         )
 
-        if needs_blur and big_blur is not None:
+        if big_blur is not None:
             # WHY: use uniform scale (max of x/y) to FILL viewport without stretch.
             # Different x/y scales would distort the blur. The larger scale ensures
             # the blur covers the entire viewport; excess is cropped by warpAffine.
@@ -207,7 +239,7 @@ def render_ken_burns_streaming(
             )
             bg[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
             yield bg
-        elif letterboxed:
+        elif layers.letterboxed:
             canvas = np.zeros((vp_h, vp_w, *big.shape[2:]), dtype=big.dtype)
             canvas[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
             yield canvas
@@ -217,6 +249,30 @@ def render_ken_burns_streaming(
             yield cv2.warpAffine(
                 big, m_vp, (vp_w, vp_h), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE
             )
+
+
+def render_ken_burns_streaming(
+    src: np.ndarray,
+    vp_w: int,
+    vp_h: int,
+    params: KenBurnsParams | None = None,
+    *,
+    scale_mode: str = "blur",
+) -> Iterator[np.ndarray]:
+    """Yield Ken Burns frames one at a time (O(1) memory).
+
+    The photo "window" is a fixed rectangle centered in the viewport.
+    Ken Burns zooms/pans INSIDE that window. With `scale_mode` "blur" the
+    photograph's own blur fills the rest, derived from the same crop content
+    each frame; with "fit" the rest is black, as it is around a fitted video.
+
+    The window position and size NEVER change during the animation.
+    """
+    if params is None:
+        params = KenBurnsParams()
+    return ken_burns_frames(
+        ken_burns_layers(src, vp_w, vp_h, params, scale_mode=scale_mode), params
+    )
 
 
 def _blit_cell(canvas: np.ndarray, cell: np.ndarray, cx: int, cy: int) -> None:

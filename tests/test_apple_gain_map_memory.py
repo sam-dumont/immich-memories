@@ -5,7 +5,6 @@ from __future__ import annotations
 import struct
 import tracemalloc
 
-import cv2
 import numpy as np
 import pytest
 from PIL import Image
@@ -82,7 +81,8 @@ def test_the_gain_map_is_applied_in_linear_light_to_every_pixel(tmp_path, gain_m
 
     assert prepared.has_gain_map
     assert prepared.peak_nits == int(animator._headroom_from_stops(1.01, 0.00608) * 203)
-    written = cv2.cvtColor(cv2.imread(str(prepared.path), cv2.IMREAD_UNCHANGED), cv2.COLOR_BGR2RGB)
+    written = prepared.pixels
+    assert written is not None
     assert written.dtype == np.uint16
     expected = _expected(path, gain, prepared.peak_nits / 203)
     assert np.abs(written.astype(np.float64) - expected).max() <= 70

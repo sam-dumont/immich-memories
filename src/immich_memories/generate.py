@@ -29,8 +29,10 @@ from immich_memories.processing.output_canvas import OutputCanvas
 from immich_memories.processing.output_contract import (
     DecodeCheck,
     OutputProbe,
+    carried_verification,
     publish_validated_output,
     validate_output,
+    video_stream_digest,
 )
 from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.timed import timed
@@ -41,7 +43,7 @@ if TYPE_CHECKING:
     from immich_memories.api.models import VideoClipInfo
     from immich_memories.config.loader import Config
     from immich_memories.processing.assembly_config import AssemblyClip
-    from immich_memories.processing.encoding_plan import EncodingPlan
+    from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
     from immich_memories.processing.timeline_budget import TimelinePlan
     from immich_memories.tracking import RunTracker
     from immich_memories.tracking.models import RunMetadata
@@ -76,6 +78,9 @@ class GenerationParams:
     # The rate a still animates at: the film's own, which its videos decide (#2475).
     # None until preparation knows it.
     photo_fps: int | None = None
+    # The HDR transfer a still is rendered in: the film's, when its videos settle it
+    # (#2709). None leaves a still in its own transfer.
+    photo_transfer: HdrTransfer | None = None
 
     # Title settings
     title: str | None = None
@@ -199,6 +204,22 @@ class PreparedGeneration:
             decode_check=decode_check,
             verified=self.verified,
         )
+
+
+def _verified_video_digest(prepared: PreparedGeneration) -> str | None:
+    """The video packets an earlier decode vouched for, when there is one."""
+    return video_stream_digest(prepared.current_path) if prepared.verified is not None else None
+
+
+def _with_decode_kept(prepared: PreparedGeneration, video_digest: str | None) -> PreparedGeneration:
+    """The film, still vouched for by its earlier decode if the music remux copied its video.
+
+    The decode check reads only the video stream, so unchanged packets keep the decode.
+    """
+    if video_digest is None:
+        return prepared
+    verified = carried_verification(prepared.current_path, prepared.verified, video_digest)
+    return replace(prepared, verified=verified)
 
 
 class GenerationError(Exception):
@@ -616,6 +637,8 @@ def _generate_memory_inner(
         )
 
         # Phase 3: Music, mixed into the film before it is published
+        # A worker's decode of the film stands across a remux that copies its video (#2709).
+        worker_video = _verified_video_digest(prepared)
         with timing.span("render.music") as music_span:
             music_result = _complete_music_phase(
                 params,
@@ -629,6 +652,7 @@ def _generate_memory_inner(
                 mute_windows=prepared.music_mute_windows,
             )
         _phase_times["music"] = music_span.duration
+        prepared = _with_decode_kept(prepared, worker_video)
 
         final_probe = prepared.publish(decode_check)
         artifact_warnings = _artifact_warnings(

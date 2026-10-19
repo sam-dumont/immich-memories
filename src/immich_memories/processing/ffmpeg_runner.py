@@ -317,6 +317,8 @@ class AssemblyContext:
     colorspace_filter: str
     target_fps: int = 30
     fade_duration: float = 0.5
+    # The hardware clips may be decoded on; None decodes in software.
+    decode_capabilities: Any = None
 
 
 def _parse_ffmpeg_time(time_str: str) -> float:

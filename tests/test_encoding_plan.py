@@ -523,3 +523,36 @@ def test_resolved_plan_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         plan.encoder = "hevc_videotoolbox"  # type: ignore[misc]
+
+
+@pytest.mark.parametrize("hdr", [False, True])
+def test_a_software_intermediate_is_fast_x264_in_the_films_transfer(hdr: bool) -> None:
+    """#2709: intermediates the film decodes again were encoded at its own preset."""
+    film = resolve_encoding_plan(
+        _request(OutputCodec.H265, hardware_enabled=False),
+        _apple_capabilities(),
+        input_has_hdr=hdr,
+    )
+
+    plan = encoding_plan_module.intermediate_encoding_plan(film)
+
+    assert plan.encoder == "libx264"
+    assert plan.encoder_args == (
+        "-preset",
+        "ultrafast",
+        "-crf",
+        str(encoding_plan_module.INTERMEDIATE_CRF),
+    )
+    assert plan.target_transfer is film.target_transfer
+    assert plan.pixel_format == film.pixel_format
+    lossless = encoding_plan_module.intermediate_encoding_plan(film, lossless=True)
+    assert lossless.encoder_args == ("-preset", "ultrafast", "-qp", "0")
+
+
+def test_a_hardware_intermediate_keeps_its_plan() -> None:
+    film = resolve_encoding_plan(
+        _request(OutputCodec.H265, hardware_enabled=True), _apple_capabilities(), input_has_hdr=True
+    )
+
+    assert film.encoder == "hevc_videotoolbox"
+    assert encoding_plan_module.intermediate_encoding_plan(film) is film

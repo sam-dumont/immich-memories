@@ -71,10 +71,5 @@ def test_certified_hold_keeps_all_frames_at_the_declared_cadence(
     record = json.loads(output.with_suffix(".json").read_text())
     hold = record["frame_quantization"]["final_frame_hold"]
     assert hold["target_frames"] == output_frames
-    if hardware_enabled:
-        from immich_memories.processing.hardware import detect_hardware_acceleration
-
-        if detect_hardware_acceleration().supports_h264_encode:
-            assert hold["encoder"] not in {"libx264", "libx265"}
-    else:
-        assert hold["encoder"] == "libx264"
+    # Lossless x264 on every machine, so the film's encode is the only lossy step (#2692).
+    assert hold["encoder"] == "libx264"

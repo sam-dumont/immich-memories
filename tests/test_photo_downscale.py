@@ -116,7 +116,9 @@ def test_a_gain_mapped_photo_is_capped_and_still_hdr(tmp_path) -> None:
     photo = lfs_fixture(HDR_SAMPLES / "gain_mapped-photo-tokyo.jpg")
     result = prepare_photo_source(photo, tmp_path, max_size=CAP)
 
-    assert max(_dimensions(result.path)) <= max(CAP)
+    assert result.pixels is not None
+    assert max(result.pixels.shape[:2]) <= max(CAP)
+    assert (result.width, result.height) == result.pixels.shape[1::-1]
     assert result.has_gain_map
 
 
