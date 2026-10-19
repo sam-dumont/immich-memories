@@ -15,6 +15,14 @@ from PIL import Image
 _W, _H, _FPS = 64, 36, 10.0
 
 
+@pytest.fixture(autouse=True)
+def _no_tiles_ahead(monkeypatch):
+    from immich_memories.titles import map_animation
+
+    # WHY: the tiles here are faked frame by frame; fetching ahead would reach the tile host.
+    monkeypatch.setattr(map_animation, "_LOOKAHEAD_VIEWS", 0)
+
+
 def _camera_colour(lat: float, lon: float, zoom: float, w: int, h: int) -> Image.Image:
     return Image.new("RGB", (w, h), (int(lat * 2) % 256, int(lon * 2) % 256, int(zoom * 10)))
 
