@@ -17,28 +17,31 @@ _POLL_SECONDS = 5.0
 
 @contextmanager
 def log_phase_progress(
-    read_events: Callable[[], list[dict[str, Any]]],
+    read_events: Callable[[int], list[tuple[int, dict[str, Any]]]],
     interval_seconds: float = _POLL_SECONDS,
 ) -> Iterator[None]:
     """Log each phase event the child persists while the block runs.
+
+    `read_events(after)` returns the events with an id past `after` as `(id, event)`, so a
+    poll reads what is new instead of the child's whole log.
 
     The child's own output is captured for the attempt record, so `kubectl logs` shows
     nothing for the hour a year review takes unless the parent reports what the child
     wrote to the store.
     """
-    logged = 0
+    last_id = 0
     stop = threading.Event()
 
     def drain() -> None:
-        nonlocal logged
+        nonlocal last_id
         try:
-            events = read_events()
+            events = read_events(last_id)
         except Exception:  # WHY: progress lines must never fail a run
             logger.debug("Could not read phase progress", exc_info=True)
             return
-        for event in events[logged:]:
+        for event_id, event in events:
             _log_event(event)
-        logged = len(events)
+            last_id = event_id
 
     def poll() -> None:
         while not stop.wait(interval_seconds):

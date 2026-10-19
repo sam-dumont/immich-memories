@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import shutil
 import time
 from dataclasses import dataclass
@@ -25,6 +24,11 @@ from typing import TYPE_CHECKING
 import sqlalchemy as sa
 
 from immich_memories.db.tables import pipeline_runs, run_attempts
+from immich_memories.operations.attempt_size import (
+    record_attempt_size,
+    recorded_attempt_size,
+    walk_size,
+)
 from immich_memories.operations.editorial_attempt import LATEST_ATTEMPT, read_editorial_attempt
 
 if TYPE_CHECKING:
@@ -115,18 +119,22 @@ def _attempt_dirs(root: Path) -> list[Path]:
 
 
 def _measure(directory: Path) -> _Attempt:
-    size = 0
-    for current, _dirs, files in os.walk(directory):
-        for name in files:
-            try:
-                size += (Path(current) / name).lstat().st_size
-            except OSError:
-                continue
+    """Size and last-touched time; the size comes from the note an attempt leaves at finish."""
     status = directory / "status.private.json"
     try:
         touched = (status if status.exists() else directory).stat().st_mtime
     except OSError:
         touched = time.time()
+    size = recorded_attempt_size(directory)
+    if size is None:
+        # An attempt from before the note, or one still running: walk it. A finished one is
+        # noted so the next pass does not walk it again; a live one keeps changing.
+        size = (
+            record_attempt_size(directory)
+            if time.time() - touched > _RECENT_SECONDS
+            else walk_size(directory)
+        )
+        size = walk_size(directory) if size is None else size
     return _Attempt(directory, touched, size)
 
 

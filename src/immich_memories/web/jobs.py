@@ -31,6 +31,9 @@ from immich_memories.storage_errors import storage_failure_message
 from immich_memories.web.process_identity import process_started
 from immich_memories.web.schemas import Job, JobKind, JobStatus
 
+# A finished job's record, log and progress file are kept this long, then removed.
+JOB_RETENTION_SECONDS = 30 * 24 * 3600
+
 
 class JobBusy(RuntimeError):
     """Another job is running; it is carried so the page can join it instead."""
@@ -68,6 +71,8 @@ class JobRunner:
         self._lock = threading.RLock()
         self._processes: dict[str, subprocess.Popen] = {}
         self._unsaved: dict[str, Job] = {}
+        # Ids whose record says finished: it never changes again, so active() skips it.
+        self._finished: set[str] = set()
 
     def _path(self, job_id: str, suffix: str, *, progress: bool = False) -> Path:
         if re.fullmatch(r"[0-9a-f]{32}", job_id) is None:
@@ -86,6 +91,10 @@ class JobRunner:
 
     def _log(self, job_id: str) -> Path:
         return self._path(job_id, "log")
+
+    def log_path(self, job_id: str) -> Path:
+        """Where a job's child writes its output."""
+        return self._log(job_id)
 
     def progress_path(self, job_id: str) -> Path:
         """Where a job's child keeps its `--progress-file`: apart from the records, never one."""
@@ -154,10 +163,39 @@ class JobRunner:
         if not self._dir.is_dir():
             return None
         for job_id in sorted(self._record_ids(), reverse=True):
+            if job_id in self._finished:
+                continue
             job = self.get(job_id)
-            if job is not None and job.status == "running":
+            if job is None:
+                continue
+            if job.status == "running":
                 return job
+            if job_id not in self._unsaved:
+                self._finished.add(job_id)
         return None
+
+    def prune(self, *, now: float | None = None) -> int:
+        """Remove the records, logs and progress files of jobs finished past the retention."""
+        if not self._dir.is_dir():
+            return 0
+        cutoff = (time.time() if now is None else now) - JOB_RETENTION_SECONDS
+        removed = 0
+        for job_id in self._record_ids():
+            record = self._record(job_id)
+            try:
+                if record.stat().st_mtime >= cutoff:
+                    continue
+            except OSError:
+                continue
+            job = self.get(job_id)
+            if job is None or job.status == "running":
+                continue
+            for path in (record, self._log(job_id), self.progress_path(job_id)):
+                with suppress(OSError):
+                    path.unlink()
+            self._finished.discard(job_id)
+            removed += 1
+        return removed
 
     def start(
         self,
@@ -173,6 +211,7 @@ class JobRunner:
         with self._lock:
             if running := self.active():
                 raise JobBusy(running)
+            self.prune()
             job_id = job_id or uuid4().hex
             create_private_directory(self._dir)
             with os.fdopen(os.open(self._log(job_id), os.O_WRONLY | os.O_CREAT, 0o600), "w") as log:

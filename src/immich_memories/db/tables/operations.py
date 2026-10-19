@@ -112,6 +112,37 @@ automation_attempts = Table(
     Column("phase_events", JSON, nullable=False),
 )
 
+# Phase events are appended one row each, never rewritten as an array: a long run emits one per
+# clip and a heartbeat, and readers pick up from the last id they saw. The `phase_events`
+# column on the two parent tables is the pre-append array; upgrade empties it into these rows.
+run_phase_events = Table(
+    "run_phase_events",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column(
+        "run_id",
+        String(),
+        ForeignKey(pipeline_runs.c.run_id, ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    ),
+    Column("event", JSON, nullable=False),
+)
+
+attempt_phase_events = Table(
+    "attempt_phase_events",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column(
+        "attempt_id",
+        String(),
+        ForeignKey(automation_attempts.c.id, ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    ),
+    Column("event", JSON, nullable=False),
+)
+
 # One row, id 1: the health of the notification channel and its failure cooldown.
 notification_health = Table(
     "notification_health",

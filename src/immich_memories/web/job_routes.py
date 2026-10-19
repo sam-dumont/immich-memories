@@ -42,6 +42,7 @@ from immich_memories.web.film_downloads import (
     immich_finished_film,
 )
 from immich_memories.web.film_files import FILM_TYPES, local_film
+from immich_memories.web.job_stream import LEASE_TTL, Seen, next_event
 from immich_memories.web.jobs import JobBusy, JobRunner
 from immich_memories.web.schemas import AskPreview, Job, JobProgress
 
@@ -179,8 +180,8 @@ def _preparing_progress(job: Job) -> JobProgress | None:
     )
 
 
-def _cut_progress(config: Config, job: Job) -> JobProgress:
-    record = read_latest_attempt(_cut_root(config, job.id))
+def _cut_progress(config: Config, job: Job, lease_ttl: float = 0.0) -> JobProgress:
+    record = read_latest_attempt(_cut_root(config, job.id), lease_ttl=lease_ttl)
     if record is None:
         return _preparing_progress(job) or JobProgress(label="Preparing the pool")
     live = live_progress_of(record) or StageUpdate.from_record(record.get("progress"))
@@ -237,9 +238,9 @@ def _render_progress(job: Job) -> JobProgress:
     )
 
 
-def job_view(config: Config, job: Job) -> JobView:
+def job_view(config: Config, job: Job, *, lease_ttl: float = 0.0) -> JobView:
     if job.kind == "cut":
-        progress = _cut_progress(config, job)
+        progress = _cut_progress(config, job, lease_ttl)
     elif job.kind in {"render", "music"}:
         progress = _render_progress(job)
     elif job.kind == "models":
@@ -513,14 +514,18 @@ async def job_events(
     """Server-sent events: the job's view on every change, until it finishes."""
     _job(runner, job_id)
 
+    def build(job: Job) -> str:
+        return job_view(config, job, lease_ttl=LEASE_TTL).model_dump_json()
+
     async def stream() -> AsyncIterator[str]:
-        previous = ""
+        seen = Seen(None, "")
         while True:
-            view = job_view(config, _job(runner, job_id)).model_dump_json()
-            if view != previous:
-                previous = view
-                yield f"data: {view}\n\n"
-            if json.loads(view)["status"] != "running":
+            seen, changed, running = await asyncio.to_thread(
+                next_event, runner, _job(runner, job_id), _cut_root(config, job_id), build, seen
+            )
+            if changed is not None:
+                yield f"data: {changed}\n\n"
+            if not running:
                 return
             await asyncio.sleep(0.5)
 

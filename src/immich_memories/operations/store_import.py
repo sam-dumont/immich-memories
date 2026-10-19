@@ -27,11 +27,13 @@ from immich_memories.db import Store, now_db, to_db
 from immich_memories.db.legacy_import import ImportOutcome
 from immich_memories.db.tables import (
     asset_scores,
+    attempt_phase_events,
     automation_attempts,
     notification_health,
     phase_stats,
     pipeline_runs,
     run_attempts,
+    run_phase_events,
     special_days,
 )
 from immich_memories.store.legacy_verify import unreadable, verify_rows
@@ -211,13 +213,17 @@ def _import_cache_db(store: Store, path: Path, tally: _Tally) -> None:
         runs = [_v11_identity(run) for run in runs]
     with store.begin() as conn:
         new_runs = _insert_new(conn, pipeline_runs, ["run_id"], runs, tally)
+        _import_phase_events(conn, run_phase_events, "run_id", legacy["pipeline_runs"], new_runs)
         # Phase timings have no key of their own: they come in with a run new to the store.
         phases = [_phase(r) for r in legacy["phase_stats"] if r.get("run_id") in new_runs]
         if phases:
             conn.execute(sa.insert(phase_stats), phases)
         tally.imported += len(phases)
         tally.skipped += len(legacy["phase_stats"]) - len(phases)
-        _import_attempts(conn, legacy["automation_attempts"], tally)
+        new_attempts = _import_attempts(conn, legacy["automation_attempts"], tally)
+        _import_phase_events(
+            conn, attempt_phase_events, "attempt_id", legacy["automation_attempts"], new_attempts
+        )
         health = [_health(r) for r in legacy["notification_health"] if r.get("id") == 1]
         _insert_new(conn, notification_health, ["id"], health, tally)
         _insert_new(
@@ -329,18 +335,36 @@ def _held_keys(conn: Connection, table: sa.Table, keys: Sequence[str], wanted: l
     return held
 
 
-def _import_attempts(conn: Connection, legacy: list[Row], tally: _Tally) -> None:
+def _import_phase_events(
+    conn: Connection, events: sa.Table, owner: str, legacy: list[Row], imported: set[Any]
+) -> None:
+    """Move the legacy `phase_events` arrays of the rows just imported into event rows."""
+    key = "run_id" if owner == "run_id" else "id"
+    rows = [
+        {owner: row[key], "event": event}
+        for row in legacy
+        if row[key] in imported
+        for event in _json(row.get("phase_events"), [])
+    ]
+    for start in range(0, len(rows), _CHUNK):
+        conn.execute(sa.insert(events), rows[start : start + _CHUNK])
+
+
+def _import_attempts(conn: Connection, legacy: list[Row], tally: _Tally) -> set[Any]:
     """Legacy attempts in rowid order, one INSERT each, so the database numbers them in that
     order and its own counter stays in step (no explicit `seq` is ever written)."""
     rows = [_attempt(row) for row in legacy]
     held = _held_keys(conn, automation_attempts, ["id"], [row["id"] for row in rows])
+    fresh: set[Any] = set()
     for row in rows:
         if row["id"] in held:
             tally.skipped += 1
             continue
         conn.execute(sa.insert(automation_attempts), row)
         held.add(row["id"])
+        fresh.add(row["id"])
         tally.imported += 1
+    return fresh
 
 
 def _dedup_scores(rows: list[Row]) -> list[Row]:
@@ -397,7 +421,7 @@ def _run(row: Row) -> Row:
         "source": row.get("source") or "manual",
         "automation_attempt_id": row.get("automation_attempt_id"),
         "last_phase": row.get("last_phase"),
-        "phase_events": _json(row.get("phase_events"), []),
+        "phase_events": [],  # the events are rows of their own, see `_phase_event_rows`
         "person_name": row.get("person_name"),
         "person_id": row.get("person_id"),
         "date_range_start": row.get("date_range_start"),
@@ -448,7 +472,7 @@ def _attempt(row: Row) -> Row:
         "run_id": row.get("run_id"),
         "error": row.get("error"),
         "last_phase": row.get("last_phase"),
-        "phase_events": _json(row.get("phase_events"), []),
+        "phase_events": [],  # the events are rows of their own, see `_phase_event_rows`
     }
 
 

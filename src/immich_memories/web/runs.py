@@ -69,7 +69,9 @@ def list_runs(
     store = open_store(config)
     # A run whose process died is marked interrupted by the scheduler's tick, not here:
     # a read must not be the thing that writes.
-    records = RunDatabase(store).list_runs(limit=limit + 1, offset=offset, status=status)
+    records = RunDatabase(store).list_runs(
+        limit=limit + 1, offset=offset, status=status, with_events=False
+    )
     return RunPage(
         runs=[_summary(config, record) for record in records[:limit]],
         next_offset=offset + limit if len(records) > limit else None,

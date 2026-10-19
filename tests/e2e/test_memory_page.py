@@ -61,7 +61,11 @@ def _request_of_the_cut_after(launch_workspace, before: set[Path]) -> dict:
     written = _attempts(launch_workspace) - before
     assert written, "the cut opened no attempt"
     newest = max(written, key=lambda path: path.stat().st_mtime)
-    return json.loads((newest / "status.private.json").read_text())["request"]
+    from immich_memories.operations.editorial_attempt import REQUESTED_ASSETS
+
+    request = json.loads((newest / "status.private.json").read_text())["request"]
+    # The pictures asked about live in a file of their own, not in the status record.
+    return request | {"requested_assets": json.loads((newest / REQUESTED_ASSETS).read_text())}
 
 
 def _brief_for_the_month(page: Page, launch_app_url: str) -> None:
