@@ -79,23 +79,30 @@ def episode_page_scopes(
     pages: list[tuple[str, ...]] = []
     current: tuple[str, ...] = ()
     conservative_page_count = max(len(full_asset_ids), 2)
+    # The prompt is its fixed text plus one numbered line per asset, so a page's length is the
+    # empty page's plus its lines, which is exact and renders the page once, not per asset.
+    empty = EpisodeRequestScope(
+        identity=identity,
+        full_asset_ids=full_asset_ids,
+        page_asset_ids=(),
+        page_number=conservative_page_count,
+        page_count=conservative_page_count,
+    )
+    fixed = len(episode_prompt((empty,), facts))
+    lines_chars = 0
     for asset_id in full_asset_ids:
-        proposed = (*current, asset_id)
-        scope = EpisodeRequestScope(
-            identity=identity,
-            full_asset_ids=full_asset_ids,
-            page_asset_ids=proposed,
-            page_number=conservative_page_count,
-            page_count=conservative_page_count,
-        )
+        position = len(current) + 1
+        line = len(f"  asset {position} | {facts.lines[asset_id]}")
+        proposed_chars = lines_chars + (1 if current else 0) + line
         if current and (
-            len(proposed) > max_assets_per_page
-            or len(episode_prompt((scope,), facts)) > max_prompt_chars
+            position > max_assets_per_page or fixed + proposed_chars > max_prompt_chars
         ):
             pages.append(current)
             current = (asset_id,)
+            lines_chars = len(f"  asset 1 | {facts.lines[asset_id]}")
         else:
-            current = proposed
+            current = (*current, asset_id)
+            lines_chars = proposed_chars
     if current:
         pages.append(current)
 

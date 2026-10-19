@@ -722,6 +722,7 @@ src/immich_memories/
 │   │   ├── pick_pages.py       # Cut one story's pick into requests a reader can answer, and split its grant between them.
 │   │   ├── picture_admission.py # Shared candidate preparation and standing, audience, spacing and repetition checks
 │   │   ├── places.py           # One place of a scope holds only the share of it a trip of that length would
+│   │   ├── run_memo.py         # Asks once per key for a hash or scene print, so an admission does not re-read the cut
 │   │   ├── repeat_exemptions.py # What no repetition check refuses (favourite, close family's only shot), shared with the final review
 │   │   ├── replacement_pool.py # What a freed slot refills from: the carrier's own moment, its
 │   │   │                       # story's unshown moments, then other stories' moments that never took a slot
@@ -836,6 +837,7 @@ src/immich_memories/
 │   ├── clips/                  # What a kept clip plays: its timing budget, motion, window and speech.
 │   │   ├── added_live_motion.py # A Live Photo added in review: stitched with its neighbours, motion only at the floor and moving
 │   │   ├── bound_sample.py     # Content-bound sampled evidence; sample identities are never library asset IDs.
+│   │   ├── identity_memo.py    # Runs a pure function once per live object, for asset digests
 │   │   ├── budget.py           # The duration and motion constants the production structure editor plans against.
 │   │   ├── clip_facts.py       # A kept video's window facts, measured once and banked: frame sizes off the
 │   │   │                       # index, loudness and speech over at most a minute of its sound (#1949)

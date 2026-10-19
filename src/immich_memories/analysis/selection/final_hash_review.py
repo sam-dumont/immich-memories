@@ -33,6 +33,7 @@ import math
 from collections import Counter
 from collections.abc import Callable, Collection, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 from operator import itemgetter
 from typing import Any
 
@@ -105,8 +106,14 @@ def _seconds(carrier: Mapping[str, Any]) -> float:
 
 
 def _taken(carrier: Mapping[str, Any]) -> datetime:
-    taken = datetime.fromisoformat(str(carrier["taken"]))
-    return taken if taken.tzinfo is not None else taken.replace(tzinfo=UTC)
+    return _instant(str(carrier["taken"]))
+
+
+@lru_cache(maxsize=65536)
+def _instant(taken: str) -> datetime:
+    # The same capture time is read for every pair it sits in; parsing it is pure.
+    parsed = datetime.fromisoformat(taken)
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
 
 
 def _cached_hashes(

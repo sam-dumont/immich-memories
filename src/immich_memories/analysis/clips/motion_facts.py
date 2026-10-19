@@ -17,6 +17,7 @@ from immich_memories.analysis.clips.budget import (
     NOMINAL_STILL_SECONDS,
     raw_centiseconds,
 )
+from immich_memories.analysis.clips.identity_memo import per_object
 from immich_memories.analysis.clips.motion_outcomes import MotionAttemptOutcomes
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.db import Store
@@ -83,12 +84,15 @@ def flow_residual(frames: list) -> dict:
     }
 
 
-def motion_source_key(asset) -> str:
-    """A reused asset ID alone cannot authenticate a changed source or linked video."""
+def _motion_source_key(asset) -> str:
     material = {"method": METHOD, "asset": asset.model_dump(mode="json")}
     return hashlib.sha256(
         json.dumps(material, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
+
+
+# A reused asset ID alone cannot authenticate a changed source or linked video.
+motion_source_key = per_object(_motion_source_key)
 
 
 def sample_motion_members(members, *, maximum=3):

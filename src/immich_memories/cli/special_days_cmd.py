@@ -287,13 +287,12 @@ def _scan_one_year(
         else:
             because = day.unjudged_because or "nobody could say"
             console.print(f"  [dim]{day.day}  left unjudged: {because}[/dim]")
-        # Written as we go: a scan this long is worth keeping in pieces, and
-        # `found` already carries the earlier catalogue.
-        save_catalogue(found)
 
-    # Only here, with every month of the year read and asked about. A year
-    # interrupted or partly refused says nothing, and gets scanned again rather
-    # than standing as half an answer.
+    # One write per year, the days with their marker. `scan_year` hands back the whole year
+    # at once, so a write per day only rewrote the catalogue as many times as the year has
+    # days. The marker goes in only with every month read and asked about: a year interrupted
+    # or partly refused says nothing, and gets scanned again rather than standing as half an
+    # answer.
     found.append({"scanned": year})
     save_catalogue(found)
 

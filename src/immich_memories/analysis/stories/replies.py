@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Callable, Mapping
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.judgments.json_envelopes import (
@@ -42,17 +43,23 @@ _RELATION = re.compile(r"\(([^;()]+(?:\([^()]*\))?)")
 def relations_on(line: str) -> list[str]:
     """The relation of each known person on an annotation line, as the people registry states it
     ("partner", "son", "grandmother", "friend"), in order, without names."""
+    return list(_relations_on(line))
+
+
+@lru_cache(maxsize=16384)
+def _relations_on(line: str) -> tuple[str, ...]:
+    # A line's text is the whole input, so a run reads each line's regexes once.
     if not line:
-        return []
+        return ()
     match = re.search(r"\| with ([^|]+)", line)
     if not match:
-        return []
-    out = []
+        return ()
+    out: list[str] = []
     for rel in _RELATION.findall(match.group(1)):
         rel = rel.strip().rstrip(";").strip()
         if rel and rel not in out and not rel.startswith("aged"):
             out.append(rel)
-    return out
+    return tuple(out)
 
 
 _WITH_PEOPLE = re.compile(r"\| with ([^|]+)")
@@ -65,13 +72,18 @@ def people_on(line: str) -> dict[str, str]:
 
     The name only tells two people apart inside this run; nothing recorded from here carries it.
     """
+    return dict(_people_on(line))
+
+
+@lru_cache(maxsize=16384)
+def _people_on(line: str) -> tuple[tuple[str, str], ...]:
     match = _WITH_PEOPLE.search(line)
     if not match:
-        return {}
-    return {
-        name.strip(" ;"): detail.split(";")[0].strip()
+        return ()
+    return tuple(
+        (name.strip(" ;"), detail.split(";")[0].strip())
         for name, detail in _PERSON_NOTE.findall(match.group(1))
-    }
+    )
 
 
 def close_family_on(line: str) -> dict[str, str]:

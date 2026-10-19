@@ -18,6 +18,7 @@ from immich_memories.analysis.selection.final_hash_review import (
     ScenePrint,
     review_cut_by_cached_hashes,
 )
+from immich_memories.analysis.selection.run_memo import remembered_answers
 from immich_memories.analysis.selection.standing import StandingGate
 from immich_memories.analysis.stories.replies import film_close_family
 from immich_memories.analysis.stories.rule_reader import RuleStructureReader
@@ -78,6 +79,14 @@ class PictureAdmission:
     # Each moment's starred pictures: the one rule every pass that proposes a picture obeys.
     moment_favourites: Mapping[str, frozenset[str]] = field(default_factory=dict)
     decisions: list[dict[str, str]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        # Every admission puts the candidate against the whole cut: a preview and a scene print
+        # are read once per run, not once per carrier per admission.
+        for name in ("thumbnail_hash", "scene_print"):
+            read = getattr(self, name)
+            if read is not None:
+                object.__setattr__(self, name, remembered_answers(read))
 
     def admit(
         self,

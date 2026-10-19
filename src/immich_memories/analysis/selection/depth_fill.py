@@ -22,6 +22,7 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime
+from functools import lru_cache
 from typing import Any, Protocol
 
 from immich_memories.analysis.lookahead import Lookahead
@@ -35,11 +36,14 @@ from immich_memories.analysis.stories.slots import PartitionedSlots, weight_caps
 from immich_memories.planning.distinct_shots import PICTURES_PER_BEAT, is_new_shot, is_own_beat
 
 
+@lru_cache(maxsize=65536)
+def _instant(taken: str) -> datetime:
+    return datetime.fromisoformat(taken)
+
+
 def _seconds_apart(taken: str, others: Sequence[str]) -> float:
-    when = datetime.fromisoformat(taken)
-    return min(
-        (abs((when - datetime.fromisoformat(o)).total_seconds()) for o in others), default=0.0
-    )
+    when = _instant(taken)
+    return min((abs((when - _instant(o)).total_seconds()) for o in others), default=0.0)
 
 
 class DepthFillHost(Protocol):

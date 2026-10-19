@@ -166,6 +166,8 @@ class CarrierAdmission:
         self.silent: list[str] = []
         self.editorially_closed: set[tuple[str, str | None]] = set()
         self._taken: set[str] = set()
+        # How many carriers sit in each partition, kept beside `carriers` so `free` need not recount.
+        self._partition_seats: Counter[str | None] = Counter()
         self._used_choice_keys: set[str] = set()
         self._picked_before: dict[str | tuple[str, str | None], bool] = {}
 
@@ -186,13 +188,17 @@ class CarrierAdmission:
             and (
                 self.parts.limit is None
                 or self.parts.of_asset(asset) is None
-                or sum(
-                    self.parts.of_asset(c["asset_id"]) == self.parts.of_asset(asset)
-                    for c in self.carriers
-                )
-                < self.parts.limit
+                or self._seats_in(self.parts.of_asset(asset)) < self.parts.limit
             )
         )
+
+    def _seats_in(self, partition: str | None) -> int:
+        if sum(self._partition_seats.values()) != len(self.carriers):
+            # Something outside the admit and release paths changed the cut: count it afresh.
+            self._partition_seats = Counter(
+                self.parts.of_asset(c["asset_id"]) for c in self.carriers
+            )
+        return self._partition_seats[partition]
 
     def compatible(self, choice, chosen) -> bool:
         occupied = [*self.carriers, *(self._unit_by_asset[c.primary][1] for c in chosen)]
@@ -487,7 +493,7 @@ class CarrierAdmission:
 
     def _admit(self, s, choice, carrier, alternatives) -> None:
         self._taken.add(carrier["asset_id"])
-        self.carriers.append(carrier)
+        self._seat(carrier)
         self.chosen_by_story[s["key"]].append(choice.key)
         self.alternatives_of[carrier["asset_id"]] = alternatives
         self.places.took(s["key"], self._place_of(carrier["asset_id"]))
@@ -663,9 +669,14 @@ class CarrierAdmission:
             default=None,
         )
 
+    def _seat(self, carrier: dict) -> None:
+        self.carriers.append(carrier)
+        self._partition_seats[self.parts.of_asset(carrier["asset_id"])] += 1
+
     def _release(self, carrier: dict) -> None:
         asset = carrier["asset_id"]
         self.carriers.remove(carrier)
+        self._partition_seats[self.parts.of_asset(asset)] -= 1
         self._taken.discard(asset)
         self.chosen_by_story[carrier["story_episode"]].remove(carrier["depicted_moment"])
         self.places.gave_back(carrier["story_episode"], self._place_of(asset))
@@ -674,7 +685,7 @@ class CarrierAdmission:
     def _restore(self, carrier: dict) -> None:
         asset = carrier["asset_id"]
         self.displaced.remove(carrier)
-        self.carriers.append(carrier)
+        self._seat(carrier)
         self._taken.add(asset)
         self.chosen_by_story[carrier["story_episode"]].append(carrier["depicted_moment"])
         self.places.took(carrier["story_episode"], self._place_of(asset))
@@ -730,7 +741,7 @@ class CarrierAdmission:
                 if carrier is None:
                     continue
                 self._taken.add(asset)
-                self.carriers.append(carrier)
+                self._seat(carrier)
                 self.chosen_by_story[s["key"]].append(c.key)
                 self.kept_without_standing.append(asset)
                 self.alternatives_of[asset] = rest

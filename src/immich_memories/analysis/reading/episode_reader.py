@@ -421,10 +421,9 @@ class CachedTextEpisodeReader:
             announce_stage(
                 StageUpdate("event evidence", done=calls, total=len(packs), verb="Reading")
             )
-            page_readings.extend(
-                self._record_response(pack, response, diagnostics, unavailable_by_group, failed)
-            )
-            self._bank_complete(missing, request_scopes, page_readings, banked)
+            fresh = self._record_response(pack, response, diagnostics, unavailable_by_group, failed)
+            page_readings.extend(fresh)
+            self._bank_complete(missing, request_scopes, page_readings, banked, fresh)
         for _round in range(self._limits.unread_retry_rounds):
             unread = _unread_scopes(request_scopes, page_readings, failed)
             if not unread:
@@ -438,10 +437,11 @@ class CachedTextEpisodeReader:
                 retries, facts, min_tokens=self._limits.max_output_tokens
             ):
                 calls += 1
-                page_readings.extend(
-                    self._record_response(pack, response, diagnostics, unavailable_by_group, failed)
+                fresh = self._record_response(
+                    pack, response, diagnostics, unavailable_by_group, failed
                 )
-                self._bank_complete(missing, request_scopes, page_readings, banked)
+                page_readings.extend(fresh)
+                self._bank_complete(missing, request_scopes, page_readings, banked, fresh)
         return calls
 
     def _read_packs(self, packs, facts, *, min_tokens: int | None = None):
@@ -482,10 +482,23 @@ class CachedTextEpisodeReader:
             diagnostics.append(response.diagnostic)
         return response.readings
 
-    def _bank_complete(self, missing, request_scopes, page_readings, banked) -> None:
+    def _bank_complete(self, missing, request_scopes, page_readings, banked, fresh) -> None:
+        # Only an episode a page just arrived for can have become complete; the rest were
+        # settled by the pages that came before.
+        touched = {reading.scope.identity.group_id for reading in fresh}
+        if not touched:
+            return
         completed = tuple(
             reading
-            for reading in _merge_complete_readings(missing, request_scopes, tuple(page_readings))
+            for reading in _merge_complete_readings(
+                tuple(row for row in missing if row[0].group_id in touched),
+                tuple(scope for scope in request_scopes if scope.identity.group_id in touched),
+                tuple(
+                    reading
+                    for reading in page_readings
+                    if reading.scope.identity.group_id in touched
+                ),
+            )
             if reading.identity.group_id not in banked
         )
         if not completed:

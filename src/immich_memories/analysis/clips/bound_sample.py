@@ -9,12 +9,17 @@ import re
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from immich_memories.analysis.clips.identity_memo import per_object
 from immich_memories.api.models import Asset
 
 
-def source_metadata_digest(asset: Asset) -> str:
+def _metadata_digest(asset: Asset) -> str:
     encoded = json.dumps(asset.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+# A run asks for the same asset's digest every time a cut is read, banked or written.
+source_metadata_digest = per_object(_metadata_digest)
 
 
 @dataclass(frozen=True, slots=True)
