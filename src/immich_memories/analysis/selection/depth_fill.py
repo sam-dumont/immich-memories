@@ -24,6 +24,7 @@ from dataclasses import replace
 from datetime import datetime
 from typing import Any, Protocol
 
+from immich_memories.analysis.lookahead import Lookahead
 from immich_memories.analysis.selection.depth import depth_ladder, neighbours
 from immich_memories.analysis.selection.lookalike import LookAlikeCheck
 from immich_memories.analysis.selection.picture_admission import PictureAdmission
@@ -232,11 +233,13 @@ class DepthFill:
             )
         )
         host.gate.ensure([asset for _choice, asset in ladder if host.free(asset)])
+        ahead, position_of = self._lookahead(ladder, s, index)
         for choice, asset in ladder:
             if self._depth_budget_met():
                 break
             if not (host.free(asset) and host.gate.stands(asset, s["weight"], s["key"])):
                 continue
+            ahead.reach(position_of[asset])
             # A place-refused depth frame joins the same readmission ledger a place-refused
             # pass-1/2 carrier does (#2083), instead of a bare drop that `readmit` never saw.
             if host._crowds_its_place(s, choice, index, asset):
@@ -253,6 +256,22 @@ class DepthFill:
             # One frame at a time: the next is spread from the frames kept, this one included.
             return True
         return False
+
+    def _lookahead(self, ladder, s, index) -> tuple[Lookahead, dict[str, int]]:
+        """The ladder is walked until one frame is admitted: prepare it a doubling window ahead."""
+        host = self._host
+        rows: dict[str, dict] = {}
+
+        def row_of(rung):
+            choice, asset = rung
+            if asset not in rows:
+                family, unit = host._unit_by_asset[asset]
+                rows[asset] = host._carrier_row(unit, family, s, choice, index, asset)
+            return rows[asset]
+
+        free_rungs = [rung for rung in ladder if host.free(rung[1])]
+        position_of = {asset: position for position, (_choice, asset) in enumerate(free_rungs)}
+        return Lookahead(free_rungs, host.pictures.prepare, row_of), position_of
 
     def _moment_sequence(self, s, choice: Any) -> list[str]:
         """Every picture of the moment, in capture order, whatever the offer has narrowed to."""

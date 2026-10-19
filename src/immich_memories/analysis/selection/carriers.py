@@ -18,6 +18,7 @@ from operator import itemgetter
 from typing import Any
 
 from immich_memories.analysis.clips.unit_motion import carries_motion
+from immich_memories.analysis.lookahead import Lookahead
 from immich_memories.analysis.selection.carrier import carrier_row
 from immich_memories.analysis.selection.depth import neighbours
 from immich_memories.analysis.selection.depth_fill import DepthFill
@@ -217,11 +218,21 @@ class CarrierAdmission:
         )
 
     def carrier_for(self, choice, s, index, candidates, *, recovering=False):
-        for asset in candidates:
-            if not self.free(asset):
-                continue
-            family, unit = self._unit_by_asset[asset]
-            row = self._carrier_row(unit, family, s, choice, index, asset)
+        free = [asset for asset in candidates if self.free(asset)]
+        rows: dict[str, dict] = {}
+
+        def row_of(asset):
+            if asset not in rows:
+                family, unit = self._unit_by_asset[asset]
+                rows[asset] = self._carrier_row(unit, family, s, choice, index, asset)
+            return rows[asset]
+
+        # The walk below stops at the first candidate admitted; its facts are prepared a
+        # doubling window ahead, so a choice costs a few rounds, not one per candidate tried.
+        ahead = Lookahead(free, self.pictures.prepare, row_of)
+        for position, asset in enumerate(free):
+            ahead.reach(position)
+            row = row_of(asset)
             if self.pictures.admits(row, cut=self.carriers, tier_of={}, recovering=recovering):
                 continue
             rest = [

@@ -10,7 +10,7 @@ import json
 import logging
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -53,7 +53,22 @@ class AnnotationReadings:
     subjects: tuple[str, ...] = ()
     include_captions: bool = True
 
+    # One reader per prepared period: building it walks every candidate of the period, and a
+    # film asks for it twice per round. It reads the store on each call, so it never goes stale.
+    _readers: dict[int, tuple[Any, StoredAnnotationLineReader]] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
+
     def reader(self, prepared: Any) -> StoredAnnotationLineReader:
+        held = self._readers.get(id(prepared))
+        if held is not None and held[0] is prepared:
+            return held[1]
+        reader = self._new_reader(prepared)
+        self._readers.clear()
+        self._readers[id(prepared)] = (prepared, reader)
+        return reader
+
+    def _new_reader(self, prepared: Any) -> StoredAnnotationLineReader:
         editorial = self.config.editorial
         return StoredAnnotationLineReader(
             store=self.store,

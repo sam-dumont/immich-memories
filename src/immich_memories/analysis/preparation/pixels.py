@@ -72,7 +72,25 @@ def remember_pixels(store: Store, rows: Sequence[Mapping[str, Any]]) -> None:
         bank_rows(store, pixel_fact_rows, latest, keys=("asset_id",))
 
 
+# A 10th percentile barely moves while the library grows by a few percent, and the whole
+# sharpness column is read to recompute it, once per preparation round.
+THRESHOLD_REFRESH_GROWTH = 0.05
+
+
 def refresh_threshold(store: Store) -> None:
+    """Bank the library's sharpness 10th percentile; skip it while the library is stable."""
+    with store.connect() as connection:
+        count = connection.execute(
+            sa.select(sa.func.count()).where(pixel_fact_rows.c.producer_key == PRODUCER_KEY)
+        ).scalar_one()
+        banked = connection.execute(
+            sa.select(pixel_facts_thresholds.c.n).where(
+                pixel_facts_thresholds.c.name == "sharpness_p10",
+                pixel_facts_thresholds.c.producer_key == PRODUCER_KEY,
+            )
+        ).scalar()
+    if banked is not None and count <= banked * (1 + THRESHOLD_REFRESH_GROWTH):
+        return
     with store.connect() as connection:
         sharpness: list[Any] = list(
             connection.execute(

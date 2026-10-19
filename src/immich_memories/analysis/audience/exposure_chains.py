@@ -22,6 +22,7 @@ model tier's verdicts and what a ``shareable`` export may carry.
 
 from __future__ import annotations
 
+from bisect import bisect_left
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -131,3 +132,69 @@ def chain_holds_for(
 
 def _flagged(line: Any) -> bool:
     return line is not None and exposure_flagged(dict(line.heads))
+
+
+class ExposureChains(dict[str, ChainHold]):
+    """The period's holds, kept current for the runs a preparation round touches.
+
+    A round prepares a handful of pictures, and only the runs they sit in can change: a hold
+    is decided by the flags of its own run. Recomputing every run of the period for each
+    round costs more the longer the period, so this keeps the period sorted once and
+    re-derives just the runs around the pictures that were prepared. Like ``chain_holds_for``
+    it only ever adds holds.
+    """
+
+    def __init__(
+        self,
+        assets: Mapping[str, Asset],
+        annotations: Mapping[str, Any],
+        clip_heads: Mapping[str, Mapping[str, str]],
+    ) -> None:
+        super().__init__(chain_holds_for(assets, annotations, clip_heads))
+        self._assets = assets
+        self._annotations = annotations
+        self._clip_heads = clip_heads
+        self._order = sorted(
+            (asset.file_created_at, asset_id) for asset_id, asset in assets.items()
+        )
+        self._still_of_clip = {
+            str(asset.live_photo_video_id): asset_id
+            for asset_id, asset in assets.items()
+            if asset.live_photo_video_id
+        }
+
+    def refresh(self, prepared_ids: Iterable[str]) -> None:
+        """Re-derive the runs holding these pictures (or the stills of these clips)."""
+        runs: list[tuple[int, int]] = []
+        for asset_id in {self._still_of_clip.get(i, i) for i in prepared_ids}:
+            asset = self._assets.get(asset_id)
+            if asset is None:
+                continue
+            at = bisect_left(self._order, (asset.file_created_at, asset_id))
+            low, high = at, at
+            while low > 0 and self._gap(low - 1, low) <= WINDOW_SECONDS:
+                low -= 1
+            while high + 1 < len(self._order) and self._gap(high, high + 1) <= WINDOW_SECONDS:
+                high += 1
+            runs.append((low, high))
+        for low, high in set(runs):
+            self.update(
+                held_chains(
+                    (
+                        asset_id,
+                        taken,
+                        _flagged(self._annotations.get(asset_id))
+                        or exposure_flagged(
+                            dict(
+                                self._clip_heads.get(
+                                    str(self._assets[asset_id].live_photo_video_id or ""), {}
+                                )
+                            )
+                        ),
+                    )
+                    for taken, asset_id in self._order[low : high + 1]
+                )
+            )
+
+    def _gap(self, before: int, after: int) -> float:
+        return (self._order[after][0] - self._order[before][0]).total_seconds()

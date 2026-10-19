@@ -19,6 +19,7 @@ from immich_memories.analysis.audience.questions import exposure_flagged
 from immich_memories.analysis.audience.shareability import SHAREABLE, owner_cleared_ids
 from immich_memories.analysis.clips.budget import MIN_CARRIER_SECONDS
 from immich_memories.analysis.film.contract import StructurePlanningInput
+from immich_memories.analysis.lookahead import Lookahead
 from immich_memories.analysis.selection.picture_admission import PictureAdmission
 from immich_memories.analysis.stories.banked_facts import (
     BankedFacts,
@@ -66,6 +67,8 @@ class FamilySeatInputs:
     policy: FamilySeatPolicy = FamilySeatPolicy()
     close_family: Callable[[str], Mapping[str, str]] = close_family_on
     admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] = _admit
+    # Prepares frames ahead of the walk that tries them one by one (`Lookahead`).
+    prepare: Callable[[Sequence[Mapping[str, Any]]], object] | None = None
 
 
 def seat_close_family(
@@ -146,7 +149,9 @@ def _seat_one(name, film: list[dict], on, inputs: FamilySeatInputs) -> dict[str,
             frames,
             key=lambda row: (-inputs.score_of(row["asset_id"]), not row.get("favourite")),
         )
-        for best in ranked:
+        ahead = Lookahead(ranked, inputs.prepare)
+        for position, best in enumerate(ranked):
+            ahead.reach(position)
             placed = _place(key, best, film, inputs)
             if placed is not None:
                 return placed
@@ -288,6 +293,7 @@ def seat_in_film(
             policy=FamilySeatPolicy(policy.seat_min_pictures, policy.seat_min_share),
             close_family=film_close_family(source),
             admits=lambda row, cut: admission.admits(row, cut=cut, tier_of={}) is None,
+            prepare=admission.prepare,
         ),
     )
     record("family-seat", audit)

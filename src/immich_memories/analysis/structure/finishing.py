@@ -290,6 +290,7 @@ def final_duplicate_review(
     | None = None,
     close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
     admits: Admits,
+    prepare: Callable[[Sequence[Mapping[str, Any]]], object] | None = None,
     frame_quality: Callable[[str], tuple[int, float] | None] = lambda _asset: None,
     requested_seconds: float = 0.0,
 ) -> None:
@@ -316,6 +317,7 @@ def final_duplicate_review(
         scene_print=ports.scene_print,
         close_family_of=close_family_of,
         admits=admits,
+        prepare=prepare,
         frame_quality=frame_quality,
         # Folding starred twins never takes a film under the floor where it abstains.
         film_floor=(MIN_CARRIERS, 0.0),
@@ -426,6 +428,7 @@ def apply_audience_gate(
         pool_for=alternatives_pool(selection, material.units, wall.anchor_label),
         audience=gate.audience,
         admits=admits,
+        prepare=gate.prepare,
     )
     open_share_log(share_log, funded_acquisition={})
     run.selection_stages["after_shareability"] = len(run.carriers)

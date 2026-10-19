@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import math
+import threading
 from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
@@ -79,6 +80,42 @@ def producer_names(head_versions: Mapping[str, str]) -> tuple[str, ...]:
     )
 
 
+_SHARED: dict[tuple[str, float, int], httpx.Client] = {}
+_SHARED_LOCK = threading.Lock()
+
+
+def _shared_client(config: InferenceConfig) -> httpx.Client:
+    """One connection pool per service for the whole run, not one per preparation round.
+
+    A cold film prepares in dozens of rounds; each opened a client and paid a fresh handshake.
+    A closed client (``close_shared_clients``) is replaced on the next ask.
+    """
+    key = (config.facts_base_url, config.timeout_seconds, config.facts_concurrency)
+    with _SHARED_LOCK:
+        client = _SHARED.get(key)
+        if client is None or client.is_closed:
+            # httpx keeps twenty connections alive by default. With more callers than
+            # that, the ones past it hand back a closed socket and pay for a fresh
+            # handshake on every picture, which is the cost this is here to avoid.
+            client = _SHARED[key] = httpx.Client(
+                timeout=config.timeout_seconds,
+                trust_env=False,
+                limits=httpx.Limits(
+                    max_connections=config.facts_concurrency,
+                    max_keepalive_connections=config.facts_concurrency,
+                ),
+            )
+        return client
+
+
+def close_shared_clients() -> None:
+    """Close the run's pooled clients; the next ask opens fresh ones."""
+    with _SHARED_LOCK:
+        for client in _SHARED.values():
+            client.close()
+        _SHARED.clear()
+
+
 class RemoteFactsClient(AbstractContextManager):
     """Reused connections, safe to call from several threads; one upload per picture."""
 
@@ -87,17 +124,13 @@ class RemoteFactsClient(AbstractContextManager):
         # httpx keeps twenty connections alive by default. With more callers than
         # that, the ones past it hand back a closed socket and pay for a fresh
         # handshake on every picture, which is the cost this is here to avoid.
-        self._client = client or httpx.Client(
-            timeout=config.timeout_seconds,
-            trust_env=False,
-            limits=httpx.Limits(
-                max_connections=config.facts_concurrency,
-                max_keepalive_connections=config.facts_concurrency,
-            ),
-        )
+        self._closes_on_exit = client is not None
+        self._client = client or _shared_client(config)
 
     def __exit__(self, *_exc: object) -> None:
-        self._client.close()
+        # The shared pool outlives a round; a client handed in is closed with the context, as before.
+        if self._closes_on_exit:
+            self._client.close()
 
     def facts(self, image: bytes, head_versions: Mapping[str, str]) -> FactsAnswer:
         names = producer_names(head_versions)
