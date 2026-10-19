@@ -20,7 +20,7 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-SAMPLE_SECONDS = 0.25
+SAMPLE_SECONDS = 1.0
 # ru_maxrss is bytes on macOS and KiB on Linux.
 _MAXRSS_UNIT = 1 if sys.platform == "darwin" else 1024
 _PAGE = os.sysconf("SC_PAGE_SIZE") if hasattr(os, "sysconf") else 4096
@@ -46,43 +46,90 @@ def rss_bytes(pid: int) -> int | None:
         filled = _LIBPROC.proc_pidinfo(pid, _TASKINFO, ctypes.c_uint64(0), buffer, _TASKINFO_SIZE)
         return ctypes.c_uint64.from_buffer(buffer, 8).value if filled == _TASKINFO_SIZE else None
     try:
-        return int((_PROC / str(pid) / "statm").read_text().split()[1]) * _PAGE
+        return int(_read(_PROC / str(pid) / "statm").split()[1]) * _PAGE
     except (OSError, IndexError, ValueError):
         return None
 
 
-def _children(pid: int) -> list[int]:
-    if _LIBPROC is not None:
-        pids = (ctypes.c_int * 256)()
-        count = _LIBPROC.proc_listchildpids(pid, pids, ctypes.sizeof(pids))
-        return [child for child in pids[: max(0, min(count, 256))] if child > 0]
-    found: list[int] = []
-    try:
-        tasks = list((_PROC / str(pid) / "task").iterdir())
-    except OSError:
-        return found
-    for task in tasks:
+def _read(path: Path) -> str:
+    return path.read_text()
+
+
+# Threads are many and almost none of them start processes, so reading every thread's
+# `children` file each tick is the cost. Between full walks only the threads that had
+# children at the last walk (and the main thread) are read; a process started from some
+# other thread is picked up at the next full walk, and a short one that ends first is
+# still covered by the lifetime children high in `Sampler.close`.
+FULL_WALK_EVERY = 5
+
+
+class _ThreadChildren:
+    """Finds a process's direct children without reading every thread's file each tick."""
+
+    def __init__(self) -> None:
+        self._ticks = 0
+        self._hot: set[str] = set()
+
+    def children(self, pid: int) -> list[int]:
+        task_dir = _PROC / str(pid) / "task"
+        full = self._ticks % FULL_WALK_EVERY == 0
+        self._ticks += 1
         try:
-            found.extend(int(child) for child in (task / "children").read_text().split())
-        except (OSError, ValueError):
-            continue
-    return found
+            names = [t.name for t in task_dir.iterdir()] if full else [str(pid), *self._hot]
+        except OSError:
+            return []
+        found: list[int] = []
+        hot: set[str] = set()
+        for name in dict.fromkeys(names):
+            try:
+                kids = [int(c) for c in _read(task_dir / name / "children").split()]
+            except (OSError, ValueError):
+                continue
+            if kids:
+                hot.add(name)
+                found.extend(kids)
+        if full:
+            self._hot = hot - {str(pid)}
+        else:
+            self._hot |= hot - {str(pid)}
+        return found
 
 
-def tree_rss_bytes(pid: int) -> int | None:
-    """RSS of `pid` plus every live descendant, the figure an out-of-memory killer sees."""
+def _libproc_children(pid: int) -> list[int]:
+    pids = (ctypes.c_int * 256)()
+    count = _LIBPROC.proc_listchildpids(pid, pids, ctypes.sizeof(pids))  # type: ignore[union-attr]
+    return [child for child in pids[: max(0, min(count, 256))] if child > 0]
+
+
+def tree_rss_bytes(pid: int, walker: _ThreadChildren | None = None) -> int | None:
+    """RSS of `pid` plus every live descendant, the figure an out-of-memory killer sees.
+
+    `walker` carries the thread cache across ticks; descendants only ever read their
+    main thread's children, since the processes the app runs (ffmpeg, shells) do not
+    spawn from side threads.
+    """
     own = rss_bytes(pid)
     if own is None:
         return None
-    total, pending, seen = own, _children(pid), {pid}
+    roots = _libproc_children(pid) if _LIBPROC else (walker or _ThreadChildren()).children(pid)
+    total, pending, seen = own, roots, {pid}
     while pending:
         child = pending.pop()
         if child in seen:
             continue
         seen.add(child)
         total += rss_bytes(child) or 0
-        pending.extend(_children(child))
+        pending.extend(_main_thread_children(child))
     return total
+
+
+def _main_thread_children(pid: int) -> list[int]:
+    if _LIBPROC is not None:
+        return _libproc_children(pid)
+    try:
+        return [int(c) for c in _read(_PROC / str(pid) / "task" / str(pid) / "children").split()]
+    except (OSError, ValueError):
+        return []
 
 
 def _lifetime_peak(who: int) -> int:
@@ -148,10 +195,11 @@ class _Sampler:
         return watch
 
     def _run(self, stop: threading.Event) -> None:
+        walker = _ThreadChildren()
         while not stop.wait(SAMPLE_SECONDS):
             pid = os.getpid()
             own = rss_bytes(pid)
-            tree = tree_rss_bytes(pid)
+            tree = tree_rss_bytes(pid, walker)
             with self._lock:
                 for watch in self._open:
                     watch.see(own, tree)
