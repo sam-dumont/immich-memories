@@ -45,9 +45,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.audience.shareability import OWNER_CLEARANCES, allowed
-from immich_memories.analysis.audience.verdicts import (
-    library_refusals,
-)
+from immich_memories.analysis.audience.verdicts import AudienceBank, library_refusals
 from immich_memories.db.tables import editorial_episode_readings
 from immich_memories.store.batches import in_chunks
 from immich_memories.store.owner_decisions import decisions
@@ -125,6 +123,7 @@ def open_banked_facts(
     audience: str,
     episode_cards: Mapping[str, Any],
     own_producers: frozenset[str] = frozenset(),
+    library: AudienceBank | None = None,
 ) -> BankedAnswers:
     """Open this film's banks read-only and resolve what they already say.
 
@@ -136,7 +135,9 @@ def open_banked_facts(
     """
     representatives, culls = _banked_readings(store, episode_cards, own_producers)
     refused = _refused_before(attempts_dir, audience=audience) | (
-        library_refusals(store, audience) if store is not None else frozenset()
+        (library.refusals(audience) if library is not None else library_refusals(store, audience))
+        if store is not None
+        else frozenset()
     )
     answers = BankedAnswers(
         refused=refused - _owner_cleared(store, audience),

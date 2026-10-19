@@ -62,20 +62,33 @@ def distinctive_days(
 
 
 def telling(
-    pictures: list, captions: Mapping[str, str], said: Mapping[date, list[str]], *, keep: int
+    pictures: list,
+    captions: Mapping[str, str],
+    said: Mapping[date, list[str]],
+    *,
+    keep: int,
+    year: tuple[collections.Counter[str], float] | None = None,
 ) -> list:
     """The described pictures whose captions say most of what the year does not, most first.
+
+    ``year`` is ``year_vocabulary(said)`` when the caller asks about many days of one year:
+    tokenising the year's captions once, not once per day.
 
     A trail race's 112 forwarded pictures, three of them picked by the hour, were a couple
     jogging through a forest; its obstacle course and finish line went unread.
     """
-    days_saying, rare = _year_of(said)
+    days_saying, rare = year if year is not None else _year_of(said)
 
     def rarity(picture: Any) -> int:
         return sum(1 for word in _spelled(captions[picture.id]) if days_saying[word] <= rare)
 
     described = [picture for picture in pictures if captions.get(picture.id)]
     return sorted(described, key=rarity, reverse=True)[:keep]
+
+
+def year_vocabulary(said: Mapping[date, list[str]]) -> tuple[collections.Counter[str], float]:
+    """The year's word counts and what share of its days is rare, for `telling` to reuse."""
+    return _year_of(said)
 
 
 def _year_of(said: Mapping[date, list[str]]) -> tuple[collections.Counter[str], float]:

@@ -361,7 +361,7 @@ def _select(
     if pool.record is not None:
         record_story("subject-pool", pool.record)
     # A no-model draft asks nothing, so it reads the model's answers through `banked` alone.
-    banked = _banked_facts(source, ports)
+    banked = _banked_facts(source, ports, library)
     if ports.rules is not None:
         record_story("banked-facts", banked.record())
     selection = _story_selection(
@@ -650,7 +650,7 @@ def _story_selection(
     )
 
 
-def _banked_facts(source, ports) -> BankedAnswers:
+def _banked_facts(source, ports, library) -> BankedAnswers:
     """What earlier model answers about this library say, for the draft that asks nothing.
 
     Only the no-model draft reads them. A model run asks its own questions about every
@@ -662,6 +662,7 @@ def _banked_facts(source, ports) -> BankedAnswers:
     return open_banked_facts(
         attempts_dir=source.artifact_dir.parent,
         store=source.bank_store,
+        library=library,
         audience=source.audience,
         episode_cards=source.episode_readings,
         own_producers=frozenset(

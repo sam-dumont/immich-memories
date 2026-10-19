@@ -163,6 +163,8 @@ class PlaceGeocoder:
         self._store = store
         self._language = language
         self._fetch: Fetch | None = fetch
+        # Many pictures share one rounded cell: the store is asked once per cell and run.
+        self._answered: dict[str, Address] = {}
 
     def address(self, latitude: float, longitude: float) -> Address:
         """The names around this point, `{}` when nobody can say."""
@@ -172,6 +174,8 @@ class PlaceGeocoder:
         # an English fallback answer that #1954 removed, and must be asked again rather
         # than reused, with the film's own accept-language chain (never "en").
         cell = f"z{_DISTRICT_ZOOM}-film:{latitude:.{_PRECISION}f},{longitude:.{_PRECISION}f}"
+        if cell in self._answered:
+            return self._answered[cell].copy()
         with self._store.connect() as connection:
             known = connection.execute(
                 sa.select(geocoded_places.c.address).where(
@@ -180,7 +184,8 @@ class PlaceGeocoder:
                 )
             ).scalar_one_or_none()
         if known is not None:
-            return _in_one_script(dict(known), self._language)
+            self._answered[cell] = _in_one_script(dict(known), self._language)
+            return self._answered[cell].copy()
         if self._fetch is None:
             return {}
         try:
@@ -206,7 +211,8 @@ class PlaceGeocoder:
                 ],
                 ("cell", "language"),
             )
-        return _in_one_script(answer, self._language)
+        self._answered[cell] = _in_one_script(answer, self._language)
+        return self._answered[cell].copy()
 
 
 def _in_one_script(address: Address, language: str) -> Address:

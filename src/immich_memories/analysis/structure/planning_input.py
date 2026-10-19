@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -24,6 +24,7 @@ from immich_memories.analysis.reading.moment_wall import ProductionMomentWallRen
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.db.tables import pixel_facts
 from immich_memories.speech.facts import read_speech_regions, speech_producer
+from immich_memories.store.batches import id_in, in_chunks
 
 if TYPE_CHECKING:
     from immich_memories.analysis.reading.episode_reader import TextEpisodeReadResult
@@ -34,17 +35,22 @@ if TYPE_CHECKING:
     from immich_memories.db import Store
 
 
-def read_pixel_facts(store: Store, producer: str) -> dict[str, tuple[float, float]]:
+def read_pixel_facts(
+    store: Store, producer: str, asset_ids: Iterable[str]
+) -> dict[str, tuple[float, float]]:
+    """The sharpness and brightness banked for these pictures, not the whole table."""
     p = pixel_facts
+    ids = list(dict.fromkeys(asset_ids))
+    facts: dict[str, tuple[float, float]] = {}
     with store.connect() as connection:
-        return {
-            row[0]: (float(row[1] or 0.0), float(row[2] or 0.0))
+        for chunk in in_chunks(connection, ids):
             for row in connection.execute(
                 sa.select(p.c.asset_id, p.c.sharpness, p.c.brightness).where(
-                    p.c.producer_key == producer
+                    p.c.producer_key == producer, id_in(connection, p.c.asset_id, chunk)
                 )
-            )
-        }
+            ):
+                facts[row[0]] = (float(row[1] or 0.0), float(row[2] or 0.0))
+    return facts
 
 
 def capture_companion_assets(
@@ -154,7 +160,9 @@ def capture_structure_input(
             line.asset_id: line for line in workprint.episodes.annotation_batch.lines
         },
         gps=gps,
-        pixel_facts=read_pixel_facts(store, config.editorial.pixel_producer_key),
+        pixel_facts=read_pixel_facts(
+            store, config.editorial.pixel_producer_key, [*assets, *companions]
+        ),
         shareability_flags=load_flags(store, {*assets, *companions}),
         companion_detectors=load_detector_heads(
             store, companions, config.editorial.active_head_versions

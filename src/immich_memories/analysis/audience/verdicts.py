@@ -56,6 +56,11 @@ class AudienceBank:
         self._holds = {} if store is None else audience_bank.load_holds(store)
         # Refusals cast since the last flush, per picture, in the order they were cast.
         self._pending: dict[str, list[dict[str, Any]]] = {}
+        self._at_flush: list[Callable[[], None]] = []
+
+    def at_flush(self, write: Callable[[], None]) -> None:
+        """Run ``write`` whenever this bank is flushed, even with no refusal waiting."""
+        self._at_flush.append(write)
 
     def answer(self, key: str) -> dict[str, Any] | None:
         banked = self._answers.get(key)
@@ -67,6 +72,10 @@ class AudienceBank:
         self._answers[key] = record
         if self._store is not None:
             audience_bank.keep_answer(self._store, self._answerer, key, record)
+
+    def refusals(self, audience: str) -> frozenset[str]:
+        """`library_refusals` over the holds this bank already read, not a second read of them."""
+        return _refusals_among(self._holds, audience)
 
     def held(self, asset_id: str) -> dict[str, Any] | None:
         return standing_hold(self._holds.get(asset_id))
@@ -93,6 +102,8 @@ class AudienceBank:
         Another cut may have tightened a picture since this bank read it, so each is merged
         again with the store's copy, and what stands after is what this bank keeps.
         """
+        for write in self._at_flush:
+            write()
         if self._store is None or not self._pending:
             return
         pending, self._pending = self._pending, {}
@@ -190,9 +201,13 @@ def standing_hold(slots: Any) -> dict[str, Any] | None:
 
 def library_refusals(store: Store, audience: str) -> frozenset[str]:
     """Every picture the library's audience bank still holds back from this audience."""
+    return _refusals_among(audience_bank.load_holds(store), audience)
+
+
+def _refusals_among(holds: Mapping[str, Any], audience: str) -> frozenset[str]:
     return frozenset(
         asset_id
-        for asset_id, slots in audience_bank.load_holds(store).items()
+        for asset_id, slots in holds.items()
         if (hold := standing_hold(slots)) is not None
         and not _share.allowed(str(hold["verdict"]), audience)
     )
@@ -240,6 +255,8 @@ class AudienceGate:
         self.requests = 0
         # Activity answers a batch already paid for, by evidence key, until `check` reads them.
         self._answered: dict[str, str] = {}
+        self._unwritten = False
+        library.at_flush(self.write_bank)
 
     def check(self, evidence) -> tuple[str, dict[str, Any]]:
         """The banked decision for this evidence, asking the judge only for a new key."""
@@ -267,8 +284,14 @@ class AudienceGate:
             self.requests += asked
             if asked or answered is not None:
                 self._library.keep(key, self.bank[key])
-            write_secret_file(self._bank_path, json.dumps(self.bank, indent=1))
+            self._unwritten = True
         return key, self.bank[key]
+
+    def write_bank(self) -> None:
+        """Write the audit copy of the answers once, rather than again for every new key."""
+        if self._unwritten:
+            write_secret_file(self._bank_path, json.dumps(self.bank, indent=1))
+            self._unwritten = False
 
     def keep_hold(self, asset_id: str, record: dict[str, Any]) -> None:
         """Bank a refusal of this picture so no later cut, scope or prompt version lifts it."""

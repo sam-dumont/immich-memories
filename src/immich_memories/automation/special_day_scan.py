@@ -20,6 +20,8 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 from immich_memories.analysis.corpus.picture_copies import picture_copies, starred_keepers
+from immich_memories.analysis.judgments.reader_concurrency import iter_reader_jobs
+from immich_memories.analysis.llm.providers import reader_concurrency
 from immich_memories.analysis.places.trip_detection import detect_trips, haversine_km
 from immich_memories.analysis.sources.event_scope import SpecialEventAdmission
 from immich_memories.analysis.special_days.detection import (
@@ -46,6 +48,7 @@ from immich_memories.analysis.special_days.vocabulary import (
     crowded_out,
     distinctive_days,
     telling,
+    year_vocabulary,
 )
 from immich_memories.automation.special_day_facts import ranked_occasions
 from immich_memories.config.models.analysis import AnalysisConfig
@@ -338,13 +341,37 @@ def scan_year(
         stills=stills,
         clip_seconds=clip_seconds,
     )
-    found: list[DiscoveredDay] = []
-    for day, what in occasions.items():
-        if len(found) >= limit:
-            break
-        if (outcome := judge.day(day, off_trip[day], what)) is not None:
-            found.append(outcome)
+    found = _judged_days(judge, occasions, off_trip, limit=limit, llm_config=llm_config)
     return sorted(_thinned(found, words), key=lambda entry: entry.day)
+
+
+def _judged_days(
+    judge: _Judge,
+    occasions: Mapping[date, str],
+    off_trip: Mapping[date, list],
+    *,
+    limit: int,
+    llm_config: Any,
+) -> list[DiscoveredDay]:
+    """The occasions that came out as days, in the order the occasions come."""
+    if judge.reader == "rules":
+        found: list[DiscoveredDay] = []
+        for day, what in occasions.items():
+            if len(found) >= limit:
+                break
+            if (outcome := judge.day(day, off_trip[day], what)) is not None:
+                found.append(outcome)
+        return found
+    # Every occasion is read, none depends on another, and the days come back in order: the
+    # same pool the story reader asks through, instead of one day at a time. No endpoint
+    # configured means one at a time.
+    results = iter_reader_jobs(
+        None,
+        lambda _reader, entry: judge.day(entry[0], off_trip[entry[0]], entry[1]),
+        list(occasions.items()),
+        limit=reader_concurrency(llm_config) if llm_config is not None else 1,
+    )
+    return [outcome for _entry, outcome in results if outcome is not None]
 
 
 def _occasions(
@@ -405,7 +432,11 @@ def _standing_out(
         candidates,
         forwarded={day: _said(sent, captions) for day, sent in forwarded_on.items()},
     )
-    told = {day: telling(forwarded_on.get(day, []), captions, said, keep=_TOLD) for day in standing}
+    year = year_vocabulary(said)
+    told = {
+        day: telling(forwarded_on.get(day, []), captions, said, keep=_TOLD, year=year)
+        for day in standing
+    }
     return _Words(standing, told, said, YearWords(said))
 
 

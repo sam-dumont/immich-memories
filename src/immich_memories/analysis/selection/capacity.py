@@ -86,6 +86,8 @@ def distinct_choices(
     hash_alike: PairLooksAlike | None,
     scene_alike: PairLooksAlike | None,
     close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
+    *,
+    limit: int | None = None,
 ) -> list[DepictedChoice]:
     """A story's capacity is the moments it can show distinctly, by the same hash and scene
     rule the final duplicate review applies over the finished cut (``hash_alike`` is
@@ -104,19 +106,25 @@ def distinct_choices(
     frames close enough to be the owner's one "twin" moment are the final duplicate review's own
     call to make, over the finished cut, not a capacity question asked before a single
     carrier is picked.
+
+    ``limit`` stops the fold once that many moments are kept: a story is granted no more than
+    its grant, and the callers only read the count below it, which a longer list cannot change.
     """
     if hash_alike is None is scene_alike:
         return list(choices)
+    carriers: dict[str, dict[str, Any]] = {}
 
     def as_carrier(asset_id: str) -> dict[str, Any]:
-        _family, unit = unit_by_asset[asset_id]
-        return {
-            "asset_id": asset_id,
-            "taken": unit["taken"],
-            "kind": unit.get("kind"),
-            "favourite": unit.get("favourite"),
-            "story_episode": story_key,
-        }
+        if asset_id not in carriers:
+            _family, unit = unit_by_asset[asset_id]
+            carriers[asset_id] = {
+                "asset_id": asset_id,
+                "taken": unit["taken"],
+                "kind": unit.get("kind"),
+                "favourite": unit.get("favourite"),
+                "story_episode": story_key,
+            }
+        return carriers[asset_id]
 
     def repeats(candidate: Mapping[str, Any], keeper: Mapping[str, Any], only_shot: bool) -> bool:
         return repeat_may_be_refused(
@@ -127,15 +135,18 @@ def distinct_choices(
         )
 
     kept: list[DepictedChoice] = []
+    shown: set[str] = set()
     for choice in choices:
+        if limit is not None and len(kept) >= limit:
+            break
         candidate = as_carrier(choice.primary)
-        shown = {name for k in kept for name in close_family_of(k.primary)}
         only_shot = bool(set(close_family_of(choice.primary)) - shown)
         match = next(
             (k for k in kept if repeats(candidate, as_carrier(k.primary), only_shot)), None
         )
         if match is None:
             kept.append(replace(choice))
+            shown.update(close_family_of(choice.primary))
         else:
             match.alternatives = [
                 *match.alternatives,
@@ -218,13 +229,20 @@ def capacity_choices(
     groups_offered = {s["key"]: len(offered[s["key"]]) for s in stories}
     if hash_alike is None is scene_alike:
         return offered, groups_offered, frozenset()
+    pre_grant, _partition_grants = parts.allocate(stories, offered, slots)
+    # Past its grant a story's fold cannot change anything below, so it stops there.
     distinct = {
         s["key"]: distinct_choices(
-            offered[s["key"]], unit_by_asset, s["key"], hash_alike, scene_alike, close_family_of
+            offered[s["key"]],
+            unit_by_asset,
+            s["key"],
+            hash_alike,
+            scene_alike,
+            close_family_of,
+            limit=pre_grant[s["key"]],
         )
         for s in stories
     }
-    pre_grant, _partition_grants = parts.allocate(stories, offered, slots)
     saturated = frozenset(
         s["key"] for s in stories if pre_grant[s["key"]] == groups_offered[s["key"]]
     )
