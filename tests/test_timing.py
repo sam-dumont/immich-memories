@@ -274,3 +274,107 @@ def test_a_parent_span_reports_at_least_its_childs_peak(monkeypatch):
     assert download.peak_rss == 10**15
     assert run.peak_rss >= download.peak_rss
     assert run.peak_tree_rss >= download.peak_tree_rss
+
+
+def _fake_proc(root, threads: int, spawners: dict[int, list[int]]) -> None:
+    import os
+
+    pid = os.getpid()
+    task = root / str(pid) / "task"
+    for tid in range(pid, pid + threads):
+        (task / str(tid)).mkdir(parents=True)
+        kids = spawners.get(tid - pid, [])
+        (task / str(tid) / "children").write_text(" ".join(map(str, kids)))
+    (root / str(pid) / "statm").write_text("10 100 0 0 0 0 0")
+    for kid in {k for ks in spawners.values() for k in ks}:
+        (root / str(kid) / "task" / str(kid)).mkdir(parents=True)
+        (root / str(kid) / "task" / str(kid) / "children").write_text("")
+        (root / str(kid) / "statm").write_text("10 50 0 0 0 0 0")
+
+
+def test_linux_tick_reads_few_files_with_many_threads(tmp_path, monkeypatch):
+    import os
+
+    from immich_memories.tracking import peak_memory
+
+    # WHY: a fake /proc, so the read count is deterministic on any OS.
+    _fake_proc(tmp_path, threads=100, spawners={0: [900001], 40: [900002], 41: [900003]})
+    monkeypatch.setattr(peak_memory, "_PROC", tmp_path)
+    monkeypatch.setattr(peak_memory, "_LIBPROC", None)
+    monkeypatch.setattr(peak_memory, "_PAGE", 4096)
+    reads: list[str] = []
+    real = peak_memory._read
+    monkeypatch.setattr(peak_memory, "_read", lambda p: (reads.append(p.name), real(p))[1])
+
+    walker = peak_memory._ThreadChildren()
+    totals = [peak_memory.tree_rss_bytes(os.getpid(), walker) for _ in range(5)]
+
+    own, kid = 100 * 4096, 50 * 4096
+    assert totals == [own + 3 * kid] * 5  # every child seen on every tick
+    # Before: ~100 children reads per tick. Now one full walk, then a handful.
+    assert reads.count("children") <= 100 + 3 + 4 * 8
+
+
+def test_linux_walk_survives_missing_and_garbled_proc_files(tmp_path, monkeypatch):
+    import os
+
+    from immich_memories.tracking import peak_memory
+
+    pid = os.getpid()
+    # WHY: a fake /proc, so the error paths are reachable on any OS.
+    _fake_proc(tmp_path, threads=3, spawners={0: [900001]})
+    (tmp_path / str(pid) / "task" / str(pid + 1) / "children").unlink()
+    (tmp_path / str(pid) / "task" / str(pid + 2) / "children").write_text("not-a-pid")
+    (tmp_path / "900001" / "task" / "900001" / "children").write_text("junk")
+    monkeypatch.setattr(peak_memory, "_PROC", tmp_path)
+    monkeypatch.setattr(peak_memory, "_LIBPROC", None)
+    monkeypatch.setattr(peak_memory, "_PAGE", 4096)
+
+    # The child's own children file is garbled; it still counts, with no grandchildren.
+    assert peak_memory.tree_rss_bytes(pid) == (100 + 50) * 4096
+    (tmp_path / "900001" / "task" / "900001" / "children").unlink()
+    assert peak_memory.tree_rss_bytes(pid) == (100 + 50) * 4096
+
+    import shutil
+
+    shutil.rmtree(tmp_path / str(pid) / "task")
+    assert peak_memory._ThreadChildren().children(pid) == []
+
+
+def test_thread_children_remembers_a_spawning_thread_between_full_walks(tmp_path, monkeypatch):
+    import os
+
+    from immich_memories.tracking import peak_memory
+
+    pid = os.getpid()
+    # WHY: a fake /proc, so thread contents are controlled.
+    _fake_proc(tmp_path, threads=10, spawners={})
+    monkeypatch.setattr(peak_memory, "_PROC", tmp_path)
+    walker = peak_memory._ThreadChildren()
+    side = tmp_path / str(pid) / "task" / str(pid + 7) / "children"
+
+    assert walker.children(pid) == []
+    side.write_text("900009")  # a side thread starts a process after the full walk
+    assert walker.children(pid) == []  # not seen until the next full walk
+    for _ in range(peak_memory.FULL_WALK_EVERY - 2):
+        walker.children(pid)
+    assert walker.children(pid) == [900009]  # full walk finds it
+    assert walker.children(pid) == [900009]  # then it is read on light ticks too
+
+
+def test_macos_libproc_children_reach_grandchildren(tmp_path, monkeypatch):
+    from immich_memories.tracking import peak_memory
+
+    tree = {1000: [2000], 2000: [3000], 3000: []}
+
+    class FakeLibproc:
+        # WHY: libproc is macOS-only; this stands in for proc_listchildpids.
+        def proc_listchildpids(self, pid, buffer, _size):
+            for slot, child in enumerate(tree.get(pid, [])):
+                buffer[slot] = child
+            return len(tree.get(pid, []))
+
+    monkeypatch.setattr(peak_memory, "_LIBPROC", FakeLibproc())
+    monkeypatch.setattr(peak_memory, "rss_bytes", lambda pid: pid)
+
+    assert peak_memory.tree_rss_bytes(1000) == 1000 + 2000 + 3000
