@@ -196,7 +196,7 @@ advanced:
     forwarded_copies_when_short: false  # Let forwarded copies fill gaps in the film's camera timeline
 
     # Downloads
-    download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
+    download_workers: 3            # Parallel Immich clients for downloads, previews and faces (1-8)
     source_prepare_workers: auto   # Sources prepared at once (1-4); auto: reserve 1 GiB, then 3 GiB per worker; 1-2, capped by available CPUs
     prepared_source_cache_max_size_gb: 10.0  # Disk for prepared sources a later render reuses (0-500 GB; 0 keeps none)
 

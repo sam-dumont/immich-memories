@@ -64,6 +64,9 @@ class Client:
     def require_read_permissions(self) -> None:
         self.get_key_capabilities().require_read()
 
+    def remember_windows(self) -> None:
+        """A run's client reads each window once; this fake records every read."""
+
     def __enter__(self):
         return self
 

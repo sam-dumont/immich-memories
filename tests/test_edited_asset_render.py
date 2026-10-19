@@ -267,3 +267,31 @@ def test_an_id_outside_the_known_assets_still_falls_back_to_get_asset():
 
     assert client.get_asset_calls == ["unseen-asset"]
     assert client.thumbnail_calls == [("unseen-asset", {"edited": True})]
+
+
+def test_previews_of_clips_and_live_photo_companions_in_the_pool_make_no_get_asset_calls():
+    """A clip in the pool carries its asset, and a Live Photo's companion clip is never
+    touched by Immich's editor, so neither costs a `get_asset` round trip (#2711)."""
+    from immich_memories.analysis.runtime.ports import EditorialRuntimePorts, edited_by_id
+    from immich_memories.api.models import VideoClipInfo
+
+    clip = VideoClipInfo(
+        asset=make_asset("clip", is_edited=True), live_burst_video_ids=["burst-1", "burst-2"]
+    )
+    still = make_asset("still").model_copy(
+        update={"type": AssetType.IMAGE, "live_photo_video_id": "companion"}
+    )
+    client = _FakeStructurePlannerClient(is_edited=True)  # would answer wrongly if ever asked
+    reader = EditorialRuntimePorts().preview_reader(client, edited_by_id([clip, still]))
+
+    for asset_id in ("clip", "still", "companion", "burst-1", "burst-2"):
+        reader(asset_id)
+
+    assert client.get_asset_calls == []
+    assert client.thumbnail_calls == [
+        ("clip", {"edited": True}),
+        ("still", {"edited": False}),
+        ("companion", {"edited": False}),
+        ("burst-1", {"edited": False}),
+        ("burst-2", {"edited": False}),
+    ]

@@ -15,6 +15,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from immich_memories.analysis.preparation.bounded_reads import ThreadClients
 from immich_memories.analysis.reading.annotation_lines import StoredAnnotationLineReader
 from immich_memories.analysis.runtime.ports import EditorialRuntimePorts, edited_by_id
 from immich_memories.analysis.sources.window_context import FullEditorialSource
@@ -206,25 +207,35 @@ class EvidencePreparation:
             captured.get(c.asset_id, c.source) for c in prepared.candidates if c.asset_id in reach
         )
         known_edited = edited_by_id(assets)
-        return prepare(
-            assets=assets,
-            store=self.readings.store,
-            thumbnail_cache=self.thumbnail_cache,
-            preparation_config=config.editorial.preparation,
-            triage_config=config.triage,
-            head_versions=config.editorial.active_head_versions,
-            inference_config=config.inference,
-            llm_config=config.llm,
-            description_model=config.editorial.description_model,
-            pixel_producer_key=config.editorial.pixel_producer_key,
-            fetch_preview=self.ports.preview_reader(self.client, known_edited),
-            fetch_faces=lambda asset_id: self.ports.fetch_faces(self.client, asset_id),
-            read_playback=partial(self.ports.fetch_playback_range, self.client),
-            progress=progress,
-            on_asset=live.note_asset,
-            inspect_clips=self.inspect_clips,
-            acquire_motion=False,
-        )
+        # Preview and face reads overlap, each worker thread on its own client (#2711).
+        clients = ThreadClients(self.client) if ThreadClients.available(self.client) else None
+        reader = clients.current if clients is not None else lambda: self.client
+        try:
+            return prepare(
+                assets=assets,
+                store=self.readings.store,
+                thumbnail_cache=self.thumbnail_cache,
+                preparation_config=config.editorial.preparation,
+                triage_config=config.triage,
+                head_versions=config.editorial.active_head_versions,
+                inference_config=config.inference,
+                llm_config=config.llm,
+                description_model=config.editorial.description_model,
+                pixel_producer_key=config.editorial.pixel_producer_key,
+                fetch_preview=lambda asset_id: self.ports.preview_reader(reader(), known_edited)(
+                    asset_id
+                ),
+                fetch_faces=lambda asset_id: self.ports.fetch_faces(reader(), asset_id),
+                read_playback=partial(self.ports.fetch_playback_range, self.client),
+                progress=progress,
+                on_asset=live.note_asset,
+                inspect_clips=self.inspect_clips,
+                acquire_motion=False,
+                read_workers=config.analysis.download_workers if clients is not None else 1,
+            )
+        finally:
+            if clients is not None:
+                clients.close()
 
     def _screen_documents(self, prepared: Any, readable: tuple[str, ...]) -> dict[str, Any]:
         from immich_memories.analysis.reading.source_gate import (

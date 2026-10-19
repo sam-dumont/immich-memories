@@ -90,6 +90,9 @@ class _ReadableKey:
     def require_read_permissions(self) -> None:
         self.get_key_capabilities().require_read()
 
+    def remember_windows(self) -> None:
+        """A run's client reads each window once; this fake answers every read the same."""
+
 
 def _camera_asset(asset_id: str, at: datetime) -> Asset:
     """A picture Immich would admit into preparation: EXIF names a camera."""

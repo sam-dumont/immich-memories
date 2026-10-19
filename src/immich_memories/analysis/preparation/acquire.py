@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import sqlalchemy as sa
 
@@ -27,6 +27,7 @@ from immich_memories.analysis.facts.clip_frames import (
 )
 from immich_memories.analysis.facts.subject_framing import FaceBox
 from immich_memories.analysis.llm.providers import resolved_llm_config
+from immich_memories.analysis.preparation.bounded_reads import read_each
 from immich_memories.analysis.preparation.detector_frames import DetectorFrames
 from immich_memories.analysis.preparation.detectors import prepare_detectors
 from immich_memories.analysis.preparation.edits import (
@@ -256,6 +257,8 @@ class _Acquisition:
     pictures: dict[str, int] = field(default_factory=dict)
     service_seconds: dict[str, float] = field(default_factory=dict)
     transfer: dict[str, dict[str, int]] = field(default_factory=dict)
+    # How many preview and face reads may be in flight at once; 1 reads one at a time.
+    read_workers: int = 1
 
     def scoped(self, scope: str) -> _Acquisition:
         """Keep video and attached-clip work distinct without changing their fact producers."""
@@ -311,19 +314,25 @@ class _Acquisition:
     ) -> tuple[dict[str, Path], list[str]]:
         paths: dict[str, Path] = {}
         unusable: list[str] = []
+
+        def path_of(asset_id: str) -> Path:
+            subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
+            return cache_path / subdir / f"{asset_id}_preview.jpg"
+
+        def fetch(asset_id: str) -> int:
+            edited = (edited_by_id or {}).get(asset_id, False)  # #2114: may be stale
+            return ensure_preview(path_of(asset_id), asset_id, fetch_preview, edited=edited)
+
         with self.timed("previews", len(ids)):
-            for index, asset_id in enumerate(ids, 1):
-                self.check()
-                subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
-                path = cache_path / subdir / f"{asset_id}_preview.jpg"
-                try:
-                    edited = (edited_by_id or {}).get(asset_id, False)  # #2114: may be stale
-                    self.wrote(ensure_preview(path, asset_id, fetch_preview, edited=edited))
-                    paths[asset_id] = path
+            answers = read_each(ids, fetch, workers=self.read_workers, check=self.check)
+            for index, (asset_id, written, exc) in enumerate(answers, 1):
+                if exc is None:
+                    self.wrote(written or 0)
+                    paths[asset_id] = path_of(asset_id)
                     self.note(asset_id)
-                except AccountReadFailed:
-                    raise
-                except Exception as exc:
+                elif isinstance(exc, AccountReadFailed):
+                    raise exc
+                else:
                     unusable.append(asset_id)
                     if preview_refused(exc):
                         self.unservable[asset_id] = PREVIEW_UNAVAILABLE
@@ -370,13 +379,15 @@ class _Acquisition:
         read: dict[str, Sequence[FaceBox]] = {}
         with self.timed("faces", len(asset_ids)):
             try:
-                for index, asset_id in enumerate(asset_ids, 1):
-                    self.check()
-                    try:
-                        read[asset_id] = fetch_faces(asset_id)
-                    except AccountReadFailed:
-                        raise
-                    except Exception as exc:
+                answers = read_each(
+                    asset_ids, fetch_faces, workers=self.read_workers, check=self.check
+                )
+                for index, (asset_id, boxes, exc) in enumerate(answers, 1):
+                    if exc is None:
+                        read[asset_id] = cast(Sequence[FaceBox], boxes)
+                    elif isinstance(exc, AccountReadFailed):
+                        raise exc
+                    else:
                         self.failures[f"faces:{asset_id}"] = f"{type(exc).__name__}: {exc}"
                     if len(read) >= BANK_BATCH:
                         remember_faces(self.store, read)
@@ -682,6 +693,7 @@ def prepare_editorial_annotations(
     read_playback: Callable[[str, int, int], tuple[bytes, int]] | None = None,
     inspect_clips: bool = True,
     acquire_motion: bool = True,
+    read_workers: int = 1,
 ) -> PreparationResult:
     """Prepare the supplied source scope, reusing facts under their exact producer identity.
 
@@ -696,6 +708,8 @@ def prepare_editorial_annotations(
     Cuts set ``acquire_motion=False``: their rules draft/refinement does not consume
     motion sentences, so this pass neither acquires nor reports them as missing.
     Explicit prepare retains motion acquisition and its completeness report.
+    ``read_workers`` bounds how many preview and face reads are in flight at once; above 1,
+    ``fetch_preview`` and ``fetch_faces`` must be safe to call from several threads.
     """
     cache_path = Path(getattr(thumbnail_cache, "cache_dir", thumbnail_cache))
     source = tuple({asset.id: asset for asset in assets}.values())
@@ -715,6 +729,7 @@ def prepare_editorial_annotations(
         note=on_asset or _noop_asset,
         failures={},
         wrote=getattr(thumbnail_cache, "note_written", None) or (lambda _bytes: None),
+        read_workers=read_workers,
     )
     stage.check()
     flipped_edits = edited_mismatch_ids(store, source)  # before `remember_assets` overwrites it

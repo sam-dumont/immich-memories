@@ -87,14 +87,14 @@ def _print_outcome(
 def _bank_overviews(client, config: Config, scope, sources, unservable) -> None:
     """Bank the period accounts a later cut reads instead of paying for its own thesis."""
     from immich_memories.analysis.runtime.period_accounts import catalogue_prepared_window
-    from immich_memories.analysis.sources.album_index import RunAlbumNames
+    from immich_memories.analysis.sources.album_index import ALBUM_MEMBERS_NAME, RunAlbumNames
 
     catalogue, unread = catalogue_prepared_window(
         sources,
         scope=scope,
         config=config,
         unservable=unservable,
-        albums=RunAlbumNames(client),
+        albums=RunAlbumNames(client, memo_path=config.cache.cache_path / ALBUM_MEMBERS_NAME),
         client=client,
     )
     print_success(

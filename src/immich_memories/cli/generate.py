@@ -552,6 +552,9 @@ def register_generate_commands(main: click.Group) -> None:
                 with run_client(config.immich, household) as client:
                     progress.update(task, completed=True)
                     record_connected_system()
+                    # Discovery and the editor read the same windows; this client serves
+                    # this one run, so each window is read from Immich once (#2711).
+                    client.remember_windows()
                     # Album flow: the album is the pool, so branch before discovery
                     if from_album:
                         from immich_memories.cli._album_generation import (

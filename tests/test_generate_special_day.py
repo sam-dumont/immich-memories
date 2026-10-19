@@ -64,6 +64,9 @@ class _RecordingImmich:
     def __init__(self) -> None:
         self.windows: list = []
 
+    def remember_windows(self) -> None:
+        """A run's client reads each window once; this fake records every read."""
+
     def get_videos_for_date_range(self, date_range) -> list:
         self.windows.append(date_range)
         return []

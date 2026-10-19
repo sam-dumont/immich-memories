@@ -49,6 +49,7 @@ from immich_memories.analysis.runtime.source_route import (
     project_source_rendering,
 )
 from immich_memories.analysis.sources.album_index import (
+    ALBUM_MEMBERS_NAME,
     RunAlbumNames,
     record_album_index,
 )
@@ -602,6 +603,7 @@ def build_editorial_planner(
     album_names = RunAlbumNames(
         client,
         record=lambda index: record_album_index(index, backend._context.artifact_dir),
+        memo_path=config.cache.cache_path / ALBUM_MEMBERS_NAME,
     )
 
     def rule_episode_reader(prepared: Any) -> EpisodeReader:
@@ -672,7 +674,7 @@ def build_editorial_planner(
         prepare_refinement=refinement.refine if refinement else None,
         printed_near=_printed_near(client),
         album_names=album_names,
-        document_ocr_text=document_ocr_port(client, accounts=accounts),
+        document_ocr_text=document_ocr_port(client),
     )
 
     def attempt_directory() -> Path:

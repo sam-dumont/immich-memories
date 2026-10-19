@@ -190,6 +190,11 @@ class ImmichClient:
         self.albums = AlbumService(self._request, self.get_api_version, self.get_key_capabilities)
 
     @property
+    def api_version_policy(self) -> ApiVersionPolicy:
+        """The API version this client was asked to use, before any server answered."""
+        return self._api_version_policy
+
+    @property
     def client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
         if self._client is None or self._client.is_closed:
