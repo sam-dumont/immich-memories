@@ -33,6 +33,7 @@ import math
 from collections import Counter
 from collections.abc import Callable, Collection, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
+from operator import itemgetter
 from typing import Any
 
 import numpy as np
@@ -43,6 +44,7 @@ from immich_memories.analysis.corpus.duplicate_hashing import (
     hamming_distance,
 )
 from immich_memories.analysis.corpus.moment_grouping import MOMENT_WINDOW_MINUTES
+from immich_memories.analysis.lookahead import Lookahead
 from immich_memories.analysis.selection.lookalike import MOTION_KINDS
 from immich_memories.analysis.selection.repeat_exemptions import repeat_may_be_refused
 
@@ -297,6 +299,7 @@ def _refill(
     repeats: _Repeats,
     thumbnail_hash: Callable[[str], str | None],
     admits: Admits,
+    prepare: Callable[[Sequence[Mapping[str, Any]]], object] | None = None,
 ) -> tuple[str | None, dict[str, Any] | None]:
     """The first offered picture that the film can show instead, and the rung it came from.
 
@@ -305,6 +308,7 @@ def _refill(
     only move the problem to the next pass. A candidate the audience gate refuses is passed
     over too, and it is asked last, since asking it can cost a model call.
     """
+    offered = []
     for rung, unit in offers:
         asset_id = str(unit.get("asset_id") or "")
         if not asset_id or asset_id in taken:
@@ -313,7 +317,11 @@ def _refill(
         if not digest:
             continue
         repeats.hashes[asset_id] = digest
-        candidate = _replacement_row(carrier, unit)
+        offered.append((rung, _replacement_row(carrier, unit)))
+    # Walked until one is admitted: the offers are prepared a doubling window ahead.
+    ahead = Lookahead(offered, prepare, itemgetter(1))
+    for position, (rung, candidate) in enumerate(offered):
+        ahead.reach(position)
         repeated, _similarity = repeats.of(candidate, kept)
         if repeated is None and admits(candidate, company):
             return rung, candidate
@@ -344,7 +352,9 @@ class _Cut:
         family_of: FamilyOf,
         admits: Admits = _admit_all,
         film_floor: tuple[int, float] = (0, 0.0),
+        prepare: Callable[[Sequence[Mapping[str, Any]]], object] | None = None,
     ) -> None:
+        self.prepare = prepare
         self.family_of = family_of
         self.film_floor = film_floor
         self.shown = len(carriers)
@@ -427,6 +437,7 @@ class _Cut:
             repeats=self.repeats,
             thumbnail_hash=self.thumbnail_hash,
             admits=self.admits,
+            prepare=self.prepare,
         )
         if replacement is None or rung is None:
             return False
@@ -454,6 +465,7 @@ def review_cut_by_cached_hashes(
     admits: Admits = _admit_all,
     frame_quality: FrameQuality = _no_quality,
     film_floor: tuple[int, float] = (0, 0.0),
+    prepare: Callable[[Sequence[Mapping[str, Any]]], object] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Drop the frames of a finished cut that repeat one it already holds, and refill the slot.
 
@@ -492,6 +504,7 @@ def review_cut_by_cached_hashes(
         close_family_of,
         admits,
         film_floor=film_floor,
+        prepare=prepare,
     )
     only_shots = frozenset(
         c["asset_id"]

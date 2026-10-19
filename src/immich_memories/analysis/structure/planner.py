@@ -16,7 +16,7 @@ from datetime import datetime
 from functools import partial
 from operator import itemgetter
 
-from immich_memories.analysis.audience.exposure_chains import chain_holds_for
+from immich_memories.analysis.audience.exposure_chains import ExposureChains
 from immich_memories.analysis.audience.review_list import write_for_cut
 from immich_memories.analysis.audience.shareability import FAMILY, SHAREABLE
 from immich_memories.analysis.audience.tiers import audience_check_for
@@ -324,7 +324,7 @@ def _select(
         )
 
     audience_tier = source.config.editorial.preparation.tier
-    chains = chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
+    chains = ExposureChains(source.assets, source.audience_annotations, source.companion_detectors)
 
     gate = AudienceGate(
         ports.judge,
@@ -489,6 +489,7 @@ def _select(
         owner_required=source.owner_required_asset_ids,
         close_family_of=lambda asset_id: close_of(selection.lines.get(asset_id, "")),
         admits=lambda row, cut: gates.admits(row, cut=cut, tier_of={}) is None,
+        prepare=gates.prepare,
         frame_quality=frame_quality_of(source),
         requested_seconds=source.case.target_seconds,
     )

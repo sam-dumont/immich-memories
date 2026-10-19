@@ -469,6 +469,15 @@ def isolated_store(monkeypatch) -> Iterator[None]:
 
     flush_judgments()
     close_stores()
+    # The inference clients are pooled for a whole run; a test that swapped the transport
+    # must not leave its client behind for the next one. Only if the module was ever loaded.
+    facts = sys.modules.get("immich_memories.analysis.preparation.remote_facts")
+    if facts is not None:
+        facts.close_shared_clients()
+    # Likewise the caption provider check: one test's accepted server is not the next one's.
+    caption_requests = sys.modules.get("immich_memories.analysis.captions.requests")
+    if caption_requests is not None:
+        caption_requests.forget_provider_checks()
 
 
 @pytest.fixture(autouse=True)

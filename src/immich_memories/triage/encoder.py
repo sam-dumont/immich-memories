@@ -7,7 +7,7 @@ version, layout version); a bundle refuses to run on any other key.
 from __future__ import annotations
 
 import hashlib
-import os
+import threading
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +16,7 @@ from typing import Any, Protocol
 import numpy as np
 
 from immich_memories.onnx_session import open_inference_session
+from immich_memories.processing.memory_budget import available_cpus
 from immich_memories.triage.preprocess import PREPROCESS_VERSION
 
 LAYOUT_VERSION = "cls+mean+quad2x2/pca256/fp16"
@@ -102,17 +103,34 @@ class DinoEncoder:
 
     @classmethod
     def open(cls, model_path: Path, *, provider: str = "auto") -> DinoEncoder:
-        """Load the pinned DINOv2-small export; refuse any other graph."""
-        with model_path.open("rb") as handle:
-            digest = hashlib.file_digest(handle, "sha256").hexdigest()
-        if digest != DINOV2_SMALL_ONNX_SHA256:
-            raise RuntimeError(
-                f"{model_path}: digest {digest[:12]} is not the pinned {DINOV2_SMALL_ID} export"
-            )
-        return cls(
-            session=_create_session(model_path, provider),
-            key=encoder_key(DINOV2_SMALL_ID, digest),
-        )
+        """Load the pinned DINOv2-small export; refuse any other graph.
+
+        The export is hashed and its session built once per process for a given file and
+        provider: a film prepares in many rounds, and each used to pay for the 88 MB hash
+        and a new thread pool. A file that changes on disk (mtime or size) is opened afresh.
+        """
+        stat = model_path.stat()
+        cache_key = (str(model_path), stat.st_mtime_ns, stat.st_size, provider)
+        with _OPEN_LOCK:
+            opened = _OPENED.get(cache_key)
+            if opened is None:
+                with model_path.open("rb") as handle:
+                    digest = hashlib.file_digest(handle, "sha256").hexdigest()
+                if digest != DINOV2_SMALL_ONNX_SHA256:
+                    raise RuntimeError(
+                        f"{model_path}: digest {digest[:12]} is not the pinned "
+                        f"{DINOV2_SMALL_ID} export"
+                    )
+                opened = cls(
+                    session=_create_session(model_path, provider),
+                    key=encoder_key(DINOV2_SMALL_ID, digest),
+                )
+                _OPENED[cache_key] = opened
+            return opened
+
+
+_OPENED: dict[tuple[str, int, int, str], DinoEncoder] = {}
+_OPEN_LOCK = threading.Lock()
 
 
 # The execution providers each choice offers ONNX Runtime, in order.
@@ -150,7 +168,9 @@ def _create_session(model_path: Path, provider: str) -> Any:
 
     providers = list(provider_chain(provider, ort.get_available_providers()))
     options = ort.SessionOptions()
-    options.intra_op_num_threads = max(1, min(8, (os.cpu_count() or 2) - 1))
+    # WHY: os.cpu_count() is the host's core count inside a container; the pod's CPU limit
+    # (cgroup cpu.max) is what the process can actually use.
+    options.intra_op_num_threads = max(1, min(8, available_cpus() - 1))
     options.inter_op_num_threads = 1
     options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
     return open_inference_session(ort, model_path, options=options, providers=providers)

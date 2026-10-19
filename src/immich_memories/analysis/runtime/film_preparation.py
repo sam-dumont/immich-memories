@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from dataclasses import replace
 from typing import Any
 
@@ -62,15 +62,32 @@ class FilmPreparation:
         }
         return replace(
             source,
-            annotations={**source.annotations, **batch.as_mapping()},
-            audience_annotations={**source.audience_annotations, **batch.records_by_id()},
-            shareability_flags=dict(source.shareability_flags)
-            | load_flags(store, ids | companions),
-            companion_detectors=dict(source.companion_detectors)
-            | load_detector_heads(store, companions, source.config.editorial.active_head_versions),
-            clip_frames=dict(source.clip_frames) | load_clip_frames(store, companions),
-            motion_residuals=dict(source.motion_residuals) | read_motion_residuals(store, assets),
+            annotations=_merged(source.annotations, batch.as_mapping()),
+            audience_annotations=_merged(source.audience_annotations, batch.records_by_id()),
+            shareability_flags=_merged(
+                source.shareability_flags, load_flags(store, ids | companions)
+            ),
+            companion_detectors=_merged(
+                source.companion_detectors,
+                load_detector_heads(
+                    store, companions, source.config.editorial.active_head_versions
+                ),
+            ),
+            clip_frames=_merged(source.clip_frames, load_clip_frames(store, companions)),
+            motion_residuals=_merged(source.motion_residuals, read_motion_residuals(store, assets)),
         )
+
+
+def _merged(current: Mapping[str, Any], fresh: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The facts with this round's added, in place when the caller holds them live.
+
+    A round prepares a few pictures; copying every fact of the period to add them made each
+    round cost the length of the period. `CandidateEvidence` owns live dicts for exactly this.
+    """
+    if isinstance(current, MutableMapping):
+        current.update(fresh)
+        return current
+    return {**current, **fresh}
 
 
 class CandidateEvidence:
@@ -117,8 +134,10 @@ class CandidateEvidence:
             return False
         refreshed = self._prepare(self.source, pending)
         for name, facts in self._facts.items():
-            facts.clear()
-            facts.update(getattr(refreshed, name))
+            fresh = getattr(refreshed, name)
+            if fresh is not facts:
+                facts.clear()
+                facts.update(fresh)
         self._seen.update(
             asset_id
             for carrier in pending

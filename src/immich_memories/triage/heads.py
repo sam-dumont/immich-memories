@@ -7,6 +7,7 @@ never be run on features it was not trained on.
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,6 +17,20 @@ BUNDLE_SCHEMA = "triage-head-bundle-v1"
 PATCH_BUNDLE_SCHEMA = "triage-patch-head-bundle-v1"
 _META_KEY = "meta"
 PATCH_GRID = 16
+
+# A film prepares in many rounds, each of which loaded the same bundle from disk. Bundles are
+# frozen and never mutated, so one copy per (file, mtime, size) is shared across rounds.
+_LOADED: dict[tuple[str, str, int, int], object] = {}
+_LOAD_LOCK = threading.Lock()
+
+
+def _loaded_once(kind: str, path: Path, read):
+    stat = path.stat()
+    key = (kind, str(path), stat.st_mtime_ns, stat.st_size)
+    with _LOAD_LOCK:
+        if key not in _LOADED:
+            _LOADED[key] = read(path)
+        return _LOADED[key]
 
 
 @dataclass(frozen=True)
@@ -101,6 +116,11 @@ class HeadBundle:
 
     @classmethod
     def load(cls, path: Path) -> HeadBundle:
+        loaded: HeadBundle = _loaded_once("heads", path, cls._read)
+        return loaded
+
+    @classmethod
+    def _read(cls, path: Path) -> HeadBundle:
         with np.load(path, allow_pickle=False) as payload:
             meta = json.loads(str(payload[_META_KEY]))
             if meta.get("schema") != BUNDLE_SCHEMA:
@@ -170,6 +190,11 @@ class PatchHeadBundle:
 
     @classmethod
     def load(cls, path: Path) -> PatchHeadBundle:
+        loaded: PatchHeadBundle = _loaded_once("patch", path, cls._read)
+        return loaded
+
+    @classmethod
+    def _read(cls, path: Path) -> PatchHeadBundle:
         with np.load(path, allow_pickle=False) as payload:
             meta = json.loads(str(payload["meta"]))
             if meta.get("schema") != PATCH_BUNDLE_SCHEMA:

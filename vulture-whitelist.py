@@ -121,3 +121,6 @@ _._draw_base_layer
 # web/roster.py, not the excluded schemas module).
 _.person_urls
 
+
+# The unit suite closes the pooled inference clients between tests (tests/conftest.py).
+close_shared_clients  # unused function (src/immich_memories/analysis/preparation/remote_facts.py)

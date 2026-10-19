@@ -130,3 +130,39 @@ def test_a_picture_reaches_its_whole_run_however_long_and_no_further():
     assert runs_holding(rows, {"a0"}) == {"a0", "a1", "a2", "a3"}
     assert runs_holding(rows, {"a4"}) == {"a4"}
     assert runs_holding(rows, set()) == set()
+
+
+def test_refreshing_the_runs_a_round_touched_gives_the_period_wide_answer():
+    """A round re-derives only the runs around what it prepared, and reaches the same holds
+    as recomputing the whole period."""
+    from types import SimpleNamespace
+
+    from immich_memories.analysis.audience.exposure_chains import (
+        ExposureChains,
+        chain_holds_for,
+    )
+
+    stills, lines, heads = _captures(6, clip_flagged=0)
+    far = {}
+    for index in range(10):
+        taken = datetime(2024, 5, 1, 9, 0, tzinfo=UTC) + timedelta(minutes=2 * index)
+        still = stills["s0"].model_copy(
+            update={"id": f"f{index}", "file_created_at": taken, "live_photo_video_id": None}
+        )
+        far[still.id] = still
+    stills = {**stills, **far}
+    chains = ExposureChains(stills, lines, heads)
+    assert chains == {}
+
+    # Preparing the first clips reads them as flagged: their run holds, the far run is untouched.
+    for index in range(3):
+        heads[f"c{index}"] = {"nsfw_marqo": "yes"}
+    chains.refresh({"c0", "c1", "c2"})
+
+    assert chains == chain_holds_for(stills, lines, heads)
+    assert set(chains) == {f"s{n}" for n in range(6)}
+    # A far run that becomes flagged later is found by its own pictures, not by a full pass.
+    for index in range(4):
+        lines[f"f{index}"] = SimpleNamespace(heads=(("nsfw_marqo", "yes"),))
+    chains.refresh({"f0", "f1", "f2", "f3"})
+    assert chains == chain_holds_for(stills, lines, heads)

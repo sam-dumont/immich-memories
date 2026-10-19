@@ -88,6 +88,31 @@ def test_two_actual_invalid_completions_become_bound_unavailable(monkeypatch):
     assert count_rows(store, "descriptions") == 0
 
 
+def test_rounds_check_the_provider_once_until_a_request_fails(monkeypatch):
+    checks = []
+    monkeypatch.setattr(captions, "check_provider", lambda *_, **__: checks.append(1) or _probed())
+    envelope = validate_envelope({"description": "People sit together.", "setting": "a room"})
+    healthy = [True]
+
+    def ask(_url, image, **_):
+        if healthy[0]:
+            return outcome(image, envelope=envelope, error=None)
+        return outcome(image, error="TimeoutError", finish_reason=None)
+
+    monkeypatch.setattr(captions, "_ask_one", ask)
+    store = annotation_store()
+
+    assert run(store, asset_ids=("a",)) == {}
+    assert run(store, asset_ids=("b",)) == {}
+    assert len(checks) == 1
+
+    healthy[0] = False
+    assert run(store, asset_ids=("c",)) == {"c": "TimeoutError"}
+    healthy[0] = True
+    assert run(store, asset_ids=("d",)) == {}
+    assert len(checks) == 2
+
+
 def test_transport_failures_never_fabricate_terminal_unavailable(monkeypatch):
     monkeypatch.setattr(captions, "check_provider", lambda *_, **__: _probed())
     monkeypatch.setattr(

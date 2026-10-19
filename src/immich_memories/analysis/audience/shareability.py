@@ -44,6 +44,7 @@ from immich_memories.analysis.audience.questions import (
 from immich_memories.analysis.corpus.moment_grouping import capture_space_available
 from immich_memories.analysis.facts.line_fields import content_of
 from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
+from immich_memories.analysis.lookahead import Lookahead
 from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.db.tables import asset_flags, head_facts
 from immich_memories.store.asset_annotations import (
@@ -676,12 +677,18 @@ def _first_shareable(
     audience: str,
     occupied: Sequence[Mapping[str, Any]],
     admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] | None,
+    prepare: Callable[[Sequence[Mapping[str, Any]]], object] | None = None,
 ) -> tuple[Mapping[str, Any] | None, int]:
     """The first unused pool unit that passes its own gate, and the checks it cost."""
     checked = 0
-    for unit in pool:
-        if str(unit.get("asset_id")) in used or not capture_space_available(unit, occupied):
-            continue
+    candidates = [
+        unit
+        for unit in pool
+        if str(unit.get("asset_id")) not in used and capture_space_available(unit, occupied)
+    ]
+    ahead = Lookahead(candidates, prepare)
+    for position, unit in enumerate(candidates):
+        ahead.reach(position)
         verdict = verdict_of(unit)
         if verdict is not None:
             checked += 1
@@ -706,6 +713,7 @@ def apply_gate(
     pool_for: Callable[[Mapping[str, Any]], Sequence[Mapping[str, Any]]],
     audience: str = "family",
     admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] | None = None,
+    prepare: Callable[[Sequence[Mapping[str, Any]]], object] | None = None,
 ) -> tuple[list[dict], dict[str, Any]]:
     """Keep, replace or drop each carrier by its shareability verdict.
 
@@ -715,6 +723,9 @@ def apply_gate(
     same capture spacing as normal selection before buying its audience verdict. If none fits
     and passes, the slot is dropped; no other anchor fills the gap.
     """
+    # One round for every carrier the film holds, instead of one per carrier.
+    if prepare is not None:
+        prepare(carriers)
     verdicts = [verdict_of(carrier) for carrier in carriers]
     kept = [
         carrier
@@ -736,7 +747,7 @@ def apply_gate(
             {"asset_id": carrier.get("asset_id"), "event": carrier.get("event"), "verdict": verdict}
         )
         replacement, checked = _first_shareable(
-            pool_for(carrier), used, verdict_of, audience, kept, admits
+            pool_for(carrier), used, verdict_of, audience, kept, admits, prepare
         )
         log["checked"] += checked
         if replacement is None:

@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import logging
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -407,6 +408,47 @@ def _describe(
     return asset_id, preview, tuple(outcomes)
 
 
+# The provider check is a /models request and three sequential control captions. A film
+# prepares in many rounds against the same server, so it is paid once per (endpoint, model,
+# key) and again only after a request failed.
+_PROBED: dict[tuple[str, str, str], CaptionOrigin] = {}
+_PROBE_LOCK = threading.Lock()
+
+
+def _probe_key(base_url: str, api_key: str, llm_config: LLMConfig | None) -> tuple[str, str, str]:
+    if llm_config is not None:
+        resolved = resolved_llm_config(llm_config)
+        base_url, model = resolved.base_url, resolved.model
+    else:
+        model = API_MODEL
+    return base_url, model, hashlib.sha256(api_key.encode()).hexdigest()
+
+
+def _accepted_origin(
+    base_url: str,
+    timeout: float,
+    check_cancelled: Callable[[], None],
+    api_key: str,
+    llm_config: LLMConfig | None,
+) -> CaptionOrigin:
+    key = _probe_key(base_url, api_key, llm_config)
+    with _PROBE_LOCK:
+        origin = _PROBED.get(key)
+    if origin is None:
+        origin = check_provider(
+            base_url, timeout, check_cancelled, api_key=api_key, llm_config=llm_config
+        )
+        with _PROBE_LOCK:
+            _PROBED[key] = origin
+    return origin
+
+
+def forget_provider_checks() -> None:
+    """Make the next caption round check its provider again."""
+    with _PROBE_LOCK:
+        _PROBED.clear()
+
+
 def prepare_captions(
     *,
     store: Store,
@@ -427,10 +469,8 @@ def prepare_captions(
     description_model = (
         llm_caption_identity(llm_config, artifact_id) if llm_config else DESCRIPTION_MODEL
     )
-    origin = replace(
-        check_provider(base_url, timeout, check_cancelled, api_key=api_key, llm_config=llm_config),
-        artifact_id=artifact_id,
-    )
+    origin = _accepted_origin(base_url, timeout, check_cancelled, api_key, llm_config)
+    origin = replace(origin, artifact_id=artifact_id)
     failures = {}
     # Bound submitted work too: cancellation must not drain a whole library queue.
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
@@ -459,6 +499,9 @@ def prepare_captions(
             source = LLM_DESCRIPTION_SOURCE if llm_config is not None else DESCRIPTION_SOURCE
             failures |= batch.bank(store, origin, model=description_model, source=source)
             progress("captions", min(start + concurrency, len(asset_ids)), len(asset_ids))
+    if failures:
+        # A failed request may mean the server changed under us; check it again next round.
+        forget_provider_checks()
     return failures
 
 

@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from immich_memories.analysis.audience import shareability as _share
-from immich_memories.analysis.audience.exposure_chains import chain_holds_for
+from immich_memories.analysis.audience.exposure_chains import ExposureChains, chain_holds_for
 from immich_memories.analysis.clips.budget import (
     MIN_CARRIER_SECONDS,
     MIN_MOTION_SECONDS,
@@ -674,10 +674,14 @@ def refresh_candidates(source, ports, material: Material, chains, carriers) -> N
         return
     # Gates and prose readers share the refreshed facts, but these derived views
     # must follow them before any candidate is judged.
-    chains.update(
-        chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
-    )
     members = {member for carrier in carriers for member in _share.unit_members(carrier)}
+    if isinstance(chains, ExposureChains):
+        # Only the runs these pictures sit in can have changed.
+        chains.refresh(members)
+    else:
+        chains.update(
+            chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
+        )
     for member in members:
         material.document_sources.pop(member, None)
     material.document_sources.update(

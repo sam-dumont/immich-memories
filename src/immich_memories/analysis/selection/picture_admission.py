@@ -137,6 +137,14 @@ class PictureAdmission:
         )
         return refusal
 
+    def prepare(self, rows: Sequence[Mapping[str, Any]]) -> None:
+        """Prepare these candidates in one round, ahead of the one-by-one walk that tries them.
+
+        ``admits`` prepares its own candidate too; a candidate prepared here makes that a no-op.
+        """
+        if self.prepare_candidates is not None and rows:
+            self.prepare_candidates(rows)
+
     def _check(self, candidate, cut, tier_of, *, recovering):
         if self.prepare_candidates is not None:
             self.prepare_candidates([candidate])
