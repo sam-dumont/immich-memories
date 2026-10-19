@@ -386,7 +386,10 @@ def auto_generate_music(
         timeline.film_duration = video_duration
 
         musicgen_config = MusicGenClientConfig.from_app_config(config.musicgen)
-        musicgen_config.num_versions = 1 + config.audio.max_regenerations
+        # One take per film; the periodicity score is logged, never a reason to redo it (#2702).
+        musicgen_config.num_versions = 1
+        if config.audio.max_regenerations:
+            logger.info("audio.max_regenerations is ignored: generated music is one take (#2702)")
 
         music_dir = run_output_dir / "music"
         music_dir.mkdir(parents=True, exist_ok=True)

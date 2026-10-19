@@ -410,7 +410,6 @@ and `--no-music` skips music. Music volume is per run too (`--music-volume`); th
 audio:
   no_music: false                       # true: films render without music unless a run asks
   local_music_dir: "~/Music/Memories"   # Your own music, one folder per mood; films pick from it
-  max_regenerations: 2                  # Extra auto-mode takes when the first is flagged (0-3)
 advanced:
   musicgen:
     enabled: false                 # Use a MusicGen API server
@@ -446,10 +445,9 @@ configured generator still comes first. The `immich-memories music` commands rea
 the web render panel (which opens on **No music**). `--music FILE`, `--music auto` or a track picked
 in the panel still gets music for that film; `--no-music` turns it off for one film.
 
-`audio.max_regenerations` bounds auto mode's reaction to a generated track the cheap quality gate
-flags as a repetitive "tic-tac". The first take is scored; if it is flagged, auto mode generates
-up to that many more takes and keeps the best-scored one. It never drops music, so a run ends with
-a track even when every take is flagged.
+Generated music is one take per film. The repetition check still scores it and writes the score to
+the log, so a film that sounds mechanical can be diagnosed, but a high score never costs another
+generation. `audio.max_regenerations` is ignored and warns when set; it stops being read in 2.0.
 
 Seasonal music prompts read seasons in the home base's hemisphere (`trips.homebase_latitude`),
 like the titles do; without a home base they read the northern one.

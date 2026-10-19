@@ -137,13 +137,13 @@ def test_a_lan_bind_without_sign_in_is_no_longer_a_setting(tmp_path, caplog):
 
 
 @pytest.mark.parametrize("section", ["musicgen", "ace_step"])
-def test_the_generators_take_count_is_ignored_for_max_regenerations(tmp_path, caplog, section):
+def test_the_generators_take_count_is_ignored(tmp_path, caplog, section):
     from immich_memories.audio.music_generator_client import MusicGenClientConfig
 
     config = _load(tmp_path, f"advanced:\n  {section}:\n    num_versions: 5\n")
 
     assert f"{section}.num_versions is no longer supported" in _warnings(caplog)
-    assert "audio.max_regenerations" in _warnings(caplog)
+    assert "a generated film is always one take" in _warnings(caplog)
     assert MusicGenClientConfig.from_app_config(config.musicgen).num_versions == 3
 
 
@@ -167,3 +167,11 @@ def test_tuning_the_maintainer_moved_out_is_read_and_named(tmp_path, caplog, key
 
     assert getattr(getattr(config, section), field) == value
     assert f"{key} is no longer supported" in _warnings(caplog)
+
+
+def test_max_regenerations_still_loads_and_is_ignored(tmp_path, caplog):
+    config = _load(tmp_path, "audio:\n  max_regenerations: 3\n")
+
+    assert config is not None
+    assert "audio.max_regenerations is no longer supported" in _warnings(caplog)
+    assert "never regenerated" in _warnings(caplog)

@@ -106,14 +106,6 @@ def test_a_steady_noise_bed_is_not_flagged(tmp_path: Path) -> None:
     assert not quality.flagged
 
 
-def test_a_tick_outranks_music_for_the_keep_best_choice(tmp_path: Path) -> None:
-    tick = score_track(_metronome(tmp_path / "tick.wav"))
-    music = score_track(_irregular_rhythm(tmp_path / "music.wav"))
-
-    assert tick is not None and music is not None
-    assert tick.score > music.score
-
-
 def test_an_unreadable_file_is_none_not_flagged(tmp_path: Path) -> None:
     broken = tmp_path / "broken.wav"
     broken.write_bytes(b"not audio")
