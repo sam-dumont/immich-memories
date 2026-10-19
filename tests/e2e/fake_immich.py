@@ -263,6 +263,7 @@ ALBUMS = (
         "assetCount": len(ALBUM_ASSETS),
         "startDate": f"{_ALBUM_DAYS[0]}T00:00:00.000Z",
         "endDate": f"{_ALBUM_DAYS[-1]}T00:00:00.000Z",
+        "updatedAt": f"{_ALBUM_DAYS[-1]}T20:00:00.000Z",
     },
 )
 

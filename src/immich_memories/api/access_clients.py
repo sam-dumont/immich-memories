@@ -101,8 +101,19 @@ class AccessBoundClient(SyncImmichClient):
         Raises `AccountUnavailable` naming the first account that cannot be opened.
         """
         missing = [name for name in dict.fromkeys(names) if name not in self._accounts]
-        self._accounts.update(open_accounts(self._immich, missing))
+        opened = open_accounts(self._immich, missing)
+        if self._windows is not None:
+            # A run that reads each window once does so on every account it reads.
+            for account in opened.values():
+                account.client.remember_windows()
+        self._accounts.update(opened)
         return {name: self._accounts[name] for name in dict.fromkeys(names)}
+
+    def remember_windows(self) -> None:
+        """Read each window once on the primary and on every account this run opens."""
+        super().remember_windows()
+        for account in self._accounts.values():
+            account.client.remember_windows()
 
     @property
     def uses_native_identities(self) -> bool:

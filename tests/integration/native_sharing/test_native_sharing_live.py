@@ -437,7 +437,7 @@ def test_normalized_multilingual_ocr_reaches_the_personal_document_gate(househol
     from immich_memories.analysis.preparation.document_ocr import document_ocr_port
 
     state, _, client = household
-    reader = document_ocr_port(client, accounts=("primary", "partner"))
+    reader = document_ocr_port(client)
     assert reader is not None
     text = reader(state["target"], True)
     assert text == OCR_TEXT

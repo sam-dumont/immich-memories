@@ -20,6 +20,9 @@ from immich_memories.security import write_secret_file
 logger = logging.getLogger(__name__)
 
 ALBUM_INDEX_NAME = "album-index.private.json"
+# Which assets each album held when last read, so a later run reads only changed albums.
+ALBUM_MEMBERS_NAME = "album-members.private.json"
+_MEMO_SCHEMA = "album-members-v1"
 
 # One read of an album is one `/search/metadata` page, which returns at most a
 # thousand assets, so a bigger album would be indexed only in part anyway. It is
@@ -63,11 +66,19 @@ def build_album_index(
     source: object,
     *,
     max_album_assets: int = MAX_INDEXED_ALBUM_ASSETS,
+    memo_path: Path | None = None,
 ) -> AlbumMembershipIndex:
-    """Map assets to the albums holding them, skipping albums too big to name anything."""
+    """Map assets to the albums holding them, skipping albums too big to name anything.
+
+    With `memo_path`, an album whose update stamp and count are what the last run saw is
+    answered from that run's read instead of searched again (#2711); only changed or new
+    albums cost a request. The memo is the owner's own cache, never shared.
+    """
     albums = _listing(source)
     if albums is None:
         return NO_ALBUMS
+    remembered = _read_memo(memo_path)
+    members: dict[str, tuple[str, ...]] = {}
     names_by_asset: dict[str, list[str]] = {}
     indexed: list[str] = []
     skipped: list[str] = []
@@ -75,20 +86,63 @@ def build_album_index(
         if album.asset_count > max_album_assets:
             skipped.append(album.name)
             continue
-        assets = _album_assets(source, album.id)
+        assets = _members(source, album, remembered)
         if assets is None:
             skipped.append(album.name)
             continue
+        members[album.id] = assets
         indexed.append(album.name)
-        for asset in assets:
-            asset_id = str(asset.get("id") or "")
-            if asset_id:
-                names_by_asset.setdefault(asset_id, []).append(album.name)
+        for asset_id in assets:
+            names_by_asset.setdefault(asset_id, []).append(album.name)
+    if memo_path is not None:
+        _write_memo(memo_path, albums, members)
     return AlbumMembershipIndex(
         names_by_asset={asset: tuple(names) for asset, names in names_by_asset.items()},
         indexed_albums=tuple(indexed),
         skipped_albums=tuple(skipped),
     )
+
+
+def _revision(album: Any) -> list[Any] | None:
+    """What changes when an album's members do; None when Immich gave no update stamp."""
+    updated = getattr(album, "updated_at", None)
+    return [updated, album.asset_count] if updated else None
+
+
+def _members(source: object, album: Any, remembered: Mapping[str, Any]) -> tuple[str, ...] | None:
+    entry = remembered.get(album.id)
+    revision = _revision(album)
+    if revision is not None and isinstance(entry, dict) and entry.get("revision") == revision:
+        return tuple(str(asset_id) for asset_id in entry.get("assets", ()))
+    assets = _album_assets(source, album.id)
+    if assets is None:
+        return None
+    return tuple(asset_id for asset in assets if (asset_id := str(asset.get("id") or "")))
+
+
+def _read_memo(path: Path | None) -> Mapping[str, Any]:
+    if path is None or not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        logger.debug("Album memo unreadable (%s); every album is read again", type(exc).__name__)
+        return {}
+    albums = data.get("albums") if isinstance(data, dict) else None
+    return albums if isinstance(albums, dict) and data.get("schema") == _MEMO_SCHEMA else {}
+
+
+def _write_memo(path: Path, albums: Sequence[Any], members: Mapping[str, tuple[str, ...]]) -> None:
+    kept = {
+        album.id: {"revision": revision, "assets": list(members[album.id])}
+        for album in albums
+        if album.id in members and (revision := _revision(album)) is not None
+    }
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        write_secret_file(path, json.dumps({"schema": _MEMO_SCHEMA, "albums": kept}))
+    except OSError as exc:  # WHY: a memo that cannot be kept only costs the next run a read
+        logger.warning("Could not keep the album memo (%s)", type(exc).__name__)
 
 
 def _listing(source: object) -> Sequence[Any] | None:
@@ -131,15 +185,17 @@ class RunAlbumNames:
         source: object,
         *,
         record: Callable[[AlbumMembershipIndex], None] | None = None,
+        memo_path: Path | None = None,
     ) -> None:
         self._source = source
         self._record = record
+        self._memo_path = memo_path
         self._index: AlbumMembershipIndex | None = None
 
     def __call__(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
         """The album names holding these assets, indexing the library on first use."""
         if self._index is None:
-            self._index = build_album_index(self._source)
+            self._index = build_album_index(self._source, memo_path=self._memo_path)
             if self._record is not None:
                 self._record(self._index)
         return self._index.names_for(asset_ids)

@@ -101,6 +101,9 @@ class _Immich:
     def __init__(self, videos) -> None:
         self.videos = videos
 
+    def remember_windows(self) -> None:
+        """A run's client reads each window once; this fake answers every read the same."""
+
     def get_videos_for_date_range(self, date_range) -> list:
         start, end = date_range.start.replace(tzinfo=None), date_range.end.replace(tzinfo=None)
         return [v for v in self.videos if start <= v.local_taken_at.replace(tzinfo=None) <= end]

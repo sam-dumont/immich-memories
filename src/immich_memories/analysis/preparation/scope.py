@@ -74,6 +74,7 @@ def run_preparation(
     """
     from immich_memories.analysis.facts.subject_framing import face_boxes_of
     from immich_memories.analysis.preparation.acquire import prepare_editorial_annotations
+    from immich_memories.analysis.preparation.bounded_reads import ThreadClients
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from immich_memories.db import open_store
     from immich_memories.tracking.timing import active
@@ -95,27 +96,36 @@ def run_preparation(
         if progress:
             progress(producer, done, total)
 
+    # Preview and face reads overlap, each worker thread on its own client (#2711).
+    clients = ThreadClients(client) if ThreadClients.available(client) else None
+    reader = clients.current if clients is not None else lambda: client
+
     def fetch_preview(asset_id: str) -> bytes:
-        return client.get_asset_thumbnail(
+        return reader().get_asset_thumbnail(
             asset_id, size="preview", edited=edited_by_id.get(asset_id, False)
         )
 
-    result = prepare_editorial_annotations(
-        assets=assets,
-        store=open_store(config),
-        thumbnail_cache=thumbnail_cache,
-        preparation_config=config.editorial.preparation,
-        triage_config=config.triage,
-        head_versions=config.editorial.active_head_versions,
-        inference_config=config.inference,
-        llm_config=config.llm,
-        description_model=config.editorial.description_model,
-        pixel_producer_key=config.editorial.pixel_producer_key,
-        fetch_preview=fetch_preview,
-        fetch_faces=lambda asset_id: face_boxes_of(client.get_asset_faces(asset_id)),
-        read_playback=client.get_video_playback_range,
-        progress=report,
-    )
+    try:
+        result = prepare_editorial_annotations(
+            assets=assets,
+            store=open_store(config),
+            thumbnail_cache=thumbnail_cache,
+            preparation_config=config.editorial.preparation,
+            triage_config=config.triage,
+            head_versions=config.editorial.active_head_versions,
+            inference_config=config.inference,
+            llm_config=config.llm,
+            description_model=config.editorial.description_model,
+            pixel_producer_key=config.editorial.pixel_producer_key,
+            fetch_preview=fetch_preview,
+            fetch_faces=lambda asset_id: face_boxes_of(reader().get_asset_faces(asset_id)),
+            read_playback=client.get_video_playback_range,
+            progress=report,
+            read_workers=config.analysis.download_workers if clients is not None else 1,
+        )
+    finally:
+        if clients is not None:
+            clients.close()
     return clock, result
 
 

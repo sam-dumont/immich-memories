@@ -333,3 +333,29 @@ async def test_a_long_film_keeps_its_label_when_immich_reads_it_again_slowly(yea
     assert result["delivery_complete"] is True
     assert immich.description == LABEL.description
     assert immich.tags == {PROVENANCE, *LABEL.tags}
+
+
+# --- One write per kind, so one quiet wait fewer (#2711) --------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_the_provenance_tag_rides_in_the_story_tags_write(film):
+    # WHY: each write makes Immich rewrite the film's sidecar, and each is waited out on its
+    # own. The provenance tag written on its own cost a whole wait before the label's own.
+    immich = FakeImmich(reads_after=1)
+
+    result = await _service(immich).upload_memory(film, label=LABEL)
+
+    assert result["warnings"] == []
+    assert result["delivery_complete"] is True
+    assert immich.tags == {PROVENANCE, *LABEL.tags}
+    assert immich.writes == [("PUT", "/tags"), ("PUT", "/tags/assets"), ("PUT", "/assets/film")]
+
+
+@pytest.mark.asyncio
+async def test_a_film_whose_provenance_did_not_stay_says_so(film):
+    immich = FakeImmich(sticks=False)
+
+    result = await _service(immich).upload_memory(film, label=LABEL)
+
+    assert any("provenance" in w and "did not stay" in w for w in result["warnings"])

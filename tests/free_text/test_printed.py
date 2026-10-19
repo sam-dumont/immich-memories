@@ -104,3 +104,17 @@ def test_only_a_screen_or_document_in_the_window_counts_as_reading_the_word() ->
         before,
     )
     assert with_screen.asked[0]["ocr"] == "result"
+
+
+def test_the_same_question_is_asked_of_immich_once_per_reader() -> None:
+    # Every story reading of a run asks whether a result sheet follows each event (#2711):
+    # the same word over the same window is one search, however often it is asked.
+    after, before = datetime(2024, 5, 1, 20, tzinfo=UTC), datetime(2024, 5, 2, 14, tzinfo=UTC)
+    immich = _Screens(with_screen=True)
+    printed = ImmichPrintedText(immich)
+
+    answers = [printed.screen_reads("result", after, before) for _ in range(3)]
+    printed.screen_reads("finish", after, before)
+
+    assert answers == [True, True, True]
+    assert [asked["ocr"] for asked in immich.asked] == ["result", "finish"]

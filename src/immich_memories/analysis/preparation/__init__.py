@@ -7,6 +7,7 @@ the inference service, resumed from the same missing-facts ledger.
 # The modules other packages may import; `make private-imports` holds every import to it.
 __all__ = [
     "acquire",
+    "bounded_reads",
     "demanded_previews",
     "detectors",
     "document_ocr",

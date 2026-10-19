@@ -7,7 +7,7 @@ import hashlib
 import logging
 from collections import Counter
 from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -82,7 +82,8 @@ class AlbumRef:
     """An album resolved to its ID, display name and asset count.
 
     ``start`` and ``end`` are when its earliest and latest pictures were taken,
-    as Immich reports them; None when Immich did not say.
+    as Immich reports them; None when Immich did not say. ``updated_at`` is Immich's
+    own stamp for the album, which moves when its members do.
     """
 
     id: str
@@ -90,6 +91,7 @@ class AlbumRef:
     asset_count: int
     start: datetime | None = None
     end: datetime | None = None
+    updated_at: str | None = None
 
 
 # WHY these two bars are relative, never a fixed size or a list of names: a
@@ -231,7 +233,13 @@ def _album_ref(album: dict) -> AlbumRef:
         asset_count=album.get("assetCount") or 0,
         start=_album_date(album.get("startDate")),
         end=_album_date(album.get("endDate")),
+        updated_at=album.get("updatedAt") or None,
     )
+
+
+def _tag_rights_missing(allows: Callable[[str], bool]) -> list[str]:
+    """The tag rights this key lacks to file a film under a tag."""
+    return [permission for permission in ("tag.create", "tag.asset") if not allows(permission)]
 
 
 class AlbumService:
@@ -654,14 +662,12 @@ class AlbumService:
         if missing:
             warnings.append("delivery incomplete: the key lacks " + ", ".join(missing))
         allows = capabilities.allows if capabilities else lambda _permission: True
-        await self._tag_delivery(asset_id, allows, warnings, waits)
         # A key that cannot label is reported, never an incomplete delivery: keys made
         # before films had labels lack `asset.update`, and treating that as incomplete
         # would keep every earlier render beside the new one. A label the key may write
         # but that did not stay leaves the delivery pending, so the retry writes it again.
         label_notes: list[str] = []
-        if label:
-            await self._label_delivery(asset_id, label, allows, (label_notes, warnings), waits)
+        await self._mark_delivery(asset_id, label, allows, (label_notes, warnings), waits)
         album_id = await self._album_delivery(asset_id, album_name, allows, warnings)
         complete = not warnings
         warnings.extend(label_notes)
@@ -686,6 +692,26 @@ class AlbumService:
             "warnings": warnings,
         }
 
+    async def _mark_delivery(
+        self,
+        asset_id: str,
+        label: FilmLabel | None,
+        allows: Callable[[str], bool],
+        reports: tuple[list[str], list[str]],
+        waits: UploadWaits,
+    ) -> None:
+        """File the film under the provenance tag and give it its label.
+
+        The provenance tag rides in the label's own tag write when there is one: every
+        write makes Immich rewrite the film's sidecar, and each is waited out on its own
+        (#2711). Otherwise it goes on alone.
+        """
+        carried = bool(label and label.tags) and not _tag_rights_missing(allows)
+        if not carried:
+            await self._tag_delivery(asset_id, allows, reports[1], waits)
+        if label:
+            await self._label_delivery(asset_id, label, allows, reports, waits, provenance=carried)
+
     async def _tag_delivery(
         self,
         asset_id: str,
@@ -693,8 +719,7 @@ class AlbumService:
         warnings: list[str],
         waits: UploadWaits,
     ) -> None:
-        tag_missing = [p for p in ("tag.create", "tag.asset") if not allows(p)]
-        if tag_missing:
+        if tag_missing := _tag_rights_missing(allows):
             warnings.append("uploaded without provenance: the key lacks " + ", ".join(tag_missing))
             return
         try:
@@ -710,26 +735,34 @@ class AlbumService:
         allows: Callable[[str], bool],
         reports: tuple[list[str], list[str]],
         waits: UploadWaits,
+        *,
+        provenance: bool = False,
     ) -> None:
         """Label the film; `reports` are (notes, warnings): a key that cannot label is a
-        note, a label that did not stay is a warning that leaves the delivery pending."""
+        note, a label that did not stay is a warning that leaves the delivery pending.
+        `provenance` writes the provenance tag with the label's tags, in the same write."""
         notes, warnings = reports
-        tag_missing = [p for p in ("tag.create", "tag.asset") if not allows(p)]
+        tag_missing = _tag_rights_missing(allows)
         if label.tags and tag_missing:
             notes.append("uploaded without story tags: the key lacks " + ", ".join(tag_missing))
         if label.description and not allows(DESCRIBE):
             notes.append(f"uploaded without description: the key lacks {DESCRIBE}")
+        written = replace(label, tags=(GENERATED_MEMORY_TAG, *label.tags)) if provenance else label
         try:
             not_kept = await self.apply_label_once_read(
                 asset_id,
-                label,
+                written,
                 description=allows(DESCRIBE),
                 tags=not tag_missing,
                 waits=waits,
             )
         except Exception as exc:
+            if provenance:
+                warnings.append(f"uploaded without verified provenance: {exc}")
             warnings.append(f"uploaded without a verified description and tags: {exc}")
             return
+        if provenance and "tags" in not_kept:
+            warnings.append("uploaded without verified provenance: the tag did not stay")
         warnings.extend(f"uploaded film's {name} did not stay" for name in not_kept)
 
     async def _album_delivery(

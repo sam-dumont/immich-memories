@@ -310,13 +310,10 @@ The separate model-planning route can read banked lines or use plain clip facts.
   word, an MRZ line, a Luhn/IBAN-checked number or a named gift voucher corroborates the frame
   head otherwise. `document_ocr_port` (`preparation/document_ocr.py`) reads that OCR: a server
   below 2.2, or a failed read, turns the signal off for the run rather than holding the library.
-  Its bulk keyword search is built from the same word tuples the content check reads
-  (`PERSONAL_RECORD_FIELD_WORDS`, `DOCUMENT_TITLE_WORDS` in `facts/carrier_eligibility.py`)
-  so the two can't drift apart, runs against every configured account (not the primary's
-  alone), and narrows which assets pay for the expensive per-asset read; a candidate the frame
-  head already calls document-like is read anyway, since an MRZ line or a card number can't be
-  found by a keyword search. Every read is memoised per asset, shared across the material
-  build, a candidate refresh and the audience gate. Only an explicit owner pin exempts a
+  It reads only a frame the head leaves document-like, the only frames whose OCR text
+  `personal_document` looks at, and never searches the library by keyword. Every read is
+  memoised per asset and per client, shared across the material build, a candidate refresh,
+  the audience gate and the period account. Only an explicit owner pin exempts a
   picture. The document head's map label is corrected at the read, before any of this sees it:
   `corroborated_document` turns it into `photograph` when the public `frame_kind` head is all but
   certain the frame is a place (a view from a summit, a plane or a drone), in
@@ -808,6 +805,7 @@ src/immich_memories/
 │   │   └── wall_rows.py        # Lossless wall rows shared by the production structure editor and replay tools.
 │   ├── preparation/            # The facts each picture owes, produced and banked before a film is read.
 │   │   ├── acquire.py          # Acquire the accepted annotation producers before any story selection calls.
+│   │   ├── bounded_reads.py    # Per-picture Immich reads, a bounded few at a time, answered in the order asked (#2711).
 │   │   ├── demanded_previews.py # Fetch a missing preview only when native hashing or picture evidence demands its source.
 │   │   ├── detector_frames.py  # The frames a video is decided on: eight across its length, not one early preview.
 │   │   ├── detectors.py        # Portable detector producers, isolated in a cancellable configured Python worker.
