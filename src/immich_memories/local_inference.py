@@ -154,6 +154,9 @@ class LocalModels:
     def prepare_audio(self) -> None:
         """Release the owned reader and unused buffers in already-loaded local runtimes."""
         self.close()
+        if laya := sys.modules.get("immich_memories.analysis.audience.laya_onnx"):
+            # Kept open across the run's edits; the render needs the memory (or the card).
+            laya.release_sessions()
         # Model loaders can leave cyclic Python owners after their live tensors are dropped.
         # Collect those owners before asking each allocator to return unused buffers.
         gc.collect()

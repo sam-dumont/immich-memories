@@ -368,6 +368,16 @@ class AudienceGate:
         if batch >= 2:
             self._read_locally(units)
 
+    def read_ahead(self, units: Sequence[Mapping[str, Any]]) -> None:
+        """Prepare these carriers in one round, then let the local reader answer them together.
+
+        The audience pass reads its carriers, and each window of replacements, one at a time;
+        reading them here first spares a batch of one per carrier.
+        """
+        self.prepare(units)
+        if len(units) >= 2:
+            self._read_locally(units)
+
     def _read_locally(self, units) -> None:
         if self._activity_reader is None:
             return

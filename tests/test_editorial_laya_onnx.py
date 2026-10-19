@@ -67,6 +67,8 @@ def test_onnx_preserves_input_order_across_length_sorted_batches(monkeypatch, ch
             get_available_providers=lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
             disable_telemetry_events=lambda: None,
             InferenceSession=Session,
+            SessionOptions=SimpleNamespace,
+            GraphOptimizationLevel=SimpleNamespace(ORT_ENABLE_ALL=1),
         ),
     )
 
@@ -149,10 +151,10 @@ def test_the_configured_onnx_checkpoint_answers_without_mlx(monkeypatch, checkpo
     assert answer["finding"] == "bathing"
 
 
-def test_close_drops_session_and_reloads_same_probabilities(monkeypatch, checkpoint):
+def test_released_sessions_drop_and_reload_same_probabilities(monkeypatch, checkpoint):
     import weakref
 
-    from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer
+    from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer, release_sessions
 
     class Session:
         # WHY: the ONNX native session boundary; tokenizer and scoring remain real.
@@ -169,6 +171,8 @@ def test_close_drops_session_and_reloads_same_probabilities(monkeypatch, checkpo
             get_available_providers=lambda: ["CPUExecutionProvider"],
             disable_telemetry_events=lambda: None,
             InferenceSession=Session,
+            SessionOptions=SimpleNamespace,
+            GraphOptimizationLevel=SimpleNamespace(ORT_ENABLE_ALL=1),
         ),
     )
     scorer = OnnxLayaScorer(checkpoint)
@@ -176,6 +180,7 @@ def test_close_drops_session_and_reloads_same_probabilities(monkeypatch, checkpo
     session, tokens = weakref.ref(scorer._session), weakref.ref(scorer._tokens)
     scorer.close()
     scorer.close()
+    release_sessions()
     assert session() is None and tokens() is None
     assert scorer.probabilities(["bath"], AUDIENCE_QUESTION) == before
     scorer.close()

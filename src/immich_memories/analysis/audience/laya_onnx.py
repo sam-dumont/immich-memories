@@ -10,6 +10,7 @@ ONNX Runtime are needed at run time: no torch, no MLX.
 from __future__ import annotations
 
 import json
+import threading
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -89,21 +90,17 @@ class OnnxLayaScorer:
         self._tokens: LayaTokens | None = None
 
     def close(self) -> None:
-        """Drop the owned session and tokenizer; keep configuration for later reuse."""
+        """Drop this scorer's hold on the session; the process keeps it for the next check.
+
+        Every edit closes its readers, and a film runs several. Opening the graph again for
+        each cost a load per edit; `release_sessions` lets it go when selection hands over
+        to the render.
+        """
         self._session = self._tokens = None
 
     def _load(self) -> tuple[Any, LayaTokens]:
         if self._session is None or self._tokens is None:
-            import onnxruntime as ort
-
-            from immich_memories.onnx_session import open_inference_session
-            from immich_memories.triage.encoder import provider_chain
-
-            chain = provider_chain(self._provider, ort.get_available_providers())
-            self._session = open_inference_session(
-                ort, self._checkpoint / "model.onnx", providers=list(chain)
-            )
-            self._tokens = LayaTokens(self._checkpoint)
+            self._session, self._tokens = _opened(self._checkpoint, self._provider)
         return self._session, self._tokens
 
     @property
@@ -130,6 +127,41 @@ class OnnxLayaScorer:
                 e = np.exp(z - z.max())
                 out[i] = (e / e.sum()).tolist()
         return out
+
+
+_OPENED: dict[tuple[Any, ...], tuple[Any, LayaTokens]] = {}
+_OPEN_LOCK = threading.Lock()
+
+
+def _opened(checkpoint: Path, provider: str) -> tuple[Any, LayaTokens]:
+    """The checkpoint's session and tokenizer, opened once per process for these files.
+
+    Keyed by the graph's files as they are on disk, so a replaced checkpoint opens afresh.
+    """
+    graph = checkpoint / "model.onnx"
+    files = (graph, checkpoint / "model.onnx.data")
+    stats = tuple((s.st_mtime_ns, s.st_size) for s in (f.stat() for f in files if f.exists()))
+    key = (str(checkpoint), stats, provider)
+    with _OPEN_LOCK:
+        opened = _OPENED.get(key)
+        if opened is None:
+            import onnxruntime as ort
+
+            from immich_memories.onnx_session import cpu_bounded_options, open_inference_session
+            from immich_memories.triage.encoder import provider_chain
+
+            chain = provider_chain(provider, ort.get_available_providers())
+            session = open_inference_session(
+                ort, graph, options=cpu_bounded_options(ort), providers=list(chain)
+            )
+            opened = _OPENED[key] = (session, LayaTokens(checkpoint))
+        return opened
+
+
+def release_sessions() -> None:
+    """Let every open Laya session go, before the render needs the memory or the card."""
+    with _OPEN_LOCK:
+        _OPENED.clear()
 
 
 def _batch(
