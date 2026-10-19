@@ -688,3 +688,26 @@ def test_title_rendering_preflight_names_python_314_as_the_cause() -> None:
         "Python 3.14 has no GPU title kernels yet (quadrants supports up to 3.13); "
         "reinstall with --python 3.12 for SDF titles; titles use PIL + FFmpeg (no SDF effects)"
     )
+
+
+def test_a_remote_render_probes_no_title_kernel_backend(monkeypatch):
+    """The worker draws the titles; the app must not start probe children for them (#2687)."""
+    from immich_memories.titles import kernel_backend_probe
+
+    def spawned(*_args, **_kwargs):
+        raise AssertionError("a kernel probe child was started")
+
+    # WHY: the probe child is the expensive boundary; any call to it fails the test.
+    monkeypatch.setattr(kernel_backend_probe, "_probe_backend", spawned)
+    kernel_backend_probe.probe_backend_dispatch.cache_clear()
+    config = Config(
+        render={
+            "worker_base_url": "https://worker.example.invalid",
+            "worker_token": "t" * 32,
+        }
+    )
+
+    result = check_title_rendering(config)
+
+    assert result.status is CheckStatus.SKIPPED
+    assert "render worker" in result.message

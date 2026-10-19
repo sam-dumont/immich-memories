@@ -330,3 +330,43 @@ def test_failed_retry_reuses_its_record_at_the_retained_record_limit():
     with pytest.raises(QueueFull):
         store.admit(_job(uuid4()), "new-record")
     assert store.admit(failed, "fingerprint") == (failed, True)
+
+
+def test_a_render_past_its_deadline_is_stopped_and_frees_the_lane(tmp_path):
+    """A running render cannot be cancelled like a queued one; it is told to stop (#2687)."""
+    import subprocess
+    import sys
+
+    from immich_memories_render_worker.models import RenderRequest
+
+    from immich_memories.processing.render_control import check_render_stopped, owned_child
+
+    started = threading.Event()
+    children: list[subprocess.Popen] = []
+
+    class Renderer(_Renderer):
+        def render(self, request, directory, progress):
+            child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+            children.append(child)
+            with owned_child(child):
+                started.set()
+                for _ in range(1000):
+                    check_render_stopped()  # the seam between clips
+                    time.sleep(0.01)
+            return stub_artifact(directory)
+
+    service = _service(tmp_path, Renderer(), job_timeout_seconds=30)
+    try:
+        status = service.submit(RenderRequest.model_validate(render_request_body()))
+        assert started.wait(5)
+        service.store.update(status.job_id, started_at=datetime.now(UTC) - timedelta(seconds=120))
+        service.cleanup()
+
+        service.health()  # answers only once the single lane is free
+        assert children[0].wait(timeout=10) is not None  # its FFmpeg-like child was ended
+        assert service.store.get(status.job_id).state == "failed"
+        assert not service.directory(status.job_id).exists()
+    finally:
+        for child in children:
+            child.kill()
+        service.close()

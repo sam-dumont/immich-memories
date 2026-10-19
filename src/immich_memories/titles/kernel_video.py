@@ -16,6 +16,7 @@ from pathlib import Path
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
 from immich_memories.processing.ffmpeg_runner import drain_stderr_tail
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 from .encoding import standalone_title_encoding_plan, title_color_filter, title_encoder_args
@@ -204,7 +205,7 @@ def create_title_video_gpu(
         str(output_path),
     ]
 
-    cmd = apply_hardware_encode(cmd, pixel_format=plan.pixel_format)
+    cmd = with_cpu_threads(apply_hardware_encode(cmd, pixel_format=plan.pixel_format))
 
     logger.info(f"Generating title on the GPU: {title}")
 

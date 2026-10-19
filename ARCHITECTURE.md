@@ -978,6 +978,8 @@ src/immich_memories/
 │   ├── hdr_utilities.py        # HDR detection & conversion filters
 │   ├── scaling_utilities.py    # Aspect-ratio filter strings, mood aggregation
 │   ├── ffmpeg_runner.py        # FFmpeg execution with progress
+│   ├── ffmpeg_threads.py       # Thread pools of every FFmpeg and of OpenCV, sized from the CPU limit
+│   ├── render_control.py       # Stop flag + owned FFmpeg children: a running render can be told to stop
 │   ├── hardware.py             # Hardware detection (GPU, encoders)
 │   ├── hardware_detection.py   # Hardware detection backends
 │   ├── hardware_encode.py      # VAAPI/QSV device init + hwupload for built commands

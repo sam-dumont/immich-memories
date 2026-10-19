@@ -1455,7 +1455,8 @@ features:
     doc: reference/media-processing.md
     tests:
       - tests/integration/processing/test_caption_paths_real.py::test_a_caption_draws_from_a_path_with_a_colon_and_an_apostrophe
-      - tests/integration/processing/test_film_frame_rate_real.py::test_a_60_fps_video_late_in_a_long_film_sets_its_rate
+      - tests/integration/processing/test_film_frame_rate_real.py::test_one_60_fps_video_late_in_a_long_film_leaves_it_at_30
+      - tests/integration/processing/test_film_frame_rate_real.py::test_a_film_mostly_made_of_60_fps_video_plays_at_60
       - tests/integration/processing/test_film_frame_rate_real.py::test_a_film_of_24_or_25_fps_videos_and_a_photo_keeps_their_rate
       - tests/integration/processing/test_partial_segment_real.py::test_the_cut_after_a_killed_one_is_whole
   - id: api.playback-404-survives

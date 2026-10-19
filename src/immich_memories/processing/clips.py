@@ -18,6 +18,7 @@ from immich_memories.processing.clip_probing import (
 )
 from immich_memories.processing.clip_transitions import TRANSITION_BUFFER
 from immich_memories.processing.ffmpeg_runner import ffmpeg_error_excerpt
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware import (
     HWAccelCapabilities,
     detect_hardware_acceleration,
@@ -294,7 +295,7 @@ class ClipExtractor:
         cmd.extend(["-movflags", "+faststart"])
         cmd.append(str(output_path))
 
-        return apply_hardware_encode(cmd)
+        return with_cpu_threads(apply_hardware_encode(cmd))
 
     def _append_encoder_args(
         self,

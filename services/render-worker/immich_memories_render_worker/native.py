@@ -63,6 +63,9 @@ class NativeRenderer:
         from immich_memories_render_worker.native_plan import generation_params
         from immich_memories_render_worker.renderer import RenderArtifact
 
+        # A probe that found no encoder (a card busy for a moment) must not decide
+        # every later job of this long-lived process.
+        detect_hardware_acceleration("nvidia", retry_missed=True)
         wanted = _wanted_encoder(request)
         capabilities = self.health()
         degradations = _capability_degradations(capabilities, wanted)

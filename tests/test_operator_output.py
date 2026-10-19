@@ -67,7 +67,7 @@ def test_default_and_explicit_auto_share_one_hardware_probe():
     from immich_memories.processing import hardware_detection as hardware
     from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
 
-    hardware._cached_hardware_detection.cache_clear()
+    hardware._cached_hardware_detection.forget(hits=True)
     caps = HWAccelCapabilities(backend=HWAccelBackend.NVIDIA, supports_h264_encode=True)
     try:
         # WHY: the hardware detector probes FFmpeg and the physical GPU.
@@ -77,7 +77,7 @@ def test_default_and_explicit_auto_share_one_hardware_probe():
             assert hardware.detect_hardware_acceleration(backend="auto") is caps
         assert probe.call_count == 1
     finally:
-        hardware._cached_hardware_detection.cache_clear()
+        hardware._cached_hardware_detection.forget(hits=True)
 
 
 def test_unconfigured_home_is_an_optional_feature():

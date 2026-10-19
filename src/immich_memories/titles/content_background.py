@@ -15,6 +15,7 @@ import numpy as np
 
 from immich_memories.processing.encoding_plan import HdrTransfer
 from immich_memories.processing.ffmpeg_runner import stop_owned_process
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.titles.motion_interpolation import FlowInterpolator, build_flow_interpolator
 
 if TYPE_CHECKING:
@@ -96,7 +97,7 @@ class SlowmoBackgroundReader:
         # WHY: extract source frames at native fps — no slowdown in FFmpeg.
         # Interpolation happens in Python for smooth blending.
         window = [] if self._reveal else ["-t", str(actual_source)]
-        cmd = [
+        cmd = with_cpu_threads([
             "ffmpeg",
             "-ss", "0",
             *window,
@@ -105,7 +106,7 @@ class SlowmoBackgroundReader:
             "-pix_fmt", "rgb48le" if source_is_hdr else "rgb24",
             "-an",
             "pipe:1",
-        ]  # fmt: skip
+        ])  # fmt: skip
 
         returncode = self._decode_source_frames(
             cmd, (height, width, 3), np.uint16 if source_is_hdr else np.uint8

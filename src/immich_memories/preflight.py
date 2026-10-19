@@ -116,6 +116,15 @@ def check_title_rendering(config: Config, inference_gpu: bool = False) -> CheckR
             status=CheckStatus.SKIPPED,
             message="Title screens disabled",
         )
+    if config.render.enabled and not config.render.fallback_to_local:
+        # WHY (#2687): the worker draws the titles. Probing kernel backends here
+        # started three child interpreters, each loading the kernel library, to
+        # answer a question about a machine that renders nothing.
+        return CheckResult(
+            name="Title rendering",
+            status=CheckStatus.SKIPPED,
+            message="Titles render on the render worker",
+        )
     return _kernel_library_check(inference_gpu)
 
 

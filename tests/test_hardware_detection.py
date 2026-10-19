@@ -391,7 +391,7 @@ class TestDetectQsv:
 class TestDetectHardwareAcceleration:
     def test_no_backends_returns_none_backend(self):
         # Clear the lru_cache so we get fresh detection
-        _cached_hardware_detection.cache_clear()
+        _cached_hardware_detection.forget(hits=True)
         # WHY: no backend may talk to real hardware in a unit test
         with (
             patch(
@@ -403,10 +403,10 @@ class TestDetectHardwareAcceleration:
         ):
             caps = detect_hardware_acceleration()
         assert caps.backend == HWAccelBackend.NONE
-        _cached_hardware_detection.cache_clear()
+        _cached_hardware_detection.forget(hits=True)
 
     def test_first_backend_with_encoding_wins(self):
-        _cached_hardware_detection.cache_clear()
+        _cached_hardware_detection.forget(hits=True)
         nvidia_caps = HWAccelCapabilities(
             backend=HWAccelBackend.NVIDIA,
             supports_h264_encode=True,
@@ -422,7 +422,7 @@ class TestDetectHardwareAcceleration:
         ):
             caps = detect_hardware_acceleration()
         assert caps.backend == HWAccelBackend.NVIDIA
-        _cached_hardware_detection.cache_clear()
+        _cached_hardware_detection.forget(hits=True)
 
     def test_a_named_backend_probes_that_one_and_no_other(self):
         """`hardware.backend` exists so a measurement can say which chip it ran on.
@@ -430,7 +430,7 @@ class TestDetectHardwareAcceleration:
         On a box with two encode paths, first-hit-wins would quietly hand the run
         the other one, and the row would carry a number about the wrong hardware.
         """
-        _cached_hardware_detection.cache_clear()
+        _cached_hardware_detection.forget(hits=True)
         apple = HWAccelCapabilities(backend=HWAccelBackend.APPLE, supports_h264_encode=True)
         # WHY: a detector talks to ffmpeg, and no unit test may reach real hardware.
         with (
@@ -446,7 +446,7 @@ class TestDetectHardwareAcceleration:
         assert caps.backend == HWAccelBackend.NONE, "software, rather than the other chip"
         assert nvidia_probe.called
         assert not apple_probe.called
-        _cached_hardware_detection.cache_clear()
+        _cached_hardware_detection.forget(hits=True)
 
 
 # ---------------------------------------------------------------------------
@@ -609,3 +609,32 @@ class TestHwaccelArgsForSoftwareFilters:
         for_filters = get_ffmpeg_hwaccel_args(caps, operation="decode", for_software_filters=True)
 
         assert plain == for_filters == ["-hwaccel", "videotoolbox"]
+
+
+class TestAFailedProbeIsRetried:
+    """One busy-GPU moment must not make every later job encode in software (#2687)."""
+
+    def test_a_missed_probe_is_retried_by_the_next_job_and_a_hit_is_kept(self):
+        _cached_hardware_detection.forget(hits=True)
+        nvidia = HWAccelCapabilities(backend=HWAccelBackend.NVIDIA, supports_h264_encode=True)
+        calls: list[int] = []
+
+        def busy_then_free():
+            calls.append(1)
+            return None if len(calls) == 1 else nvidia
+
+        # WHY: a detector talks to ffmpeg and the GPU; no unit test may reach them.
+        with (
+            patch("immich_memories.processing.hardware_detection._detect_nvidia", busy_then_free),
+            patch("immich_memories.processing.hardware_detection._detect_apple", return_value=None),
+            patch("immich_memories.processing.hardware_detection._detect_qsv", return_value=None),
+            patch("immich_memories.processing.hardware_detection._detect_vaapi", return_value=None),
+        ):
+            assert detect_hardware_acceleration().backend == HWAccelBackend.NONE
+            assert detect_hardware_acceleration().backend == HWAccelBackend.NONE
+            assert len(calls) == 1  # within one job the miss is not re-probed per call
+            detect_hardware_acceleration(retry_missed=True)  # the next job
+            assert detect_hardware_acceleration().backend == HWAccelBackend.NVIDIA
+            assert detect_hardware_acceleration(retry_missed=True).backend == HWAccelBackend.NVIDIA
+            assert len(calls) == 2  # a hit is kept
+        _cached_hardware_detection.forget(hits=True)

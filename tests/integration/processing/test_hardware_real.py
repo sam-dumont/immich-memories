@@ -30,7 +30,7 @@ def test_detect_hardware_returns_valid_backend():
         detect_hardware_acceleration,
     )
 
-    _cached_hardware_detection.cache_clear()
+    _cached_hardware_detection.forget(hits=True)
     caps = detect_hardware_acceleration()
 
     assert caps.backend in list(HWAccelBackend)
@@ -43,7 +43,7 @@ def test_apple_backend_has_metal():
         detect_hardware_acceleration,
     )
 
-    _cached_hardware_detection.cache_clear()
+    _cached_hardware_detection.forget(hits=True)
     caps = detect_hardware_acceleration()
 
     # On macOS with FFmpeg built with VideoToolbox, Apple backend is detected
@@ -169,7 +169,7 @@ def test_apple_preset_variants(preset):
         get_ffmpeg_encoder,
     )
 
-    _cached_hardware_detection.cache_clear()
+    _cached_hardware_detection.forget(hits=True)
     caps = detect_hardware_acceleration()
 
     if caps.backend != HWAccelBackend.APPLE:

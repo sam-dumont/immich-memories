@@ -17,6 +17,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from immich_memories.processing.encoding_plan import EncodingPlan
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.map_move_timing import MapMoveTiming
 from immich_memories.processing.memory_budget import available_cpus, memory_budget
@@ -590,7 +591,7 @@ def _pipe_frames(
         str(output_path),
     ]
 
-    cmd = apply_hardware_encode(cmd, pixel_format=plan.pixel_format)
+    cmd = with_cpu_threads(apply_hardware_encode(cmd, pixel_format=plan.pixel_format))
 
     proc = subprocess.Popen(  # noqa: S603
         cmd,
@@ -728,7 +729,7 @@ def _pipe_map_plates(
         "-c:a", "aac", "-b:a", "128k", "-t", str(duration),
         "-movflags", "+faststart", str(output_path),
     ]  # fmt: skip
-    cmd = apply_hardware_encode(cmd, pixel_format=plan.pixel_format)
+    cmd = with_cpu_threads(apply_hardware_encode(cmd, pixel_format=plan.pixel_format))
     code, tail = write_frames_to_ffmpeg(
         cmd,
         _plate_frames(plates, total, fps, arrival, fade),

@@ -15,6 +15,8 @@ from pathlib import Path
 from threading import Event, Thread, Timer
 from typing import IO, Any
 
+from immich_memories.processing.render_control import owned_child
+
 logger = logging.getLogger(__name__)
 
 __all__ = [
@@ -263,8 +265,9 @@ def write_frames_to_ffmpeg(
     watchdog, expired = _arm_kill_watchdog(process, deadline)
 
     try:
-        _feed_frames(process.stdin, frames)
-        process.wait(timeout=wait_timeout)
+        with owned_child(process):
+            _feed_frames(process.stdin, frames)
+            process.wait(timeout=wait_timeout)
     except OSError:
         # Writing to the child the watchdog just killed fails with EPIPE. The
         # deadline is the honest story, and it is told below.

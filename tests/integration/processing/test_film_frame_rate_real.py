@@ -1,4 +1,4 @@
-"""The film plays at its videos' own frame rate (#2348).
+"""The film plays at 30 fps, or at 24/25 for 24/25 footage, or at 60 when most footage is fast (#2348, #2687).
 
 24 and 25 fps libraries were stretched to 30 with judder, only the first 20 clips
 were probed, and photos, rendered at 30, counted as footage.
@@ -60,8 +60,16 @@ def test_a_film_of_24_or_25_fps_videos_and_a_photo_keeps_their_rate(tmp_path, ra
 
 
 @pytest.mark.feature("render.media-small-fixes")
-def test_a_60_fps_video_late_in_a_long_film_sets_its_rate(tmp_path):
+def test_one_60_fps_video_late_in_a_long_film_leaves_it_at_30(tmp_path):
     clips = [AssemblyClip(path=_clip(tmp_path, "video30", 30, 0.2), duration=0.2)] * 21
     clips.append(AssemblyClip(path=_clip(tmp_path, "video60", 60, 0.2), duration=0.2))
+
+    assert _film_rate(clips, tmp_path / "film.mp4") == 30
+
+
+@pytest.mark.feature("render.media-small-fixes")
+def test_a_film_mostly_made_of_60_fps_video_plays_at_60(tmp_path):
+    clips = [AssemblyClip(path=_clip(tmp_path, "video60", 60, 0.2), duration=0.2)] * 3
+    clips.append(AssemblyClip(path=_clip(tmp_path, "video30", 30, 0.2), duration=0.2))
 
     assert _film_rate(clips, tmp_path / "film.mp4") == 60
