@@ -244,6 +244,9 @@ class _Acquisition:
     note: Callable[[str], None]
     failures: dict[str, str]
     llm_config: LLMConfig | None = None
+    # Told how many bytes each preview written to the cache added, so the cache's
+    # budget check can run off its own running total instead of walking the tree.
+    wrote: Callable[[int], None] = lambda _bytes: None
     # Sources the server refused by name, kept apart from `failures` so the
     # completeness check never reads them as a producer that went down.
     unservable: dict[str, str] = field(default_factory=dict)
@@ -315,7 +318,7 @@ class _Acquisition:
                 path = cache_path / subdir / f"{asset_id}_preview.jpg"
                 try:
                     edited = (edited_by_id or {}).get(asset_id, False)  # #2114: may be stale
-                    ensure_preview(path, asset_id, fetch_preview, edited=edited)
+                    self.wrote(ensure_preview(path, asset_id, fetch_preview, edited=edited))
                     paths[asset_id] = path
                     self.note(asset_id)
                 except AccountReadFailed:
@@ -711,6 +714,7 @@ def prepare_editorial_annotations(
         report=progress or _noop_progress,
         note=on_asset or _noop_asset,
         failures={},
+        wrote=getattr(thumbnail_cache, "note_written", None) or (lambda _bytes: None),
     )
     stage.check()
     flipped_edits = edited_mismatch_ids(store, source)  # before `remember_assets` overwrites it
@@ -720,7 +724,8 @@ def prepare_editorial_annotations(
     # This stage writes into the cache layout directly rather than through `put`,
     # so the periodic check `put` performs never sees the previews a scope brings
     # in -- and on a rerun, where nothing is fetched, nothing checks at all. The
-    # cap belongs to the directory, not to whoever last wrote to it.
+    # cap belongs to the directory, not to whoever last wrote to it. The cache keeps a
+    # running total (`wrote` above feeds it), so this is free until the run goes over.
     enforce_budget = getattr(thumbnail_cache, "enforce_budget", None)
     if callable(enforce_budget):
         enforce_budget()

@@ -37,6 +37,8 @@ class Eviction:
     freed_bytes: int
     active_files: int
     overflow_bytes: int
+    # Bytes left in the directory after this pass; a caller keeps it as its running total.
+    remaining_bytes: int = 0
 
     @property
     def overflowed(self) -> bool:
@@ -66,7 +68,7 @@ def evict_to_budget(
 
     entries, total = _cache_entries(directory, pattern)
     if total <= max_bytes:
-        return Eviction(0, 0, 0)
+        return Eviction(0, 0, 0, remaining_bytes=total)
     freed, active_kept = _evict_oldest(
         entries,
         total=total,
@@ -86,6 +88,7 @@ def evict_to_budget(
         freed_bytes=freed,
         active_files=active_kept,
         overflow_bytes=remaining - max_bytes if remaining > max_bytes and active_kept else 0,
+        remaining_bytes=remaining,
     )
 
 

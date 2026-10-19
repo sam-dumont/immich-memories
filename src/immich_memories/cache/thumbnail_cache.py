@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -17,9 +18,9 @@ logger = logging.getLogger(__name__)
 class ThumbnailCache:
     """Simple file-based cache for Immich thumbnails."""
 
-    # Scanning the tree on every put would make each thumbnail O(cache size).
-    # Checking every so often bounds the overshoot to roughly this many files'
-    # worth of data, which at thumbnail sizes is a few MB.
+    # Until the tree has been measured, a put cannot know the total, so it asks
+    # for a measurement every so often. That bounds the overshoot to roughly this
+    # many files' worth of data, which at thumbnail sizes is a few MB.
     _PUTS_BETWEEN_BUDGET_CHECKS = 200
 
     def __init__(
@@ -31,6 +32,17 @@ class ThumbnailCache:
         self._puts_since_check = 0
         self._run_started_at: float | None = None
         self._overflow_announced = False
+        # WHY: walking a 90k-file tree takes 20-45 s, so the budget check must cost what
+        # the run wrote, not what the cache holds. The tree is measured once per run (the
+        # first check after `begin_run`) and the total is kept in memory from there: puts
+        # and `note_written` add, eviction resyncs it from its own walk. Another process
+        # (web server and CLI share this directory) can make it drift; the next run's
+        # measurement resyncs it, which is all a soft cap needs.
+        self._tracked_bytes: int | None = None
+        # Set once a pass found only this run's own files left to keep: re-walking
+        # cannot free any of them, so later checks stop until the next run.
+        self._nothing_left_to_free = False
+        self._lock = threading.Lock()
         create_private_directory(self.cache_dir)
         self.cache_dir.chmod(0o700)
 
@@ -45,6 +57,9 @@ class ThumbnailCache:
         """
         self._run_started_at = self._filesystem_now()
         self._overflow_announced = False
+        with self._lock:
+            self._tracked_bytes = None
+            self._nothing_left_to_free = False
 
     def _filesystem_now(self) -> float:
         """Now, as this filesystem would stamp a file touched right here.
@@ -91,23 +106,52 @@ class ThumbnailCache:
     def put(self, asset_id: str, size: str, data: bytes) -> Path:
         path = self._path(asset_id, size)
         path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            replaced = path.stat().st_size
+        except OSError:
+            replaced = 0
         path.write_bytes(data)
-        self._puts_since_check += 1
-        if self._puts_since_check >= self._PUTS_BETWEEN_BUDGET_CHECKS:
+        self.note_written(len(data) - replaced)
+        with self._lock:
+            measured = self._tracked_bytes is not None
+            self._puts_since_check += 1
+            due = measured or self._puts_since_check >= self._PUTS_BETWEEN_BUDGET_CHECKS
+        if due:
             self.enforce_budget()
         return path
 
+    def note_written(self, delta_bytes: int) -> None:
+        """Count bytes a writer put in the cache tree itself, bypassing `put`.
+
+        Preparation writes previews straight into the cache layout; telling the
+        cache what it added keeps the budget check off the disk.
+        """
+        with self._lock:
+            if self._tracked_bytes is not None:
+                self._tracked_bytes = max(0, self._tracked_bytes + delta_bytes)
+
     def enforce_budget(self) -> int:
-        """Drop the least recently used thumbnails until the cache fits."""
-        self._puts_since_check = 0
-        if self.max_size_mb == float("inf"):
-            return 0
+        """Drop the least recently used thumbnails until the cache fits.
+
+        Under budget this answers from the tracked total without touching the
+        disk; the first call of a run (and any call over budget) walks the tree.
+        """
+        max_bytes = int(self.max_size_mb * 1_000_000) if self.max_size_mb != float("inf") else 0
+        with self._lock:
+            self._puts_since_check = 0
+            if self.max_size_mb == float("inf") or self._nothing_left_to_free:
+                return 0
+            if self._tracked_bytes is not None and self._tracked_bytes <= max_bytes:
+                return 0
         eviction = evict_to_budget(
             self.cache_dir,
-            max_bytes=int(self.max_size_mb * 1_000_000),
+            max_bytes=max_bytes,
             pattern="*.jpg",
             run_started_at=self._run_started_at,
         )
+        with self._lock:
+            self._tracked_bytes = eviction.remaining_bytes
+            self._nothing_left_to_free = eviction.overflowed
         if eviction.overflowed and not self._overflow_announced:
             self._overflow_announced = True
             logger.warning(
@@ -128,6 +172,9 @@ class ThumbnailCache:
         """Remove all cached thumbnails. Returns count of removed files."""
 
         self._run_started_at = None
+        with self._lock:
+            self._tracked_bytes = 0
+            self._nothing_left_to_free = False
         count = 0
         if self.cache_dir.exists():
             for f in self.cache_dir.rglob("*.jpg"):
