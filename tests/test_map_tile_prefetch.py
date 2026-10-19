@@ -26,7 +26,7 @@ _AHEAD = map_animation._LOOKAHEAD_VIEWS
 class _SlowTileServer:
     """Serves one tile after ``latency`` seconds and counts the requests per path."""
 
-    def __init__(self, latency: float, fail_first: int = 0) -> None:
+    def __init__(self, latency: float, fail_first: int = 0, failure: int = 503) -> None:
         image = Image.new("RGB", (256, 256), (40, 80, 120))
         ImageDraw.Draw(image).rectangle((0, 0, 127, 127), fill=(180, 40, 90))
         encoded = io.BytesIO()
@@ -45,7 +45,7 @@ class _SlowTileServer:
                     server.ahead_seen.append(len(map_animation.tile_cache.ahead))
                 time.sleep(latency)
                 if attempt <= fail_first:
-                    self.send_response(503)
+                    self.send_response(failure)
                     self.end_headers()
                     return
                 self.send_response(200)
@@ -80,6 +80,7 @@ class _TimedEncoder:
     # Per frame written: the tiles it drew, and every tile stored or asked for by then.
     drawn: list[frozenset[str]] = []
     requested: list[frozenset[str]] = []
+    unreachable: list[bool] = []
 
     def __init__(self, *_args, **_kwargs):
         self.stdin = self
@@ -89,6 +90,7 @@ class _TimedEncoder:
         cache = map_animation.tile_cache
         type(self).ahead_seen.append(len(cache.ahead))
         type(self).drawn.append(cache.in_view)
+        type(self).unreachable.append(cache.unreachable)
         # dict.copy and set.copy are single steps, safe against the fetching threads.
         type(self).requested.append(frozenset(cache.content.copy()) | cache.ahead.copy())
         time.sleep(_ENCODE)
@@ -123,6 +125,7 @@ def card(monkeypatch, tmp_path):
         _TimedEncoder.ahead_seen = []
         _TimedEncoder.drawn = []
         _TimedEncoder.requested = []
+        _TimedEncoder.unreachable = []
         map_animation.tile_cache.clear()
         map_animation.create_map_move_video(
             (10.0, 20.0), (10.9, 21.3), "", tmp_path / "card.mp4", 4.0, 320, 180, 15
@@ -209,3 +212,75 @@ def test_a_card_that_ends_leaves_no_fetch_running(card):
     assert server.requests == requested
     assert not map_animation.tile_cache.ahead
     assert {urlparse(url).path for url in map_animation.tile_cache.content} <= set(requested)
+
+
+_FOREVER = 10**9
+
+
+@pytest.mark.parametrize("failure", [403, 404])
+def test_a_card_stops_asking_a_tile_host_that_refuses(card, failure):
+    with _SlowTileServer(0, fail_first=_FOREVER, failure=failure) as server:
+        frames = card(server, lookahead=_AHEAD)
+
+    # The card still renders every frame, on the grey fallback, after a handful of asks.
+    assert len(frames) == 60
+    assert all(_TimedEncoder.unreachable[1:])
+    assert 0 < sum(server.requests.values()) <= 8
+    assert set(server.requests.values()) == {1}
+
+
+def test_a_card_gives_up_on_a_tile_host_that_keeps_failing(card):
+    with _SlowTileServer(0, fail_first=_FOREVER) as server:
+        frames = card(server, lookahead=_AHEAD)
+
+    # Three attempts for the tiles the first frame asked for, then nothing more.
+    assert len(frames) == 60
+    assert set(server.requests.values()) <= {1, 2, 3}
+    assert sum(server.requests.values()) <= 3 * 24
+
+
+def test_a_card_stops_asking_a_tile_host_that_refuses_the_connection(card, monkeypatch):
+    import socket
+
+    import requests
+
+    with socket.create_server(("127.0.0.1", 0)) as closed:
+        port = closed.getsockname()[1]
+    attempts = []
+    get = requests.get
+
+    def counted(url, **kwargs):
+        attempts.append(url)
+        return get(url, **kwargs)
+
+    # WHY: a refused connection never reaches a server, so the client side counts the tries.
+    monkeypatch.setattr(requests, "get", counted)
+    server = _SlowTileServer(0)
+    server.url = f"http://127.0.0.1:{port}/{{z}}/{{y}}/{{x}}"
+    frames = card(server, lookahead=_AHEAD)
+
+    assert len(frames) == 60
+    assert 0 < len(attempts) <= 8
+
+
+def test_a_tile_that_fails_once_is_fetched_again_and_the_card_keeps_its_map(card, monkeypatch):
+    import requests
+
+    with _SlowTileServer(0) as server:
+        expected = card(server, lookahead=_AHEAD)
+        failed: list[str] = []
+        get = requests.get
+
+        def blip(url, **kwargs):
+            if not failed:
+                failed.append(url)
+                raise requests.ConnectionError("connection reset by peer")
+            return get(url, **kwargs)
+
+        # WHY: a reset on one request is a client-side error; the tile server cannot send one.
+        monkeypatch.setattr(requests, "get", blip)
+        frames = card(server, lookahead=_AHEAD)
+
+    assert failed
+    assert not any(_TimedEncoder.unreachable)
+    assert frames == expected
