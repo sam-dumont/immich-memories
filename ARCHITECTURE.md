@@ -1575,7 +1575,8 @@ Immich answers, so connection failures still have history without paying for GPU
 `titles/map_tiles.py` owns satellite tile fetching and the bounded decoded-pixel cache.
 Map animations reuse tiles across frames and release both caches when a card finishes or fails.
 While a frame renders, `TilePrefetcher` fetches the tiles of the next views, one request per tile,
-within the decoded-tile budget.
+within the decoded-tile budget. A tile host that refuses (a 4xx, a refused connection) or a tile that fails
+every attempt stops the card asking: its frames take the grey fallback.
 
 ### Assembly Flow
 
