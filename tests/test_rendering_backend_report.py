@@ -152,20 +152,25 @@ def test_host_without_gpu_never_compiles_title_kernels(config, caplog):
     assert "found no device" in caplog.text
 
 
-def test_system_report_on_cpu_host_does_not_compile_title_kernels():
+def test_system_report_on_cpu_host_does_not_compile_title_kernels(monkeypatch):
+    from immich_memories.titles import kernels
     from immich_memories.tracking.system_info import capture_system_info
 
+    # WHY: this process has not started title kernels, whatever an earlier test did.
+    monkeypatch.setattr(kernels, "_kernel_arch", None)
     with (
-        # WHY: a CPU-only host can pass the native CPU safety probe.
-        patch(
-            "immich_memories.titles.kernel_backend_probe.kernel_dispatch_failure", return_value=None
-        ),
-        # WHY: native GPU probes find no usable device.
-        patch("immich_memories.titles.kernel_backend_probe.gpu_backend", return_value=(None, ())),
         # WHY: collecting diagnostics must not compile native title kernels.
         patch(
             "immich_memories.titles.kernels.init_kernels",
             side_effect=AssertionError("System reports must not compile title kernels"),
         ),
+        # WHY: nor ask a native probe child.
+        patch(
+            "immich_memories.titles.kernel_backend_probe.probe_backend_dispatch",
+            side_effect=AssertionError("System reports must not spawn kernel probes"),
+        ),
     ):
-        assert not capture_system_info().gpu_kernels_available
+        info = capture_system_info()
+
+    assert not info.gpu_kernels_available
+    assert not info.gpu_kernels_probed

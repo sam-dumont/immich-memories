@@ -9,7 +9,7 @@ from pathlib import Path
 
 # WHY: the kernel library prints a banner to stdout at import time and init
 # time, which corrupts the Rich Live display. Must be set before ANY module
-# imports it (including tracking/system_info); titles/gpu_kernel_backend.py sets
+# imports it (title rendering, preflight); titles/gpu_kernel_backend.py sets
 # the same pair for every other entry point.
 os.environ.setdefault("ENABLE_QUADRANTS_HEADER_PRINT", "0")
 os.environ.setdefault("QD_LOG_LEVEL", "error")

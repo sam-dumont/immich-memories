@@ -33,7 +33,7 @@ import math
 from collections import Counter
 from collections.abc import Callable, Collection, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
-from functools import lru_cache
+from functools import lru_cache, partial
 from operator import itemgetter
 from typing import Any
 
@@ -343,6 +343,10 @@ def _no_family(_asset_id: str) -> Collection[str]:
     return ()
 
 
+def _no_offers(_carrier: Mapping[str, Any]) -> Sequence[tuple[str, Mapping[str, Any]]]:
+    return ()
+
+
 def _admit_all(_row: Mapping[str, Any], _cut: Sequence[Mapping[str, Any]]) -> bool:
     return True
 
@@ -380,7 +384,10 @@ class _Cut:
         self.collapsed: list[dict[str, Any]] = []
         self.rungs: Counter[str] = Counter()
 
-    def settle(self, carrier, offers: Sequence[tuple[str, Mapping[str, Any]]]) -> None:
+    def settle(
+        self, carrier, offers: Callable[[], Sequence[tuple[str, Mapping[str, Any]]]]
+    ) -> None:
+        """Keep the carrier, or remove it as a repeat; ``offers`` is read only on removal."""
         self.pending.pop(carrier["asset_id"])
         keeper, similarity = self.repeats.of(carrier, self.kept)
         if keeper is None:
@@ -391,7 +398,9 @@ class _Cut:
             removal["same_scene"] = round(similarity, 3)
         twin = self._starred_twin(carrier, keeper)
         alone = {p for p in set(self.family_of(carrier["asset_id"])) if self.shots[p] == 1}
-        refilled = self._take_refill(carrier, self._offers(offers, twin=twin, alone=alone), removal)
+        refilled = self._take_refill(
+            carrier, self._offers(offers(), twin=twin, alone=alone), removal
+        )
         if not refilled and alone:
             self.kept.append(carrier)
             self.kept_only_shots.append(carrier["asset_id"])
@@ -524,7 +533,8 @@ def review_cut_by_cached_hashes(
         if carrier["asset_id"] in protected:
             cut.kept.append(carrier)
         else:
-            cut.settle(carrier, replacements_for(carrier) if replacements_for else ())
+            # Offers build a carrier row per pool picture: only a frame that leaves pays it.
+            cut.settle(carrier, partial(replacements_for or _no_offers, carrier))
     removals, rungs, added = cut.removals, cut.rungs, cut.added
     removed = {row["asset_id"] for row in removals}
     survivors = [c for c in carriers if c["asset_id"] not in removed]

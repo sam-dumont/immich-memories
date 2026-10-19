@@ -6,13 +6,10 @@ import logging
 import os
 import platform
 import subprocess
-from typing import TYPE_CHECKING
+import sys
 
 from immich_memories import process_start
 from immich_memories.tracking.models import SystemInfo
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +33,9 @@ def capture_system_info() -> SystemInfo:
         vram_mb=get_vram_mb(),
         ffmpeg_version=_get_ffmpeg_version(),
         opencv_version=_get_opencv_version(),
-        gpu_kernels_available=False,
     )
+    info.gpu_kernels_available, info.gpu_kernels_probed = _title_kernel_facts()
     process_start.mark("system")
-    # WHY last and marked apart: the check compiles the title kernels, the slowest probe.
-    info.gpu_kernels_available = _check_kernel_library()
-    process_start.mark("title_kernels")
     return info
 
 
@@ -278,32 +272,17 @@ def _get_opencv_version() -> str | None:
         return None
 
 
-def _check_kernel_library() -> bool:
-    """Whether the title kernel library is present and can initialize.
+def _title_kernel_facts() -> tuple[bool, bool]:
+    """Whether title kernels run here, and whether this process found out: (available, probed).
 
-    An absent library reports False; one that is installed but cannot load its
-    own runtime raises, because that is a broken machine and must stay
-    actionable instead of looking like "this box has no GPU".
+    Read from what the process already knows, never found out here. Finding out loads the
+    kernel library (and torch under it), compiles the kernels and spawns a probe child per
+    backend: about 5 s per film on a Mac, paid by every run, a remote render included, for a
+    diagnostic (#2712). The run's own title render logs the backend it lands on.
     """
-    # WHY: ti.init() resets the kernel library's process-wide runtime. Title
-    # rendering owns that lifecycle and its compiled kernel references, so system
-    # capture must use the same idempotent initializer instead of resetting the
-    # GPU underneath it. It also must not import the kernel library by name to
-    # find out whether it is here: the seam behind this import is the only place
-    # that imports it, once.
-    from immich_memories.titles.kernel_backend_probe import gpu_backend, kernel_dispatch_failure
-
-    # WHY before the import below and not after: `kernels` pulls in the library,
-    # and a processor without AVX dies inside that import (#910). Capturing a
-    # hardware report must not be the thing that kills the run.
-    if kernel_dispatch_failure() is not None:
-        return False
-    if gpu_backend(platform.system())[0] is None:
-        return False
-
-    from immich_memories.titles.kernels import kernels_available
-
-    try:
-        return kernels_available()
-    except (RuntimeError, OSError):
-        return False
+    # WHY sys.modules and not an import: importing the library is the cost being avoided, and
+    # on a processor without AVX it is a crash (#910).
+    kernels = sys.modules.get("immich_memories.titles.kernels")
+    if kernels is None or kernels.initialized_kernel_backend() is None:
+        return False, False
+    return True, True

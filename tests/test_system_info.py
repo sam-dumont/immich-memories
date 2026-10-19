@@ -3,101 +3,92 @@
 from __future__ import annotations
 
 import subprocess as _subprocess
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from immich_memories.tracking.models import SystemInfo
 from immich_memories.tracking.system_info import (
-    _check_kernel_library,
     _get_cpu_brand,
     _get_ffmpeg_version,
     _get_gpu_name,
     _get_opencv_version,
+    _title_kernel_facts,
+    capture_system_info,
     get_ram_gb,
     get_vram_mb,
 )
 from tests.module_stubs import swapped_modules
 
 
-def _reinitialized(**_kwargs) -> None:
-    raise AssertionError("the kernel runtime was reinitialized")
+class TestTitleKernelFacts:
+    """Diagnostics report what the process already knows about title kernels, and probe nothing.
 
-
-class TestCheckKernelLibrary:
-    """Kernel-library detection must distinguish absence from a broken install."""
+    Loading the kernel library (and torch under it) and spawning its probe children cost
+    about 5 s per film on a Mac, on every run, remote render included (#2712).
+    """
 
     @pytest.fixture(autouse=True)
-    def _available_gpu(self, monkeypatch):
-        # WHY: these runtime tests need a usable GPU independent of the host running them.
+    def _no_probe(self, monkeypatch: pytest.MonkeyPatch):
+        def never(*_args, **_kwargs):
+            raise AssertionError("diagnostics spawned a kernel probe")
+
+        # WHY: the probe is a child process; a diagnostic must never start one.
         monkeypatch.setattr(
-            "immich_memories.titles.kernel_backend_probe.gpu_backend",
-            lambda _system: ("Metal", ()),
+            "immich_memories.titles.kernel_backend_probe.probe_backend_dispatch", never
         )
 
-    def test_reuses_initialized_title_runtime_without_reinitializing_it(
+    def test_a_process_that_never_rendered_titles_records_not_probed(
         self, monkeypatch: pytest.MonkeyPatch
     ):
-        """System capture must not invalidate kernels owned by the title runtime."""
+        monkeypatch.delitem(sys.modules, "immich_memories.titles.kernels", raising=False)
+
+        assert _title_kernel_facts() == (False, False)
+        assert "immich_memories.titles.kernels" not in sys.modules
+
+    def test_kernels_this_process_initialized_are_reported_without_touching_them(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         from immich_memories.titles import kernels
 
-        monkeypatch.setattr(kernels, "_kernels_initialized", True)
         monkeypatch.setattr(kernels, "_kernel_arch", "Metal")
-        # WHY not patch the library's own init: naming it imports its C++
-        # runtime into a test process that has no use for it. The initializer
-        # this module owns is the boundary either way.
-        monkeypatch.setattr(
-            kernels,
-            "silent_init",
-            _reinitialized,
-        )
+        # WHY: the initializer this module owns is the boundary; it must not run again.
+        monkeypatch.setattr(kernels, "init_kernels", _reinitialized)
 
-        assert _check_kernel_library() is True
+        assert _title_kernel_facts() == (True, True)
 
-    def test_missing_optional_package_is_unavailable(self, monkeypatch: pytest.MonkeyPatch):
-        """A base/dev install with no kernel library can still record a pipeline run."""
+    def test_kernels_loaded_but_never_started_are_not_probed(self, monkeypatch: pytest.MonkeyPatch):
         from immich_memories.titles import kernels
 
-        monkeypatch.setattr(kernels, "KERNELS_AVAILABLE", False)
+        monkeypatch.setattr(kernels, "_kernel_arch", None)
+        # WHY: the initializer this module owns is the boundary; it must not run here.
+        monkeypatch.setattr(kernels, "init_kernels", _reinitialized)
 
-        assert _check_kernel_library() is False
+        assert _title_kernel_facts() == (False, False)
 
-    def test_a_cpu_that_cannot_dispatch_is_unavailable_without_loading_the_library(
-        self, monkeypatch: pytest.MonkeyPatch
-    ):
-        """A hardware report must not be the thing that kills the run (#910).
+    def test_the_report_says_whether_kernels_were_probed(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.delitem(sys.modules, "immich_memories.titles.kernels", raising=False)
 
-        On a processor without AVX, reaching `kernels_available()` is already the
-        SIGILL, so the probe's answer has to settle it before the import.
-        """
-        from immich_memories.titles import kernel_backend_probe, kernels
+        system = capture_system_info().to_dict()
 
-        def never(*_args, **_kwargs) -> bool:
-            raise AssertionError("the kernel library must not be imported after a failed probe")
+        assert system["gpu_kernels_available"] is False
+        assert system["gpu_kernels_probed"] is False
+        assert "immich_memories.titles.kernels" not in sys.modules
 
-        # WHY: the probe is a child process; this is the answer a Celeron J4125 gives.
-        monkeypatch.setattr(
-            kernel_backend_probe,
-            "kernel_dispatch_failure",
-            lambda: "kernel backend crashed on this CPU: illegal instruction",
-        )
-        monkeypatch.setattr(kernels, "kernels_available", never)
 
-        assert _check_kernel_library() is False
+def test_a_report_saved_before_the_probed_flag_reads_as_probed():
+    """Every run saved before #2712 did probe; its verdict stays a verdict."""
+    old = {"platform": "linux", "gpu_kernels_available": True}
 
-    def test_a_broken_kernel_dependency_is_not_hidden(self, monkeypatch: pytest.MonkeyPatch):
-        """A corrupt optional install remains actionable instead of becoming false."""
-        from immich_memories.titles import kernels
+    info = SystemInfo.from_dict(old)
 
-        def raise_missing_runtime() -> bool:
-            raise ModuleNotFoundError(
-                "No module named 'quadrants_runtime'",
-                name="quadrants_runtime",
-            )
+    assert info.gpu_kernels_available is True
+    assert info.gpu_kernels_probed is True
 
-        monkeypatch.setattr(kernels, "kernels_available", raise_missing_runtime)
 
-        with pytest.raises(ModuleNotFoundError, match="quadrants_runtime"):
-            _check_kernel_library()
+def _reinitialized(*_args, **_kwargs) -> None:
+    raise AssertionError("the kernel runtime was initialized by a diagnostic")
 
 
 class TestGetCpuBrand:
