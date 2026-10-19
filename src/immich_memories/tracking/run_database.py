@@ -19,11 +19,17 @@ from sqlalchemy.exc import IntegrityError
 
 from immich_memories.db import Store, open_store, to_db
 from immich_memories.db.leases import Lease
-from immich_memories.db.tables import automation_attempts, phase_stats, pipeline_runs
+from immich_memories.db.tables import (
+    attempt_phase_events,
+    automation_attempts,
+    phase_stats,
+    pipeline_runs,
+    run_phase_events,
+)
 from immich_memories.operations.phases import PhaseEvent
 from immich_memories.security import private_temp_dir
 from immich_memories.tracking.models import DeliveryStatus, PhaseStats, RunMetadata
-from immich_memories.tracking.phase_rows import advance_phase
+from immich_memories.tracking.phase_rows import advance_phase, read_phase_events
 from immich_memories.tracking.run_database_rows import (
     phase_stats_to_row,
     row_to_phase_stats,
@@ -54,6 +60,10 @@ def _chunks(values: Sequence[str]) -> Iterable[Sequence[str]]:
         yield values[start : start + _CHUNK]
 
 
+# What a run list shows: every column but the host diagnostics blob and the legacy event array.
+_SUMMARY_COLUMNS = [c for c in pipeline_runs.c if c.name not in ("system_info", "phase_events")]
+
+
 class RunDatabase:
     """Pipeline run history: every run, its phase timings, and its delivery lifecycle."""
 
@@ -65,6 +75,11 @@ class RunDatabase:
         try:
             with self.store.begin() as conn:
                 conn.execute(sa.insert(pipeline_runs), [run_to_row(run)])
+                if run.phase_events:
+                    conn.execute(
+                        sa.insert(run_phase_events),
+                        [{"run_id": run.run_id, "event": event} for event in run.phase_events],
+                    )
         except IntegrityError as error:
             raise DuplicateRunError(f"Pipeline run already exists: {run.run_id}") from error
 
@@ -80,7 +95,9 @@ class RunDatabase:
     def update_operational_phase(self, run_id: str, event: PhaseEvent) -> bool:
         """Persist a monotonic run phase and mirror its exact automation attempt."""
         with self.store.begin() as conn:
-            advanced = advance_phase(conn, pipeline_runs, _RUNS.run_id, run_id, event)
+            advanced = advance_phase(
+                conn, pipeline_runs, _RUNS.run_id, run_id, event, run_phase_events.c.run_id
+            )
             if advanced is None:
                 raise KeyError(f"Unknown pipeline run: {run_id}")
             if not advanced:
@@ -90,7 +107,12 @@ class RunDatabase:
             ).scalar()
             if attempt_id:
                 advance_phase(
-                    conn, automation_attempts, automation_attempts.c.id, attempt_id, event
+                    conn,
+                    automation_attempts,
+                    automation_attempts.c.id,
+                    attempt_id,
+                    event,
+                    attempt_phase_events.c.attempt_id,
                 )
         return True
 
@@ -112,8 +134,15 @@ class RunDatabase:
 
     def get_run(self, run_id: str) -> RunMetadata | None:
         """Get a single run by ID, with its phase timings."""
-        runs = self._select_runs(sa.select(pipeline_runs).where(_RUNS.run_id == run_id))
+        runs = self._select_runs(
+            sa.select(pipeline_runs).where(_RUNS.run_id == run_id), with_events=True
+        )
         return runs[0] if runs else None
+
+    def phase_events_after(self, run_id: str, after: int = 0) -> list[tuple[int, dict]]:
+        """The run's phase events past event id `after`, as `(id, event)`, oldest first."""
+        with self.store.connect() as conn:
+            return read_phase_events(conn, run_phase_events.c.run_id, run_id, after)
 
     def describe_run(self, run: RunMetadata) -> None:
         """Fill resolved inputs on the run opened before discovery, preserving its lifecycle."""
@@ -450,9 +479,35 @@ class RunDatabase:
                     found.setdefault(row["run_id"], []).append(row_to_phase_stats(row))
         return found
 
-    def _select_runs(self, query: sa.Select, *, with_phases: bool = True) -> list[RunMetadata]:
+    @staticmethod
+    def _events_of(conn: sa.Connection, run_ids: Sequence[str]) -> dict[str, list[dict]]:
+        found: dict[str, list[dict]] = {}
+        table = run_phase_events
+        for start in range(0, len(run_ids), 500):
+            chunk = run_ids[start : start + 500]
+            query = (
+                sa.select(table.c.run_id, table.c.event)
+                .where(table.c.run_id.in_(chunk))
+                .order_by(table.c.id)
+            )
+            for row in conn.execute(query):
+                found.setdefault(row.run_id, []).append(row.event)
+        return found
+
+    def _select_runs(
+        self, query: sa.Select, *, with_phases: bool = True, with_events: bool = True
+    ) -> list[RunMetadata]:
+        """The runs `query` selects, with their phase events unless `with_events` is off.
+
+        The events of all the runs come in one query per chunk, so a page costs a fixed number
+        of round trips whatever its size.
+        """
         with self.store.connect() as conn:
             runs = [row_to_run(row) for row in conn.execute(query).mappings()]
+            if with_events and runs:
+                events = self._events_of(conn, [run.run_id for run in runs])
+                for run in runs:
+                    run.phase_events = events.get(run.run_id, [])
         if with_phases and runs:
             phases = self._phases_of([run.run_id for run in runs])
             for run in runs:
@@ -467,23 +522,29 @@ class RunDatabase:
         status: str | None = None,
         source: str | None = None,
         order_by_completion: bool = False,
+        with_events: bool = True,
     ) -> list[RunMetadata]:
-        """List runs with optional filtering and explicit completion ordering."""
+        """List runs with optional filtering and explicit completion ordering.
+
+        A caller that only shows summaries passes `with_events=False` and skips the events.
+        """
         if order_by_completion and status != "completed":
             msg = "order_by_completion requires status='completed'"
             raise ValueError(msg)
-        query = sa.select(pipeline_runs)
+        query = sa.select(*_SUMMARY_COLUMNS)
         if status:
             query = query.where(_RUNS.status == status)
         if source is not None:
             query = query.where(_RUNS.source == source)
         order = _COMPLETION_ORDER if order_by_completion else (_RUNS.created_at.desc(),)
         if person_name:
-            return self._runs_about(person_name, query.order_by(*order), limit, offset)
-        return self._select_runs(query.order_by(*order).limit(limit).offset(offset))
+            return self._runs_about(person_name, query.order_by(*order), limit, offset, with_events)
+        return self._select_runs(
+            query.order_by(*order).limit(limit).offset(offset), with_events=with_events
+        )
 
     def _runs_about(
-        self, name: str, ordered: sa.Select, limit: int, offset: int
+        self, name: str, ordered: sa.Select, limit: int, offset: int, with_events: bool = True
     ) -> list[RunMetadata]:
         """One page of the runs `name` is one of the people of, in `ordered`'s order.
 
@@ -505,7 +566,12 @@ class RunDatabase:
         page = matching[offset : offset + limit]
         if not page:
             return []
-        runs = {run.run_id: run for run in self._select_runs(ordered.where(_RUNS.run_id.in_(page)))}
+        runs = {
+            run.run_id: run
+            for run in self._select_runs(
+                ordered.where(_RUNS.run_id.in_(page)), with_events=with_events
+            )
+        }
         return [runs[run_id] for run_id in page]
 
     def get_aggregate_stats(self) -> dict:

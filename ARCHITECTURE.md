@@ -1139,6 +1139,7 @@ src/immich_memories/
 │   ├── brief.py                # CutBrief: generate's flags 1:1 → argv, and the command shown to copy
 │   ├── jobs.py                 # JobRunner: the CLI as a child process; records/logs under cache/web-jobs
 │   ├── process_identity.py     # A pid plus its start time, so a reused pid is not mistaken for a job's child
+│   ├── job_stream.py           # one tick of a job's event stream: stat the files, build the view only on change
 │   ├── job_routes.py           # POST /cuts (generate --no-render), /runs/{id}/renders (runs render),
 │   │                           #   /runs/{id}/music-preview, /music uploads, /roster/scan,
 │   │                           #   /jobs/{id}[/events|/cancel|/output] (SSE progress), /runs/{id}/film
@@ -1160,7 +1161,7 @@ src/immich_memories/
 ├── tracking/                   # Run history & telemetry
 │   ├── run_database.py         # RunDatabase: run history in the store (pipeline_runs, phase_stats)
 │   ├── run_database_rows.py    # Store row <-> RunMetadata/PhaseStats conversion
-│   ├── phase_rows.py           # advance_phase(): forward-only phase log on a run or attempt row
+│   ├── phase_rows.py           # advance_phase(): appends one row to run_phase_events/attempt_phase_events, forward-only; read_phase_events() reads past an id
 │   ├── run_lifecycle_errors.py # Refused lifecycle transitions and their diagnosis
 │   ├── run_tracker.py          # Pipeline run tracking
 │   ├── run_id.py               # Run ID generation
@@ -1405,6 +1406,7 @@ src/immich_memories/
 │   ├── phase_heartbeat.py      # Repeats the last phase event every 30 s so a long step never goes silent
 │   │                           #   read_latest_attempt/live_progress_of: any process reads a cut's progress
 │   ├── editorial_runs_budget.py # editorial-runs held to cache.editorial_runs_max_size_gb, unread attempts first
+│   ├── attempt_size.py          # an attempt folder's size noted at finish, so the budget does not walk it again
 │   ├── run_index.py            # A run id resolved to its attempt directory (store table run_attempts);
 │   │                           #   record_cut_run: `generate --no-render` keeps its cut as a run
 │   ├── store_import.py         # import_legacy(): cache.db run/automation/score tables, the by-run

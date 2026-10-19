@@ -42,7 +42,10 @@ def test_phase_logs_use_the_time_the_child_reported(caplog):
     timestamp = datetime(2026, 1, 1, 3, 0, 5, 125000, tzinfo=UTC)
     event = PhaseEvent(OperationalPhase.RENDER, 3, 10, "Preparing clips", 12, timestamp=timestamp)
     assert event.to_dict()["timestamp"] == timestamp.isoformat()
-    with caplog.at_level(logging.INFO), log_phase_progress(lambda: [event.to_dict()]):
+    with (
+        caplog.at_level(logging.INFO),
+        log_phase_progress(lambda after: [(1, event.to_dict())] if after < 1 else []),
+    ):
         pass
     record = next(record for record in caplog.records if record.name.endswith("phase_log"))
     assert record.created == timestamp.timestamp()

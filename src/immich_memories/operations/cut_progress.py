@@ -465,11 +465,13 @@ def started_before(record: Mapping[str, Any], since: datetime | None) -> bool:
     return started < since
 
 
-def read_latest_attempt(root: Path | None, since: datetime | None = None) -> dict[str, Any] | None:
+def read_latest_attempt(
+    root: Path | None, since: datetime | None = None, *, lease_ttl: float = 0.0
+) -> dict[str, Any] | None:
     """The newest attempt under a cut key, its liveness read from the lease.
 
     An attempt started before `since` belongs to an earlier cut of the same
-    brief and reads as no attempt at all.
+    brief and reads as no attempt at all. `lease_ttl` lets a poller reuse a liveness probe.
     """
     # WHY local: editorial_attempt records StageUpdate from this module.
     from immich_memories.operations.editorial_attempt import LATEST_ATTEMPT, read_editorial_attempt
@@ -481,7 +483,7 @@ def read_latest_attempt(root: Path | None, since: datetime | None = None) -> dic
         return None
     try:
         directory = Path(json.loads(pointer.read_text())["directory"])
-        record = read_editorial_attempt(directory)
+        record = read_editorial_attempt(directory, lease_ttl=lease_ttl)
     except (OSError, ValueError, KeyError):
         return None
     if started_before(record, since):

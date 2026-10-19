@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Mapping
 from contextlib import ExitStack
 from datetime import UTC, datetime
@@ -13,12 +14,17 @@ from uuid import uuid4
 from immich_memories.analysis.llm.metrics import LLMCounters, collecting
 from immich_memories.analysis.llm.usage_record import write_llm_usage
 from immich_memories.db.leases import Lease
+from immich_memories.operations.attempt_size import record_attempt_size
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageClock, StageUpdate
 from immich_memories.security import write_secret_file
 
 # Beside a cut key's attempts: which attempt is the newest, for a reader in another process.
 LATEST_ATTEMPT = "latest-attempt.private.json"
+
+# Every picture id the cut was asked about: written once, because the status record is
+# rewritten on each progress change and 30k ids made it over a megabyte.
+REQUESTED_ASSETS = "requested-assets.private.json"
 
 if TYPE_CHECKING:
     from immich_memories.db import Store
@@ -42,6 +48,11 @@ class EditorialAttempt:
         self.root = Path(root)
         self.attempt_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-") + uuid4().hex[:12]
         self.directory = self.root / "attempts" / self.attempt_id
+        request = request.copy()
+        self._requested_assets: list[str] | None = request.pop("requested_assets", None)
+        if self._requested_assets is not None:
+            request["requested_asset_count"] = len(self._requested_assets)
+            request["requested_assets_file"] = REQUESTED_ASSETS
         self.record: dict[str, Any] = {
             "schema": "editorial-attempt-v1",
             "attempt_id": self.attempt_id,
@@ -61,7 +72,7 @@ class EditorialAttempt:
 
         collected = timing.active()
         profile = collected.diagnostics.get("progress_profile") if collected else None
-        pictures = len(request.get("requested_assets", [])) or None
+        pictures = request.get("requested_asset_count") or None
         future = None
         plan = None
         tracker = current_tracker()
@@ -91,6 +102,10 @@ class EditorialAttempt:
         self._lease.acquire(wait=True)
         try:
             self._usage = self._usage_scope.enter_context(collecting())
+            if self._requested_assets is not None:
+                write_secret_file(
+                    self.directory / REQUESTED_ASSETS, json.dumps(self._requested_assets)
+                )
             self._save()
             from immich_memories.operations.run_index import record_run_attempt
             from immich_memories.tracking.run_observations import current_tracker
@@ -150,7 +165,7 @@ class EditorialAttempt:
         self.record["updated_at"] = _now()
         write_secret_file(
             self.directory / "status.private.json",
-            json.dumps(self.record, ensure_ascii=False, indent=2),
+            json.dumps(self.record, ensure_ascii=False),
         )
 
     def __exit__(self, _exc_type, exc, traceback) -> None:
@@ -167,6 +182,7 @@ class EditorialAttempt:
                 self.record["status"] = "incomplete"
             self.record["finished_at"] = _now()
             self._save()
+            record_attempt_size(self.directory)
         finally:
             self._usage_scope.close()
             self._lease.release()
@@ -176,12 +192,32 @@ def _attempt_lease(directory: Path, attempt_id: str, store: Store | None) -> Lea
     return Lease(f"editorial-attempt:{attempt_id}", directory / ".lease", store)
 
 
-def read_editorial_attempt(directory: Path, store: Store | None = None) -> dict[str, Any]:
-    """Read truthful liveness without changing an attempt's historical record."""
+# directory -> (monotonic time of the probe, whether another process held the lease)
+_LEASE_PROBES: dict[Path, tuple[float, bool]] = {}
+
+
+def _held_elsewhere(directory: Path, attempt_id: str, store: Store | None, ttl: float) -> bool:
+    now = time.monotonic()
+    if ttl > 0 and (seen := _LEASE_PROBES.get(directory)) and now - seen[0] < ttl:
+        return seen[1]
+    held = _attempt_lease(directory, attempt_id, store).held_elsewhere()
+    if ttl > 0:
+        _LEASE_PROBES[directory] = (now, held)
+    return held
+
+
+def read_editorial_attempt(
+    directory: Path, store: Store | None = None, *, lease_ttl: float = 0.0
+) -> dict[str, Any]:
+    """Read truthful liveness without changing an attempt's historical record.
+
+    A poller passes `lease_ttl` to reuse a lease probe for that many seconds; the default
+    probes every time.
+    """
     record = json.loads((directory / "status.private.json").read_text())
     if record.get("status") != "running":
         return record
-    if _attempt_lease(directory, record["attempt_id"], store).held_elsewhere():
+    if _held_elsewhere(directory, record["attempt_id"], store, lease_ttl):
         return record
     return record | {
         "status": "interrupted",

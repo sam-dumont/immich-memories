@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -22,9 +22,9 @@ from immich_memories.automation.models import (
     AutoOutcome,
 )
 from immich_memories.db import Store, from_db, open_store, to_db
-from immich_memories.db.tables import automation_attempts
+from immich_memories.db.tables import attempt_phase_events, automation_attempts
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
-from immich_memories.tracking.phase_rows import advance_phase
+from immich_memories.tracking.phase_rows import advance_phase, read_phase_events
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,6 @@ def _row_to_attempt(row: Mapping[Any, Any]) -> AutomationAttempt:
         run_id=row["run_id"],
         error=row["error"],
         last_phase=OperationalPhase(row["last_phase"]) if row["last_phase"] else None,
-        phase_events=list(row["phase_events"] or []),
     )
 
 
@@ -114,7 +113,14 @@ class AutomationStateStore:
     def update_phase(self, attempt_id: str, event: PhaseEvent) -> bool:
         """Persist a forward-only phase update for one exact automation attempt."""
         with self.store.begin() as conn:
-            advanced = advance_phase(conn, automation_attempts, _ATTEMPTS.id, attempt_id, event)
+            advanced = advance_phase(
+                conn,
+                automation_attempts,
+                _ATTEMPTS.id,
+                attempt_id,
+                event,
+                attempt_phase_events.c.attempt_id,
+            )
         if advanced is None:
             raise KeyError(f"Unknown automation attempt: {attempt_id}")
         return advanced
@@ -226,6 +232,11 @@ class AutomationStateStore:
         """Return one attempt by id, or None when nothing was ever started under it."""
         return self._first(sa.select(automation_attempts).where(_ATTEMPTS.id == attempt_id))
 
+    def phase_events_after(self, attempt_id: str, after: int = 0) -> list[tuple[int, dict]]:
+        """The attempt's phase events past event id `after`, as `(id, event)`, oldest first."""
+        with self.store.connect() as conn:
+            return read_phase_events(conn, attempt_phase_events.c.attempt_id, attempt_id, after)
+
     def get_last_attempt(self) -> AutomationAttempt | None:
         """Return the most recently started automation attempt."""
         return self._first(
@@ -273,7 +284,12 @@ class AutomationStateStore:
     def _first(self, query: sa.Select) -> AutomationAttempt | None:
         with self.store.connect() as conn:
             row = conn.execute(query).mappings().first()
-        return _row_to_attempt(row) if row else None
+        if not row:
+            return None
+        attempt = _row_to_attempt(row)
+        # One attempt per call, so its events are one small read.
+        events = [event for _, event in self.phase_events_after(attempt.id)]
+        return replace(attempt, phase_events=events)
 
     def consecutive_failures_by_key(self) -> dict[str, FailureStreak]:
         """Failures per memory since it last completed, keyed by `memory_identity`.

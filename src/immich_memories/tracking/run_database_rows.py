@@ -35,7 +35,8 @@ def run_to_row(run: RunMetadata) -> dict[str, Any]:
         "source": run.source,
         "automation_attempt_id": run.automation_attempt_id,
         "last_phase": run.last_phase.value if run.last_phase else None,
-        "phase_events": run.phase_events.copy(),
+        # The events are rows of their own; the column keeps only what older stores wrote.
+        "phase_events": [],
         "person_name": run.person_name,
         "person_names": list(run.person_names) or None,
         "app_version": run.app_version,
@@ -77,7 +78,6 @@ def row_to_run(row: Mapping[Any, Any]) -> RunMetadata:
         memory_people=tuple(row["memory_people"] or ()),
         source=row["source"],
         automation_attempt_id=row["automation_attempt_id"],
-        phase_events=list(row["phase_events"] or []),
         last_phase=OperationalPhase(row["last_phase"]) if row["last_phase"] else None,
         person_name=row["person_name"],
         person_names=tuple(row["person_names"] or ()),
@@ -107,7 +107,7 @@ def row_to_run(row: Mapping[Any, Any]) -> RunMetadata:
         clips_analyzed=row["clips_analyzed"] or 0,
         clips_selected=row["clips_selected"] or 0,
         errors_count=row["errors_count"] or 0,
-        system_info=SystemInfo.from_dict(row["system_info"]) if row["system_info"] else None,
+        system_info=SystemInfo.from_dict(row["system_info"]) if row.get("system_info") else None,
     )
 
 

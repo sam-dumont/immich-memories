@@ -227,10 +227,6 @@ class AutoRunner:
         self._prepared_immich_preflight: Any | None = None
         self._prepared_pending_delivery: RunMetadata | None = None
 
-    def _attempt_phase_events(self, attempt_id: str) -> list[dict[str, Any]]:
-        stored = self.state.get_attempt(attempt_id)
-        return stored.phase_events if stored is not None else []
-
     def _secrets(self) -> tuple[str, ...]:
         """Return configured credential values that must never enter attempt history."""
         return configured_secret_values(self.config)
@@ -746,7 +742,9 @@ class AutoRunner:
             logger.info("Generating: %s (score=%.3f)", candidate.reason, candidate.score)
             logger.info("Running: %s", " ".join(cmd))
             try:
-                with log_phase_progress(lambda: self._attempt_phase_events(attempt.id)):
+                with log_phase_progress(
+                    lambda after: self.state.phase_events_after(attempt.id, after)
+                ):
                     process = self.execute(cmd)
             except subprocess.TimeoutExpired as exc:
                 self._retain_child_output(attempt.id, exc.stdout, exc.stderr)

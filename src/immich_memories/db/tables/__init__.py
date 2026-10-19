@@ -40,11 +40,13 @@ from immich_memories.db.tables.model_answers import (
 )
 from immich_memories.db.tables.operations import (
     asset_scores,
+    attempt_phase_events,
     automation_attempts,
     notification_health,
     phase_stats,
     pipeline_runs,
     run_attempts,
+    run_phase_events,
     special_days,
 )
 from immich_memories.db.tables.people import (
@@ -68,6 +70,7 @@ __all__ = [
     "asset_scores",
     "audience_answers",
     "audience_holds",
+    "attempt_phase_events",
     "automation_attempts",
     "caption_provenance",
     "description_fields",
@@ -99,6 +102,7 @@ __all__ = [
     "pixel_facts",
     "pixel_facts_thresholds",
     "run_attempts",
+    "run_phase_events",
     "run_diagnostics",
     "run_spans",
     "session_generations",

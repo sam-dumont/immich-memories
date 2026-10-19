@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import threading
+from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -16,6 +19,7 @@ from immich_memories.db import open_store
 from immich_memories.operations import picture_holds
 from immich_memories.operations.candidate_fates import CandidateFates
 from immich_memories.operations.run_index import attempt_dir_for_run
+from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE, TRACE_FILE
 from immich_memories.store.owner_decisions import CLEARANCE_LEVELS, NEVER_USE
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.schemas import Decision, Hold, Pool, PoolItem
@@ -47,6 +51,71 @@ def _kind(asset: Asset) -> Literal["photo", "video", "live"]:
     return "live" if asset.live_photo_video_id else "photo"
 
 
+@dataclass
+class _PoolView:
+    """A cut's pool, built once per version of its files: sorted pictures, fates, cut members."""
+
+    assets: list[Asset]
+    everything: int
+    fates: CandidateFates
+    in_cut: set[str]
+    reachable: list[Asset] | None = None
+
+    def pictures(self, *, reachable_only: bool) -> list[Asset]:
+        if not reachable_only:
+            return self.assets
+        if self.reachable is None:
+            self.reachable = [a for a in self.assets if self.fates.reachable(a.id)]
+        return self.reachable
+
+
+_VIEWS: OrderedDict[tuple[Path, tuple[object, ...]], _PoolView] = OrderedDict()
+_VIEWS_KEPT = 4
+_VIEWS_LOCK = threading.Lock()
+
+
+def _stamps(attempt: Path) -> tuple[object, ...]:
+    """Modification stamps of every file the pool is built from."""
+    out: list[object] = []
+    for name in (SNAPSHOT_NAME, PLAN_FILE, PROJECTION_FILE, TRACE_FILE):
+        try:
+            stat = (attempt / name).stat()
+        except OSError:
+            out.append(None)
+        else:
+            out.append((stat.st_mtime_ns, stat.st_size))
+    return tuple(out)
+
+
+def _pool_view(attempt: Path, snapshot: Path) -> _PoolView:
+    """The pool of this attempt, rebuilt only when one of its files changed since last page."""
+    key = (attempt, _stamps(attempt))
+    with _VIEWS_LOCK:
+        if (view := _VIEWS.get(key)) is not None:
+            _VIEWS.move_to_end(key)
+            return view
+    payload = json.loads(snapshot.read_text())
+    every_file = [_asset(source) for source in sources_from_payload(payload)]
+    # One tile per picture: a copy (an album's downscale, a forwarded file) is its full-size file.
+    copies = picture_copies(every_file)
+    assets = sorted(
+        (asset for asset in every_file if asset.id not in copies),
+        key=lambda asset: (asset.file_created_at, asset.id),
+    )
+    fates = CandidateFates.read(attempt)
+    view = _PoolView(
+        assets,
+        len(assets),
+        fates,
+        {shot.asset_id for shot in (fates.board.shots if fates.board else ())},
+    )
+    with _VIEWS_LOCK:
+        _VIEWS[key] = view
+        while len(_VIEWS) > _VIEWS_KEPT:
+            _VIEWS.popitem(last=False)
+    return view
+
+
 @router.get("/runs/{run_id}/pool", response_model=Pool)
 def read_pool(
     run_id: str,
@@ -58,26 +127,17 @@ def read_pool(
     """Every picture the cut saw, in capture order, with its fate and whatever holds it."""
     attempt = attempt_dir_for_run(run_id, store=open_store(config))
     snapshot = Path(attempt) / SNAPSHOT_NAME if attempt else None
-    if snapshot is None or not snapshot.is_file():
+    if attempt is None or snapshot is None or not snapshot.is_file():
         raise HTTPException(404, "This run kept no record of its pool.")
-    payload = json.loads(snapshot.read_text())
-    every_file = [_asset(source) for source in sources_from_payload(payload)]
-    # One tile per picture: a copy (an album's downscale, a forwarded file) is its full-size file.
-    copies = picture_copies(every_file)
-    assets = sorted(
-        (asset for asset in every_file if asset.id not in copies),
-        key=lambda asset: (asset.file_created_at, asset.id),
-    )
-    fates = CandidateFates.read(attempt)
-    everything = len(assets)
-    if reachable_only:
-        assets = [asset for asset in assets if fates.reachable(asset.id)]
+    view = _pool_view(Path(attempt), snapshot)
+    assets = view.pictures(reachable_only=reachable_only)
     page = assets[offset : offset + limit]
-    in_cut = {shot.asset_id for shot in (fates.board.shots if fates.board else ())}
+    fates, in_cut = view.fates, view.in_cut
+    # Only the page's pictures: the holds are read for these ids, not for the whole pool.
     holds = picture_holds.read(config, [asset.id for asset in page])
     return Pool(
         total=len(assets),
-        outside=everything - len(assets),
+        outside=view.everything - len(assets),
         items=[
             PoolItem(
                 asset_id=asset.id,
