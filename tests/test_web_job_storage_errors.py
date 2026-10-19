@@ -108,7 +108,8 @@ def test_cancel_still_stops_the_child_when_status_storage_is_full(tmp_path, monk
         import signal
         from contextlib import suppress
 
-        with suppress(ProcessLookupError):
+        # macOS answers EPERM for a group whose members already exited.
+        with suppress(ProcessLookupError, PermissionError):
             os.killpg(job.pid, signal.SIGTERM)
 
 
