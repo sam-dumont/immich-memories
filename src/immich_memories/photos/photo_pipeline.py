@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import subprocess
 from collections.abc import Collection, Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -24,8 +25,10 @@ from immich_memories.photos.animator import prepare_photo_source
 from immich_memories.photos.encoding import photo_encoding_plan
 from immich_memories.photos.ken_burns_moves import film_subject, planned_move
 from immich_memories.photos.renderer import (
+    KenBurnsLayers,
     KenBurnsParams,
-    render_ken_burns_streaming,
+    ken_burns_frames,
+    ken_burns_layers,
 )
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.clip_encoder import encoder_args_for_plan
@@ -70,6 +73,8 @@ def _prepared_photo_pixels(raw_path: Path, target_w: int, target_h: int, work_di
         max_size=(round(target_w * 1.5), round(target_h * 1.5)),
     )
 
+    if prepared.pixels is not None:
+        return prepared, prepared.pixels
     # Load image — 16-bit for gain-mapped HDR, 8-bit for SDR
     img = cv2.imread(str(prepared.path), cv2.IMREAD_UNCHANGED)
     if img is None:
@@ -131,13 +136,14 @@ def render_single_photo(
     output_format: str | None = None,
     scale_mode: str = "blur",
     subjects: Collection[str | None] = (),
+    film_transfer: HdrTransfer | None = None,
 ) -> AssemblyClip | None:
     """Download, prepare, render (streaming), and encode a single photo.
 
     `scale_mode` fills the bands around a still that does not match the canvas: its own
     blur ("blur") or black ("fit"), the same choice the film makes for its videos.
     `subjects` are the people the memory is about, by name or person id; the move
-    ends on their faces.
+    ends on their faces. `film_transfer`, when known, is the HDR film's: the still is made in it.
     """
     try:
         raw_path = _source_photo_path(asset, work_dir) if source_path is None else source_path
@@ -171,8 +177,8 @@ def render_single_photo(
             capabilities=capabilities,
             output_format=output_format,
             scale_mode=scale_mode,
+            film_transfer=film_transfer,
         )
-
         if not output_path.exists() or output_path.stat().st_size < 100:
             logger.warning(f"Encoding failed for {asset.id}")
             return None
@@ -188,7 +194,6 @@ def render_single_photo(
             longitude=asset.exif_info.longitude if asset.exif_info else None,
             location_name=clip_location_name(asset.exif_info),
         )
-
     except (ImmichAPIError, OSError, subprocess.SubprocessError, ValueError) as e:
         logger.warning(f"Failed to render photo {asset.id}: {e}")
         return None
@@ -334,6 +339,142 @@ def _convert_still_once(
     return np.ascontiguousarray(converted[:rows, :columns]), out_fmt, frame_vf
 
 
+def _sdr_still_in_hdr_chain(target: HdrTransfer) -> str:
+    """An SDR still converted to an HDR film's transfer as the assembly converts SDR clips.
+
+    The film used to receive SDR stills as BT.709 clips and convert every frame with
+    this same zscale, reading the pixels as BT.709 at 203 nits.
+    """
+    from immich_memories.processing.hdr_utilities import get_hdr_conversion_filter
+
+    return "scale=out_color_matrix=bt709:out_range=tv,format=yuv444p16le" + (
+        get_hdr_conversion_filter("sdr", target.value, source_primaries="bt709", required=True)
+    )
+
+
+def _pq_still_in_hlg_chain() -> str:
+    """A PQ still converted to HLG as the assembly converts a PQ clip."""
+    from immich_memories.processing.hdr_utilities import get_hdr_conversion_filter
+
+    return "scale=in_range=full:out_color_matrix=bt2020:out_range=tv,format=yuv444p16le" + (
+        get_hdr_conversion_filter("pq", "hlg", required=True)
+    )
+
+
+@dataclass(frozen=True)
+class _StillColor:
+    """How one still reaches its encoder's colour."""
+
+    plan: EncodingPlan
+    pix_fmt: str
+    # Run on the picture once when ``convert_source``, else on every frame.
+    vf: str
+    convert_source: bool
+    # Run once on the resampled picture and its blur, before any frame is cut.
+    recolor: str | None = None
+
+
+def _still_color(
+    *,
+    gain_map_hdr: bool,
+    peak_nits: int,
+    primaries: str,
+    encoding_plan: EncodingPlan | None,
+    encoding_config: Config | None,
+    capabilities: HWAccelCapabilities | None,
+    output_format: str | None,
+    film_transfer: HdrTransfer | None,
+) -> _StillColor:
+    """The still's plan and colour chains, in the film's transfer when it is known."""
+    from immich_memories.processing.hdr_utilities import (
+        check_zscale_available,
+        get_hdr_conversion_filter,
+    )
+
+    has_zscale = check_zscale_available()
+    own = HdrTransfer.PQ if has_zscale and gain_map_hdr else HdrTransfer.NONE
+    # Source HDR is known only after decoding its gain map. Filter availability
+    # cannot tell us whether the photograph or the requested film needs HDR.
+    plan = encoding_plan or photo_encoding_plan(
+        encoding_config,
+        transfer=film_transfer if has_zscale and film_transfer is not None else own,
+        capabilities=capabilities,
+        format_override=output_format,
+    )
+    in_film = film_transfer is not None and plan.hdr and plan.target_transfer is film_transfer
+    pix_fmt, vf = photo_filter_chain(
+        gain_map_hdr=gain_map_hdr,
+        has_zscale=has_zscale,
+        peak_nits=peak_nits,
+        primaries=primaries,
+        hdr_film=plan.hdr and (gain_map_hdr or not in_film),
+    )
+    if in_film and not gain_map_hdr:
+        return _StillColor(plan, pix_fmt, vf, False, _sdr_still_in_hdr_chain(plan.target_transfer))
+    if in_film and plan.target_transfer is HdrTransfer.HLG:
+        return _StillColor(plan, pix_fmt, vf, True, _pq_still_in_hlg_chain())
+    convert = has_zscale and (gain_map_hdr or plan.hdr)
+    if convert:
+        vf += get_hdr_conversion_filter(
+            "pq", plan.target_transfer.value if plan.hdr else "sdr", required=True
+        )
+    return _StillColor(plan, pix_fmt, vf, convert)
+
+
+def _recolored(layers: KenBurnsLayers, color: _StillColor) -> tuple[KenBurnsLayers, str, str]:
+    """The layers in the film's transfer, with the frame format and chain they now need."""
+    assert color.recolor is not None  # noqa: S101
+    chain = color.recolor
+    frame: list[str] = []
+
+    def convert(image: np.ndarray) -> np.ndarray:
+        fmt = "rgb48le" if image.dtype == np.uint16 else "rgb24"
+        converted, out_fmt, frame_vf = _convert_still_once(
+            image, fmt, chain, hdr=True, plan=color.plan
+        )
+        frame[:] = [out_fmt, frame_vf]
+        return converted
+
+    recolored = layers.recolored(convert)
+    return recolored, frame[0], frame[1]
+
+
+def _frame_source(
+    img: np.ndarray,
+    color: _StillColor,
+    params: KenBurnsParams,
+    size: tuple[int, int],
+    scale_mode: str,
+) -> tuple[KenBurnsLayers, str, str]:
+    """What the frames are cut from, and the pipe format and chain they reach FFmpeg with.
+
+    Raises RuntimeError only when the still was to be rendered in the film's transfer.
+    """
+    pix_fmt, vf = color.pix_fmt, color.vf
+    source = _at_pipe_depth(img, sixteen_bit=pix_fmt == "rgb48le")
+    if color.convert_source:
+        # WHY (#2687): the colour of a still never changes, so its transfer conversion
+        # (and in an SDR film the whole HDR tone map) runs once on the picture, not
+        # once on each of the 100+ frames cut from it. The frames then only move.
+        try:
+            source, pix_fmt, vf = _convert_still_once(
+                source, pix_fmt, vf, hdr=color.plan.hdr, plan=color.plan
+            )
+        except RuntimeError as exc:
+            if color.recolor is not None:
+                raise
+            # An FFmpeg whose filter probe said yes but cannot run the chain on a still:
+            # keep the per-frame chain, which is what every earlier release did.
+            logger.warning("Converting the still once failed; converting per frame: %s", exc)
+    layers = ken_burns_layers(source, *size, params, scale_mode=scale_mode)
+    if color.recolor is None:
+        return layers, pix_fmt, vf
+    # WHY (#2709): the film converted this still to its own transfer on every frame.
+    # The move still resamples and blurs in the still's own transfer, as it did, and
+    # only the picture it moves over is converted, once.
+    return _recolored(layers, color)
+
+
 def _stream_render_to_mp4(
     img: np.ndarray,
     params: KenBurnsParams,
@@ -348,6 +489,7 @@ def _stream_render_to_mp4(
     capabilities: HWAccelCapabilities | None = None,
     output_format: str | None = None,
     scale_mode: str = "blur",
+    film_transfer: HdrTransfer | None = None,
 ) -> None:
     """Render Ken Burns frames and stream directly to FFmpeg.
 
@@ -359,49 +501,32 @@ def _stream_render_to_mp4(
 
     Streams one frame at a time — O(1) memory.
     """
-    from immich_memories.processing.hdr_utilities import (
-        check_zscale_available,
-        get_hdr_conversion_filter,
-    )
-
-    has_zscale = check_zscale_available()
-    # Source HDR is known only after decoding its gain map. Filter availability
-    # cannot tell us whether the photograph or the requested film needs HDR.
-    plan = encoding_plan or photo_encoding_plan(
-        encoding_config,
-        transfer=HdrTransfer.PQ if has_zscale and gain_map_hdr else HdrTransfer.NONE,
-        capabilities=capabilities,
-        format_override=output_format,
-    )
-    encoder_args = encoder_args_for_plan(plan, frame_size=(target_w, target_h))
-    pix_fmt, vf = photo_filter_chain(
+    color = _still_color(
         gain_map_hdr=gain_map_hdr,
-        has_zscale=has_zscale,
         peak_nits=peak_nits,
         primaries=primaries,
-        hdr_film=plan.hdr,
+        encoding_plan=encoding_plan,
+        encoding_config=encoding_config,
+        capabilities=capabilities,
+        output_format=output_format,
+        film_transfer=film_transfer,
     )
-    if has_zscale and (gain_map_hdr or plan.hdr):
-        vf += get_hdr_conversion_filter(
-            "pq", plan.target_transfer.value if plan.hdr else "sdr", required=True
-        )
-
-    source = _at_pipe_depth(img, sixteen_bit=pix_fmt == "rgb48le")
-    if has_zscale and (gain_map_hdr or plan.hdr):
-        # WHY (#2687): the colour of a still never changes, so its transfer conversion
-        # (and in an SDR film the whole HDR tone map) runs once on the picture, not
-        # once on each of the 100+ frames cut from it. The frames then only move.
-        try:
-            source, pix_fmt, vf = _convert_still_once(source, pix_fmt, vf, hdr=plan.hdr, plan=plan)
-        except RuntimeError as exc:
-            # An FFmpeg whose filter probe said yes but cannot run the chain on a still:
-            # keep the per-frame chain, which is what every earlier release did.
-            logger.warning("Converting the still once failed; converting per frame: %s", exc)
+    plan = color.plan
+    encoder_args = encoder_args_for_plan(plan, frame_size=(target_w, target_h))
+    try:
+        layers, pix_fmt, vf = _frame_source(img, color, params, (target_w, target_h), scale_mode)
+    except RuntimeError as exc:
+        # The film converts a still it cannot take in its own transfer, as it always did.
+        logger.warning("Converting the still to the film's transfer failed: %s", exc)
+        _stream_render_to_mp4(
+            img, params, output_path, target_w, target_h, gain_map_hdr, peak_nits,
+            primaries, encoding_plan, encoding_config, capabilities, output_format,
+            scale_mode,
+        )  # fmt: skip
+        return
 
     def _frames() -> Iterator[memoryview]:
-        for frame in render_ken_burns_streaming(
-            source, target_w, target_h, params, scale_mode=scale_mode
-        ):
+        for frame in ken_burns_frames(layers, params):
             # Each frame is a fresh C-contiguous array the renderer never touches again,
             # so FFmpeg can read it in place instead of from a copy.
             yield frame.data

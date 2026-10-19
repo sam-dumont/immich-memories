@@ -1105,6 +1105,35 @@ class TestAudioFilterChain:
         assert "loudnorm" not in _segment_chain(title, fps=30, normalize_audio=True)
         assert "loudnorm" in _segment_chain(content, fps=30, normalize_audio=True)
 
+    def test_a_stills_generated_silence_skips_loudnorm_for_the_same_samples(
+        self, tmp_path: Path
+    ) -> None:
+        """#2709: loudnorm hands a still's silence back sample for sample, after a
+        resample to 192 kHz and back; the chain without it writes the same WAV."""
+        import subprocess
+
+        from immich_memories.processing.assembly_config import AssemblyClip
+        from immich_memories.processing.streaming_audio import _segment_chain
+
+        still = AssemblyClip(path=tmp_path / "still.mp4", duration=2.0, is_photo=True)
+        subprocess.run(
+            ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+             "-t", "2", "-c:a", "aac", str(still.path)],
+            check=True,
+        )  # fmt: skip
+        chain = _segment_chain(still, fps=30, normalize_audio=True)
+        assert "loudnorm" not in chain
+
+        def samples(af: str) -> bytes:
+            return subprocess.run(
+                ["ffmpeg", "-v", "error", "-i", str(still.path), "-af", af,
+                 "-f", "f32le", "-"],
+                check=True, capture_output=True,
+            ).stdout  # fmt: skip
+
+        content = AssemblyClip(path=still.path, duration=2.0)
+        assert samples(chain) == samples(_segment_chain(content, fps=30, normalize_audio=True))
+
     def test_pre_extracted_audio_with_crossfade_uses_acrossfade(self, tmp_path: Path) -> None:
         """Pre-extracted audio with fade transitions must route through
         filter graph with acrossfade, not concat demuxer (which ignores

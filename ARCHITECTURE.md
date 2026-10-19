@@ -509,6 +509,13 @@ frames to a `FrameSink` and crossfades across clip boundaries, and `StreamingEnc
 sink it is constructed with) pipes them into FFmpeg. Large-frame decoders may read ahead into
 three borrowed slots when CPU/memory limits permit; the assembler closes every decoder
 on clip completion and failure, including when an exception traceback remains live.
+With `hardware.gpu_decode`, 4:2:0 H.264/HEVC clips decode on the hardware and are repacked
+to the software decoder's format first, so every filter sees the same pixels; a failed
+hardware decode re-runs the assembly in software. Photo moves, title cards and their
+backgrounds are intermediates (`intermediate_encoding_plan`: fast near-lossless x264 when
+the film encodes in software), and Live merges and certified cuts are lossless, so the
+film's encode is a Live clip's only lossy step. Stills are rendered in the HDR film's
+transfer once its videos settle it (`generate_settings.still_render_transfer`).
 The full assembler quantizes each fade to a frame count once, shares that count with the video
 and clip-audio paths, and converts the overlap to 48 kHz samples for audio mixing. A zero-frame
 fade joins audio without overlap. Soundtrack block/loop fades have their own musical timing.
@@ -634,7 +641,7 @@ src/immich_memories/
 │   ├── ken_burns_moves.py      # Which move a still gets: whole picture <-> closest frame (person, group, pan, other)
 │   ├── animator.py             # Photo source prep: HEIC decode, downscale cap, HDR detection
 │   ├── photo_pipeline.py       # Render one photograph as a Ken Burns clip, streamed to FFmpeg
-│   ├── encoding.py             # Verified photo encoder; NAS H.264/SDR on hardware without HEVC
+│   ├── encoding.py             # Photo intermediate plan: fast x264 in software; NAS H.264/SDR on hardware without HEVC
 │   ├── ultrahdr.py             # Ultra HDR JPEG (Android/Pixel): MPF parser, gain map, ISO 21496-1
 │   └── burst_dedup.py          # One photo per burst: near-duplicates shot within minutes of each other
 │
@@ -1049,6 +1056,8 @@ src/immich_memories/
 │   ├── kernels.py              # GPU kernels + lazy compilation (init_kernels)
 │   ├── kernel_backend_probe.py # The gate: which arch can dispatch here, asked without loading
 │   ├── kernel_video.py         # GPU title video creation
+│   ├── hlg_frames.py           # HLG title frames: the zscale SDR->HLG chain reproduced, qualified on this FFmpeg
+│   ├── hlg_kernel.py           # The device kernel that quantizes, fades and converts a frame to HLG in one pass
 │   ├── ffmpeg_pipe.py          # Feed raw frames to FFmpeg without deadlocking on an unread stderr
 │   ├── safe_zones.py           # Keep vertical titles clear of the Reels/Shorts/TikTok button rail
 │   ├── map_animation.py        # Home-to-first-stop and previous-to-next flights (van Wijk zoom, resolution-independent city framing)

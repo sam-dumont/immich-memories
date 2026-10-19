@@ -25,6 +25,7 @@ from immich_memories.processing.encoding_plan import (
     EncodingPlan,
     EncodingRequest,
     HdrMode,
+    HdrTransfer,
     resolve_encoding_plan,
     resolve_output_selection,
 )
@@ -34,6 +35,8 @@ from immich_memories.processing.hardware import (
 )
 from immich_memories.processing.hdr_utilities import (
     detect_dominant_hdr_transfer,
+    dominant_transfer,
+    hdr_transfer_votes,
     quality_encoder_preset,
 )
 from immich_memories.processing.map_move_timing import MapMoveTiming
@@ -97,51 +100,24 @@ def build_assembly_settings(
     # Scale mode: CLI/param > config > default
     effective_scale_mode = normalize_scale_mode(params.scale_mode or config.defaults.scale_mode)
 
-    # A CLI format override selects both a compatible codec and container.
-    # With no override, the explicit output config remains authoritative.
-    output_selection = resolve_output_selection(
-        config_codec=config.output.codec,
-        config_container=config.output.format,
-        format_override=params.output_format,
-    )
-
-    capabilities = (
-        detect_hardware_acceleration(config.hardware.backend)
-        if config.hardware.enabled
-        else HWAccelCapabilities()
-    )
-    output_crf = params.output_crf if params.output_crf is not None else config.output.effective_crf
-    hdr_mode = config.output.hdr_mode
-    if (
-        config.tier == "basic"
-        and hdr_mode is HdrMode.AUTO
-        and config.output.codec_policy == "prefer_hardware"
-        and capabilities.supports_h264_encode
-        and not capabilities.supports_h265_encode
-    ):
-        hdr_mode = HdrMode.SDR
+    capabilities = _film_capabilities(config)
+    hdr_mode = _film_hdr_mode(config, capabilities)
+    if hdr_mode is not config.output.hdr_mode:
         logger.info("NAS automatic output uses hardware H.264 with HDR-to-SDR tone mapping")
-    encoding_plan = resolve_encoding_plan(
-        EncodingRequest(
-            codec=output_selection.codec,
-            hdr_mode=hdr_mode,
-            hardware_enabled=config.hardware.enabled,
-            preset=quality_encoder_preset(config.output.quality, config.hardware.encoder_preset),
-            crf=output_crf,
-            container=output_selection.container,
-            codec_policy=config.output.codec_policy,
-        ),
-        capabilities,
-        input_transfer=detect_dominant_hdr_transfer(
-            assembly_clips,
-            probe_cache=probe_cache,
-        ),
+    encoding_plan = film_encoding_plan(
+        params,
+        detect_dominant_hdr_transfer(assembly_clips, probe_cache=probe_cache),
     )
     if encoding_plan.tone_map_to_sdr and hdr_mode is HdrMode.AUTO:
         _warn_about_tone_mapped_sources(assembly_clips, encoding_plan, probe_cache)
 
     return AssemblySettings(
         encoding_plan=encoding_plan,
+        decode_capabilities=(
+            capabilities
+            if config.hardware.enabled and config.hardware.gpu_decode and capabilities.has_decoding
+            else None
+        ),
         captured_at=film_capture_instant(clip.asset for clip in params.clips),
         transition=transition_type,
         transition_duration=params.transition_duration,
@@ -156,6 +132,81 @@ def build_assembly_settings(
         privacy_mode=params.privacy_mode,
         certified_content_intervals=certified_intervals,
     )
+
+
+def _film_capabilities(config: Config) -> HWAccelCapabilities:
+    return (
+        detect_hardware_acceleration(config.hardware.backend)
+        if config.hardware.enabled
+        else HWAccelCapabilities()
+    )
+
+
+def _film_hdr_mode(config: Config, capabilities: HWAccelCapabilities) -> HdrMode:
+    """The configured HDR mode, unless NAS hardware that only encodes H.264 makes it SDR."""
+    if (
+        config.tier == "basic"
+        and config.output.hdr_mode is HdrMode.AUTO
+        and config.output.codec_policy == "prefer_hardware"
+        and capabilities.supports_h264_encode
+        and not capabilities.supports_h265_encode
+    ):
+        return HdrMode.SDR
+    return config.output.hdr_mode
+
+
+def film_encoding_plan(params: GenerationParams, input_transfer: HdrTransfer) -> EncodingPlan:
+    """The film's encoding contract, for sources whose dominant transfer is ``input_transfer``."""
+    config = params.config
+    # A CLI format override selects both a compatible codec and container.
+    # With no override, the explicit output config remains authoritative.
+    output_selection = resolve_output_selection(
+        config_codec=config.output.codec,
+        config_container=config.output.format,
+        format_override=params.output_format,
+    )
+    capabilities = _film_capabilities(config)
+    output_crf = params.output_crf if params.output_crf is not None else config.output.effective_crf
+    return resolve_encoding_plan(
+        EncodingRequest(
+            codec=output_selection.codec,
+            hdr_mode=_film_hdr_mode(config, capabilities),
+            hardware_enabled=config.hardware.enabled,
+            preset=quality_encoder_preset(config.output.quality, config.hardware.encoder_preset),
+            crf=output_crf,
+            container=output_selection.container,
+            codec_policy=config.output.codec_policy,
+        ),
+        capabilities,
+        input_transfer=input_transfer,
+    )
+
+
+def still_render_transfer(
+    params: GenerationParams,
+    prepared_videos: list[AssemblyClip],
+    stills: int,
+    *,
+    probe_cache: ProbeCache | None = None,
+) -> HdrTransfer | None:
+    """The HDR transfer stills are rendered in: the film's, once its videos settle it (#2709).
+
+    A gain-mapped still votes PQ in the film's transfer and an SDR still does not
+    vote, and which a still is only shows once it is decoded. So the film's
+    transfer is known before the stills only when every still being gain-mapped
+    and none being so give the same answer. None leaves each still in its own
+    transfer, for the assembly to convert on every frame as before.
+    """
+    try:
+        hlg, pq = hdr_transfer_votes(prepared_videos, probe_cache=probe_cache)
+    except (OSError, ValueError):
+        # A prepared clip that cannot be read leaves the stills to the assembly.
+        return None
+    without = film_encoding_plan(params, dominant_transfer(hlg, pq)).target_transfer
+    with_all = film_encoding_plan(params, dominant_transfer(hlg, pq + stills)).target_transfer
+    if without is not with_all or without is HdrTransfer.NONE:
+        return None
+    return without
 
 
 def _warn_about_tone_mapped_sources(

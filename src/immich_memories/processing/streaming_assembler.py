@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import threading
 from collections.abc import Callable, Generator, Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -43,7 +44,7 @@ from immich_memories.processing.streaming_audio import (
     probe_duration,
 )
 from immich_memories.processing.streaming_frame_blender import FrameBlender
-from immich_memories.processing.streaming_frame_decoder import make_decoder
+from immich_memories.processing.streaming_frame_decoder import HardwareDecodeFailed, make_decoder
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -232,6 +233,42 @@ def _sequence_frame_counts(
     total = sum(int(c.duration * fps) for c in clips)
     fade_count = sum(1 for t in transitions if t == "fade")
     return fade_frames, max(1, total - fade_count * fade_frames)
+
+
+def assemble_with_software_decode_fallback(
+    clips: list,
+    transitions: list[str],
+    output_path: Path,
+    width: int,
+    height: int,
+    fps: int,
+    fade_duration: float = 0.5,
+    encoding_plan: EncodingPlan | None = None,
+    ctx: Any | None = None,
+    privacy_mode: bool = False,
+    date_overlay: bool = False,
+    place_overlay: bool = False,
+    caption_locale: str = "en",
+    scale_mode: str = "blur",
+    progress_callback: Callable[[int, int], None] | None = None,
+    frame_preview_callback: Callable[[bytes], None] | None = None,
+    audio_work_dir: Path | None = None,
+    effective_plan_callback: Callable[[EncodingPlan], None] | None = None,
+    _allow_runtime_fallback: bool = True,
+    probe_cache: ProbeCache | None = None,
+    *,
+    fade_frames: int | None = None,
+) -> list[Path]:
+    """``assemble_streaming``, run again in software when a clip's hardware decode fails."""
+    arguments = locals().copy()
+    try:
+        return assemble_streaming(**arguments)
+    except HardwareDecodeFailed:
+        if ctx is None or getattr(ctx, "decode_capabilities", None) is None:
+            raise
+        logger.warning("Hardware decoding failed; retrying the streaming assembly in software")
+        _clear_clip_audio(audio_work_dir)
+        return assemble_streaming(**(arguments | {"ctx": replace(ctx, decode_capabilities=None)}))
 
 
 def assemble_streaming(
@@ -522,7 +559,7 @@ def streaming_assemble_full(
         # WHY: Extract audio in the same FFmpeg pass as video decoding.
         # This eliminates the separate audio extraction pass and ensures
         # audio timing matches decoded video frames exactly.
-        clip_audio_paths = assemble_streaming(
+        clip_audio_paths = assemble_with_software_decode_fallback(
             clips=clips,
             transitions=transitions,
             output_path=video_only,

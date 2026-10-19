@@ -30,7 +30,9 @@ from immich_memories.processing.encoding_plan import (
     HdrMode,
     HdrTransfer,
     OutputCodec,
+    intermediate_encoding_plan,
     resolve_encoding_plan,
+    software_fallback_plan,
 )
 from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware import HWAccelCapabilities
@@ -41,12 +43,6 @@ from immich_memories.processing.preparation_fallbacks import note_fallback
 
 # Default Live Photo clip duration (1.5s before + 1.5s after shutter)
 DEFAULT_CLIP_DURATION = 3.0
-
-# A merged burst is an intermediate: the assembler re-encodes it under the run's
-# own plan, so this only has to survive one more generation without visible
-# loss. 18 is the project's default CRF and is near-transparent; going lower
-# would only grow a file that is deleted at the end of the run.
-BURST_CRF = 18
 
 
 def estimate_clip_duration(asset: Asset) -> float:
@@ -750,7 +746,7 @@ def burst_encoding_plan(
     config: Config | None = None,
     input_transfer: HdrTransfer | None = None,
 ) -> EncodingPlan:
-    """The encoding contract for a merged burst.
+    """The encoding contract for a merged burst: lossless x264, in the transfer it keeps.
 
     The source transfer survives preparation unless NAS hardware needs H.264.
     That case explicitly tone-maps to SDR. Certified caches bind the tier and
@@ -770,16 +766,19 @@ def burst_encoding_plan(
         codec=OutputCodec.H265 if preserve_hdr else OutputCodec.H264,
         hdr_mode=HdrMode.HDR if preserve_hdr else HdrMode.SDR,
         hardware_enabled=hardware_enabled,
-        # An intermediate is not worth a slow preset; the CRF carries the quality.
+        # The plan only decides the codec and transfer: the merge itself is lossless.
         preset="fast",
-        crf=BURST_CRF,
+        crf=0,
         container="mp4",
         # NAS preparation chooses a codec its verified hardware can encode.
         codec_policy="prefer_hardware" if nas else "strict",
     )
-    return resolve_encoding_plan(
+    plan = resolve_encoding_plan(
         request, capabilities, input_has_hdr=is_hdr, input_transfer=input_transfer
     )
+    # WHY (#2692): the film decodes the merge and encodes it again, so a lossy merge
+    # was a second generation; its film encode is now the only lossy step.
+    return intermediate_encoding_plan(software_fallback_plan(plan), lossless=True)
 
 
 def append_encoding_args(cmd: list[str], plan: EncodingPlan, has_audio: bool, output: Path) -> None:

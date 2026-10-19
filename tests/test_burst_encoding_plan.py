@@ -1,9 +1,8 @@
 """A merged Live Photo burst is encoded under a plan, not a hardcoded encoder (#504).
 
-The merge runs at download time, before the run's own EncodingPlan exists, so it
-used to hardcode libx264 (libx265 for HDR) with no quality setting and no
-hardware encoder. On a hardware-encode machine the bursts were the only
-software-encoded clips in the memory.
+The merge runs at download time, before the run's own EncodingPlan exists. The
+plan keeps the burst's transfer and makes the merge lossless, so the film's own
+encode is the only lossy step a Live Photo takes (#2692).
 """
 
 from __future__ import annotations
@@ -64,23 +63,19 @@ def _encoder(cmd: list[str]) -> str:
     return cmd[cmd.index("-c:v") + 1]
 
 
-def test_the_burst_is_encoded_at_a_stated_quality() -> None:
-    """No CRF meant the encoder's own default, which is not the one the rest of
-    the run uses and is not written down anywhere."""
+def test_the_burst_is_lossless_so_the_film_encode_is_its_only_lossy_step() -> None:
+    """The film decodes the merge and encodes it again (#2692): a lossy merge was a
+    second generation, and a quality dial nobody had written down (#504)."""
     cmd = _merge_command()
 
-    from immich_memories.processing.live_photo_merger import BURST_CRF
-    from immich_memories.processing.rate_control import quality_args
-
-    assert "-crf" in cmd
-    # libx264 needs two steps below the libx265 reference to match its picture,
-    # so the stated quality is BURST_CRF translated, not BURST_CRF copied.
-    assert cmd[cmd.index("-crf") + 1] == quality_args("libx264", BURST_CRF)[-1]
+    assert cmd[cmd.index("-qp") + 1] == "0"
+    assert "-crf" not in cmd
 
 
-def test_a_hardware_machine_encodes_the_burst_in_hardware() -> None:
-    """Bursts were the only software-encoded clips on a hardware-encode setup."""
-    assert _encoder(_merge_command(capabilities=_apple())) == "h264_videotoolbox"
+def test_a_hardware_machine_merges_losslessly_in_software() -> None:
+    """No hardware encoder is lossless; x264 at its fastest preset costs a Live
+    Photo about a second of CPU against twenty for the libx265 merge it replaces."""
+    assert _encoder(_merge_command(capabilities=_apple())) == "libx264"
 
 
 def test_disabling_hardware_is_still_honoured() -> None:
@@ -101,13 +96,8 @@ def test_an_hdr_burst_keeps_its_hlg_metadata_and_ten_bits(hardware_enabled: bool
     assert cmd[cmd.index("-color_trc") + 1] == "arib-std-b67"
     assert cmd[cmd.index("-color_primaries") + 1] == "bt2020"
     assert cmd[cmd.index("-colorspace") + 1] == "bt2020nc"
-    assert "10" in cmd[cmd.index("-pix_fmt") + 1]
-    # HEVC in MP4 needs hvc1 rather than hev1 to play on Apple devices.
-    assert cmd[cmd.index("-tag:v") + 1] == "hvc1"
-
-
-def test_an_hdr_burst_uses_the_hardware_hevc_encoder() -> None:
-    assert _encoder(_merge_command(is_hdr=True, capabilities=_apple())) == "hevc_videotoolbox"
+    assert cmd[cmd.index("-pix_fmt") + 1] == "yuv420p10le"
+    assert cmd[cmd.index("-qp") + 1] == "0"
 
 
 def test_the_download_path_carries_the_setting_into_the_merge() -> None:

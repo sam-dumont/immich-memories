@@ -1,10 +1,14 @@
-"""Photo intermediates spend HDR encoding only on HDR sources in an HDR film."""
+"""Photo intermediates spend HDR encoding only on HDR sources in an HDR film.
+
+A software intermediate is x264 at its fastest preset and near-lossless, whatever
+the film's codec: the assembly decodes it and encodes it again (#2709).
+"""
 
 import pytest
 
 from immich_memories.config.loader import Config
 from immich_memories.photos.encoding import photo_encoding_plan
-from immich_memories.processing.encoding_plan import HdrTransfer, OutputCodec
+from immich_memories.processing.encoding_plan import INTERMEDIATE_CRF, HdrTransfer, OutputCodec
 
 
 def test_hdr_photo_in_sdr_film_uses_software_h264():
@@ -16,7 +20,7 @@ def test_hdr_photo_in_sdr_film_uses_software_h264():
     assert plan.encoder == "libx264"
     assert plan.target_transfer is HdrTransfer.NONE
     assert plan.tone_map_to_sdr
-    assert plan.crf == 18
+    assert plan.crf == INTERMEDIATE_CRF
 
 
 @pytest.mark.parametrize("hdr_mode", ["auto", "hdr"])
@@ -25,7 +29,8 @@ def test_gain_mapped_photo_in_hdr_film_preserves_pq(hdr_mode):
 
     plan = photo_encoding_plan(config, transfer=HdrTransfer.PQ)
 
-    assert plan.codec is OutputCodec.H265
+    assert plan.encoder_args == ("-preset", "ultrafast", "-crf", str(INTERMEDIATE_CRF))
+    assert plan.pixel_format == "yuv420p10le"
     assert plan.target_transfer is HdrTransfer.PQ
     assert not plan.tone_map_to_sdr
 
@@ -37,7 +42,7 @@ def test_sdr_photo_in_hdr_film_keeps_an_sdr_intermediate():
 
     assert plan.encoder == "libx264"
     assert plan.target_transfer is HdrTransfer.NONE
-    assert plan.crf == 18
+    assert plan.pixel_format == "yuv420p"
 
 
 @pytest.mark.parametrize(("hdr_mode", "policy"), [("hdr", "prefer_hardware"), ("auto", "strict")])
@@ -51,5 +56,21 @@ def test_explicit_hdr_film_does_not_lose_photo_hdr_on_h264_only_hardware(hdr_mod
 
     plan = photo_encoding_plan(config, transfer=HdrTransfer.PQ, capabilities=capabilities)
 
-    assert plan.encoder == "libx265"
+    assert plan.encoder == "libx264"
+    assert plan.pixel_format == "yuv420p10le"
     assert plan.target_transfer is HdrTransfer.PQ
+
+
+def test_a_hardware_encoder_keeps_its_own_plan():
+    """Hardware costs the CPU next to nothing; only software plans are swapped."""
+    from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
+
+    config = Config(output={"codec": "h265", "hdr_mode": "hdr"})
+    capabilities = HWAccelCapabilities(
+        backend=HWAccelBackend.APPLE, supports_h264_encode=True, supports_h265_encode=True
+    )
+
+    plan = photo_encoding_plan(config, transfer=HdrTransfer.PQ, capabilities=capabilities)
+
+    assert plan.codec is OutputCodec.H265
+    assert plan.encoder == "hevc_videotoolbox"

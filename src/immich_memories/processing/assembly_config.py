@@ -18,6 +18,7 @@ from immich_memories.processing.map_move_timing import MapMoveTiming
 
 if TYPE_CHECKING:
     from immich_memories.processing.film_timeline import FilmTimeline
+    from immich_memories.processing.hardware import HWAccelCapabilities
 
 __all__ = [
     "AssemblyClip",
@@ -175,6 +176,9 @@ class AssemblySettings:
     # When the memory happened, offset included: stamped into the container so a
     # server reading the file agrees with what the upload says about it.
     captured_at: datetime | None = None
+    # The hardware the assembly may decode its clips on (`hardware.gpu_decode`);
+    # None decodes in software.
+    decode_capabilities: HWAccelCapabilities | None = None
 
     @property
     def effective_transition_duration(self) -> float:

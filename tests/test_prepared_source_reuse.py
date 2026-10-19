@@ -24,7 +24,7 @@ from immich_memories.generate_prepared_sources import (
     reuse_or_prepare,
 )
 from immich_memories.processing.assembly_config import AssemblyClip
-from immich_memories.processing.encoding_plan import HdrMode
+from immich_memories.processing.encoding_plan import HdrMode, HdrTransfer
 from immich_memories.processing.output_canvas import OutputCanvas
 from tests.conftest import make_clip
 from tests.immich_fakes import fake_immich_client
@@ -138,6 +138,8 @@ _RENDER_CHANGES: dict[str, Callable] = {
     "photo duration flag": lambda _clip, params: setattr(params.config.photos, "duration", 6.0),
     # A still moves at the film's own rate (#2475): a 30 fps clip in a 25 fps film jitters.
     "the film's frame rate": lambda _clip, params: setattr(params, "photo_fps", 25),
+    # A still rendered in the film's HLG is not the one rendered in its own PQ (#2709).
+    "the film's transfer": lambda _clip, params: setattr(params, "photo_transfer", HdrTransfer.HLG),
 }
 
 

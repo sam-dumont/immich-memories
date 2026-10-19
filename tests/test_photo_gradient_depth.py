@@ -40,9 +40,11 @@ def rendered_and_reference(tmp_path, monkeypatch, *, sixteen_bit: bool, low: flo
     frames = []
     real_render = renderer.render_ken_burns_streaming
 
+    real_layers = renderer.ken_burns_layers
+
     def spy(src, width, height, params, **kwargs):
         moves.append(params)
-        return real_render(src, width, height, params, **kwargs)
+        return real_layers(src, width, height, params, **kwargs)
 
     def pipe(cmd, sent, **_kwargs):
         frames.extend(bytes(frame) for frame in sent)
@@ -53,7 +55,7 @@ def rendered_and_reference(tmp_path, monkeypatch, *, sixteen_bit: bool, low: flo
     monkeypatch.setattr(photo_pipeline, "write_frames_to_ffmpeg", pipe)
     # WHY: zscale on this machine decides the pipe format; the test picks the pipe.
     monkeypatch.setattr(hdr_utilities, "check_zscale_available", lambda: True)
-    monkeypatch.setattr(photo_pipeline, "render_ken_burns_streaming", spy)
+    monkeypatch.setattr(photo_pipeline, "ken_burns_layers", spy)
     # WHY: this measures the integer depth of the renderer's own pixels; the colour
     # conversion that runs once on the still before it is not what is under test here.
     monkeypatch.setattr(

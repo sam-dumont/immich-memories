@@ -207,7 +207,8 @@ def test_without_zscale_every_photo_is_plain_sdr_h264(tmp_path, source):
 
 @pytest.mark.parametrize(
     ("encoders", "codec"),
-    [("hevc_videotoolbox libx265", "hevc_videotoolbox"), ("libx264 libx265", "libx265")],
+    # Without a hardware HEVC encoder the move is a fast x264 intermediate (#2709).
+    [("hevc_videotoolbox libx265", "hevc_videotoolbox"), ("libx264 libx265", "libx264")],
 )
 def test_the_hevc_encoder_is_the_hardware_one_when_ffmpeg_has_it(tmp_path, encoders, codec):
     command = _command(tmp_path, _gain_mapped_photo(tmp_path), zscale=True, encoders=encoders)

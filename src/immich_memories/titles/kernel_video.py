@@ -20,6 +20,7 @@ from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 from .encoding import standalone_title_encoding_plan, title_color_filter, title_encoder_args
+from .hlg_frames import hlg_frame_filter, title_frames_in_hlg
 from .renderer_kernels import KernelTitleConfig, KernelTitleRenderer
 
 logger = logging.getLogger(__name__)
@@ -158,8 +159,11 @@ def create_title_video_gpu(
     # Preserve the historical working path: describe that raw input precisely
     # and let the encoder quantize it, without converting HLG/PQ to SDR and back.
     transfer_matches_output = plan.hdr and frame_transfer is plan.target_transfer
+    cfg.hlg = None if transfer_matches_output else title_frames_in_hlg(plan)
     input_color_args: list[str] = []
-    if transfer_matches_output:
+    if cfg.hlg is not None:
+        video_filter_args = ["-vf", hlg_frame_filter(plan)]
+    elif transfer_matches_output:
         input_color_args = [
             "-color_primaries",
             "bt2020",

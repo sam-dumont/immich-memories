@@ -722,10 +722,24 @@ class GPUBuffers:
         self._source_frames: list[np.ndarray] = []
         self._source_slots: dict[int, int] = {}
         self._source_scale = 1.0 / 255.0
+        self._still: ti.ndarray | None = None
+        self._still_source: np.ndarray | None = None
 
     def load_background(self, bg: np.ndarray) -> None:
         """CPU to GPU: load background frame (one transfer per frame)."""
         self.frame.from_numpy(bg)
+
+    def load_still_background(self, bg: np.ndarray) -> None:
+        """Fill the frame with a background that never changes, uploaded only once.
+
+        WHY (#2709): a card's still background went up as a float frame on every
+        frame (25 MB at 1080p); a copy on the device gives the same values.
+        """
+        if self._still is None or self._still_source is not bg:
+            self._still = ti.ndarray(dtype=ti.f32, shape=(self.h, self.w, 3))
+            self._still.from_numpy(bg)
+            self._still_source = bg
+        compiled_copy_field_3(self._still, self.frame)
 
     def read_output(self) -> np.ndarray:
         """GPU to CPU: read finalized uint8/uint16 frame."""

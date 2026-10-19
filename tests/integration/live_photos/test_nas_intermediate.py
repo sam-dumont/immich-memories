@@ -40,7 +40,7 @@ def _hdr_source(tmp_path: Path, size: str = "3840x2160", transfer: str = "smpte2
     "size,transfer,expected",
     [("3840x2160", "smpte2084", (1920, 1080)), ("2160x3840", "arib-std-b67", (1080, 1920))],
 )
-def test_nas_hdr_live_intermediate_is_bounded_and_hardware_encoded(
+def test_nas_hdr_live_intermediate_is_bounded_and_lossless(
     tmp_path: Path, size, transfer, expected
 ):
     source = _hdr_source(tmp_path, size, transfer)
@@ -54,12 +54,13 @@ def test_nas_hdr_live_intermediate_is_bounded_and_hardware_encoded(
     assert (stream["width"], stream["height"]) == expected
     assert int(stream["nb_read_frames"]) == 3
     capabilities = detect_hardware_acceleration()
-    encoder = command[command.index("-c:v") + 1]
+    # Lossless x264 whatever the hardware: the film's encode is the only lossy step (#2692).
+    assert command[command.index("-c:v") + 1] == "libx264"
+    assert command[command.index("-qp") + 1] == "0"
     if capabilities.supports_h265_encode:
-        assert encoder.startswith("hevc_")
         assert stream["color_transfer"] == transfer
     elif capabilities.supports_h264_encode:
-        assert encoder.startswith("h264_")
+        # NAS hardware without HEVC still tone-maps the Live to an SDR film.
         assert stream["color_transfer"] == "bt709"
     else:
         assert stream["color_transfer"] == transfer

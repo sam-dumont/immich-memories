@@ -94,26 +94,25 @@ def test_a_hardware_encode_is_untouched(tmp_path, monkeypatch, container):
     assert not any("rc-lookahead" in part for part in cmd)
 
 
-def test_photo_clips_merge_the_lookahead_into_their_own_x265_params(container, tmp_path):
-    from tests.test_photo_render import _command, _gain_mapped_photo
-
-    container(3)
-
-    args = _command(tmp_path, _gain_mapped_photo(tmp_path), zscale=True, frame_size=(2160, 3840))
-    params = args[args.index("-x265-params") + 1]
-    assert params.startswith("hdr-opt=1:")
-    assert params.endswith(":rc-lookahead=5")
-
-
 def test_parallel_sources_share_encoder_budget_without_leaking_into_assembly(container):
     from contextlib import nullcontext
 
     from immich_memories.processing.clip_encoder import encoder_args_for_plan
-    from immich_memories.processing.live_photo_merger import burst_encoding_plan
+    from immich_memories.processing.encoding_plan import (
+        EncodingRequest,
+        HdrMode,
+        OutputCodec,
+        resolve_encoding_plan,
+    )
+    from immich_memories.processing.hardware import HWAccelCapabilities
     from immich_memories.processing.source_preparation import prepare_sources
 
     container(8)
-    plan = burst_encoding_plan(is_hdr=True, hardware_enabled=False)
+    plan = resolve_encoding_plan(
+        EncodingRequest(OutputCodec.H265, HdrMode.HDR, False, "fast", 18, "mp4", "strict"),
+        HWAccelCapabilities(),
+        input_has_hdr=True,
+    )
     outside = encoder_args_for_plan(plan)
     assert "-x265-params" not in outside
     prepared = list(

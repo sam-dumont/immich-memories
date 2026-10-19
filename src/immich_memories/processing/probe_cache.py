@@ -69,6 +69,8 @@ class VideoProbe:
     container_start_seconds: float = 0.0
     container_format: str | None = None
     audio_sample_rate: int = 0
+    # The software decoder's output format, e.g. yuv420p10le.
+    pixel_format: str | None = None
 
     @property
     def resolution(self) -> tuple[int, int] | None:
@@ -168,6 +170,7 @@ def _parse_video_probe(data: dict[str, Any]) -> VideoProbe:
         video_time_base=video.get("time_base"),
         container_start_seconds=_number(format_data.get("start_time")),
         container_format=format_data.get("format_name"),
+        pixel_format=video.get("pix_fmt"),
     )
 
 
@@ -474,7 +477,7 @@ class ProbeCache:
             (
                 "stream=index,codec_type,codec_name,width,height,r_frame_rate,avg_frame_rate,"
                 "bit_rate,duration,start_time,time_base,color_space,color_transfer,color_primaries,"
-                "bits_per_raw_sample,sample_rate,channels:stream_side_data=rotation:"
+                "bits_per_raw_sample,pix_fmt,sample_rate,channels:stream_side_data=rotation:"
                 "format=format_name,duration,size,bit_rate,start_time"
             ),
             "-of",

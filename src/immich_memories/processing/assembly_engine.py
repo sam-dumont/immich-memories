@@ -126,6 +126,7 @@ def create_assembly_context(
         colorspace_filter=colorspace_filter,
         target_fps=target_fps,
         fade_duration=settings.effective_transition_duration,
+        decode_capabilities=settings.decode_capabilities,
     )
 
 

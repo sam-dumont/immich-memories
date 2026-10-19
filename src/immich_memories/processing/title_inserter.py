@@ -14,6 +14,7 @@ from immich_memories.processing.assembly_config import (
     AssemblySettings,
     TransitionType,
 )
+from immich_memories.processing.encoding_plan import intermediate_encoding_plan
 from immich_memories.processing.ffmpeg_prober import FFmpegProber
 from immich_memories.processing.map_move_timing import map_move_timing_of
 from immich_memories.processing.scaling_utilities import aggregate_mood_from_clips
@@ -157,7 +158,8 @@ class TitleInserter:
             resolution_width=target_w,
             resolution_height=target_h,
             fps=float(fps),
-            encoding_plan=self.settings.encoding_plan,
+            # Every card is decoded again by the assembly: an intermediate (#2709).
+            encoding_plan=intermediate_encoding_plan(self.settings.encoding_plan),
             title_override=title_settings.title_override,
             subtitle_override=title_settings.subtitle_override,
             memory_type=title_settings.memory_type,

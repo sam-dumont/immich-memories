@@ -90,7 +90,9 @@ def test_mislabeled_ultrahdr_jpeg_retains_its_gain_map_and_cap(tmp_path):
     assert prepared.has_gain_map
     assert prepared.peak_nits > 203
     assert max(prepared.width, prepared.height) <= 128
-    assert prepared.path.suffix == ".png"
+    # The 16-bit linear picture stays in memory, the way the renderer reads it (#2709).
+    assert prepared.pixels is not None
+    assert prepared.pixels.dtype.itemsize == 2
 
 
 def test_other_pillow_formats_still_use_the_conversion_fallback(tmp_path):
@@ -135,8 +137,6 @@ def _rotated_ultrahdr_jpeg(path: Path) -> None:
 
 
 def test_ultrahdr_jpeg_is_turned_upright_with_its_gain_map(tmp_path):
-    import cv2
-
     source = tmp_path / "rotated.jpg"
     _rotated_ultrahdr_jpeg(source)
 
@@ -144,7 +144,9 @@ def test_ultrahdr_jpeg_is_turned_upright_with_its_gain_map(tmp_path):
 
     assert prepared.has_gain_map
     assert (prepared.width, prepared.height) == (32, 64)
-    pixels = cv2.cvtColor(cv2.imread(str(prepared.path), cv2.IMREAD_UNCHANGED), cv2.COLOR_BGR2RGB)
+    pixels = prepared.pixels
+    assert pixels is not None
+    assert pixels.shape[:2] == (64, 32)
     top, bottom = pixels[8, 16], pixels[56, 16]
     assert top[0] > top[2], "the stored left (red) half displays on top"
     assert bottom[2] > bottom[0], "the stored right (blue) half displays at the bottom"

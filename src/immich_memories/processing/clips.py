@@ -249,6 +249,7 @@ class ClipExtractor:
         segment: ClipSegment,
         output_path: Path,
         hw_caps: HWAccelCapabilities | None,
+        lossless: bool = False,
     ) -> list[str]:
         validate_video_path(segment.source_path, must_exist=True)
 
@@ -286,7 +287,11 @@ class ClipExtractor:
             cmd.extend(["-vf", filters])
 
         # Get encoder and its args
-        self._append_encoder_args(cmd, hw_caps, codec, config)
+        if lossless:
+            # A cut the film encodes again adds no loss of its own (#2692).
+            cmd.extend(["-c:v", "libx264", "-preset", "ultrafast", "-qp", "0"])
+        else:
+            self._append_encoder_args(cmd, hw_caps, codec, config)
 
         # Audio encoding (always software, very fast)
         cmd.extend(["-c:a", "aac", "-b:a", "128k"])
@@ -406,6 +411,7 @@ class ClipExtractor:
         output_path: Path,
         progress_callback: Callable[[float], None] | None = None,
         use_hw_accel: bool = True,
+        lossless: bool = False,
     ) -> None:
         """Extract clip with re-encoding (slower but ensures compatibility).
 
@@ -416,11 +422,14 @@ class ClipExtractor:
             output_path: Path for output file.
             progress_callback: Optional progress callback.
             use_hw_accel: Whether to use hardware acceleration if available.
+            lossless: Encode losslessly in software, for a cut the film encodes again.
         """
         config = self._config
-        hw_caps = _get_hw_caps() if use_hw_accel and config.hardware.enabled else None
+        hw_caps = (
+            _get_hw_caps() if use_hw_accel and not lossless and config.hardware.enabled else None
+        )
 
-        cmd = self._build_reencode_command(segment, output_path, hw_caps)
+        cmd = self._build_reencode_command(segment, output_path, hw_caps, lossless)
 
         logger.debug(f"Running: {' '.join(cmd)}")
 
@@ -451,6 +460,7 @@ def extract_clip(
     *,
     config: Config,
     scratch_dir: Path | None = None,
+    lossless: bool = False,
 ) -> Path:
     """Convenience function to extract a single clip.
 
@@ -465,6 +475,7 @@ def extract_clip(
         buffer_seconds: Amount of buffer to add (default 0.5s).
         config: Application configuration.
         scratch_dir: The run's own scratch directory; the shared one when None.
+        lossless: Re-encode losslessly, for a cut the film encodes again.
 
     Returns:
         Path to extracted clip.
@@ -500,7 +511,10 @@ def extract_clip(
         return output_path
 
     if reencode:
-        _publish_whole(output_path, lambda path: extractor._extract_with_reencode(segment, path))
+        _publish_whole(
+            output_path,
+            lambda path: extractor._extract_with_reencode(segment, path, lossless=lossless),
+        )
     else:
         _publish_whole(output_path, lambda path: extractor._extract_copy(segment, path))
 
