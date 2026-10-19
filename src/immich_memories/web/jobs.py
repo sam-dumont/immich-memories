@@ -238,12 +238,12 @@ class JobRunner:
             except OSError:
                 # Without a durable record the page cannot follow or cancel this child.
                 self._processes.pop(job_id, None)
-                with suppress(ProcessLookupError):
+                with suppress(ProcessLookupError, PermissionError):
                     os.killpg(process.pid, signal.SIGTERM)
                 try:
                     process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
-                    with suppress(ProcessLookupError):
+                    with suppress(ProcessLookupError, PermissionError):
                         os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
                 raise

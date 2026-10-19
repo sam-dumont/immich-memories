@@ -1,5 +1,6 @@
 """The real built setup form responds to choices without sending service requests."""
 
+import contextlib
 import os
 import signal
 import socket
@@ -45,7 +46,9 @@ def setup_site(tmp_path_factory):
                 pytest.fail(log.read_text())
             yield url
         finally:
-            os.killpg(process.pid, signal.SIGTERM)
+            # macOS answers EPERM for a group whose members already exited.
+            with contextlib.suppress(ProcessLookupError, PermissionError):
+                os.killpg(process.pid, signal.SIGTERM)
             process.wait(timeout=10)
 
 
