@@ -27,7 +27,7 @@ def preview_refused(exc: BaseException) -> bool:
     return status == 404
 
 
-def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = False) -> None:
+def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = False) -> int:
     """Keep a verified preview at `path`, fetching it only when the cached one is unusable.
 
     The payload is verified as a picture before it replaces anything, and written
@@ -37,6 +37,9 @@ def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = F
     earlier run's unedited preview, and reusing it would feed every downstream
     producer -- pixels, heads, captions -- the wrong picture. An edited asset is
     always fetched fresh, never cached across runs.
+
+    Returns the bytes this call added to the cache (0 for a reused preview), net of
+    any file it replaced, so a cache that tracks its size need not re-measure.
     """
     if not edited:
         try:
@@ -52,7 +55,7 @@ def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = F
             # missing fact rather than fetched again.
             with suppress(OSError):
                 os.utime(path)
-            return
+            return 0
     payload = fetch_preview(asset_id) if fetch_preview else None
     if not payload:
         raise FileNotFoundError(
@@ -61,6 +64,10 @@ def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = F
     with Image.open(io.BytesIO(payload)) as image:
         image.verify()
     path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        replaced = path.stat().st_size
+    except OSError:
+        replaced = 0
     descriptor, temporary = tempfile.mkstemp(
         prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
     )
@@ -70,3 +77,4 @@ def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = F
         os.replace(temporary, path)
     finally:
         Path(temporary).unlink(missing_ok=True)
+    return len(payload) - replaced
