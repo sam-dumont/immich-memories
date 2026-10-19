@@ -890,7 +890,7 @@ def import_failures(repo: Path, paths: Iterable[str]) -> list[str]:
 
 def _import(name: str, env: dict[str, str], repo: Path) -> str:
     result = subprocess.run(  # nosec B603 - our own interpreter, a module name we derived
-        [sys.executable, "-c", f"import {name}"],
+        [sys.executable, "-c", "import importlib, sys; importlib.import_module(sys.argv[1])", name],
         cwd=repo,
         env=env,
         capture_output=True,
