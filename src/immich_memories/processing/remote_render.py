@@ -95,13 +95,19 @@ class RemoteRenderClient:
         return health
 
     def render(
-        self, params: GenerationParams, output_path: Path, progress: Progress
+        self,
+        params: GenerationParams,
+        output_path: Path,
+        progress: Progress,
+        *,
+        on_submitted: Callable[[dict], None] | None = None,
     ) -> PreparedGeneration:
         """Send the frozen cut, wait as long as its work needs, then retrieve it.
 
         The film stays staged: music is mixed into it there, and ``publish`` on
         the result decodes it once, or not at all when the worker's decode
-        provably covers the same bytes.
+        provably covers the same bytes. ``on_submitted`` hears the request once
+        the worker has accepted it, while the worker renders.
         """
         staged = output_path.with_name(f".{output_path.stem}.receiving.mp4")
         # A received film that is returned, or that fails its check, stays on disk.
@@ -112,6 +118,8 @@ class RemoteRenderClient:
             request = build_render_request(params)
             deadline = time.monotonic() + _wait_budget(request, self.settings.timeout_seconds)
             status = self._json("POST", "/jobs", json=request)
+            if on_submitted is not None:
+                on_submitted(request)
             status = self._wait(params, request, status, deadline, progress)
             plan = _encoding_plan(status["encoding_plan"])
             clips = _assembly_clips(status["clips"], output_path.parent)
@@ -298,11 +306,53 @@ def _assembly_clips(records: list[dict], directory: Path) -> tuple[AssemblyClip,
     )
 
 
+def expected_film(
+    params: GenerationParams, request: dict, directory: Path
+) -> tuple[tuple[AssemblyClip, ...], float, float]:
+    """The clips, longest length and frame rate the worker is expected to return for ``request``.
+
+    Read the way the worker reads them (clip dates, places, photo or motion, the film's
+    rate from its footage) before it has drawn a frame. Only a guess: music made from it is
+    kept only when the returned film asks for the same music (`generate_music_early`).
+    """
+    from immich_memories.generate_privacy import clip_location_name
+    from immich_memories.processing.ffmpeg_prober import film_frame_rate
+
+    sources = {clip.asset.id: clip for clip in params.clips}
+    clips = []
+    rates: dict[Path, float] = {}
+    for row in request["plan"]["clips"]:
+        source = sources[row["asset_id"]]
+        asset, exif = source.asset, source.asset.exif_info
+        still = row["render_mode"] == "still"
+        clip = AssemblyClip(
+            path=directory / ".remote-sources" / str(UUID(row["asset_id"])),
+            asset_id=str(UUID(row["asset_id"])),
+            duration=float(row["end"] - row["start"]),
+            is_photo=still,
+            date=asset.local_taken_at.isoformat()
+            if still
+            else asset.local_taken_at.strftime("%Y-%m-%d"),
+            llm_emotion=row.get("llm_emotion"),
+            latitude=exif.latitude if exif else None,
+            longitude=exif.longitude if exif else None,
+            location_name=clip_location_name(exif),
+        )
+        clips.append(clip)
+        if source.fps > 0:
+            rates[clip.path] = source.fps
+    fps = film_frame_rate(clips, rates.get)
+    # The worker's film may run up to the slack its check allows past the preview; music
+    # made for the longest film it can return covers whichever arrives.
+    longest = _expected_duration(params, request, clips) + _duration_slack(clips)
+    return tuple(clips), longest, float(fps)
+
+
 def _validate_result(params, request, status, clips, probe, plan) -> None:
     _validate_cut(request, clips)
     _validate_encoding(request["output"], probe, plan)
     expected = _expected_duration(params, request, clips)
-    if not math.isclose(probe.duration_seconds, expected, abs_tol=max(0.25, len(clips) / 30)):
+    if not math.isclose(probe.duration_seconds, expected, abs_tol=_duration_slack(clips)):
         raise GenerationError("Render worker changed the film duration")
     for start, end in status.get("music_mute_windows") or ():
         if not (
@@ -339,6 +389,11 @@ def _map_extra(params, request, clips) -> float:
 
     timeline, titles = _preview_inputs(params, request, clips)
     return preview_map_extra(list(clips), timeline, titles)
+
+
+def _duration_slack(clips) -> float:
+    """How far a worker's film may run from the preview: about a frame per clip."""
+    return max(0.25, len(clips) / 30)
 
 
 def _expected_duration(params, request, clips) -> float:

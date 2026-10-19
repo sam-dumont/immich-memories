@@ -352,3 +352,132 @@ def test_worker_failures_stop_without_publishing_or_leaking_tokens(tmp_path, mon
     assert WORKER_TOKEN not in str(error.value)
     assert params.config.immich.api_key not in str(error.value)
     assert not (tmp_path / "film.mp4").exists()
+
+
+class _SlowMusic:
+    """The music backend: a real tone, made while the test watches whether the render runs."""
+
+    def __init__(self, rendering):
+        import threading
+
+        self.rendering = rendering
+        self.started = threading.Event()
+        self.heard_render_running: list[bool] = []
+        self.stems_during_render: list[bool] = []
+
+    async def __call__(self, *, timeline, output_dir, **_kwargs):
+        import subprocess
+
+        from immich_memories.audio.music_generator_models import (
+            GeneratedMusic,
+            MusicGenerationResult,
+        )
+
+        self.heard_render_running.append(self.rendering.is_set())
+        self.started.set()
+        track = output_dir / f"take_{len(self.heard_render_running)}.wav"
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=d=6", str(track)],
+            check=True,
+        )
+        return MusicGenerationResult(
+            versions=[GeneratedMusic(full_mix=track)], timeline=timeline, mood="calm"
+        )
+
+
+def _music_run(tmp_path, monkeypatch, *, fails, music_url="http://music.example.lan:8000"):
+    import threading
+
+    from immich_memories.config.models.render import RenderWorkerConfig
+    from immich_memories.db import open_store
+    from immich_memories.processing import remote_render
+    from immich_memories.tracking import RunTracker
+
+    params = manual_params(tmp_path)
+    params.config.cache.directory = str(tmp_path / "cache")
+    params.config.cache.database = str(tmp_path / "cache" / "runs.sqlite")
+    params.config.render = RenderWorkerConfig(
+        worker_base_url="http://127.0.0.1", worker_token=WORKER_TOKEN
+    )
+    params.config.ace_step.enabled = True
+    params.config.ace_step.api_url = music_url
+    params.config.ace_step.model_variant = "xl-turbo"  # states the server runs XL: no probe
+    overlaps = music_url != "http://localhost:8000"
+    params.original_audio = False  # the stub film is silent: music is its only sound
+    rendering = threading.Event()
+    music = _SlowMusic(rendering)
+    # WHY: the music model is the boundary; mood, plan, mix and the worker API stay real.
+    monkeypatch.setattr("immich_memories.audio.music_generator.generate_music_for_video", music)
+
+    async def separate(_config, _track, _output_dir, _progress=None):
+        music.stems_during_render.append(rendering.is_set())
+
+    # WHY: the stem separator may be the worker's GPU; the test asks when it is used.
+    monkeypatch.setattr("immich_memories.audio.music_pipeline.separate_track", separate)
+
+    class Renderer:
+        def health(self):
+            return {"ready": True, "accelerated": False}
+
+        def render(self, request, directory, progress):
+            rendering.set()
+            # The film is still being drawn when its music starts.
+            if overlaps:
+                music.started.wait(30)
+            rendering.clear()
+            if fails:
+                raise RuntimeError("the encoder stopped")
+            return stub_artifact(
+                directory,
+                size="720x720",
+                seconds=3.25,
+                clips=(
+                    {
+                        "asset_id": params.clips[0].asset.id,
+                        "duration": 3.25,
+                        "is_photo": False,
+                        # What the worker reads off the asset, as `_segment_clip` writes it.
+                        "date": params.clips[0].asset.local_taken_at.strftime("%Y-%m-%d"),
+                    },
+                ),
+            )
+
+    params.config.cache.cache_path.mkdir(parents=True)
+    tracker = RunTracker("app-music-test", store=open_store(params.config), capture_system=False)
+    with TestClient(worker_app(tmp_path / "worker", Renderer())) as http:
+        # WHY: keep the real authenticated API while replacing the TCP connection boundary.
+        monkeypatch.setattr(remote_render.httpx, "Client", lambda **_kwargs: http)
+        from immich_memories.generate import GenerationError, generate_memory
+
+        if fails:
+            with pytest.raises(GenerationError):
+                generate_memory(params, run_tracker=tracker)
+            return music, None
+        return music, generate_memory(params, run_tracker=tracker)
+
+
+def test_a_remote_films_music_is_made_while_the_worker_renders_it(tmp_path, monkeypatch):
+    from immich_memories.processing.probe_cache import ProbeCache
+
+    music, film = _music_run(tmp_path, monkeypatch, fails=False)
+
+    assert music.heard_render_running == [True]  # one take, made during the render
+    assert music.stems_during_render == [False]  # its stems wait for the worker's GPU
+    assert ProbeCache().get(film).has_audio
+
+
+def test_music_served_from_the_workers_host_is_made_after_the_film(tmp_path, monkeypatch):
+    """The worker and the music server on one machine may share one card: no overlap."""
+    music, film = _music_run(tmp_path, monkeypatch, fails=False, music_url="http://localhost:8000")
+
+    assert music.heard_render_running == [False]  # one take, made once the film was back
+    assert film is not None
+
+
+def test_a_failed_render_leaves_no_music_running(tmp_path, monkeypatch):
+    import threading
+
+    music, _ = _music_run(tmp_path, monkeypatch, fails=True)
+
+    assert music.heard_render_running == [True]
+    assert not [thread for thread in threading.enumerate() if thread.name == "early-music"]

@@ -145,7 +145,7 @@ async def test_generation_releases_selection_buffers_before_render_even_with_act
         assert unused_buffers
         events.append("release")
 
-    def render(*args):
+    def render(*args, **_kwargs):
         assert events == ["release"]
         events.append("render")
         raise GenerationError("stop at render")

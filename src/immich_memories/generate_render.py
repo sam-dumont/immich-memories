@@ -296,10 +296,27 @@ def anonymized_params(params: GenerationParams) -> GenerationParams:
 
 
 @timed("render")
-def render_base(params, output_path, directory, tracker, operational, progress, phase_times):
-    """Choose the configured renderer and keep one progress and run-tracking lifecycle."""
+def render_base(
+    params, output_path, directory, tracker, operational, progress, phase_times, *, early=None
+):
+    """Choose the configured renderer and keep one progress and run-tracking lifecycle.
+
+    ``early`` (`generate_music_early.EarlyMusic`) starts the film's music once the worker has
+    the job; a film that falls back to a local render stops it, so the two never compete.
+    """
     from immich_memories.generate import GenerationError
-    from immich_memories.processing.remote_render import RemoteRenderClient
+    from immich_memories.processing.remote_render import RemoteRenderClient, expected_film
+
+    def submitted(request: dict) -> None:
+        if early is None:
+            return
+        try:
+            film = expected_film(params, request, output_path.parent)
+        except Exception:  # WHY: a head start for the music never costs the film its render
+            logger.warning("Music starts after the render: the expected film could not be read")
+            logger.debug("Expected film unreadable", exc_info=True)
+            return
+        early.begin(*film)
 
     if params.config.render.enabled:
         operational.emit_unperformed_prerequisites(OperationalPhase.SELECTION)
@@ -310,11 +327,18 @@ def render_base(params, output_path, directory, tracker, operational, progress, 
                 span("render.assembly", items=len(params.clips)) as remote,
                 RemoteRenderClient(params.config.render) as worker,
             ):
-                result = worker.render(params, output_path.with_suffix(".mp4"), progress.report)
+                result = worker.render(
+                    params,
+                    output_path.with_suffix(".mp4"),
+                    progress.report,
+                    on_submitted=submitted,
+                )
         except GenerationError:
             if not params.config.render.fallback_to_local:
                 raise
             logger.warning("Render worker failed; rendering the same selected cut locally")
+            if early is not None:
+                early.cancel()
             tracker.complete_phase(items_processed=0, errors=[{"error": "Worker render failed"}])
         else:
             tracker.complete_phase(
