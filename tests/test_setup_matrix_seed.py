@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from setup_matrix_seed import STORE_FILES, seed_cache  # noqa: E402
 
-from immich_memories.cache.judgment_cache import JudgmentCache  # noqa: E402
+from immich_memories.cache.judgment_cache import JudgmentCache, flush_judgments  # noqa: E402
 from immich_memories.db import Store, close_stores, open_store  # noqa: E402
 from immich_memories.db.bootstrap import StoreLocation  # noqa: E402
 from tests.annotation_rows import add_rows, count_rows  # noqa: E402
@@ -55,6 +55,7 @@ def _prepared_bank(directory: Path) -> Path:
         },
     )
     JudgmentCache(store).remember("a-judgment-key", '{"keep": ["M01"]}')
+    flush_judgments()
     close_stores()
     return store_path
 
@@ -83,9 +84,12 @@ def test_a_second_seed_replaces_what_the_last_run_banked(tmp_path: Path) -> None
     destination = tmp_path / "mac-local-gemma4" / "cache"
     seed_cache(source.parent, destination)
     JudgmentCache(_open(destination / STORE_FILE)).remember("answered-during-the-first-run", "{}")
+    # The cache writes behind on a timer; unflushed, the answer lands after the second seed.
+    flush_judgments()
     close_stores()
 
     seed_cache(source.parent, destination)
+    flush_judgments()  # nothing may be left waiting to write into the new file
 
     assert _rows(destination / STORE_FILE, "judgments") == 0
 
