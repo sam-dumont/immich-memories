@@ -103,3 +103,57 @@ def test_close_releases_the_owned_encoder_and_can_reopen(tmp_path):
     assert references[1]() is not None
     prints.close()
     assert references[1]() is None
+
+
+class _PinnedStandIn:
+    """# WHY: the pinned 88 MB export is not in the test environment; what matters is that
+    the heads pass and the print reader agree on the key and the pack."""
+
+    def __init__(self) -> None:
+        from immich_memories.analysis.preparation.scene_prints import PRINT_ENCODER_KEY
+
+        self.key = PRINT_ENCODER_KEY
+        self.images = 0
+
+    def embed(self, batch: np.ndarray) -> np.ndarray:
+        self.images += len(batch)
+        return np.repeat(batch.mean(axis=(2, 3)), 6 * 128, axis=1)
+
+    def embed_with_patches(self, batch: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        return self.embed(batch), np.zeros((len(batch), 256, 384), np.float32)
+
+
+def test_the_heads_pass_banks_the_print_selection_reads_without_encoding_again(tmp_path):
+    from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS, prepare_heads
+    from tests.annotation_rows import annotation_store
+    from tests.test_editorial_preparation_heads import bundle_at
+
+    heads_encoder, print_encoder = _PinnedStandIn(), _PinnedStandIn()
+    encoder_path = tmp_path / "encoder.onnx"
+    encoder_path.write_bytes(b"")
+    bank = tmp_path / "scene-prints.sqlite"
+    prepare_heads(
+        asset_ids=["red", "blue"],
+        store=annotation_store(),
+        bundle_path=bundle_at(
+            tmp_path / "heads.npz", PUBLIC_HEAD_VERSIONS, encoder_key=heads_encoder.key
+        ),
+        encoder_path=encoder_path,
+        head_versions=PUBLIC_HEAD_VERSIONS,
+        preview_for=PREVIEWS.__getitem__,
+        batch_size=8,
+        check_cancelled=lambda: None,
+        progress=lambda *_args: None,
+        scene_prints=bank,
+        open_encoder=lambda _path, **_kwargs: heads_encoder,
+    )
+
+    prints = CachedScenePrints(bank, PREVIEWS.get, open_encoder=lambda: print_encoder)
+    red = prints("red")
+
+    assert print_encoder.images == 0
+    assert heads_encoder.images == 2
+    from immich_memories.triage.preprocess import preprocess_image_bytes
+
+    expected = print_encoder.embed(preprocess_image_bytes(PREVIEWS["red"])[np.newaxis])[0]
+    np.testing.assert_array_equal(red, expected.astype(np.float16).astype(np.float32))

@@ -14,6 +14,7 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Protocol
 
+from immich_memories.analysis.clips.bound_sample import source_metadata_digest
 from immich_memories.analysis.facts.clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
 from immich_memories.analysis.facts.obstruction import HEAD_NAME as OBSTRUCTION_HEAD
 from immich_memories.analysis.facts.obstruction import HEAD_VERSION as OBSTRUCTION_VERSION
@@ -28,12 +29,18 @@ from immich_memories.analysis.preparation.detectors import (
     MARQO_STILL_EQUIVALENT,
 )
 from immich_memories.analysis.preparation.heads import PUBLIC_HEAD_VERSIONS
-from immich_memories.analysis.preparation.remote_facts import RemoteFactsError, offloaded_versions
+from immich_memories.analysis.preparation.obstruction_bank import OBSTRUCTION_FRAME_PRODUCER
+from immich_memories.analysis.preparation.remote_facts import (
+    RemoteFactsError,
+    offloaded_versions,
+    serves_producer,
+)
 from immich_memories.analysis.preparation.remote_frames import prepare_remote_frame_facts
 from immich_memories.api.models import Asset
 from immich_memories.config.models.editorial_preparation import EditorialPreparationConfig
 from immich_memories.config.models.inference import InferenceConfig
 from immich_memories.db import Store
+from immich_memories.store.cut_measurements import banked_motion_residuals
 from immich_memories.store.editorial_preparation import carry_head_answers, heads_missing_for
 
 
@@ -65,9 +72,12 @@ class ModelFactStage(Protocol):
 
     def scoped(self, scope: str) -> ModelFactStage: ...
 
-    def public_heads(self, asset_ids: Sequence[str], head_versions: Mapping[str, str]) -> None: ...
-
-    def obstruction_heads(self, asset_ids: Sequence[str]) -> None: ...
+    def public_heads(
+        self,
+        asset_ids: Sequence[str],
+        head_versions: Mapping[str, str],
+        obstruction_ids: Sequence[str] = (),
+    ) -> None: ...
 
     def detectors(
         self,
@@ -78,13 +88,14 @@ class ModelFactStage(Protocol):
 
     def remote_facts(self, pending: Mapping[str, Mapping[str, str]]) -> bool: ...
 
-    def clip_frames(self, frame_paths: Mapping[str, Sequence[Path]]) -> None: ...
-
-    def video_motion(
-        self, frame_paths: Mapping[str, Sequence[Path]], videos: Mapping[str, Asset]
+    def clip_frames(
+        self,
+        frame_paths: Mapping[str, Sequence[Path]],
+        obstruction: Mapping[str, Sequence[Path]] | None = None,
+        videos: Mapping[str, Asset] | None = None,
     ) -> None: ...
 
-    def obstruction_frames(
+    def video_motion(
         self, frame_paths: Mapping[str, Sequence[Path]], videos: Mapping[str, Asset]
     ) -> None: ...
 
@@ -207,25 +218,44 @@ def acquire_model_facts(
     measured residual; they share the exposure head's sampled frames, so a clip is read off
     Immich once for all three."""
     motion = motion or {}
+    readable = [asset_id for asset_id in ids if asset_id in available]
+    # #2022: its own bundle, not the required public heads', so it is asked for by name
+    # rather than through `before` (which only ever scans the configured heads). It reads
+    # the same encoder call as the public heads: one pass per picture owing either, here
+    # or on the inference service.
+    remote_obstruction = _obstruction_offloaded(stage)
     head_versions, offloaded_exposure = _after_remote(
-        stage, before, ids, available, head_versions, frames.video_ids
+        stage,
+        before,
+        ids,
+        available,
+        head_versions,
+        frames.video_ids,
+        _owing_obstruction(stage, readable) if remote_obstruction else (),
     )
     requested_public = {
         head: version for head, version in head_versions.items() if head in PUBLIC_HEAD_VERSIONS
     }
     public_ids = _public_head_ids(before, ids, available, requested_public)
-    if public_ids:
-        stage.public_heads(public_ids, requested_public)
-    # #2022: its own path, not the required public heads' bundle, so it is asked for by
-    # name rather than through `before` (which only ever scans the configured heads).
-    obstruction_ids = heads_missing_for(
-        stage.store, [a for a in ids if a in available], OBSTRUCTION_HEAD, OBSTRUCTION_VERSION
+    obstruction_ids = (
+        ()
+        if remote_obstruction and not stage.inference_config.fallback_to_local
+        else _owing_obstruction(stage, readable)
     )
-    if obstruction_ids:
-        stage.obstruction_heads(obstruction_ids)
+    if public_ids or obstruction_ids:
+        stage.public_heads(public_ids, requested_public, obstruction_ids)
     detector_pending = _detector_pending(pending, head_versions, offloaded_exposure)
     _acquire_frame_batches(stage, detector_pending, preview_paths, frames, clips, motion)
     _record_unpackaged_heads(pending, head_versions, stage.failures)
+
+
+def _obstruction_offloaded(stage: ModelFactStage) -> bool:
+    config = stage.inference_config
+    return config.enabled and serves_producer(config, OBSTRUCTION_HEAD)
+
+
+def _owing_obstruction(stage: ModelFactStage, asset_ids: Sequence[str]) -> Sequence[str]:
+    return heads_missing_for(stage.store, asset_ids, OBSTRUCTION_HEAD, OBSTRUCTION_VERSION)
 
 
 def _acquire_frame_batches(stage, pending, previews, frames, clips, motion):
@@ -254,28 +284,36 @@ def _acquire_frame_batches(stage, pending, previews, frames, clips, motion):
             total=total,
         ) as sampled:
             owed = {clip: sampled[clip] for clip in clips if clip in sampled}
-            _sampled_models(stage, batch_pending, previews, sampled, owed)
-            if measurable := {video: sampled[video] for video in motion if video in sampled}:
+            measurable = {video: sampled[video] for video in motion if video in sampled}
+            _sampled_models(stage, batch_pending, previews, sampled, owed, measurable, motion)
+            if measurable:
                 stage.video_motion(measurable, motion)
-                stage.obstruction_frames(measurable, motion)
 
 
-def _sampled_models(stage, pending, previews, frames, clips) -> None:
+def _sampled_models(stage, pending, previews, frames, clips, obstruction=None, videos=None):
+    """``clips`` owe their frame reading and ``obstruction`` their obstructed seconds; both
+    read the same sampled frames, off one encoder call per clip."""
+    obstruction = obstruction or {}
     if stage.inference_config.enabled:
-        pending, clips = _offload_sampled(stage, pending, previews, frames, clips)
+        pending, clips, obstruction = _offload_sampled(
+            stage, pending, previews, frames, clips, obstruction, videos or {}
+        )
     if local := {head: ids for head, ids in pending.items() if ids}:
         stage.detectors(local, previews, frames)
-    if clips:
-        stage.clip_frames(clips)
+    if clips or obstruction:
+        stage.clip_frames(clips, obstruction, videos)
 
 
-def _offload_sampled(stage, pending, previews, frames, clips):
+def _offload_sampled(stage, pending, previews, frames, clips, obstruction, videos):
     config = stage.inference_config
     exposure = pending.get(MARQO_HEAD, ()) if MARQO_HEAD in config.producers else ()
     remote_clips = clips if "heads" in config.producers else {}
-    if not exposure and not remote_clips:
-        return pending, clips
-    _read_remote_samples(stage, exposure, remote_clips, previews, frames)
+    remote_obstruction = (
+        {video: videos[video] for video in obstruction} if _obstruction_offloaded(stage) else {}
+    )
+    if not exposure and not remote_clips and not remote_obstruction:
+        return pending, clips, obstruction
+    _read_remote_samples(stage, exposure, remote_clips, remote_obstruction, previews, frames)
     pending = dict(pending)
     if exposure:
         pending[MARQO_HEAD] = (
@@ -292,16 +330,28 @@ def _offload_sampled(stage, pending, previews, frames, clips):
             else ()
         )
         clips = {asset_id: clips[asset_id] for asset_id in missing}
-    return pending, clips
+    if remote_obstruction:
+        obstruction = _unmeasured_obstruction(stage, obstruction, remote_obstruction)
+    return pending, clips, obstruction
 
 
-def _read_remote_samples(stage, exposure, clips, previews, frames) -> None:
+def _unmeasured_obstruction(stage, obstruction, videos):
+    """The videos the service left without obstructed seconds, for the local reader."""
+    if not stage.inference_config.fallback_to_local:
+        return {}
+    digests = {video: source_metadata_digest(videos[video]) for video in obstruction}
+    measured = banked_motion_residuals(stage.store, digests, OBSTRUCTION_FRAME_PRODUCER)
+    return {video: paths for video, paths in obstruction.items() if video not in measured}
+
+
+def _read_remote_samples(stage, exposure, clips, obstruction, previews, frames) -> None:
     config = stage.inference_config
     try:
-        with stage.timed("remote_frames", len(set(exposure) | set(clips))):
+        with stage.timed("remote_frames", len({*exposure, *clips, *obstruction})):
             charged = prepare_remote_frame_facts(
                 exposure=exposure,
                 clips=clips,
+                obstruction=obstruction,
                 frame_paths=frames,
                 preview_paths=previews,
                 store=stage.store,
@@ -326,8 +376,10 @@ def _after_remote(
     available: set[str],
     head_versions: Mapping[str, str],
     videos: frozenset[str],
+    obstruction: Sequence[str] = (),
 ) -> tuple[Mapping[str, str], frozenset[str]]:
-    """Offload what the service answers for.
+    """Offload what the service answers for, ``obstruction`` naming the pictures it is
+    asked the obstruction head of in the same request as their other heads.
 
     Returns the head versions the local producers still owe, and the sources whose
     exposure head the service did answer for -- a head that stays local for the videos
@@ -337,6 +389,8 @@ def _after_remote(
         return head_versions, frozenset()
     offloaded = offloaded_versions(head_versions, stage.inference_config.producers)
     pending, withheld = _offload_requests(before, ids, available, offloaded, videos)
+    for asset_id in obstruction:
+        pending.setdefault(asset_id, {})[OBSTRUCTION_HEAD] = OBSTRUCTION_VERSION
     served = stage.remote_facts(pending)
     if not served and stage.inference_config.fallback_to_local:
         return head_versions, frozenset()

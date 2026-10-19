@@ -7,7 +7,10 @@ so a fact computed in this service cannot drift from one computed in process.
 
 from __future__ import annotations
 
+import hashlib
 import math
+import threading
+from collections import OrderedDict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from io import BytesIO
@@ -18,16 +21,20 @@ from typing import Protocol
 import numpy as np
 from PIL import Image
 
+from immich_memories.analysis.facts.obstruction import HEAD_NAME as OBSTRUCTION_HEAD
 from immich_memories.analysis.preparation import detectors
+from immich_memories.analysis.preparation.obstruction_bank import obstruction_facts
 from immich_memories.pinned_models import ENCODER, MARQO_ONNX
 from immich_memories.triage.encoder import DinoEncoder
 from immich_memories.triage.engine import TriageEngine
-from immich_memories.triage.heads import HeadBundle, HeadFact
+from immich_memories.triage.heads import HeadBundle, HeadFact, PatchHeadBundle
+from immich_memories.triage.preprocess import preprocess_image_bytes
 from immich_memories_inference.seeding import seed
 
 HEADS = "heads"
 NSFW_MARQO = "nsfw_marqo"
 DOC_DOCLING = "doc_docling"
+OBSTRUCTION = OBSTRUCTION_HEAD
 
 # One request is one picture, and the engine keys its work by asset id.
 _REQUEST_ASSET = "request"
@@ -86,6 +93,63 @@ class _CaptureStore:
         return {}
 
 
+class SharedEncoding:
+    """One encoder call per picture, whichever producers read it.
+
+    A client asks the heads and the obstruction head about the same picture in one
+    request, and the service decides them one after the other. The second finds the
+    tokens the first paid for here instead of running the encoder again. Keyed by the
+    pixels themselves, so two pictures never share an answer; bounded, so a busy
+    service holds a few pictures' tokens and no more.
+    """
+
+    def __init__(self, encoder: DinoEncoder, size: int = 8) -> None:
+        self._encoder = encoder
+        self._size = size
+        self._held: OrderedDict[str, tuple[np.ndarray, np.ndarray]] = OrderedDict()
+        self._lock = threading.Lock()
+        self.encoded = 0
+
+    @property
+    def key(self) -> str:
+        return self._encoder.key
+
+    @property
+    def session(self) -> object:
+        return self._encoder.session
+
+    def embed(self, batch: np.ndarray) -> np.ndarray:
+        return self.embed_with_patches(batch)[0]
+
+    def embed_with_patches(self, batch: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        pixels = np.ascontiguousarray(batch, dtype=np.float32)
+        digest = hashlib.sha256(pixels.tobytes()).hexdigest()
+        with self._lock:
+            if digest in self._held:
+                self._held.move_to_end(digest)
+                return self._held[digest]
+        answer = self._encoder.embed_with_patches(pixels)
+        with self._lock:
+            self.encoded += len(pixels)
+            self._held[digest] = answer
+            while len(self._held) > self._size:
+                self._held.popitem(last=False)
+        return answer
+
+
+_SHARED: dict[int, SharedEncoding] = {}
+_SHARED_LOCK = threading.Lock()
+
+
+def shared_encoding(encoder: DinoEncoder) -> SharedEncoding:
+    """The one memo every producer reading this encoder shares."""
+    with _SHARED_LOCK:
+        held = _SHARED.get(id(encoder))
+        if held is None or held._encoder is not encoder:
+            held = _SHARED[id(encoder)] = SharedEncoding(encoder)
+        return held
+
+
 class HeadsProducer:
     """Encoder + head bundle, decided by the engine preparation runs."""
 
@@ -97,7 +161,7 @@ class HeadsProducer:
         # decide builds its own against a fresh capture store, so two requests
         # can never see each other's facts.
         TriageEngine(encoder=encoder, bundle=bundle, store=_CaptureStore())
-        self._encoder = encoder
+        self._encoder = shared_encoding(encoder)
         self._bundle = bundle
 
     @property
@@ -127,6 +191,47 @@ class HeadsProducer:
                     confidence=fact.confidence,
                 )
                 for fact in store.facts
+            ),
+        )
+
+
+class ObstructionProducer:
+    """The finger-over-the-lens head, read off the tokens the heads' encoder call holds."""
+
+    name = OBSTRUCTION
+
+    def __init__(self, encoder: DinoEncoder, bundle: PatchHeadBundle) -> None:
+        if bundle.encoder_key != encoder.key:
+            raise ValueError("obstruction head bundle was trained on another encoder")
+        self._encoder = shared_encoding(encoder)
+        self._bundle = bundle
+
+    @property
+    def encoder_key(self) -> str:
+        return self._encoder.key
+
+    @property
+    def versions(self) -> Mapping[str, str]:
+        return {self._bundle.name: self._bundle.version}
+
+    @property
+    def session_providers(self) -> tuple[str, ...]:
+        return running_providers(self._encoder.session)
+
+    def decide(self, image: bytes) -> ProducerFacts:
+        pixels = preprocess_image_bytes(image)[np.newaxis]
+        _packs, patches = self._encoder.embed_with_patches(pixels)
+        fact = obstruction_facts(self._bundle, pixels, patches)[0]
+        return ProducerFacts(
+            producer=self.name,
+            encoder_key=self._encoder.key,
+            facts=(
+                Fact(
+                    head=fact.head,
+                    version=fact.version,
+                    label=fact.label,
+                    confidence=fact.confidence,
+                ),
             ),
         )
 
@@ -208,6 +313,22 @@ def heads_loader(
             )
         return HeadsProducer(
             DinoEncoder.open(encoder_path, provider=provider), HeadBundle.load(bundle_path)
+        )
+
+    return load
+
+
+def obstruction_loader(
+    encoder_path: Path, bundle_path: Path, *, provider: str, allow_downloads: bool = False
+) -> Callable[[], Producer]:
+    def load() -> Producer:
+        seed(ENCODER, encoder_path, allow_downloads=allow_downloads)
+        if not encoder_path.is_file():
+            raise FileNotFoundError(
+                f"the pinned DINOv2 ONNX export is not at {encoder_path}; {ENCODER_HINT}"
+            )
+        return ObstructionProducer(
+            DinoEncoder.open(encoder_path, provider=provider), PatchHeadBundle.load(bundle_path)
         )
 
     return load

@@ -139,3 +139,88 @@ def test_streamed_fingerprint_keeps_the_existing_persistent_key(tmp_path):
         assert connection.execute(
             "SELECT source_key, thumbnail_hash FROM thumbnail_hashes"
         ).fetchall() == [(legacy_key, expected)]
+
+
+def _distinct_previews(count):
+    previews = {}
+    for index in range(count):
+        pixels = np.full((64, 64, 3), index * 40 % 256, dtype=np.uint8)
+        pixels[: 8 * (index + 1)] = 255 - index * 40 % 256
+        ok, encoded = cv2.imencode(".jpg", pixels)
+        assert ok
+        previews[f"asset-{index}"] = encoded.tobytes()
+    return previews
+
+
+@pytest.fixture
+def statements(monkeypatch):
+    """Every SQL statement the hasher's connections run, in order."""
+    from immich_memories.cache import sqlite_conn
+
+    seen: list[str] = []
+    real = sqlite_conn.connect_sqlite
+
+    def tracing(*args, **kwargs):
+        connection = real(*args, **kwargs)
+        connection.set_trace_callback(seen.append)
+        return connection
+
+    # WHY: counts what reaches SQLite; the connections stay real.
+    monkeypatch.setattr(sqlite_conn, "connect_sqlite", tracing)
+    return seen
+
+
+def _count(statements, verb):
+    return sum(statement.lstrip().upper().startswith(verb) for statement in statements)
+
+
+def test_the_refinement_pass_hashes_nothing_the_draft_already_hashed(tmp_path, statements):
+    """A film builds its material twice, draft then refinement, each with its own hasher."""
+    previews = _distinct_previews(5)
+    path = tmp_path / "hashes.sqlite"
+    draft = CachedThumbnailHasher(path, previews.get)
+    drafted = {asset_id: draft(asset_id) for asset_id in previews}
+    statements.clear()
+
+    refinement = CachedThumbnailHasher(path, previews.get)
+    try:
+        refined = {asset_id: refinement(asset_id) for asset_id in previews}
+    finally:
+        refinement.close()
+        draft.close()
+
+    assert refined == drafted
+    assert len(set(refined.values())) == 5
+    assert refinement.metrics()["hashes_computed"] == 0
+    assert refinement.metrics()["cache_hits"] == 5
+    assert _count(statements, "SELECT") == 0
+
+
+def test_a_preview_that_changed_is_hashed_again_not_answered_from_memory(tmp_path):
+    previews = {"a": preview()}
+    path = tmp_path / "hashes.sqlite"
+    draft = CachedThumbnailHasher(path, previews.get)
+    before = draft("a")
+    previews["a"] = preview(reverse=True)
+    refinement = CachedThumbnailHasher(path, previews.get)
+    try:
+        after = refinement("a")
+    finally:
+        refinement.close()
+        draft.close()
+
+    assert after == compute_thumbnail_hash(previews["a"]) != before
+    assert refinement.metrics()["hashes_computed"] == 1
+
+
+def test_a_cold_pool_is_banked_in_one_commit_and_survives_a_restart(tmp_path, statements):
+    previews = _distinct_previews(5)
+    path = tmp_path / "hashes.sqlite"
+    hasher = CachedThumbnailHasher(path, previews.get)
+    hashed = {asset_id: hasher(asset_id) for asset_id in previews}
+    hasher.close()
+
+    assert _count(statements, "COMMIT") == 1
+    with sqlite3.connect(path) as connection:
+        banked = connection.execute("SELECT thumbnail_hash FROM thumbnail_hashes").fetchall()
+    assert sorted(value for (value,) in banked) == sorted(hashed.values())

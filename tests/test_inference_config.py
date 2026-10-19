@@ -12,7 +12,7 @@ def test_inference_defaults_to_the_existing_local_path() -> None:
     inference = Config().inference
     assert inference.facts_base_url == ""
     assert inference.enabled is False
-    assert inference.producers == ["heads", "nsfw_marqo", "doc_docling"]
+    assert inference.producers == ["heads", "nsfw_marqo", "doc_docling", "obstruction"]
     assert inference.fallback_to_local is True
     assert inference.facts_concurrency == 8
 

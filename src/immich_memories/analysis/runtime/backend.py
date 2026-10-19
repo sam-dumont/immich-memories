@@ -31,7 +31,11 @@ from immich_memories.analysis.polish.layer import (
 )
 from immich_memories.analysis.polish.short import ShortReads
 from immich_memories.analysis.preparation.demanded_previews import DemandedPreviewReader
-from immich_memories.analysis.preparation.scene_prints import CachedScenePrints, pinned_encoder
+from immich_memories.analysis.preparation.scene_prints import (
+    SCENE_PRINTS_FILE,
+    CachedScenePrints,
+    pinned_encoder,
+)
 from immich_memories.analysis.preparation.thumbnail_hashes import CachedThumbnailHasher
 from immich_memories.analysis.reading.case import Case
 from immich_memories.analysis.reading.demand import DemandEpisodeReadings
@@ -304,7 +308,7 @@ class ProductionPostCardBackend:
         )
         resources.callback(thumbnail_hasher.close)
         scene_prints = CachedScenePrints(
-            source.bank_dir.parent / "scene-prints.sqlite",
+            source.bank_dir.parent / SCENE_PRINTS_FILE,
             read_preview,
             open_encoder=pinned_encoder(config.triage.encoder_path, config.triage.provider),
         )

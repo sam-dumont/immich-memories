@@ -1,23 +1,27 @@
-"""Banking the obstruction head is add-only: a preview it cannot read keeps its old line."""
+"""Banking the obstruction head is add-only: a preview it cannot read keeps its old line.
+
+It reads the tokens of the encoder call the public heads already pay for, never its own.
+"""
 
 from __future__ import annotations
 
 import numpy as np
-import pytest
 from PIL import Image
 
-from immich_memories.analysis.facts.obstruction import CLEAR_LABEL, OBSTRUCTED_LABEL
-from immich_memories.analysis.facts.subject_framing import FaceBox
-from immich_memories.analysis.preparation.obstruction_bank import (
-    OBSTRUCTION_FRAME_PRODUCER,
-    prepare_obstruction_frames,
-    prepare_obstruction_heads,
+from immich_memories.analysis.facts.obstruction import OBSTRUCTED_LABEL
+from immich_memories.analysis.preparation.heads import (
+    PUBLIC_HEAD_VERSIONS,
+    prepare_clip_frames,
+    prepare_heads,
 )
+from immich_memories.analysis.preparation.obstruction_bank import OBSTRUCTION_FRAME_PRODUCER
 from immich_memories.store.cut_measurements import banked_motion_residuals
 from immich_memories.triage.heads import PatchHeadBundle
 from tests.annotation_rows import annotation_store, read_rows
+from tests.test_editorial_preparation_heads import bundle_at
 
 TOKEN_DIM = 4
+PACK_DIM = 6 * 384
 
 
 class FakeEncoder:
@@ -25,9 +29,13 @@ class FakeEncoder:
     # tokens it would produce are replaced here, everything that reads them is real.
     key = "a" * 64
 
+    def __init__(self) -> None:
+        self.calls: list[int] = []
+
     def embed_with_patches(self, batch: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         n = len(batch)
-        return np.zeros((n, 6 * TOKEN_DIM), np.float32), np.zeros((n, 256, TOKEN_DIM), np.float32)
+        self.calls.append(n)
+        return np.zeros((n, PACK_DIM), np.float32), np.zeros((n, 256, TOKEN_DIM), np.float32)
 
 
 def _bundle(tmp_path, *, flagged: bool):
@@ -51,19 +59,26 @@ def _jpeg(path):
     return path
 
 
-def _prepare(tmp_path, bundle_path, *, faces_for=None):
+def _prepare(tmp_path, bundle_path, *, public=(), obstruction=("one",), encoder=None, **kwargs):
     encoder_path = tmp_path / "encoder.onnx"
     encoder_path.write_bytes(b"")
-    return prepare_obstruction_heads(
-        asset_ids=["one"],
+    encoder = encoder or FakeEncoder()
+    return prepare_heads(
+        asset_ids=list(public),
         store=annotation_store(),
-        bundle_path=bundle_path,
+        bundle_path=bundle_at(tmp_path / "heads.npz", PUBLIC_HEAD_VERSIONS),
         encoder_path=encoder_path,
-        preview_for=lambda _asset_id: _jpeg(tmp_path / "preview.jpg").read_bytes(),
-        faces_for=faces_for,
+        head_versions=PUBLIC_HEAD_VERSIONS,
+        preview_for=kwargs.pop(
+            "preview_for", lambda _asset_id: _jpeg(tmp_path / "preview.jpg").read_bytes()
+        ),
+        batch_size=kwargs.pop("batch_size", 8),
         check_cancelled=lambda: None,
         progress=lambda *_args: None,
-        open_encoder=lambda _path, **_kwargs: FakeEncoder(),
+        obstruction_ids=list(obstruction),
+        obstruction_bundle_path=bundle_path,
+        open_encoder=lambda _path, **_kwargs: encoder,
+        **kwargs,
     )
 
 
@@ -78,26 +93,18 @@ def test_a_confidently_flagged_patch_map_banks_obstructed(tmp_path):
 
 
 def test_a_preview_that_cannot_be_read_is_reported_and_leaves_no_fact(tmp_path):
-    bundle_path = _bundle(tmp_path, flagged=True)
-    encoder_path = tmp_path / "encoder.onnx"
-    encoder_path.write_bytes(b"")
-
-    failures = prepare_obstruction_heads(
-        asset_ids=["unreadable"],
-        store=annotation_store(),
-        bundle_path=bundle_path,
-        encoder_path=encoder_path,
+    failures = _prepare(
+        tmp_path,
+        _bundle(tmp_path, flagged=True),
+        obstruction=["unreadable"],
         preview_for=lambda _asset_id: (_ for _ in ()).throw(OSError("gone")),
-        check_cancelled=lambda: None,
-        progress=lambda *_args: None,
-        open_encoder=lambda _path, **_kwargs: FakeEncoder(),
     )
 
-    assert "unreadable" in failures
+    assert "obstruction:unreadable" in failures
     assert read_rows(annotation_store(), "head_facts") == []
 
 
-def test_a_bundle_trained_on_another_encoder_is_refused(tmp_path):
+def test_a_bundle_trained_on_another_encoder_is_named_and_spares_the_public_heads(tmp_path):
     bundle_path = tmp_path / "obstruction.npz"
     PatchHeadBundle(
         encoder_key="b" * 64,
@@ -109,22 +116,43 @@ def test_a_bundle_trained_on_another_encoder_is_refused(tmp_path):
         b=0.0,
     ).save(bundle_path)
 
-    with pytest.raises(ValueError, match="another encoder"):
-        _prepare(tmp_path, bundle_path)
+    failures = _prepare(tmp_path, bundle_path, public=["one"])
+
+    assert "another encoder" in failures["obstruction"]
+    heads = {row["head"] for row in read_rows(annotation_store(), "head_facts")}
+    assert heads == set(PUBLIC_HEAD_VERSIONS)
 
 
-def test_a_face_veto_suppresses_the_flag(tmp_path):
-    bundle_path = _bundle(tmp_path, flagged=True)  # a wide-open edge blob at every patch
+def test_every_head_reads_one_encoder_call_per_picture(tmp_path):
+    encoder = FakeEncoder()
+    pictures = [f"p{index}" for index in range(5)]
 
     failures = _prepare(
         tmp_path,
-        bundle_path,
-        faces_for=lambda _asset_id: (FaceBox(x1=0.0, y1=0.0, x2=1.0, y2=1.0, named=False),),
+        _bundle(tmp_path, flagged=False),
+        public=pictures[:4],
+        obstruction=pictures[1:],
+        encoder=encoder,
+        batch_size=2,
     )
 
     assert failures == {}
+    # Five pictures owe one head or both: five encoded, in batches of two, once each.
+    assert encoder.calls == [2, 2, 1]
     rows = read_rows(annotation_store(), "head_facts")
-    assert rows[0]["label"] == CLEAR_LABEL
+    obstruction = sorted(r["asset_id"] for r in rows if r["head"] == "obstruction")
+    public = sorted({r["asset_id"] for r in rows if r["head"] == "activity"})
+    assert obstruction == pictures[1:] and public == pictures[:4]
+
+
+def test_a_banked_picture_is_not_encoded_again(tmp_path):
+    bundle_path = _bundle(tmp_path, flagged=False)
+    _prepare(tmp_path, bundle_path, public=["one"], obstruction=["one"])
+    encoder = FakeEncoder()
+
+    _prepare(tmp_path, bundle_path, public=["one"], obstruction=["one"], encoder=encoder)
+
+    assert encoder.calls == []
 
 
 def _video(asset_id: str, *, duration: float = 8.0):
@@ -163,11 +191,13 @@ def test_a_videos_flagged_frames_bank_as_seconds_on_its_own_producer(tmp_path):
         assert progress == [("obstruction_frames", 0, 1)]
         return FakeEncoder()
 
-    failures = prepare_obstruction_frames(
+    failures = prepare_clip_frames(
         store=annotation_store(),
         videos={"vid": _video("vid", duration=8.0)},
-        frame_paths={"vid": frames},
-        bundle_path=bundle_path,
+        frame_paths={},
+        obstruction={"vid": frames},
+        bundle_path=tmp_path / "unused-heads.npz",
+        obstruction_bundle_path=bundle_path,
         encoder_path=encoder_path,
         check_cancelled=lambda: None,
         open_encoder=open_encoder,
@@ -193,11 +223,13 @@ def test_a_video_with_no_flagged_frames_banks_an_empty_list(tmp_path):
     encoder_path.write_bytes(b"")
     frames = [_jpeg(tmp_path / f"clear-{i}.jpg") for i in range(2)]
 
-    failures = prepare_obstruction_frames(
+    failures = prepare_clip_frames(
         store=annotation_store(),
         videos={"vid": _video("vid")},
-        frame_paths={"vid": frames},
-        bundle_path=bundle_path,
+        frame_paths={},
+        obstruction={"vid": frames},
+        bundle_path=tmp_path / "unused-heads.npz",
+        obstruction_bundle_path=bundle_path,
         encoder_path=encoder_path,
         check_cancelled=lambda: None,
         open_encoder=lambda _path, **_kwargs: FakeEncoder(),
@@ -218,14 +250,16 @@ def test_an_unreadable_frame_is_reported_and_leaves_no_fact(tmp_path):
     encoder_path = tmp_path / "encoder.onnx"
     encoder_path.write_bytes(b"")
 
-    failures = prepare_obstruction_frames(
+    failures = prepare_clip_frames(
         store=annotation_store(),
         videos={"vid": _video("vid")},
-        frame_paths={"vid": [tmp_path / "absent.jpg"]},
-        bundle_path=bundle_path,
+        frame_paths={},
+        obstruction={"vid": [tmp_path / "absent.jpg"]},
+        bundle_path=tmp_path / "unused-heads.npz",
+        obstruction_bundle_path=bundle_path,
         encoder_path=encoder_path,
         check_cancelled=lambda: None,
         open_encoder=lambda _path, **_kwargs: FakeEncoder(),
     )
 
-    assert "vid" in failures
+    assert "obstruction_frames:vid" in failures

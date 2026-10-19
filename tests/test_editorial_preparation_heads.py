@@ -12,9 +12,9 @@ from tests.annotation_rows import annotation_store
 PACK_DIM = 6 * 384
 
 
-def bundle_at(path, versions):
+def bundle_at(path, versions, *, encoder_key="a" * 64):
     HeadBundle(
-        encoder_key="a" * 64,
+        encoder_key=encoder_key,
         pca=PcaWeights(
             mean=np.zeros(PACK_DIM, dtype=np.float32),
             components=np.zeros((4, PACK_DIM), dtype=np.float32),

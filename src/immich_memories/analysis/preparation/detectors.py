@@ -14,18 +14,15 @@ import hashlib
 import json
 import logging
 import os
-import signal
-import subprocess
+import select
 import sys
 import tempfile
-import time
 from collections.abc import Callable, Mapping, Sequence
-from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any
 
 import numpy as np
 from PIL import Image
@@ -118,9 +115,13 @@ class Marqo:
     encoder_key = MARQO_ONNX_ID
     classes = MARQO_CLASSES
 
-    def __init__(self, *, model_path: Path, provider: str = "auto") -> None:
+    def __init__(
+        self, *, model_path: Path, provider: str = "auto", threads: int | None = None
+    ) -> None:
         _refuse_unpinned_marqo(model_path)
-        self.session, self.input_name = _open_session(self.head, model_path, provider=provider)
+        self.session, self.input_name = _open_session(
+            self.head, model_path, provider=provider, threads=threads
+        )
 
     def batch(self, images: list[Image.Image]) -> np.ndarray:
         return _softmax(self.session.run(None, {self.input_name: marqo_pixels(images)})[0])
@@ -133,13 +134,19 @@ class Docling:
     classes = DOCLING_LABELS
 
     def __init__(
-        self, *, allow_downloads: bool, cache_dir: str | None, provider: str = "auto"
+        self,
+        *,
+        allow_downloads: bool,
+        cache_dir: str | None,
+        provider: str = "auto",
+        threads: int | None = None,
     ) -> None:
         self.session, self.input_name = _open_session(
             self.head,
             _docling_snapshot(allow_downloads=allow_downloads, cache_dir=cache_dir),
             provider=provider,
             disable_layout_optimizer=True,
+            threads=threads,
         )
 
     def batch(self, images: list[Image.Image]) -> np.ndarray:
@@ -171,14 +178,31 @@ def provider_chain(choice: str, available: Sequence[str]) -> tuple[str, ...]:
     return (accelerator, CPU_PROVIDER)
 
 
+# Stated again rather than imported from onnx_session, for the same reason as the
+# provider ladder: the worker's interpreter need not have the application installed.
+_SLEEPING_THREADS = {
+    "session.intra_op.allow_spinning": "0",
+    "session.inter_op.allow_spinning": "0",
+}
+
+
 def _open_session(
-    head: str, model_path: Path, *, provider: str, disable_layout_optimizer: bool = False
+    head: str,
+    model_path: Path,
+    *,
+    provider: str,
+    disable_layout_optimizer: bool = False,
+    threads: int | None = None,
 ) -> tuple[Any, str]:
     import onnxruntime as ort
 
     wanted = provider_chain(provider, ort.get_available_providers())
     options = ort.SessionOptions()
-    options.intra_op_num_threads = 6
+    # The worker is handed the parent's count (`onnx_session.inference_threads`); an
+    # in-process caller with none takes the same rule over this host's cores.
+    options.intra_op_num_threads = threads or max(1, min(8, (os.cpu_count() or 2) - 1))
+    for key, value in _SLEEPING_THREADS.items():
+        options.add_session_config_entry(key, value)
     if disable_layout_optimizer:
         # Docling collapses to near-constant table predictions with the NCHWc
         # layout fusion on J4125. Extended matches the unfused graph on x86/arm64.
@@ -429,9 +453,18 @@ def _decided_rows(detector: Marqo | Docling, keep: Sequence[str], probabilities)
 def _open_detector(head: str, job: dict) -> Marqo | Docling:
     # Resolved through the module rather than a table built at import, so an
     # installed-dependency stub can replace either producer.
+    threads = job.get("threads")
     if head == MARQO_HEAD:
-        return Marqo(model_path=Path(job["marqo_onnx"]).expanduser())
-    return Docling(allow_downloads=job["allow_downloads"], cache_dir=job["cache_dir"])
+        return Marqo(model_path=Path(job["marqo_onnx"]).expanduser(), threads=threads)
+    return Docling(
+        allow_downloads=job["allow_downloads"], cache_dir=job["cache_dir"], threads=threads
+    )
+
+
+def _detector_key(head: str, job: dict) -> tuple:
+    """What a loaded producer depends on, so a later job may reuse it."""
+    model = job["marqo_onnx"] if head == MARQO_HEAD else job["cache_dir"]
+    return head, model, job["allow_downloads"], job.get("threads")
 
 
 def _bank(facts_path: str, progress: _WorkerProgress, rows: Sequence[Any]) -> None:
@@ -484,19 +517,24 @@ def _failure_text(head: str, exc: Exception) -> str:
     )
 
 
-def _worker(job: dict) -> dict[str, str]:
+def _worker(job: dict, opened: dict[tuple, Marqo | Docling] | None = None) -> dict[str, str]:
+    """Decide one job; ``opened`` keeps the producers loaded for the worker's next job."""
     failures: dict[str, str] = {}
     progress = _WorkerProgress(job.get("progress_path"), sum(map(len, job["pending"].values())))
+    opened = {} if opened is None else opened
     # Every requested producer is loaded before the first picture, and a
     # refusal is published the moment it happens. A missing model used to be
     # discovered only when the whole worker had finished, which on a slow box
     # meant half an hour of the other producer's work before anything said so.
     loaded: dict[str, Marqo | Docling] = {}
     for head in job["pending"]:
+        key = _detector_key(head, job)
         try:
-            loaded[head] = _open_detector(head, job)
+            loaded[head] = opened[key] if key in opened else _open_detector(head, job)
         except Exception as exc:
             progress.refuse(head, _failure_text(head, exc))
+        else:
+            opened[key] = loaded[head]
     failures.update(progress.refusals)
     for head, asset_ids in job["pending"].items():
         if head not in loaded:
@@ -526,10 +564,17 @@ def prepare_detectors(
 
     A source with frames is decided on all of them at once and keeps the strongest
     answer, which only the exposure head asks for. Everything else reads one preview.
+    The worker outlives the call: the next batch is handed to the same interpreter, with
+    ONNX Runtime imported and the models loaded, instead of starting all of that again.
     """
     if not pending:
         return {}
     check_cancelled()
+    from immich_memories.analysis.preparation import detector_workers
+    from immich_memories.onnx_session import inference_threads
+
+    threads = inference_threads()
+    interpreter = str(Path(python).expanduser()) if python else sys.executable
     with tempfile.TemporaryDirectory(prefix="immich-editorial-detectors-") as directory:
         job_path = Path(directory) / "job.json"
         result_path = Path(directory) / "result.json"
@@ -551,36 +596,24 @@ def prepare_detectors(
                     "allow_downloads": allow_downloads,
                     "batch_size": batch_size,
                     "progress_path": str(progress_path),
+                    "threads": threads,
                 }
             )
         )
-        interpreter = str(Path(python).expanduser()) if python else sys.executable
-        with (Path(directory) / "worker.log").open("w+") as log:
-            process = subprocess.Popen(  # noqa: S603 — configured executable, no shell
-                # Run this packaged file directly so a detector-only environment
-                # does not need unrelated application/UI configuration dependencies.
-                [interpreter, str(Path(__file__).resolve()), str(job_path), str(result_path)],
-                env=_worker_env(cache_dir, allow_downloads),
-                stdout=log,
-                stderr=log,
-                start_new_session=True,
-            )
-            watch = _WorkerWatch(progress_path, progress, spool.drain)
-            try:
-                _await_worker(process, watch, check_cancelled)
-                check_cancelled()
-                if process.returncode or not result_path.is_file():
-                    log.seek(0)
-                    raise RuntimeError(
-                        f"detector worker failed; install required detector dependencies in {interpreter}: {log.read()[-3000:]}"
-                    )
-                result = json.loads(result_path.read_text())
-                watch.poll()
-                return result
-            finally:
-                _stop_worker(process)
-                # Whatever the worker decided before it stopped is kept, as a commit was.
-                spool.drain()
+        key = (interpreter, cache_dir, allow_downloads, threads)
+        worker = detector_workers.lease(key)
+        watch = _WorkerWatch(progress_path, progress, spool.drain)
+        try:
+            result = worker.run(job_path, result_path, watch.poll, check_cancelled)
+        except BaseException:
+            worker.stop()
+            raise
+        else:
+            detector_workers.give_back(key, worker)
+            return result
+        finally:
+            # Whatever the worker decided before it stopped is kept, as a commit was.
+            spool.drain()
 
 
 @dataclass
@@ -606,9 +639,10 @@ class _FactSpool:
         self.offset += len(complete)
 
 
-def _worker_env(cache_dir: str, allow_downloads: bool) -> dict[str, str]:
+def worker_env(cache_dir: str, allow_downloads: bool, *, threads: int = 1) -> dict[str, str]:
+    """The environment a detector worker starts in: its thread count and model cache."""
     env = os.environ.copy()
-    env["OMP_NUM_THREADS"] = "6"
+    env["OMP_NUM_THREADS"] = str(threads)
     env["TOKENIZERS_PARALLELISM"] = "false"
     # The worker cannot import immich_memories, which sets this for everything else (#2217).
     env["ORT_DISABLE_TELEMETRY"] = "1"
@@ -643,29 +677,25 @@ class _WorkerWatch:
             self.progress("detectors", self.done, published["total"])
 
 
-def _await_worker(
-    process: subprocess.Popen,
-    watch: _WorkerWatch,
-    check_cancelled: Callable[[], None],
-) -> None:
-    while process.poll() is None:
-        check_cancelled()
-        watch.poll()
-        time.sleep(0.2)
+def _serve(jobs: IO[str], idle_seconds: float) -> None:
+    """Decide one job per input line until the input ends or stays quiet for ``idle_seconds``.
 
-
-def _stop_worker(process: subprocess.Popen) -> None:
-    if process.poll() is not None:
-        return
-    with suppress(ProcessLookupError):
-        os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
-        process.wait()
+    A line names the job file and where its result goes. The result is written whole, under
+    a temporary name first, so the parent never reads half of one. Producers stay loaded
+    between jobs: that, and not starting an interpreter per batch, is the point.
+    """
+    opened: dict[tuple, Marqo | Docling] = {}
+    while select.select([jobs], [], [], idle_seconds)[0]:
+        line = jobs.readline()
+        if not line:
+            return
+        request = json.loads(line)
+        result = _worker(json.loads(Path(request["job"]).read_text()), opened)
+        written = Path(request["result"])
+        temporary = written.with_suffix(".tmp")
+        temporary.write_text(json.dumps(result))
+        temporary.replace(written)
 
 
 if __name__ == "__main__":
-    Path(sys.argv[2]).write_text(json.dumps(_worker(json.loads(Path(sys.argv[1]).read_text()))))
+    _serve(sys.stdin, float(sys.argv[2]))

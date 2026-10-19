@@ -64,7 +64,8 @@ def test_onnx_threads_follow_the_cpu_limit_the_process_has(tmp_path, monkeypatch
     seen = {}
 
     class Options:
-        pass
+        def add_session_config_entry(self, _key, _value):
+            pass
 
     fake_ort = types.SimpleNamespace(
         get_available_providers=lambda: ["CPUExecutionProvider"],

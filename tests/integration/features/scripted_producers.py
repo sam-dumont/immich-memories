@@ -83,10 +83,27 @@ class _Producers:
         }
         HeadFactStore(store).remember_facts(facts, encoder_key=_ENCODER_KEY)
 
-    def heads(self, *, asset_ids, store, head_versions, progress, **_real: Any) -> None:
-        self.note("public_heads", asset_ids)
-        self.bank(store, {asset_id: dict(head_versions) for asset_id in asset_ids})
-        progress("public_heads", len(asset_ids), len(asset_ids))
+    def heads(
+        self, *, asset_ids, store, head_versions, progress, obstruction_ids=(), **_real: Any
+    ) -> dict[str, str]:
+        # One encoder pass answers the public heads and the obstruction head together.
+        if asset_ids:
+            self.note("public_heads", asset_ids)
+            self.bank(store, {asset_id: dict(head_versions) for asset_id in asset_ids})
+        if obstruction_ids:
+            self.note("obstruction", obstruction_ids)
+            facts = {
+                asset_id: [
+                    HeadFact(
+                        head=HEAD_NAME, label=CLEAR_LABEL, confidence=0.1, version=HEAD_VERSION
+                    )
+                ]
+                for asset_id in obstruction_ids
+            }
+            HeadFactStore(store).remember_facts(facts, encoder_key=_ENCODER_KEY)
+        count = len({*asset_ids, *obstruction_ids})
+        progress("public_heads", count, count)
+        return {}
 
     def detectors(self, *, pending, store, **_real: Any) -> dict[str, str]:
         rows: dict[str, dict[str, str]] = {}
@@ -97,8 +114,9 @@ class _Producers:
         self.bank(store, rows)
         return {}
 
-    def clip_frames(self, *, frame_paths, store, **_real: Any) -> dict[str, str]:
-        self.note("clip_frames", list(frame_paths))
+    def clip_frames(self, *, frame_paths, store, obstruction=None, **_real: Any) -> dict[str, str]:
+        if frame_paths:
+            self.note("clip_frames", list(frame_paths))
         facts = {
             asset_id: [fact]
             for asset_id in frame_paths
@@ -109,22 +127,9 @@ class _Producers:
             )
         }
         HeadFactStore(store).remember_facts(facts, encoder_key=_ENCODER_KEY)
-        return {}
-
-    def obstruction(self, *, asset_ids, store, **_real: Any) -> dict[str, str]:
-        self.note("obstruction", asset_ids)
-        facts = {
-            asset_id: [
-                HeadFact(head=HEAD_NAME, label=CLEAR_LABEL, confidence=0.1, version=HEAD_VERSION)
-            ]
-            for asset_id in asset_ids
-        }
-        HeadFactStore(store).remember_facts(facts, encoder_key=_ENCODER_KEY)
-        return {}
-
-    def obstruction_frames(self, *, frame_paths, **_real: Any) -> dict[str, str]:
-        # A video never measured for obstruction plays as it did before the head existed.
-        self.note("obstruction_frames", list(frame_paths))
+        if obstruction:
+            # A video never measured for obstruction plays as it did before the head existed.
+            self.note("obstruction_frames", list(obstruction))
         return {}
 
 
@@ -137,6 +142,4 @@ def scripted_ports(
         "heads": producers.heads,
         "detectors": producers.detectors,
         "clip_frames": producers.clip_frames,
-        "obstruction": producers.obstruction,
-        "obstruction_frames": producers.obstruction_frames,
     }

@@ -150,6 +150,24 @@ def test_nas_prepares_and_selects_without_marqo_or_docling(tmp_path):
     assert report["missing_by_producer"] == {}
 
 
+def test_the_heads_pass_banks_prints_where_the_films_selection_reads_them(tmp_path):
+    handed = []
+
+    def heads(**kwargs):
+        handed.append(kwargs["scene_prints"])
+        return providers.heads(**kwargs)
+
+    providers = successful_ports([])
+    planner, sources, _ = build(
+        tmp_path, providers=replace(providers, heads=heads), fetched=[], product_tier="basic"
+    )
+
+    planner.plan_source(sources, trace=Trace())
+
+    # `runtime.backend` opens the film's scene prints beside its structure banks.
+    assert handed == [tmp_path / "cache" / "structure-banks" / "scene-prints.sqlite"]
+
+
 def test_missing_required_producer_blocks_all_editing_and_records_failed_attempt(
     tmp_path, monkeypatch
 ):
