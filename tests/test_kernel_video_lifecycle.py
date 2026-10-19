@@ -154,6 +154,9 @@ def test_content_backed_hlg_title_preserves_transfer_without_reencoding_it(
     assert command[command.index("-colorspace") + 1] == "bt2020nc"
 
 
+_DEADLOCK_BOUND_SECONDS = 10.0
+
+
 def test_stderr_is_drained_while_frame_writer_is_active(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -171,10 +174,11 @@ def test_stderr_is_drained_while_frame_writer_is_active(
 
     caller = threading.Thread(target=render, daemon=True)
     caller.start()
-    caller.join(timeout=0.5)
+    # WHY: a real deadlock blocks forever, so the bound only has to outlast a loaded runner.
+    caller.join(timeout=_DEADLOCK_BOUND_SECONDS)
     completed_under_pressure = not caller.is_alive()
     pressure_released.set()
-    caller.join(timeout=1.0)
+    caller.join(timeout=_DEADLOCK_BOUND_SECONDS)
 
     assert completed_under_pressure, "title rendering deadlocked before stderr was drained"
     assert not errors

@@ -361,7 +361,7 @@ async def test_cancelled_audio_keeps_reader_waiting_until_native_work_finishes(
 
     async def generate(*args):
         started.set()
-        await asyncio.to_thread(finish.wait, 5)
+        await asyncio.to_thread(finish.wait, 60)
         return GenerationResult(tmp_path / "track.wav", metadata={"mode": "lib"})
 
     # WHY: native GPU work keeps running when its Python awaiter is cancelled.
@@ -371,9 +371,10 @@ async def test_cancelled_audio_keeps_reader_waiting_until_native_work_finishes(
     audio = asyncio.create_task(backend.generate(GenerationRequest(output_dir=tmp_path)))
     reader = None
     try:
-        await asyncio.wait_for(started.wait(), 2)
+        await asyncio.wait_for(started.wait(), 60)
         audio.cancel()
         reader = asyncio.create_task(query_llm("Wait for audio", local_reader))
+        # Only a negative window: a slow runner makes this check weaker, never flaky.
         await asyncio.sleep(0.2)
         assert not audio.done(), "Cancellation must drain the native audio job"
         assert not Path(local_reader.local_server).with_suffix(".pid").exists()
