@@ -41,8 +41,10 @@ class FrameSink(Protocol):
     def write_frame(self, frame: np.ndarray) -> None: ...
 
 
-def _alloc_blend_buf(width: int, height: int, is_hdr: bool) -> np.ndarray:
+def _alloc_blend_buf(width: int, height: int, is_hdr: bool, planar_sdr: bool) -> np.ndarray:
     """Allocate the blend destination. One buffer: cv2 writes straight into it."""
+    if planar_sdr:
+        return np.zeros(width * height * 3 // 2, dtype=np.uint8)
     if is_hdr:
         # WHY: yuv420p10le is flat uint16 — W*H*3 bytes = W*H*3/2 uint16 samples
         return np.zeros(width * height * 3 // 2, dtype=np.uint16)
@@ -62,6 +64,11 @@ def _match_blend_bufs(ref: np.ndarray, blend_buf: np.ndarray) -> tuple[np.ndarra
         # Y plane occupies first 2/3 of the flat array, U+V the last 1/3
         y_size = len(ref) * 2 // 3
         black[y_size:] = 512
+    if ref.ndim == 1 and ref.dtype == np.uint8:
+        # Planar 8-bit: limited-range black is Y=16, U=V=128.
+        y_size = len(ref) * 2 // 3
+        black[:y_size] = 16
+        black[y_size:] = 128
     if blend_buf.shape != ref.shape or blend_buf.dtype != ref.dtype:
         blend_buf = np.zeros_like(ref)
     return black, blend_buf
@@ -87,6 +94,7 @@ class FrameBlender:
         width: int,
         height: int,
         is_hdr: bool = False,
+        planar_sdr: bool = False,
         total_frames: int = 0,
         report_interval: int = 1,
         progress_callback: Callable[[int, int], None] | None = None,
@@ -100,7 +108,7 @@ class FrameBlender:
         self._report_interval = report_interval
         self._progress_callback = progress_callback
         self._frame_preview_callback = frame_preview_callback
-        self._blend_buf = _alloc_blend_buf(width, height, is_hdr)
+        self._blend_buf = _alloc_blend_buf(width, height, is_hdr, planar_sdr)
         self._frames_written = 0
         self._last_preview_time = 0.0
 

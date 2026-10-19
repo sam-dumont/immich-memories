@@ -140,9 +140,15 @@ def decoder_threads(memory: int | None, *, cpus: int) -> int:
 
 @functools.cache
 def assembly_decoder_threads() -> int:
-    """`decoder_threads` for this process's memory budget, read once."""
+    """`decoder_threads` for this process's memory budget and CPU limit, read once.
+
+    Capped at half the CPUs so the two decoders of a crossfade fit together.
+    """
     budget = memory_budget()
-    threads = decoder_threads(budget.size if budget else None, cpus=available_cpus())
+    cpus = available_cpus()
+    threads = decoder_threads(budget.size if budget else None, cpus=cpus)
+    # Two decoders run together through every crossfade: they share the limit.
+    threads = max(1, min(threads, cpus // 2))
     logger.info("Assembly decodes: %d thread(s) each", threads)
     return threads
 

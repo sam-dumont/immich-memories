@@ -6,6 +6,7 @@ import io
 import time
 from collections.abc import Callable
 
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -47,6 +48,11 @@ def _to_rgb8(frame: np.ndarray, height: int, width: int) -> np.ndarray:
     return np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
 
 
+def _i420_to_rgb8(frame: np.ndarray, height: int, width: int) -> np.ndarray:
+    """Convert a flat 8-bit yuv420p buffer (planar SDR) to RGB8."""
+    return cv2.cvtColor(frame.reshape(height * 3 // 2, width), cv2.COLOR_YUV2RGB_I420)
+
+
 def maybe_emit_preview(
     frame: np.ndarray,
     last_preview_time: float,
@@ -66,7 +72,12 @@ def maybe_emit_preview(
     if now - last_preview_time < PREVIEW_INTERVAL_SECONDS:
         return last_preview_time
 
-    rgb = _to_rgb8(frame, height, width) if is_hdr else frame
+    if is_hdr:
+        rgb = _to_rgb8(frame, height, width)
+    elif frame.ndim == 1:
+        rgb = _i420_to_rgb8(frame, height, width)
+    else:
+        rgb = frame
     jpeg = _encode_preview_jpeg(rgb)
     callback(jpeg)
     return now

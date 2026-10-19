@@ -23,6 +23,7 @@ from immich_memories.processing.ffmpeg_runner import (
     AssemblyContext,
     run_ffmpeg_with_progress,
 )
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware_encode import (
     HardwareChainUnavailable,
     apply_hardware_encode,
@@ -33,6 +34,7 @@ from immich_memories.processing.hdr_utilities import (
     get_colorspace_filter,
     get_hdr_conversion_filter,
 )
+from immich_memories.processing.memory_budget import available_cpus
 from immich_memories.processing.probe_cache import ProbeCache
 from immich_memories.security import validate_video_path
 
@@ -112,8 +114,10 @@ def hardware_command_for_plan(
     caller reports the encoder that ran rather than the one it asked for.
     """
     try:
-        return plan, apply_hardware_encode(
-            build(plan), pixel_format=plan.pixel_format, video_label=video_label
+        return plan, with_cpu_threads(
+            apply_hardware_encode(
+                build(plan), pixel_format=plan.pixel_format, video_label=video_label
+            )
         )
     except HardwareChainUnavailable as exc:
         fallback = software_fallback_plan(plan)
@@ -341,7 +345,7 @@ class ClipEncoder:
                 "-b:a",
                 "128k",
                 "-threads",
-                "4",
+                str(min(4, available_cpus())),
                 "-filter_complex_threads",
                 "1",
                 "-max_muxing_queue_size",

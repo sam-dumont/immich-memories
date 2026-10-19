@@ -36,8 +36,12 @@ re-render moves the same way:
 
 The move is one continuous glide, size and position together. Each still draws one of four easings
 (in, out, in-out or linear) from the same seed, blended with linear so no move stalls at either end.
-It animates at the film's own frame rate, the rate its videos set (30 fps with no video), so a
-24 fps film doesn't drop frames out of every pan.
+It animates at the film's own frame rate, so a 24 fps film doesn't drop frames out of every pan.
+
+A film is 30 fps. It goes to 60 (or 50) only when more than half of its video seconds are 60 (or
+50) fps footage; one fast clip among slower ones doesn't count. Slow motion, recorded at 100 fps or
+more and played slowed, counts as 30. A film made only of 24 or 25 fps footage keeps that rate.
+Photos follow the film.
 
 The ceiling is 50 % because the photo is prepared at 1.5 times the canvas; closer would upscale it.
 The face boxes come from Immich's faces endpoint, one request per still; framing runs no face

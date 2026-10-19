@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hdr_utilities import get_hdr_conversion_filter
 from immich_memories.tracking.timing import expected_fallback_level
 
@@ -349,20 +350,22 @@ class RenderingService:
             which = ["-sseof", "-0.25"] if last_frame else []
             count = [] if last_frame else ["-frames:v", "1"]
             result = subprocess.run(
-                [
-                    "ffmpeg",
-                    *which,
-                    "-i",
-                    str(clip_path),
-                    "-vf",
-                    ",".join(filters),
-                    *count,
-                    "-f",
-                    "rawvideo",
-                    "-pix_fmt",
-                    "rgb24",
-                    "pipe:1",
-                ],  # fmt: skip
+                with_cpu_threads(
+                    [
+                        "ffmpeg",
+                        *which,
+                        "-i",
+                        str(clip_path),
+                        "-vf",
+                        ",".join(filters),
+                        *count,
+                        "-f",
+                        "rawvideo",
+                        "-pix_fmt",
+                        "rgb24",
+                        "pipe:1",
+                    ]
+                ),  # fmt: skip
                 capture_output=True,
                 timeout=15,
             )

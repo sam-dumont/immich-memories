@@ -13,6 +13,7 @@ from tempfile import TemporaryDirectory
 from uuid import UUID, uuid4
 
 from immich_memories.processing.output_contract import validate_output
+from immich_memories.processing.render_control import RenderControl, RenderStopped
 from immich_memories.security import credential_fingerprint, sanitize_error_message
 from immich_memories_render_worker.access import request_secrets
 from immich_memories_render_worker.admission import job_identity
@@ -82,6 +83,7 @@ class RenderJobs:
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="render")
         self._lock = threading.RLock()
         self._renders: dict[UUID, Future[None]] = {}
+        self._controls: dict[UUID, RenderControl] = {}
         self._discarding: set[UUID] = set()
         self._closing = False
         # WHY: a hard kill cannot run cleanup, so the boot sweep above is the
@@ -123,6 +125,7 @@ class RenderJobs:
                 )
             status, fresh = self.store.admit(self.job_status(job_id, request), fingerprint)
             if fresh:
+                self._controls[job_id] = RenderControl()
                 rendered = self._pool.submit(self._render, request, job_id)
                 self._renders[job_id] = rendered
                 rendered.add_done_callback(lambda _done: self._finished(job_id))
@@ -183,7 +186,13 @@ class RenderJobs:
                     return
                 directory.mkdir(mode=0o700)
                 self.store.update(job_id, state="running", started_at=_now())
-            self._publish(job_id, directory, self.renderer.render(request, directory, progress))
+            with self._controls[job_id]:
+                artifact = self.renderer.render(request, directory, progress)
+            self._publish(job_id, directory, artifact)
+        except RenderStopped:
+            # A deadline or a discard stopped it; the job is already closed and its
+            # workspace is removed when the lane releases it (`_finished`).
+            return
         except (
             Exception
         ) as exc:  # WHY: one failed job must not kill the worker or expose its Immich key.
@@ -232,13 +241,17 @@ class RenderJobs:
             if rendered is not None:
                 # A deadline closes the job, not the native renderer using these files.
                 self._discarding.add(job_id)
-                rendered.cancel()
+                # cancel() only helps a render that has not started. One that is running
+                # holds the single lane until it is told to stop.
+                if not rendered.cancel():
+                    self._controls[job_id].stop()
                 return
             shutil.rmtree(self.directory(job_id), ignore_errors=True)
 
     def _finished(self, job_id: UUID) -> None:
         with self._lock:
             self._renders.pop(job_id, None)
+            self._controls.pop(job_id, None)
             if job_id in self._discarding:
                 self._discarding.remove(job_id)
                 self.discard(job_id)

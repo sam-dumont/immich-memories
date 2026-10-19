@@ -32,6 +32,7 @@ from immich_memories.processing.encoding_plan import (
     OutputCodec,
     resolve_encoding_plan,
 )
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware import HWAccelCapabilities
 from immich_memories.processing.hardware_detection import detect_hardware_acceleration
 from immich_memories.processing.hardware_encode import apply_hardware_encode
@@ -644,7 +645,9 @@ def build_merge_command(
     video_label = _build_concat_and_map(cmd, parts, v_labels, a_labels, n, has_audio)
 
     append_encoding_args(cmd, plan, has_audio, output)
-    return apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label=video_label)
+    return with_cpu_threads(
+        apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label=video_label)
+    )
 
 
 def _build_trim_filters(

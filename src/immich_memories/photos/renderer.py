@@ -24,6 +24,10 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+# The blurred background is drawn at this fraction of the canvas and scaled up.
+BLUR_DOWNSCALE = 4
+
+
 @dataclass
 class KenBurnsParams:
     """Parameters for a Ken Burns animation."""
@@ -86,6 +90,14 @@ def crop_window(params: KenBurnsParams, t: float) -> tuple[float, float, float]:
     return (x0 + (x1 - x0) * step, y0 + (y1 - y0) * step, size)
 
 
+def _rounded(image: np.ndarray, dtype: np.dtype) -> np.ndarray:
+    """A float image at the source's integer depth, rounded rather than truncated."""
+    if np.issubdtype(dtype, np.floating):
+        return image.astype(dtype, copy=False)
+    info = np.iinfo(dtype)
+    return np.clip(np.rint(image), info.min, info.max).astype(dtype)
+
+
 def render_ken_burns_streaming(
     src: np.ndarray,
     vp_w: int,
@@ -128,8 +140,22 @@ def render_ken_burns_streaming(
     )
     bh, bw = big.shape[:2]
 
-    # Pre-blur for background (one-time cost)
-    big_blur = cv2.GaussianBlur(big, (0, 0), sigmaX=40) if needs_blur else None
+    # The background is a blur with sigma 40, so nothing in it is finer than a few
+    # tens of pixels: blur it, and warp it every frame, at a fraction of the canvas.
+    # Only the final upscale touches full-canvas pixels (#2687).
+    bg_w, bg_h = max(1, vp_w // BLUR_DOWNSCALE), max(1, vp_h // BLUR_DOWNSCALE)
+    bg_shrink = (bg_w / vp_w, bg_h / vp_h)
+    big_blur = None
+    if needs_blur:
+        small = cv2.resize(
+            big,
+            (max(1, round(bw * bg_shrink[0])), max(1, round(bh * bg_shrink[1]))),
+            interpolation=cv2.INTER_AREA,
+        )
+        # Float from here: the blur averages the resize's rounding away, and the warp
+        # then rounds once, so the background stays within a code of a float render.
+        big_blur = cv2.GaussianBlur(small.astype(np.float32), (0, 0), sigmaX=40 / BLUR_DOWNSCALE)
+        blur_scale = (big_blur.shape[1] / bw, big_blur.shape[0] / bh)
 
     n_frames = int(params.fps * params.duration)
 
@@ -160,13 +186,24 @@ def render_ken_burns_streaming(
             blur_cy = y0 + vis_h / 2
             blur_x0 = blur_cx - (vp_w / fs) / 2
             blur_y0 = blur_cy - (vp_h / fs) / 2
-            m_blur = np.array([[fs, 0, -blur_x0 * fs], [0, fs, -blur_y0 * fs]], dtype=np.float32)
-            bg = cv2.warpAffine(
+            # The same view, in the reduced picture's own pixels.
+            sx_b, sy_b = fs * bg_shrink[0] / blur_scale[0], fs * bg_shrink[1] / blur_scale[1]
+            m_blur = np.array(
+                [
+                    [sx_b, 0, -blur_x0 * blur_scale[0] * sx_b],
+                    [0, sy_b, -blur_y0 * blur_scale[1] * sy_b],
+                ],
+                dtype=np.float32,
+            )
+            bg_small = cv2.warpAffine(
                 big_blur,
                 m_blur,
-                (vp_w, vp_h),
-                flags=cv2.INTER_AREA,
+                (bg_w, bg_h),
+                flags=cv2.INTER_LINEAR,
                 borderMode=cv2.BORDER_REPLICATE,
+            )
+            bg = cv2.resize(
+                _rounded(bg_small, big.dtype), (vp_w, vp_h), interpolation=cv2.INTER_LINEAR
             )
             bg[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
             yield bg

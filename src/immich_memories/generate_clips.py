@@ -14,6 +14,7 @@ from immich_memories.generate_downloads import preparation_route
 from immich_memories.generate_privacy import clip_location_name
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.preparation_fallbacks import note_fallback
+from immich_memories.processing.render_control import check_render_stopped
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -399,6 +400,7 @@ def _rendered_clip(
 
 def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
     """Render one selected source as the directive demands, or report nothing usable."""
+    check_render_stopped()
     params = extraction.params
     directive = extraction.directives.get(clip.asset.id)
     route = preparation_route(clip, directive, params.config)

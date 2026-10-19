@@ -14,6 +14,7 @@ import numpy as np
 from PIL import Image
 
 from immich_memories.processing.encoding_plan import EncodingPlan
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 from .backgrounds import create_background_for_style
@@ -112,7 +113,9 @@ def create_title_video(
             *title_encoder_args(plan), "-c:a", "aac", "-b:a", "128k",
             "-t", str(duration), "-r", str(fps), "-movflags", "+faststart", str(output_path),
         ]  # fmt: skip
-        cmd = apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label="video")
+        cmd = with_cpu_threads(
+            apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label="video")
+        )
         result = subprocess.run(cmd, capture_output=True, timeout=max(60, duration * 30))
         if result.returncode:
             raise RuntimeError(

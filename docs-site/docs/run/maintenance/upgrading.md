@@ -228,6 +228,13 @@ film is now tagged with the release that made it and the day it finished, on the
 wait for `upload.film_tags`. Runs now record their release; a run made before this one has none,
 so uploading it later adds the day tag only. The store gains one column on its first start.
 
+### Films render at 30 fps unless most of the footage is faster
+
+Before, one 60 fps clip, or one slow-motion clip, made the whole film 60 fps and doubled the work
+of every frame. Now a film is 30 fps unless more than half of its video seconds are 50 or 60 fps
+footage. Slow motion counts as 30. Footage that is all 24 or 25 fps keeps its rate. Photos follow
+the film. Nothing to configure; a film cut mostly from 60 fps video still comes out at 60.
+
 ### Landscapes drift instead of zooming
 
 A still with nobody in it (a landscape, a building, a plate) used to push 25-35 % into its

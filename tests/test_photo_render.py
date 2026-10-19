@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import shutil
 import subprocess
@@ -44,6 +45,31 @@ def _render(tmp_path: Path, source: Path, frame_size=(96, 64)):
     )
     download.assert_not_called()
     return clip
+
+
+@contextlib.contextmanager
+def _one_pass_ffmpeg():
+    """Fake the FFmpeg run that converts a still once; yields the commands it was given.
+
+    WHY: the run needs a zscale build; faking it keeps these tests true on every runner.
+    It answers like FFmpeg would, with a frame of the output format's size.
+    """
+    from types import SimpleNamespace
+
+    from immich_memories.photos import photo_pipeline
+
+    commands: list[list[str]] = []
+
+    def run(command, *, input, **_kwargs):  # noqa: A002
+        commands.append(list(command))
+        width, height = map(int, command[command.index("-s") + 1].split("x"))
+        depth = 6 if command[command.index("-vf") + 1].endswith("format=rgb48le") else 3
+        return SimpleNamespace(returncode=0, stdout=b"\0" * (width * height * depth), stderr=b"")
+
+    shim = SimpleNamespace(run=run, SubprocessError=subprocess.SubprocessError)
+    # WHY: the conversion's FFmpeg process is the boundary; only photo_pipeline sees the shim.
+    with patch.object(photo_pipeline, "subprocess", shim):
+        yield commands
 
 
 class _FFmpeg:
@@ -100,11 +126,18 @@ def test_a_plain_photo_uses_sdr_h264_even_with_zscale(tmp_path):
     assert command[command.index("-c:v") + 1] == "libx264"
 
 
-def test_a_gain_mapped_photo_is_piped_16_bit_linear(tmp_path):
-    command = _command(tmp_path, _gain_mapped_photo(tmp_path), zscale=True)
+def test_a_gain_mapped_photo_is_converted_to_pq_once_not_on_every_frame(tmp_path):
+    with _one_pass_ffmpeg() as conversions:
+        command = _command(tmp_path, _gain_mapped_photo(tmp_path), zscale=True)
 
-    assert command[command.index("-pix_fmt") + 1] == "rgb48le"
-    assert "tin=linear" in command[command.index("-vf") + 1]
+    assert len(conversions) == 1
+    chain = conversions[0][conversions[0].index("-vf") + 1]
+    assert "tin=linear" in chain
+    assert command[command.index("-pix_fmt") + 1] == "rgb48le"  # PQ pixels, 16-bit
+    per_frame = command[command.index("-vf") + 1]
+    assert "zscale" not in per_frame
+    assert "format=yuv420p10le" in per_frame
+    assert "color_trc=smpte2084" in per_frame
 
 
 def test_photo_preparation_uses_verified_nvidia_hardware(tmp_path):
@@ -137,6 +170,7 @@ def test_nas_photo_uses_hardware_h264_with_real_tone_mapping(tmp_path):
         output_resolution="720p",
     )
     with (
+        _one_pass_ffmpeg() as conversions,
         # WHY: inspect the emitted FFmpeg command without requiring a local VAAPI device.
         patch("immich_memories.photos.photo_pipeline.write_frames_to_ffmpeg", ffmpeg),
         # WHY: the installed FFmpeg color-conversion capability is external.
@@ -153,7 +187,10 @@ def test_nas_photo_uses_hardware_h264_with_real_tone_mapping(tmp_path):
     assert clip is not None
     command = ffmpeg.command
     assert command[command.index("-c:v") + 1] == "h264_vaapi"
-    assert "tonemap=" in command[command.index("-vf") + 1]
+    # The tone map ran once on the still; the frames only move and upload.
+    assert "tonemap=" in conversions[0][conversions[0].index("-vf") + 1]
+    assert "tonemap=" not in command[command.index("-vf") + 1]
+    assert command[command.index("-pix_fmt") + 1] == "rgb24"
     assert "hwupload" in command[command.index("-vf") + 1]
     assert command[command.index("-color_trc") + 1] == "bt709"
 
@@ -226,3 +263,18 @@ def test_an_ffmpeg_without_zscale_still_renders_the_photo(tmp_path):
     assert stream["codec_name"] == "h264"
     assert stream["pix_fmt"] == "yuv420p"
     assert stream.get("color_transfer") != "smpte2084"
+
+
+def test_a_still_whose_one_pass_conversion_fails_converts_per_frame(tmp_path):
+    """An FFmpeg without a usable zscale keeps the per-frame chain every earlier release used."""
+    from immich_memories.photos import photo_pipeline
+
+    def broken(*_args, **_kwargs):
+        raise RuntimeError("No such filter: 'zscale'")
+
+    # WHY: the one-pass conversion is an FFmpeg run; here it is the part that fails.
+    with patch.object(photo_pipeline, "_convert_still_once", broken):
+        command = _command(tmp_path, _gain_mapped_photo(tmp_path), zscale=True)
+
+    assert command[command.index("-pix_fmt") + 1] == "rgb48le"
+    assert "tin=linear" in command[command.index("-vf") + 1]

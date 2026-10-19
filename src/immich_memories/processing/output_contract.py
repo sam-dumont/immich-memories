@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.tracking.timed import timed
 
 logger = logging.getLogger(__name__)
@@ -346,25 +347,27 @@ def _decode_video_stream(path: Path, metadata: _Metadata, check: DecodeCheck) ->
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="immich-memories-decode-") as scratch:
         progress_file = Path(scratch) / "progress"
-        command = [
-            "ffmpeg",
-            "-nostdin",
-            "-hide_banner",
-            "-nostats",
-            "-v",
-            "error",
-            "-progress",
-            str(progress_file),
-            "-stats_period",
-            _DECODE_STATS_PERIOD,
-            "-i",
-            str(path),
-            "-map",
-            "0:v:0",
-            "-f",
-            "null",
-            "-",
-        ]
+        command = with_cpu_threads(
+            [
+                "ffmpeg",
+                "-nostdin",
+                "-hide_banner",
+                "-nostats",
+                "-v",
+                "error",
+                "-progress",
+                str(progress_file),
+                "-stats_period",
+                _DECODE_STATS_PERIOD,
+                "-i",
+                str(path),
+                "-map",
+                "0:v:0",
+                "-f",
+                "null",
+                "-",
+            ]
+        )
         try:
             result = _run_reporting(
                 command,

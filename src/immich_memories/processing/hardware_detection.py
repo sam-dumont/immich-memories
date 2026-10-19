@@ -7,7 +7,6 @@ import logging
 import platform
 import subprocess
 from collections.abc import Callable
-from functools import lru_cache
 
 from immich_memories.processing.hardware import (
     HWAccelBackend,
@@ -277,13 +276,47 @@ def _detectors() -> tuple[
     )
 
 
-def detect_hardware_acceleration(backend: str = "auto") -> HWAccelCapabilities:
-    """Resolve the default argument before caching a hardware probe."""
+def detect_hardware_acceleration(
+    backend: str = "auto", *, retry_missed: bool = False
+) -> HWAccelCapabilities:
+    """Resolve the default argument before caching a hardware probe.
+
+    A probe that found hardware is kept for the process. One that found nothing (a card
+    busy for a moment) is kept only until `retry_missed` asks for a new look, which a
+    long-lived worker does at the start of each job.
+    """
+    if retry_missed:
+        _cached_hardware_detection.forget(hits=False)
     return _cached_hardware_detection(backend)
 
 
-@lru_cache(maxsize=6)
-def _cached_hardware_detection(backend: str) -> HWAccelCapabilities:
+class _HardwareProbeCache:
+    """Remember a probe that found hardware for good, and one that found none for a job."""
+
+    def __init__(self) -> None:
+        self._found: dict[str, HWAccelCapabilities] = {}
+        self._missed: dict[str, HWAccelCapabilities] = {}
+
+    def __call__(self, backend: str) -> HWAccelCapabilities:
+        if backend in self._found:
+            return self._found[backend]
+        if backend in self._missed:
+            return self._missed[backend]
+        caps = _probe_hardware(backend)
+        if caps.backend is HWAccelBackend.NONE:
+            self._missed[backend] = caps
+        else:
+            self._found[backend] = caps
+        return caps
+
+    def forget(self, *, hits: bool) -> None:
+        """Drop the probes that found nothing (a new job tries again), and the hits too if asked."""
+        self._missed.clear()
+        if hits:
+            self._found.clear()
+
+
+def _probe_hardware(backend: str) -> HWAccelCapabilities:
     """Detect available hardware acceleration.
 
     `backend` is `hardware.backend`. `auto` walks NVIDIA, Apple, QSV, VAAPI and
@@ -314,3 +347,6 @@ def _cached_hardware_detection(backend: str) -> HWAccelCapabilities:
     else:
         logger.debug("No hardware acceleration detected, using software encoding")
     return HWAccelCapabilities(backend=HWAccelBackend.NONE)
+
+
+_cached_hardware_detection = _HardwareProbeCache()

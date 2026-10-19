@@ -54,6 +54,13 @@ def rendered_and_reference(tmp_path, monkeypatch, *, sixteen_bit: bool, low: flo
     # WHY: zscale on this machine decides the pipe format; the test picks the pipe.
     monkeypatch.setattr(hdr_utilities, "check_zscale_available", lambda: True)
     monkeypatch.setattr(photo_pipeline, "render_ken_burns_streaming", spy)
+    # WHY: this measures the integer depth of the renderer's own pixels; the colour
+    # conversion that runs once on the still before it is not what is under test here.
+    monkeypatch.setattr(
+        photo_pipeline,
+        "_convert_still_once",
+        lambda source, pix_fmt, vf, **_kwargs: (source, pix_fmt, vf),
+    )
     if sixteen_bit:
         prepare = photo_pipeline._prepared_photo_pixels
 

@@ -31,6 +31,7 @@ from immich_memories.processing.hdr_utilities import (
 )
 from immich_memories.processing.memory_budget import assembly_decoder_threads, available_cpus
 from immich_memories.processing.probe_cache import ProbeCache
+from immich_memories.processing.render_control import owned_child
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,8 @@ class FrameDecoder:
         self._height = height
         self._fps = fps
         self._pix_fmt = pix_fmt
-        self._frame_size = width * height * 3  # Same for yuv420p10le and rgb24
+        # rgb24 and yuv420p10le are both width*height*3 bytes; 8-bit yuv420p is half that.
+        self._frame_size = width * height * 3 // 2 if pix_fmt == "yuv420p" else width * height * 3
         self._rotation = rotation
         self._privacy_blur = privacy_blur
         self._hdr_conversion = hdr_conversion
@@ -146,7 +148,7 @@ class FrameDecoder:
             # because the frame is already blurred — adding more makes it unrecognizable.
             # WHY (#1527): overlay composites in 8-bit yuv420 unless told otherwise,
             # which rounded every HDR frame with a blur fill to multiples of 4.
-            overlay_format = ":format=yuv420p10" if self._pix_fmt != "rgb24" else ""
+            overlay_format = ":format=yuv420p10" if self._pix_fmt == "yuv420p10le" else ""
             self._use_filter_complex = True
             return [
                 "split[_bg][_fg]",
@@ -245,7 +247,7 @@ class FrameDecoder:
                     self._caption,
                     self._width,
                     self._height,
-                    is_hdr=self._pix_fmt != "rgb24",
+                    is_hdr=self._pix_fmt == "yuv420p10le",
                     font_path=self._caption_font,
                     frame_window=self._caption_window,
                 )
@@ -350,20 +352,27 @@ class FrameDecoder:
             else self._raw_frames(pipe, reuse_buffer)
         )
         try:
-            for decoded, raw in enumerate(raw_frames, start=1):
-                frame: np.ndarray
-                if self._pix_fmt == "yuv420p10le":
-                    # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
-                    # Crossfade blends each sample independently which works for all planes.
-                    # The array retains `raw`; body writes, previews and crossfades
-                    # only read it. Keep the same bytes-backed view as SDR rather
-                    # than copying another 25 MB for every 4K HDR frame.
-                    frame = np.frombuffer(raw, dtype=np.uint16)
-                else:
-                    frame = np.frombuffer(raw, dtype=np.uint8).reshape(self._height, self._width, 3)
-                frame.setflags(write=False)
-                self._finish_bounded_output(proc, decoded)
-                yield frame
+            with owned_child(proc):
+                for decoded, raw in enumerate(raw_frames, start=1):
+                    frame: np.ndarray
+                    if self._pix_fmt == "yuv420p10le":
+                        # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
+                        # Crossfade blends each sample independently which works for all planes.
+                        # The array retains `raw`; body writes, previews and crossfades
+                        # only read it. Keep the same bytes-backed view as SDR rather
+                        # than copying another 25 MB for every 4K HDR frame.
+                        frame = np.frombuffer(raw, dtype=np.uint16)
+                    elif self._pix_fmt == "yuv420p":
+                        # WHY: SDR stays planar from decoder to encoder, so no RGB
+                        # round trip. Flat uint8: Y plane, then U, then V.
+                        frame = np.frombuffer(raw, dtype=np.uint8)
+                    else:
+                        frame = np.frombuffer(raw, dtype=np.uint8).reshape(
+                            self._height, self._width, 3
+                        )
+                    frame.setflags(write=False)
+                    self._finish_bounded_output(proc, decoded)
+                    yield frame
         finally:
             # Stop the writer before joining a reader blocked on its pipe.
             stop_owned_process(proc)
@@ -454,8 +463,13 @@ def make_decoder(
     audio_work_dir: Path | None = None,
     caption_window: tuple[int, int] | None = None,
     probe_cache: ProbeCache | None = None,
+    planar_sdr: bool = False,
 ) -> FrameDecoder:
-    """Create a FrameDecoder with per-clip normalization filters."""
+    """Create a FrameDecoder with per-clip normalization filters.
+
+    SDR frames come as rgb24 unless `planar_sdr` asks for yuv420p, which the
+    streaming encoder takes without converting.
+    """
     probe_cache = probe_cache or ProbeCache()
     rotation = 0
     is_title = getattr(clip, "is_title_screen", False)
@@ -483,7 +497,7 @@ def make_decoder(
     hdr_conversion, colorspace_filter, output_pix_fmt, sdr_to_hdr_filter, _ = resolve_clip_hdr(
         clip_idx, ctx, hdr_type
     )
-    pix_fmt = "yuv420p10le" if hdr_type else "rgb24"
+    pix_fmt = "yuv420p10le" if hdr_type else ("yuv420p" if planar_sdr else "rgb24")
     logger.info(
         f"Decoder[{clip_idx}] pix={pix_fmt} title={is_title} hdr_type={hdr_type} "
         f"sdr2hdr={bool(sdr_to_hdr_filter)} {clip.path.name}"

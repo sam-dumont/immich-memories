@@ -31,6 +31,7 @@ from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.clip_encoder import encoder_args_for_plan
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
 from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 if TYPE_CHECKING:
@@ -201,6 +202,12 @@ _SDR_CHAIN = (
 )
 
 
+_TRC_NAME = {
+    HdrTransfer.PQ: "smpte2084",
+    HdrTransfer.HLG: "arib-std-b67",
+}
+
+
 def photo_filter_chain(
     *,
     gain_map_hdr: bool,
@@ -259,6 +266,69 @@ def _at_pipe_depth(img: np.ndarray, *, sixteen_bit: bool) -> np.ndarray:
     return img
 
 
+def _convert_still_once(
+    source: np.ndarray, pix_fmt: str, vf: str, *, hdr: bool, plan: EncodingPlan
+) -> tuple[np.ndarray, str, str]:
+    """Run the still's colour chain once; return the converted pixels and the per-frame chain.
+
+    The chain that used to run on every frame runs on the picture, and its result comes
+    back as RGB in the film's own transfer (16-bit for HDR, 8-bit for SDR). Each frame
+    then needs only the matrix and range conversion to the encoder's planar format.
+    """
+    height, width = source.shape[:2]
+    if hdr:
+        matrix, back, out_fmt = "bt2020", "rgb48le", "rgb48le"
+        frame_vf = (
+            "scale=in_range=full:out_color_matrix=bt2020:out_range=tv,format=yuv420p10le"
+            f",setparams=range=tv:color_primaries=bt2020:color_trc={_TRC_NAME[plan.target_transfer]}"
+            ":colorspace=bt2020nc"
+        )
+    else:
+        matrix, back, out_fmt = "bt709", "rgb24", "rgb24"
+        frame_vf = _SDR_CHAIN
+    to_rgb = (
+        f"scale=in_color_matrix={matrix}:in_range=tv:out_range=full"
+        f":flags=accurate_rnd+full_chroma_int,format={back}"
+    )
+    result = subprocess.run(  # noqa: S603
+        with_cpu_threads(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                pix_fmt,
+                "-s",
+                f"{width}x{height}",
+                "-i",
+                "pipe:0",
+                "-vf",
+                f"{vf.lstrip(',')},{to_rgb}",
+                "-frames:v",
+                "1",
+                "-f",
+                "rawvideo",
+                "pipe:1",
+            ]
+        ),  # fmt: skip
+        # Bytes, not elements: subprocess slices a memoryview by its own item size.
+        input=np.ascontiguousarray(source).data.cast("B"),
+        capture_output=True,
+        timeout=300,
+        check=False,
+    )
+    dtype = np.uint16 if out_fmt == "rgb48le" else np.uint8
+    expected = width * height * 3 * np.dtype(dtype).itemsize
+    if result.returncode or len(result.stdout) != expected:
+        raise RuntimeError(
+            f"Photo colour conversion failed: {result.stderr.decode(errors='replace')[-1500:]}"
+        )
+    converted = np.frombuffer(result.stdout, dtype=dtype).reshape(height, width, 3)
+    return converted, out_fmt, frame_vf
+
+
 def _stream_render_to_mp4(
     img: np.ndarray,
     params: KenBurnsParams,
@@ -312,45 +382,59 @@ def _stream_render_to_mp4(
         )
 
     source = _at_pipe_depth(img, sixteen_bit=pix_fmt == "rgb48le")
+    if has_zscale and (gain_map_hdr or plan.hdr):
+        # WHY (#2687): the colour of a still never changes, so its transfer conversion
+        # (and in an SDR film the whole HDR tone map) runs once on the picture, not
+        # once on each of the 100+ frames cut from it. The frames then only move.
+        try:
+            source, pix_fmt, vf = _convert_still_once(source, pix_fmt, vf, hdr=plan.hdr, plan=plan)
+        except RuntimeError as exc:
+            # An FFmpeg whose filter probe said yes but cannot run the chain on a still:
+            # keep the per-frame chain, which is what every earlier release did.
+            logger.warning("Converting the still once failed; converting per frame: %s", exc)
 
-    def _frames() -> Iterator[bytes]:
+    def _frames() -> Iterator[memoryview]:
         for frame in render_ken_burns_streaming(
             source, target_w, target_h, params, scale_mode=scale_mode
         ):
-            yield frame.tobytes()
+            # Each frame is a fresh C-contiguous array the renderer never touches again,
+            # so FFmpeg can read it in place instead of from a copy.
+            yield frame.data
 
     returncode, stderr_text = write_frames_to_ffmpeg(
-        apply_hardware_encode(
-            [
-                "ffmpeg",
-                "-y",
-                "-f",
-                "rawvideo",
-                "-pix_fmt",
-                pix_fmt,
-                "-s",
-                f"{target_w}x{target_h}",
-                "-r",
-                str(params.fps),
-                "-i",
-                "pipe:0",
-                "-f",
-                "lavfi",
-                "-i",
-                "anullsrc=r=48000:cl=stereo",
-                "-vf",
-                vf,
-                *encoder_args,
-                "-c:a",
-                "aac",
-                "-b:a",
-                "128k",
-                "-t",
-                str(params.duration),
-                "-shortest",
-                str(output_path),
-            ],
-            pixel_format=plan.pixel_format,
+        with_cpu_threads(
+            apply_hardware_encode(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-f",
+                    "rawvideo",
+                    "-pix_fmt",
+                    pix_fmt,
+                    "-s",
+                    f"{target_w}x{target_h}",
+                    "-r",
+                    str(params.fps),
+                    "-i",
+                    "pipe:0",
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    "anullsrc=r=48000:cl=stereo",
+                    "-vf",
+                    vf,
+                    *encoder_args,
+                    "-c:a",
+                    "aac",
+                    "-b:a",
+                    "128k",
+                    "-t",
+                    str(params.duration),
+                    "-shortest",
+                    str(output_path),
+                ],
+                pixel_format=plan.pixel_format,
+            )
         ),
         _frames(),
         wait_timeout=300,

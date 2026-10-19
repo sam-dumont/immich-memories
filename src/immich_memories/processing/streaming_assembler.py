@@ -27,10 +27,16 @@ from immich_memories.processing.encoding_plan import (
     uses_hardware_encoder,
 )
 from immich_memories.processing.ffmpeg_runner import drain_stderr_tail
+from immich_memories.processing.ffmpeg_threads import with_cpu_threads
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.hdr_utilities import get_colorspace_filter
 from immich_memories.processing.memory_budget import assembly_frame_read_ahead
 from immich_memories.processing.probe_cache import ProbeCache
+from immich_memories.processing.render_control import (
+    adopt_child,
+    check_render_stopped,
+    release_child,
+)
 from immich_memories.processing.streaming_audio import (
     extract_and_mix_audio,
     mux_video_audio,
@@ -97,8 +103,6 @@ class StreamingEncoder:
         self._fps = fps
         self._encoding_plan = encoding_plan or _default_streaming_plan()
         self._encoder_args = encoder_args_for_plan(self._encoding_plan, frame_size=(width, height))
-        # WHY: Frames arrive as rgb24 (sRGB). For HDR output, zscale converts
-        # sRGB → HLG/PQ on the encoder side. Same pattern as photo pipeline.
         self._target_transfer = self._encoding_plan.target_transfer
         self._ffmpeg_command = tuple(ffmpeg_command)
         self._proc: subprocess.Popen[bytes] | None = None
@@ -139,8 +143,9 @@ class StreamingEncoder:
                 "bt2020nc",
             ]
 
-        # WHY: yuv420p10le for HDR (native format, zero conversion), rgb24 for SDR
-        input_pix_fmt = "yuv420p10le" if self._encoding_plan.hdr else "rgb24"
+        # WHY: both arrive planar, so the encoder converts nothing: yuv420p10le
+        # for HDR, 8-bit yuv420p for SDR.
+        input_pix_fmt = "yuv420p10le" if self._encoding_plan.hdr else "yuv420p"
 
         cmd = [
             *self._ffmpeg_command,
@@ -163,13 +168,17 @@ class StreamingEncoder:
             "+faststart",
             str(self._output_path),
         ]
-        cmd = apply_hardware_encode(cmd, pixel_format=self._encoding_plan.pixel_format)
+        cmd = with_cpu_threads(
+            apply_hardware_encode(cmd, pixel_format=self._encoding_plan.pixel_format),
+            program_tokens=len(self._ffmpeg_command),
+        )
         self._proc = subprocess.Popen(  # noqa: S603, S607
             cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
         )
+        adopt_child(self._proc)
         # WHY: FFmpeg <= 6.1 prints stats/warnings from the transcode thread and
         # stops reading stdin once the 64 KB stderr pipe is full — draining
         # only in finish() deadlocks any encode longer than a few minutes.
@@ -185,6 +194,7 @@ class StreamingEncoder:
     def write_frame(self, frame: np.ndarray) -> None:
         """Write one frame to the encoder. Uses memoryview for zero-copy."""
         assert self._proc is not None and self._proc.stdin is not None  # noqa: S101
+        check_render_stopped()
         # WHY: ndarray.data is a memoryview — avoids copying ~25 MB per 4K frame
         # that .tobytes() would allocate
         try:
@@ -200,6 +210,7 @@ class StreamingEncoder:
         with contextlib.suppress(BrokenPipeError):
             self._proc.stdin.close()
         self._proc.wait(timeout=3600)
+        release_child(self._proc)
         if self._stderr_reader is not None:
             self._stderr_reader.join(timeout=30)
         if self._proc.returncode != 0:
@@ -266,6 +277,7 @@ def assemble_streaming(
         width=width,
         height=height,
         is_hdr=hdr_type is not None,
+        planar_sdr=hdr_type is None,
         total_frames=total_frames,
         # WHY: Throttle callbacks to every ~0.5s worth of frames to avoid UI overhead
         report_interval=max(1, fps // 2),
@@ -422,6 +434,7 @@ def _encode_clip_sequence(
             audio_work_dir=audio_work_dir,
             caption_window=caption_windows[clip_idx],
             probe_cache=probe_cache,
+            planar_sdr=True,
         ).iter_borrowed_frames(read_ahead=read_ahead)
         cleanup.callback(frames.close)
         return frames
@@ -429,6 +442,7 @@ def _encode_clip_sequence(
     # A retained failure traceback must not keep a decoder or its pipes alive.
     with contextlib.ExitStack() as cleanup:
         for clip_idx, clip in enumerate(clips):
+            check_render_stopped()
             if active_iter is None:
                 active_iter = decoder_for(clip_idx)
 

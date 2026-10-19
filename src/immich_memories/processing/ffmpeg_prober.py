@@ -174,35 +174,38 @@ class FFmpegProber:
 FILM_WITHOUT_VIDEO_FPS = 30
 
 
-def film_frame_rate(clips: list[AssemblyClip], rate_of: Callable[[Path], float | None]) -> int:
-    """Max frame rate across the video clips, snapped to 24, 25, 30, 50 or 60.
+# Footage at or above this rate is slow motion: it plays slowed down, so it is a 30 fps film.
+SLOW_MOTION_FPS = 100
+# From here a clip is fast footage that wants a 50 or 60 fps film.
+FAST_FOOTAGE_FPS = 45
 
-    Title screens and photos are excluded: both are rendered at whatever
-    rate the film picks, not the other way around. A film with no video
-    plays at 30.
+
+def film_frame_rate(clips: list[AssemblyClip], rate_of: Callable[[Path], float | None]) -> int:
+    """The film's frame rate: 30, unless most of its video seconds are 50/60 fps footage.
+
+    Every per-frame stage costs in proportion to the rate, so one fast clip does not
+    set the rate of the whole film. Slow motion (recorded at 100 fps or more, played
+    slowed) counts as 30. A film made only of 24 or 25 fps footage keeps that rate
+    rather than stretching to 30 with judder. Title screens and photos are excluded:
+    both are rendered at whatever rate the film picks. A film with no video plays at 30.
     """
 
-    rates = [
-        fps
+    footage = [
+        (fps, max(clip.duration, 0.0))
         for clip in clips
         if not getattr(clip, "is_title_screen", False) and not getattr(clip, "is_photo", False)
         if (fps := rate_of(clip.path))
     ]
-    if not rates:
+    if not footage:
         return FILM_WITHOUT_VIDEO_FPS
-    # WHY (#2348): the search used to start at 30 and probe only the first 20
-    # clips, so 24 and 25 fps libraries were stretched to 30 with judder and a
-    # 60 fps clip late in the film played at half its rate.
-    max_fps = max(rates)
-    if max_fps >= 55:
-        return 60
-    if max_fps >= 45:
-        return 50
-    if max_fps >= 27.5:
-        return 30
-    if max_fps >= 24.5:
-        return 25
-    return 24
+    fast = [(fps, secs) for fps, secs in footage if FAST_FOOTAGE_FPS <= fps < SLOW_MOTION_FPS]
+    if sum(secs for _fps, secs in fast) * 2 > sum(secs for _fps, secs in footage):
+        return 60 if max(fps for fps, _secs in fast) >= 55 else 50
+    # WHY (#2348): 24 and 25 fps libraries were stretched to 30 with judder.
+    slowest_ceiling = max(fps for fps, _secs in footage)
+    if slowest_ceiling < 27.5:
+        return 25 if slowest_ceiling >= 24.5 else 24
+    return 30
 
 
 def probe_rate(probe_cache: ProbeCache, video_path: Path) -> float | None:

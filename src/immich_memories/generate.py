@@ -316,9 +316,11 @@ def generate_memory(
         raise ValueError("Deferred finalization requires a caller-owned RunTracker")
 
     from immich_memories.free_text.trace import save_picks
+    from immich_memories.processing.ffmpeg_threads import limit_opencv_threads
     from immich_memories.tracking.report_context import record_assets
     from immich_memories.tracking.run_observations import observe_render
 
+    limit_opencv_threads()
     # Single-instance lock: prevent concurrent pipeline runs from corrupting state
     lock_path = params.config.cache.database_path.parent / ".lock"
     with PipelineLock(lock_path, open_store(params.config)), observe_render(params.config):
