@@ -49,6 +49,48 @@ def _render_card(tmp_path: Path, came_from, destination, seconds: float) -> list
     return pipe.frames
 
 
+def test_a_card_reports_its_frames_and_composes_its_hold_once(tmp_path) -> None:
+    from immich_memories.titles import map_animation
+
+    reports: list[tuple[int, int]] = []
+    composes = []
+    compose = map_animation.overlay_composite
+
+    def counted(*args):
+        composes.append(1)
+        return compose(*args)
+
+    pipe = _Pipe()
+    with (
+        # WHY: replaces the satellite tile fetch, which goes to a third-party tile server
+        patch("immich_memories.titles.map_animation._render_satellite", _camera_colour),
+        # WHY: replaces the FFmpeg encode; the frames it would have written are what we check
+        patch("immich_memories.titles.map_animation.subprocess.Popen", return_value=pipe),
+        # WHY: the stderr reader thread needs a real pipe
+        patch("immich_memories.titles.map_animation.StderrDrain"),
+        # WHY: counts the label compositing; the frames themselves are checked below
+        patch.object(map_animation, "overlay_composite", counted),
+    ):
+        map_animation.create_map_move_video(
+            (48.86, 2.35),
+            (45.76, 4.84),
+            "Newtown",
+            tmp_path / "card.mp4",
+            7.0,
+            _W,
+            _H,
+            _FPS,
+            frame_progress=lambda done, total: reports.append((done, total)),
+        )
+
+    assert reports[-1] == (70, 70)
+    assert [done for done, _ in reports] == sorted(done for done, _ in reports)
+    assert len(reports) >= 7
+    # The label fades in over the last moving frames; the 20-frame hold reuses one frame.
+    assert len(composes) <= 70 - 20 + 1
+    assert len(pipe.frames) == 70 and all(f == pipe.frames[-1] for f in pipe.frames[-20:])
+
+
 def test_a_card_flies_then_holds_still_on_the_named_place_for_two_seconds(tmp_path) -> None:
     frames = _render_card(tmp_path, (48.86, 2.35), (45.76, 4.84), 7.0)
 

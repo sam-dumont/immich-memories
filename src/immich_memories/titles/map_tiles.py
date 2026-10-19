@@ -13,11 +13,15 @@ from staticmap import StaticMap
 
 from immich_memories.processing.memory_budget import memory_budget
 
+_OPAQUE_MODES = frozenset({"RGB", "L", "CMYK", "YCbCr"})
+
 
 class TileCache:
     def __init__(self):
         self.content: dict[str, bytes] = {}
         self.images: OrderedDict[str, Image.Image] = OrderedDict()
+        # The tiles of the last frame drawn: where a card lands, the next one takes off.
+        self.in_view: frozenset[str] = frozenset()
         self.size = 0
         self.clear()
 
@@ -28,9 +32,21 @@ class TileCache:
         """Release a card's downloads and decoded images before the next card."""
         self.content.clear()
         self.images.clear()
+        self.in_view = frozenset()
         self.size = 0
         budget = memory_budget()
         self.limit = min(128 * 2**20, budget.size // 32) if budget else 32 * 2**20
+
+    def release(self) -> None:
+        """Release a finished card, but keep the downloads of the view it ended on.
+
+        Consecutive location cards share that view (one lands where the next takes
+        off), so the next card starts without fetching it again. Decoded pixels go.
+        """
+        kept = {url: self.content[url] for url in self.in_view if url in self.content}
+        self.clear()
+        self.content.update(kept)
+        self.in_view = frozenset(kept)
 
     def decode(self, url: str, content: bytes) -> Image.Image:
         """Reuse pixels while keeping their retained allocation within the budget."""
@@ -38,15 +54,22 @@ class TileCache:
             self.images.move_to_end(url)
             return self.images[url]
         with Image.open(io.BytesIO(content)) as source:
-            image = source.convert("RGBA")
-        size = image.width * image.height * 4
+            # An opaque tile (every satellite JPEG) pastes without a mask: the same
+            # pixels at a fifth of the cost, on hundreds of tiles a 4K frame.
+            opaque = source.mode in _OPAQUE_MODES and "transparency" not in source.info
+            image = source.convert("RGB" if opaque else "RGBA")
+        size = _pixel_bytes(image)
         if size <= self.limit:
             while self.size + size > self.limit:
                 _, old = self.images.popitem(last=False)
-                self.size -= old.width * old.height * 4
+                self.size -= _pixel_bytes(old)
             self.images[url] = image
             self.size += size
         return image
+
+
+def _pixel_bytes(image: Image.Image) -> int:
+    return image.width * image.height * len(image.getbands())
 
 
 tile_cache = TileCache()
@@ -87,13 +110,15 @@ class CachedStaticMap(StaticMap):
         x, y, url = tile
         pixels = tile_cache.decode(url, content)
         box = (self._x_to_px(x), self._y_to_px(y), self._x_to_px(x + 1), self._y_to_px(y + 1))
-        image.paste(pixels, box, pixels)
+        image.paste(pixels, box, pixels if pixels.mode == "RGBA" else None)
 
     def _draw_base_layer(self, image):
+        tiles = list(self._tiles())
+        tile_cache.in_view = frozenset(url for *_, url in tiles)
         undecoded = []
         # Consume resident pixels first: a miss must not evict a tile this frame
         # still needs when the view is larger than the cache's memory budget.
-        for tile in self._tiles():
+        for tile in tiles:
             if tile[2] in tile_cache.images:
                 self._paste(image, tile, tile_cache.content[tile[2]])
             else:

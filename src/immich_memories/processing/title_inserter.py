@@ -30,6 +30,12 @@ AssembleFn = Callable[
 
 _BORROW_SECONDS = 0.5
 
+# Where each stage of assemble_with_titles starts on its 0-1 progress scale. Each stage
+# reports inside its own band, so the fraction only moves forward (#2694).
+_TITLE_END = 0.35
+_ENDING_START = 0.45
+_ENCODE_START = 0.50
+
 
 def title_borrow(clip_duration: float) -> float:
     """Seconds a content-backed title or ending plays from its neighbouring clip.
@@ -189,7 +195,7 @@ class TitleInserter:
     ) -> None:
         """Generate ending screen with the configured solid-color fade."""
         if progress_callback:
-            progress_callback(0.1, "Generating ending screen...")
+            progress_callback(_ENDING_START, "Generating ending screen...")
         ending_clip = None
         if use_content_bg:
             ending_clip = self.background_renderer.render_last_clip(
@@ -203,8 +209,10 @@ class TitleInserter:
 
         def _ending_frame_progress(frame: int, total: int) -> None:
             if progress_callback:
+                share = min(1.0, frame / max(total, 1))
                 progress_callback(
-                    0.35 + 0.15 * frame / max(total, 1), "Generating ending screen..."
+                    _ENDING_START + (_ENCODE_START - _ENDING_START) * share,
+                    f"Generating ending screen... (frame {frame}/{total})",
                 )
 
         ending_screen = generator.generate_ending_screen(
@@ -268,13 +276,26 @@ class TitleInserter:
             getattr(title_settings, "title_background", "content_backed") == "content_backed"
         )
         is_trip = getattr(title_settings, "memory_type", None) == "trip"
-        if is_trip and title_settings.trip_locations and title_settings.trip_title_text:
+        trip_map = bool(
+            is_trip and title_settings.trip_locations and title_settings.trip_title_text
+        )
+        stage = "Generating trip map..." if trip_map else "Generating title screen..."
+        if progress_callback:
+            progress_callback(0.0, stage)
+
+        def _frame_progress(frame: int, total: int) -> None:
+            if progress_callback:
+                share = min(1.0, frame / max(total, 1))
+                progress_callback(_TITLE_END * share, f"{stage} (frame {frame}/{total})")
+
+        if trip_map:
             title_screen = generator.generate_trip_map_screen(
                 locations=title_settings.trip_locations,
                 title_text=title_settings.trip_title_text,
                 home_lat=getattr(title_settings, "home_lat", None),
                 home_lon=getattr(title_settings, "home_lon", None),
                 location_names=getattr(title_settings, "trip_location_names", None) or None,
+                frame_progress=_frame_progress,
             )
             logger.info(f"Generated trip map intro: {title_screen.path}")
             return title_screen, False, None  # trip maps don't use content-backed
@@ -293,10 +314,6 @@ class TitleInserter:
                 seconds=_BORROW_SECONDS,
             )
 
-        def _title_frame_progress(frame: int, total: int) -> None:
-            if progress_callback:
-                progress_callback(0.35 * frame / max(total, 1), "Generating title screen...")
-
         title_screen = generator.generate_title_screen(
             year=title_settings.year,
             month=title_settings.month,
@@ -306,7 +323,7 @@ class TitleInserter:
             birthday_age=title_settings.birthday_age,
             content_clip_path=content_clip,
             content_continues=title_borrow(clips[0].duration) > 0,
-            frame_progress=_title_frame_progress,
+            frame_progress=_frame_progress,
         )
         logger.info(f"Generated title screen: {title_screen.path}")
         return title_screen, use_content_bg, content_clip
@@ -370,17 +387,14 @@ class TitleInserter:
             config=title_config, mood=mood, output_dir=title_output_dir
         )
 
-        # Progress budget within assemble_with_titles:
-        #   0.00 - 0.35  Title screen generation (~90s at 4K)
-        #   0.35 - 0.50  Ending screen generation (~90s at 4K)
+        # Progress budget within assemble_with_titles (see the _TITLE_END constants):
+        #   0.00 - 0.35  Title screen or trip map (~90s at 4K)
+        #   0.35 - 0.45  Dividers or location cards, one step per card
+        #   0.45 - 0.50  Ending screen (~90s at 4K)
         #   0.50 - 1.00  Streaming encode of all clips
         import time as _time
 
         _t_title_start = _time.monotonic()
-
-        # 1. Opening title screen (trip map or standard)
-        if progress_callback:
-            progress_callback(0.0, "Generating title screen...")
 
         is_trip = getattr(title_settings, "memory_type", None) == "trip"
         title_screen, use_content_bg, content_clip = self._opening_title(
@@ -415,11 +429,15 @@ class TitleInserter:
 
         _t_title_done = _time.monotonic()
         if progress_callback:
-            progress_callback(0.35, "Title screen ready")
+            progress_callback(_TITLE_END, "Title screen ready")
 
         # 2-3. Clips with dividers
+        def _divider_progress(share: float, message: str) -> None:
+            if progress_callback:
+                progress_callback(_TITLE_END + (_ENDING_START - _TITLE_END) * share, message)
+
         divider_planner = TitleDividerPlanner(generator, title_settings)
-        content_clips = divider_planner.select_divider_strategy(clips, progress_callback, is_trip)
+        content_clips = divider_planner.select_divider_strategy(clips, _divider_progress, is_trip)
         final_clips.extend(content_clips)
         _t_dividers_done = _time.monotonic()
 
@@ -430,8 +448,6 @@ class TitleInserter:
             getattr(title_settings, "title_background", "content_backed") == "content_backed"
         )
         if title_settings.show_ending_screen:
-            if progress_callback:
-                progress_callback(0.35, "Generating ending screen...")
             self._generate_ending(
                 clips,
                 final_clips,
@@ -441,7 +457,7 @@ class TitleInserter:
                 target_h,
                 detected_fps,
                 hdr_type,
-                None,  # don't pass callback to _generate_ending (we handle it here)
+                progress_callback,
                 use_content_bg=ending_uses_content_bg,
             )
 
@@ -457,7 +473,7 @@ class TitleInserter:
 
         # 5. Assemble
         if progress_callback:
-            progress_callback(0.50, "Encoding video...")
+            progress_callback(_ENCODE_START, "Encoding video...")
         logger.info(f"Assembling {len(final_clips)} clips (including title screens)")
         result = self._encode_composed_clips(
             final_clips, output_path, assemble_fn, progress_callback, (target_w, target_h)
@@ -507,7 +523,7 @@ class TitleInserter:
         # reset the overall progress back to 0% after title generation.
         def _scaled_encode_cb(pct: float, msg: str) -> None:
             if progress_callback:
-                progress_callback(0.50 + pct * 0.50, msg)
+                progress_callback(_ENCODE_START + pct * (1 - _ENCODE_START), msg)
 
         try:
             return self._assemble_certified_content(

@@ -14,7 +14,6 @@ from functools import lru_cache
 from itertools import starmap
 from pathlib import Path
 
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from immich_memories.processing.encoding_plan import EncodingPlan
@@ -44,6 +43,10 @@ _SAT_URL = (
 )
 
 _ViewInterp = Callable[[float], tuple[float, float, float]]
+# Frames rendered so far and the card's total, for a caller that reports progress.
+FrameProgress = Callable[[int, int], None]
+# A 4K frame takes about a second on a CPU: report often enough that a stall guard sees motion.
+_FRAME_REPORT_EVERY = 10
 # A card's name sits in the lower third in either orientation, clear of the pin in the middle.
 _CARD_LABEL_Y = 0.72
 _TITLE_FADE_SECONDS = 0.5
@@ -376,6 +379,7 @@ def create_map_fly_video(
     encoding_plan: EncodingPlan | None = None,
     destination_names: list[str] | None = None,
     animated_background: bool = True,
+    frame_progress: FrameProgress | None = None,
 ) -> Path:
     """Fly from home to the first trip stop, then hold close on it with the trip title.
 
@@ -420,9 +424,9 @@ def create_map_fly_video(
     # The title rises with the take-off and stays: the hold is where it is read.
     alphas = [min(1.0, i / title_in) for i in range(len(progress))]
 
-    tile_cache.clear()
+    tile_cache.release()
     rendered = _create_map_video(
-        cfg, output_path, progress, alphas, fps, encoding_plan, animated_background
+        cfg, output_path, progress, alphas, fps, encoding_plan, animated_background, frame_progress
     )
     logger.info("Map fly done: %d frames (%d rendered)", len(progress), rendered)
     return output_path
@@ -440,6 +444,7 @@ def create_map_move_video(
     timing: MapMoveTiming | None = None,
     encoding_plan: EncodingPlan | None = None,
     animated_background: bool = True,
+    frame_progress: FrameProgress | None = None,
 ) -> Path:
     """A location card: fly from the last place to this one, then hold on it with its name.
 
@@ -463,7 +468,7 @@ def create_map_move_video(
         hdr=hdr,
     )
     progress = timing.schedule(duration, fps)
-    tile_cache.clear()
+    tile_cache.release()
     rendered = _create_map_video(
         cfg,
         output_path,
@@ -472,6 +477,7 @@ def create_map_move_video(
         fps,
         encoding_plan,
         animated_background,
+        frame_progress,
     )
     logger.info(
         "Map move card: %d frames (%d rendered), %.1fs",
@@ -505,6 +511,34 @@ def _frame_at(progress: float, cfg: _FlyConfig) -> tuple[Image.Image, float]:
     return _render_frame(lat, lon, z, cfg), z
 
 
+class _CardFrames:
+    """A card's frames as raw RGB, each map and each labelled frame made once.
+
+    A frame at the same point of the flight as the one before is the same map, and
+    under the same label opacity the same bytes, so a still hold costs one render.
+    """
+
+    def __init__(self, cfg: _FlyConfig) -> None:
+        self._cfg = cfg
+        self._map: tuple[float, Image.Image] | None = None
+        self._composed: tuple[float, float, bytes] | None = None
+        self.rendered = 0
+        self.zoom = 0.0
+
+    def at(self, t: float, alpha: float) -> bytes:
+        """The frame at flight progress ``t`` with the label at opacity ``alpha``."""
+        if self._map is None or self._map[0] != t:
+            image, self.zoom = _frame_at(t, self._cfg)
+            self._map = (t, image)
+            self.rendered += 1
+        if self._composed is None or self._composed[:2] != (t, alpha):
+            frame = self._map[1]
+            if self._cfg.title_overlay is not None and alpha > 0.01:
+                frame = overlay_composite(frame, self._cfg.title_overlay, alpha)
+            self._composed = (t, alpha, frame.tobytes())
+        return self._composed[2]
+
+
 def _pipe_frames(
     cfg: _FlyConfig,
     output_path: Path,
@@ -512,11 +546,11 @@ def _pipe_frames(
     overlay_alphas: list[float],
     fps: float,
     encoding_plan: EncodingPlan | None,
+    frame_progress: FrameProgress | None = None,
 ) -> int:
     """Render each frame's map, lay the overlay on it, and pipe raw RGB to FFmpeg.
 
-    A frame at the same point of the flight as the one before is the same map, so
-    the still hold costs one render however long it is. Returns the maps rendered.
+    Reports every tenth frame to ``frame_progress``. Returns the maps rendered.
     """
     plan = encoding_plan or standalone_title_encoding_plan()
     total = len(progress)
@@ -566,27 +600,25 @@ def _pipe_frames(
     assert proc.stdin is not None  # noqa: S101
     stderr_drain = StderrDrain(proc).start()
 
-    last: tuple[float, Image.Image, float] | None = None
-    rendered = 0
+    frames = _CardFrames(cfg)
     with contextlib.suppress(BrokenPipeError):
         for i, (t, alpha) in enumerate(zip(progress, overlay_alphas, strict=True)):
-            if last is None or last[0] != t:
-                frame, z = _frame_at(t, cfg)
-                last = (t, frame, z)
-                rendered += 1
-            _, frame, z = last
-            if cfg.title_overlay is not None and alpha > 0.01:
-                frame = overlay_composite(frame, cfg.title_overlay, alpha)
-            proc.stdin.write(np.array(frame).tobytes())
+            proc.stdin.write(frames.at(t, alpha))
             if i % 30 == 0:
-                logger.info("Map fly %d/%d (z=%.1f, %d tiles)", i, total, z, len(tile_cache))
+                logger.info(
+                    "Map fly %d/%d (z=%.1f, %d tiles)", i, total, frames.zoom, len(tile_cache)
+                )
+            if frame_progress is not None and (i + 1) % _FRAME_REPORT_EVERY == 0:
+                frame_progress(i + 1, total)
 
     proc.stdin.close()
     proc.wait()
     stderr_tail = stderr_drain.stop()
     if proc.returncode != 0:
         raise RuntimeError(f"Map fly FFmpeg failed: {stderr_tail[-500:]}")
-    return rendered
+    if frame_progress is not None:
+        frame_progress(total, total)
+    return frames.rendered
 
 
 def _render_title_overlay(
@@ -672,6 +704,7 @@ def _pipe_map_plates(
     overlay_alphas: list[float],
     fps: float,
     encoding_plan: EncodingPlan | None,
+    frame_progress: FrameProgress | None = None,
 ) -> int:
     from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
 
@@ -704,6 +737,8 @@ def _pipe_map_plates(
     )
     if code:
         raise RuntimeError(f"Map plates FFmpeg failed: {tail[-2000:]}")
+    if frame_progress is not None:
+        frame_progress(total, total)
     logger.info(
         "Map plates: synthesis %.2fs; stream blends/encode %.2fs; 3 views, %d frames, %dx%d",
         synthesized - started,
@@ -723,10 +758,13 @@ def _create_map_video(
     fps: float,
     encoding_plan: EncodingPlan | None,
     animated_background: bool,
+    frame_progress: FrameProgress | None = None,
 ) -> int:
     render = _pipe_frames if animated_background else _pipe_map_plates
     try:
-        return render(cfg, output_path, progress, overlay_alphas, fps, encoding_plan)
+        return render(
+            cfg, output_path, progress, overlay_alphas, fps, encoding_plan, frame_progress
+        )
     finally:
         logger.info("Map tiles: releasing %d cached downloads", len(tile_cache))
-        tile_cache.clear()
+        tile_cache.release()

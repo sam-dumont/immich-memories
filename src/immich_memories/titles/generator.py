@@ -471,6 +471,7 @@ class TitleScreenGenerator:
         home_lat: float | None = None,
         home_lon: float | None = None,
         location_names: list[str] | None = None,
+        frame_progress: Callable[[int, int], None] | None = None,
     ) -> GeneratedScreen:
         """Generate a trip map overview screen (delegates to TripService)."""
         return self._trip.generate_trip_map_screen(
@@ -480,6 +481,7 @@ class TitleScreenGenerator:
             home_lat=home_lat,
             home_lon=home_lon,
             location_names=location_names,
+            frame_progress=frame_progress,
         )
 
     def generate_location_move_screen(
@@ -488,9 +490,12 @@ class TitleScreenGenerator:
         came_from: tuple[float, float],
         destination: tuple[float, float],
         seconds: float,
+        frame_progress: Callable[[int, int], None] | None = None,
     ) -> GeneratedScreen:
         """A location card on the satellite map: the flight from the last place, then its name."""
-        return self._trip.generate_location_move(location_name, came_from, destination, seconds)
+        return self._trip.generate_location_move(
+            location_name, came_from, destination, seconds, frame_progress
+        )
 
     def generate_location_card_screen(
         self,

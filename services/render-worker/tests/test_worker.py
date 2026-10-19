@@ -318,3 +318,40 @@ def test_the_worker_refuses_to_start_with_a_weak_token(tmp_path, token):
 
     with pytest.raises(ValidationError, match="openssl rand -hex 32"):
         WorkerSettings(token=token, immich_url="http://immich.invalid", directory=tmp_path)
+
+
+def test_every_progress_report_reaches_the_job_status_a_stall_guard_reads(tmp_path):
+    """Per-card and per-frame title reports are what keeps a long trip render alive (#2694)."""
+    reports = [
+        ("assembly", 0.40, "Location card 2 of 9"),
+        ("assembly", 0.40, "Location card 2 of 9 (frame 10/420)"),
+        ("assembly", 0.41, "Location card 3 of 9"),
+    ]
+    seen = threading.Event()
+    step = threading.Semaphore(0)
+
+    class Renderer:
+        def health(self):
+            return {"ready": True}
+
+        def render(self, request, directory, progress):
+            for report in reports:
+                step.acquire(timeout=5)
+                progress(*report)
+                seen.set()
+            step.acquire(timeout=5)
+            return stub_artifact(directory)
+
+    with TestClient(worker_app(tmp_path, Renderer()), headers=AUTH) as client:
+        job_id = client.post("/jobs", json=render_request_body()).json()["job_id"]
+        statuses = []
+        for _ in reports:
+            seen.clear()
+            step.release()
+            assert seen.wait(timeout=5)
+            status = client.get(f"/jobs/{job_id}").json()
+            statuses.append((status["phase"], status["progress"], status["message"]))
+        step.release()
+        assert _settle(client, job_id).json()["state"] == "ready"
+
+    assert statuses == reports

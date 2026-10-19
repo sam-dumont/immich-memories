@@ -24,7 +24,9 @@ class _MoveCards:
     def generate_location_card_screen(self, location_name, lat=None, lon=None):
         raise AssertionError("map tiles are on: every card is a move")
 
-    def generate_location_move_screen(self, location_name, came_from, destination, seconds):
+    def generate_location_move_screen(
+        self, location_name, came_from, destination, seconds, frame_progress=None
+    ):
         return GeneratedScreen(Path(f"/{location_name}.mp4"), seconds, "location_card")
 
 

@@ -40,7 +40,42 @@ class DividerCardGenerator(Protocol):
         came_from: tuple[float, float],
         destination: tuple[float, float],
         seconds: float,
+        frame_progress: Callable[[int, int], None] | None = ...,
     ) -> GeneratedScreen: ...
+
+
+class _CardProgress:
+    """One progress step per divider card, and the frames of a card that reports them.
+
+    The fraction runs from 0 to 1 over the cards and only moves forward; the caller scales
+    it into its own stage. A render worker's stall guard reads an unchanged message as a
+    dead worker, so a long run of cards must not hide behind one line (#2694).
+    """
+
+    def __init__(
+        self, callback: Callable[[float, str], None] | None, noun: str, total: int
+    ) -> None:
+        self._callback = callback
+        self._noun = noun
+        self._total = max(total, 1)
+        self._index = 0
+
+    def _label(self) -> str:
+        return f"{self._noun} {self._index + 1} of {self._total}"
+
+    def card(self, index: int) -> None:
+        """Announce the card at ``index`` (0-based) before it renders."""
+        self._index = index
+        if self._callback:
+            self._callback(index / self._total, self._label())
+
+    def frames(self, done: int, total: int) -> None:
+        """Report the current card's rendered frames."""
+        if self._callback:
+            share = min(1.0, done / max(total, 1))
+            self._callback(
+                (self._index + share) / self._total, f"{self._label()} (frame {done}/{total})"
+            )
 
 
 def _divider_limit(title_settings: Any) -> int | None:
@@ -141,18 +176,16 @@ class TitleDividerPlanner:
         if not year_changes:
             return year_divider_paths
 
-        if progress_callback:
-            progress_callback(0.05, "Generating year dividers...")
-
         limit = _divider_limit(self._title_settings)
         # The opening block gets no card: the title card already names the year
         # a memory opens in, so a divider there would say it twice.
         planned_changes = year_changes if limit is None else year_changes[1 : limit + 1]
-        for _, year in planned_changes:
-            if year not in year_divider_paths:
-                divider = self._generator.generate_year_divider(year)
-                year_divider_paths[year] = divider.path
-                logger.info(f"Generated year divider: {year}")
+        years = list(dict.fromkeys(year for _, year in planned_changes))
+        steps = _CardProgress(progress_callback, "Year divider", len(years))
+        for index, year in enumerate(years):
+            steps.card(index)
+            year_divider_paths[year] = self._generator.generate_year_divider(year).path
+            logger.info(f"Generated year divider: {year}")
         return year_divider_paths
 
     def _needs_a_year_card(
@@ -215,9 +248,6 @@ class TitleDividerPlanner:
         if not (self._title_settings.show_month_dividers and month_changes):
             return month_divider_paths
 
-        if progress_callback:
-            progress_callback(0.05, "Generating month dividers...")
-
         included = getattr(self._title_settings, "included_month_dividers", None)
         if included is not None:
             # WHY: the budget already picked the heaviest months that fit (#2075);
@@ -227,21 +257,21 @@ class TitleDividerPlanner:
             limit = _divider_limit(self._title_settings)
             planned_changes = month_changes if limit is None else month_changes[1 : limit + 1]
 
-        for _, month, year in planned_changes:
-            key = (year, month)
-            if key not in month_divider_paths:
-                is_birthday = (
-                    self._title_settings.birthday_month is not None
-                    and month == self._title_settings.birthday_month
-                )
-                divider = self._generator.generate_month_divider(
-                    month, year, is_birthday_month=is_birthday
-                )
-                month_divider_paths[key] = divider.path
-                logger.info(
-                    f"Generated month divider: {month}/{year}"
-                    + (" (birthday!)" if is_birthday else "")
-                )
+        keys = list(dict.fromkeys((year, month) for _, month, year in planned_changes))
+        steps = _CardProgress(progress_callback, "Month divider", len(keys))
+        for index, (year, month) in enumerate(keys):
+            steps.card(index)
+            is_birthday = (
+                self._title_settings.birthday_month is not None
+                and month == self._title_settings.birthday_month
+            )
+            divider = self._generator.generate_month_divider(
+                month, year, is_birthday_month=is_birthday
+            )
+            month_divider_paths[(year, month)] = divider.path
+            logger.info(
+                f"Generated month divider: {month}/{year}" + (" (birthday!)" if is_birthday else "")
+            )
         return month_divider_paths
 
     def build_clips_with_dividers(
@@ -319,6 +349,7 @@ class TitleDividerPlanner:
         cache: dict[str, Path],
         came_from: tuple[float, float],
         destination: tuple[float, float],
+        frame_progress: Callable[[int, int], None] | None = None,
     ) -> AssemblyClip:
         """A location card that flies from `came_from` and holds on `name`.
 
@@ -332,7 +363,7 @@ class TitleDividerPlanner:
         key = f"{name}|{came_from[0]:.3f},{came_from[1]:.3f}"
         if key not in cache:
             card = self._generator.generate_location_move_screen(
-                name, came_from, destination, seconds
+                name, came_from, destination, seconds, frame_progress=frame_progress
             )
             cache[key] = card.path
         return AssemblyClip(
@@ -354,9 +385,6 @@ class TitleDividerPlanner:
         not the town the last card named. With map tiles allowed each card flies from
         the place the previous card named to its own.
         """
-        if progress_callback:
-            progress_callback(0.05, "Generating location cards...")
-
         result: list[AssemblyClip] = []
         location_card_cache: dict[str, Path] = {}
         map_moves = getattr(self._title_settings, "map_tiles", False) is True
@@ -364,16 +392,28 @@ class TitleDividerPlanner:
             [clip_route_stop(clip) for clip in clips],
             _divider_limit(self._title_settings),
         )
-        for clip, move in zip(clips, moves, strict=True):
-            if move is not None and clip.latitude is not None and clip.longitude is not None:
+        points = [
+            (clip.latitude, clip.longitude)
+            if move is not None and clip.latitude is not None and clip.longitude is not None
+            else None
+            for clip, move in zip(clips, moves, strict=True)
+        ]
+        steps = _CardProgress(
+            progress_callback, "Location card", sum(point is not None for point in points)
+        )
+        cards = 0
+        for clip, move, point in zip(clips, moves, points, strict=True):
+            if move is not None and point is not None:
+                steps.card(cards)
+                cards += 1
                 name = clip.location_name or ""
                 if map_moves:
                     card = self.make_location_move_clip(
-                        name, location_card_cache, move.came_from, (clip.latitude, clip.longitude)
+                        name, location_card_cache, move.came_from, point, steps.frames
                     )
                 else:
                     card = self.make_location_card_clip(
-                        name, location_card_cache, lat=clip.latitude, lon=clip.longitude
+                        name, location_card_cache, lat=point[0], lon=point[1]
                     )
                 result.append(card)
                 logger.info("Location card: %s (%s, %.1fs)", name, move.reason, card.duration)
