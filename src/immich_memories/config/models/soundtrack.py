@@ -41,10 +41,7 @@ class AudioConfig(BaseModel):
         default=2,
         ge=0,
         le=3,
-        description=(
-            "Extra tracks auto mode may generate when the first is flagged as a "
-            "repetitive 'tick' by the cheap quality gate; the best-scored take is kept"
-        ),
+        description="Ignored: generated music is one take and is never regenerated",
     )
     # Takes of up to 90 s joined on bar lines are the production recipe; one take per
     # film of any length sounded bland and loop-flagged (#2617).

@@ -119,9 +119,9 @@ async def generate_music_for_video(
     Callers that cannot consume stems pass ``separate_stems=False`` rather than
     paying for a Demucs run they will drop (#499).
 
-    ``quality_gate`` (pipeline path only) turns the version loop into a bounded
-    regenerate: each take is scored, generation stops early once a take passes,
-    and only the best take is stem-separated (see ``MusicPipeline``).
+    ``quality_gate`` (pipeline path only) makes the call generate one version
+    whose score is logged for diagnosis and never triggers a regeneration (see
+    ``MusicPipeline``).
 
     Args:
         timeline: Video timeline with per-clip mood information

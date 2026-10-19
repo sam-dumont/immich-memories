@@ -81,8 +81,9 @@ MOVED: dict[str, str] = {
 
 # Read by nothing: key -> what to do instead.
 IGNORED: dict[str, str] = {
-    "musicgen.num_versions": "audio.max_regenerations decides how many takes a film gets",
-    "ace_step.num_versions": "audio.max_regenerations decides how many takes a film gets",
+    "musicgen.num_versions": "a generated film is always one take",
+    "ace_step.num_versions": "a generated film is always one take",
+    "audio.max_regenerations": "generated music is one take and is never regenerated",
 }
 
 UNDOCUMENTED: frozenset[str] = frozenset((*TIER_OWNED, *INTERNAL, *MERGED, *MOVED, *IGNORED))

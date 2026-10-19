@@ -103,11 +103,10 @@ class MusicPipeline:
 
         ``mood_detail`` carries the reader's full music judgment (energy, tempo,
         genre yields) to backends that can use richer prompts than a bare mood
-        word. ``quality_gate`` turns the version loop into a bounded regenerate:
-        each take's full mix is scored once it is mastered, the loop stops early
-        as soon as a take is not flagged, and stems are separated only for the
-        best-scored take. Without it the loop generates every version and
-        separates stems for each, which is what the UI preview needs.
+        word. ``quality_gate`` makes the call generate one version: the take's full
+        mix is scored and the score logged for diagnosis, never acted on, and
+        stems are separated for that take. Without it the loop generates every
+        version and separates stems for each, which is what the UI preview needs.
         """
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -129,7 +128,6 @@ class MusicPipeline:
                 total_duration=total_duration,
                 primary_mood=primary_mood,
                 output_dir=output_dir,
-                num_versions=num_versions,
                 progress_callback=progress_callback,
                 crossfade_duration=crossfade_duration,
                 memory_type=memory_type,
@@ -195,7 +193,6 @@ class MusicPipeline:
         total_duration: float,
         primary_mood: str,
         output_dir: Path,
-        num_versions: int,
         progress_callback: Any | None,
         crossfade_duration: float,
         memory_type: str | None,
@@ -203,48 +200,33 @@ class MusicPipeline:
         mood_detail: VideoMood | None,
         quality_gate: Callable[[Path], TrackQuality | None],
     ) -> MusicGenerationResult:
-        """Bounded regenerate: score each take, stop early, separate the winner."""
+        """One take, scored for the log; a flagged score never regenerates (#2702)."""
 
-        candidates: list[tuple[GenerationRequest, GenerationResult, TrackQuality | None]] = []
-
-        for i in range(num_versions):
-            logger.info(f"Generating version {i + 1}/{num_versions}")
-
-            made = await self._generate_full_mix(
-                scenes=scenes,
-                primary_mood=primary_mood,
-                total_duration=total_duration,
-                output_dir=output_dir,
-                crossfade_duration=crossfade_duration,
-                memory_type=memory_type,
-                photo_cadence_seconds=photo_cadence_seconds,
-                mood_detail=mood_detail,
-                candidate_index=i,
-                num_versions=num_versions,
-                progress_callback=progress_callback,
-            )
-            if made is None:
-                continue
-
-            result, request = made
-            quality = quality_gate(result.audio_path)
-            candidates.append((request, result, quality))
-            logger.info(
-                "Version %d scored %s",
-                i + 1,
-                "no verdict"
-                if quality is None
-                else f"periodicity={quality.periodicity:.2f} "
-                f"spikiness={quality.spikiness:.2f} flagged={quality.flagged}",
-            )
-
-            if quality is not None and not quality.flagged:
-                break  # accepted; do not spend further regenerations
-
-        if not candidates:
+        made = await self._generate_full_mix(
+            scenes=scenes,
+            primary_mood=primary_mood,
+            total_duration=total_duration,
+            output_dir=output_dir,
+            crossfade_duration=crossfade_duration,
+            memory_type=memory_type,
+            photo_cadence_seconds=photo_cadence_seconds,
+            mood_detail=mood_detail,
+            candidate_index=0,
+            num_versions=1,
+            progress_callback=progress_callback,
+        )
+        if made is None:
             raise RuntimeError("All music generation backends failed for all versions")
 
-        request, result, quality = _best_candidate(candidates)
+        result, request = made
+        quality = quality_gate(result.audio_path)
+        logger.info(
+            "Generated music scored %s",
+            "no verdict"
+            if quality is None
+            else f"periodicity={quality.periodicity:.2f} "
+            f"spikiness={quality.spikiness:.2f} flagged={quality.flagged}",
+        )
         stems = await self._try_separate_stems(result, request, progress_callback, 0)
 
         versions = [
@@ -499,23 +481,6 @@ async def _run(
         logger.warning("Music backend %s rejected: %s; trying next backend", gen.name, reason)
         return None
     return result
-
-
-def _candidate_rank(
-    candidate: tuple[GenerationRequest, GenerationResult, TrackQuality | None],
-) -> float:
-    """Degeneracy for ranking, with an unscorable take ranked worst."""
-    quality = candidate[2]
-    return quality.score if quality is not None else 1.0
-
-
-def _best_candidate(
-    candidates: list[tuple[GenerationRequest, GenerationResult, TrackQuality | None]],
-) -> tuple[GenerationRequest, GenerationResult, TrackQuality | None]:
-    """The least tick-like take, falling back to the first when none can be scored."""
-    scored = [c for c in candidates if c[2] is not None]
-    pool = scored if scored else candidates
-    return min(pool, key=_candidate_rank)
 
 
 def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline:

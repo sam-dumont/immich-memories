@@ -37,8 +37,8 @@ _MIN_LAG_FRAMES = 4
 
 # Calibrated on the retained control-render tracks: the curated/bundled library
 # measures 0.35-0.61, the degenerate generated tracks 0.65-0.98. The two bands
-# do not touch. The cost of an over-eager flag is a bounded regeneration, never
-# a dropped track, so this leans trigger-happy on purpose; a motorik EDM track
+# do not touch. A flag is only logged for diagnosis, never acted on (#2702), so this leans
+# trigger-happy on purpose; a motorik EDM track
 # would be a false rejection, which is the documented limit of this cheap gate.
 _PULSE_THRESHOLD = 0.65
 
@@ -52,13 +52,8 @@ class TrackQuality:
 
     @property
     def flagged(self) -> bool:
-        """Too metronomic to ship without trying another take."""
+        """Metronomic enough to be worth a look when diagnosing a film."""
         return self.periodicity >= _PULSE_THRESHOLD
-
-    @property
-    def score(self) -> float:
-        """0..1 degeneracy for ranking candidates (lower = better)."""
-        return min(self.periodicity, 1.0)
 
 
 def _energy_envelope(samples: np.ndarray) -> np.ndarray:

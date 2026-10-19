@@ -325,7 +325,7 @@ class TestMusicGenClient:
         assert config.base_url == "http://remote:9000"
         assert config.api_key == "test-key"
         assert config.timeout_seconds == 600
-        # The section's take count is ignored: a film sets it from audio.max_regenerations.
+        # The section's take count is ignored: a generated film is one take.
         assert config.num_versions == 3
 
     async def test_client_requires_context(self):

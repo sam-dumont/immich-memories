@@ -82,8 +82,9 @@ when set (the key, never its value); in 2.0 they stop being read. Delete them to
 | `automation.upload_to_immich` | `upload.enabled`: one switch for manual and automatic films; the old value is applied to it |
 | `automation.album_name` | `upload.album_name`, the same way |
 | `server.allow_unauthenticated_lan` | nothing: ignored; without sign-in the UI answers on localhost only |
-| `musicgen.num_versions` | `audio.max_regenerations`; ignored |
-| `ace_step.num_versions` | `audio.max_regenerations`; ignored |
+| `musicgen.num_versions` | nothing: a generated film is one take; ignored |
+| `ace_step.num_versions` | nothing: a generated film is one take; ignored |
+| `audio.max_regenerations` | nothing: generated music is one take and is never regenerated; the key still loads, is ignored and warns |
 | `analysis.optimal_clip_duration` | nothing: fixed at 5 s |
 | `analysis.min_source_short_side` | nothing: fixed at 1080 px |
 | `analysis.max_album_assets` | nothing: fixed at 10,000 per media type |

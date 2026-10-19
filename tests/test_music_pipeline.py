@@ -689,66 +689,42 @@ class CountingSeparator(FakeStemSeparator):
 
 
 class TestQualityGate:
-    """Auto mode's bounded regenerate: score each take, stop early, keep the best.
+    """Generated music is one take. The score is logged for diagnosis, never acted on (#2702)."""
 
-    ``quality_gate`` turns the version loop from "generate everything, separate
-    everything" into "generate until one passes, separate the winner only".
-    """
-
-    async def test_an_accepted_take_stops_the_loop_after_one(self, tmp_path: Path) -> None:
+    async def test_a_flagged_first_take_is_used_without_another(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         from immich_memories.audio.track_quality import TrackQuality
 
         gen = CountingGenerator()
         sep = CountingSeparator()
         pipeline = MusicPipeline(generators=[gen], stem_separator=sep)
+        scored: list[Path] = []
 
-        # WHY: returns a verdict object; the pipeline only reads .flagged/.score.
+        # WHY: stands in for score_track, which decodes real audio.
         def gate(path: Path) -> TrackQuality:
-            del path
-            return TrackQuality(periodicity=0.2, spikiness=1.1)
+            scored.append(path)
+            return TrackQuality(periodicity=0.9, spikiness=4.0)
 
-        async with pipeline:
-            result = await pipeline.generate_music_for_video(
-                timeline=VideoTimeline(), output_dir=tmp_path, num_versions=3, quality_gate=gate
-            )
+        with caplog.at_level("INFO"):
+            async with pipeline:
+                result = await pipeline.generate_music_for_video(
+                    timeline=VideoTimeline(),
+                    output_dir=tmp_path,
+                    num_versions=3,
+                    quality_gate=gate,
+                )
 
-        assert gen.calls == 1, "an accepted take must not spend further regenerations"
-        assert sep.calls == 1, "stems are separated once, for the accepted take"
+        assert gen.calls == 1, "a flagged take must not trigger regeneration"
+        assert sep.calls == 1
         assert len(result.versions) == 1
         assert result.selected_version == 0
+        assert result.versions[0].full_mix == scored[0]
+        assert "periodicity=0.90" in caplog.text
+        assert "flagged=True" in caplog.text
 
-    async def test_flagged_takes_regenerate_bounded_and_keep_the_best(self, tmp_path: Path) -> None:
-        from immich_memories.audio.track_quality import TrackQuality
-
-        gen = CountingGenerator()
-        sep = CountingSeparator()
-        verdicts = iter(
-            [
-                TrackQuality(periodicity=0.9, spikiness=4.0),  # a tick
-                TrackQuality(periodicity=0.3, spikiness=1.4),  # a good take
-            ]
-        )
-
-        def gate(path: Path) -> TrackQuality:
-            del path
-            return next(verdicts)
-
-        pipeline = MusicPipeline(generators=[gen], stem_separator=sep)
-
-        async with pipeline:
-            result = await pipeline.generate_music_for_video(
-                timeline=VideoTimeline(), output_dir=tmp_path, num_versions=3, quality_gate=gate
-            )
-
-        assert gen.calls == 2, "the first tick is replaced, the second accepted"
-        assert sep.calls == 1, "only the winner is separated"
-        assert len(result.versions) == 1
-        # The winner is the good take: regeneration replaced the tick instead of
-        # silently shipping it.
-        assert result.versions[0].full_mix.name == "mastered_version_1.wav"
-
-    async def test_scoring_nothing_still_returns_a_track(self, tmp_path: Path) -> None:
-        """None means 'no verdict', not 'drop the take'."""
+    async def test_scoring_nothing_still_returns_one_track(self, tmp_path: Path) -> None:
+        """None means 'no verdict': still one take, nothing regenerated."""
 
         gen = CountingGenerator()
         pipeline = MusicPipeline(generators=[gen], stem_separator=None)
@@ -762,15 +738,27 @@ class TestQualityGate:
                 timeline=VideoTimeline(), output_dir=tmp_path, num_versions=3, quality_gate=gate
             )
 
-        assert gen.calls == 3, "no verdict never lets the loop stop early"
+        assert gen.calls == 1
         assert len(result.versions) == 1
         assert result.versions[0].full_mix.exists()
 
+    async def test_explicit_versions_without_a_gate_are_all_generated(self, tmp_path: Path) -> None:
+        gen = CountingGenerator()
+        pipeline = MusicPipeline(generators=[gen], stem_separator=None)
 
-class TestAutoRegenerationBudget:
-    """Auto mode regenerates a bounded number of takes and gates them (#1007)."""
+        async with pipeline:
+            result = await pipeline.generate_music_for_video(
+                timeline=VideoTimeline(), output_dir=tmp_path, num_versions=3
+            )
 
-    def test_auto_mode_requests_the_budget_and_a_quality_gate(self, tmp_path: Path) -> None:
+        assert gen.calls == 3
+        assert len(result.versions) == 3
+
+
+class TestAutoGeneratesOneVersion:
+    """Auto mode asks for one take and scores it for the log (#2702)."""
+
+    def test_auto_mode_requests_one_version(self, tmp_path: Path) -> None:
         from immich_memories.audio.music_generator_models import (
             GeneratedMusic,
             MusicGenerationResult,
@@ -781,7 +769,6 @@ class TestAutoRegenerationBudget:
 
         config = Config()
         config.ace_step.enabled = True
-        config.audio.max_regenerations = 2
 
         captured: dict = {}
 
@@ -803,8 +790,8 @@ class TestAutoRegenerationBudget:
             result = auto_generate_music(config, [], tmp_path, None, transition_overlap=0.0)
 
         assert result is not None
-        assert captured["config"].num_versions == 3, "one take plus two regenerations"
-        assert callable(captured["quality_gate"]), "auto mode gates every take"
+        assert captured["config"].num_versions == 1
+        assert callable(captured["quality_gate"]), "the take is still scored for the log"
 
 
 class TestMoodDetailThreadsThrough:
