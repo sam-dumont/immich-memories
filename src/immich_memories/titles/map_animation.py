@@ -31,7 +31,7 @@ from .map_renderer import (
     fit_title_lines,
     overlay_composite,
 )
-from .map_tiles import CachedStaticMap, tile_cache
+from .map_tiles import CachedStaticMap, TilePrefetcher, tile_cache
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,9 @@ _ViewInterp = Callable[[float], tuple[float, float, float]]
 FrameProgress = Callable[[int, int], None]
 # A 4K frame takes about a second on a CPU: report often enough that a stall guard sees motion.
 _FRAME_REPORT_EVERY = 10
+# Distinct map views whose tiles are fetched while the current frame renders; the tile
+# cache's memory budget caps it further.
+_LOOKAHEAD_VIEWS = 8
 # A card's name sits in the lower third in either orientation, clear of the pin in the middle.
 _CARD_LABEL_Y = 0.72
 _TITLE_FADE_SECONDS = 0.5
@@ -185,15 +188,7 @@ def _pick_interpolator(
 
 def _render_satellite(lat: float, lon: float, zoom: float, w: int, h: int) -> Image.Image:
     """Satellite tiles at fractional zoom via oversample + resize."""
-    z_int = max(1, min(19, math.ceil(zoom)))
-    frac = z_int - zoom
-    oversample = 2.0**frac
-
-    rw = int(math.ceil(w * oversample))
-    rh = int(math.ceil(h * oversample))
-
-    sm = CachedStaticMap(rw, rh, url_template=_SAT_URL)
-
+    sm, z_int = _satellite_map(zoom, w, h)
     try:
         img = sm.render(zoom=z_int, center=[lon, lat])
     except Exception as e:  # noqa: BLE001
@@ -202,11 +197,20 @@ def _render_satellite(lat: float, lon: float, zoom: float, w: int, h: int) -> Im
         # ValueError out of a truncated body. One grey frame beats a dead render.
         # No coordinates in the line: warnings travel into run reports and issues.
         logger.warning("Tile fetch failed at zoom %d: %s", z_int, e)
-        img = Image.new("RGB", (rw, rh), (40, 50, 60))
+        img = Image.new("RGB", (sm.width, sm.height), (40, 50, 60))
 
     if img.size != (w, h):
         img = _resize_satellite_frame(img, w, h)
     return img
+
+
+def _satellite_map(zoom: float, w: int, h: int) -> tuple[CachedStaticMap, int]:
+    """The tile map drawn at the next whole zoom, oversampled to be resized down to w x h."""
+    z_int = max(1, min(19, math.ceil(zoom)))
+    oversample = 2.0 ** (z_int - zoom)
+    rw = int(math.ceil(w * oversample))
+    rh = int(math.ceil(h * oversample))
+    return CachedStaticMap(rw, rh, url_template=_SAT_URL), z_int
 
 
 def _resize_satellite_frame(image: Image.Image, width: int, height: int) -> Image.Image:
@@ -512,6 +516,23 @@ def _frame_at(progress: float, cfg: _FlyConfig) -> tuple[Image.Image, float]:
     return _render_frame(lat, lon, z, cfg), z
 
 
+def _fetch_coming_views(
+    prefetch: TilePrefetcher, cfg: _FlyConfig, progress: list[float], i: int
+) -> None:
+    """Queue the tiles of the next distinct views after frame ``i`` while it renders."""
+    if i and progress[i] == progress[i - 1]:
+        return  # a held frame: the views ahead were queued when the hold began
+    last, queued = progress[i], 0
+    for t in progress[i + 1 :]:
+        if queued == _LOOKAHEAD_VIEWS:
+            return
+        if t != last:
+            lat, lon, z = _view_at(t, cfg.interps, len(cfg.interps), cfg.width)
+            sm, z_int = _satellite_map(z, cfg.width, cfg.height)
+            prefetch.ahead(sm.tile_urls(lon, lat, z_int))
+            last, queued = t, queued + 1
+
+
 class _CardFrames:
     """A card's frames as raw RGB, each map and each labelled frame made once.
 
@@ -602,8 +623,10 @@ def _pipe_frames(
     stderr_drain = StderrDrain(proc).start()
 
     frames = _CardFrames(cfg)
-    with contextlib.suppress(BrokenPipeError):
+    prefetch = TilePrefetcher(CachedStaticMap(1, 1, url_template=_SAT_URL))
+    with prefetch, contextlib.suppress(BrokenPipeError):
         for i, (t, alpha) in enumerate(zip(progress, overlay_alphas, strict=True)):
+            _fetch_coming_views(prefetch, cfg, progress, i)
             proc.stdin.write(frames.at(t, alpha))
             if i % 30 == 0:
                 logger.info(

@@ -4,16 +4,26 @@ from __future__ import annotations
 
 import io
 import math
+import threading
 import time
 from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable, Iterable
+from concurrent.futures import Future, ThreadPoolExecutor
 
 from PIL import Image
 from staticmap import StaticMap
+from staticmap.staticmap import _lat_to_y, _lon_to_x
 
 from immich_memories.processing.memory_budget import memory_budget
 
 _OPAQUE_MODES = frozenset({"RGB", "L", "CMYK", "YCbCr"})
+# StaticMap's request policy, kept for every fetch: four at a time, three attempts each.
+_FETCH_THREADS = 4
+_FETCH_ATTEMPTS = 3
+# A decoded RGBA tile: what a tile fetched ahead may cost once it is drawn.
+_TILE_PIXEL_BYTES = 256 * 256 * 4
+
+TileResponse = tuple[int | None, bytes | None]
 
 
 class TileCache:
@@ -22,6 +32,10 @@ class TileCache:
         self.images: OrderedDict[str, Image.Image] = OrderedDict()
         # The tiles of the last frame drawn: where a card lands, the next one takes off.
         self.in_view: frozenset[str] = frozenset()
+        # Tiles fetched (or being fetched) for coming frames that no frame has drawn yet.
+        self.ahead: set[str] = set()
+        self._fetching: dict[str, Future[TileResponse]] = {}
+        self._lock = threading.Lock()
         self.size = 0
         self.clear()
 
@@ -33,6 +47,7 @@ class TileCache:
         self.content.clear()
         self.images.clear()
         self.in_view = frozenset()
+        self.ahead.clear()
         self.size = 0
         budget = memory_budget()
         self.limit = min(128 * 2**20, budget.size // 32) if budget else 32 * 2**20
@@ -47,6 +62,50 @@ class TileCache:
         self.clear()
         self.content.update(kept)
         self.in_view = frozenset(kept)
+
+    def fetch(self, url: str, download: Callable[[], TileResponse]) -> TileResponse:
+        """One request for ``url`` at a time: a second caller waits for the first one's answer.
+
+        A frame that needs a tile already on its way for a coming frame waits for that
+        download instead of starting another; a stored download answers at once.
+        """
+        with self._lock:
+            if url in self.content:
+                return 200, self.content[url]
+            pending = self._fetching.get(url)
+            future: Future[TileResponse] = Future()
+            if pending is None:
+                self._fetching[url] = future
+        if pending is not None:
+            return pending.result()
+        try:
+            response = download()
+        except BaseException as error:
+            with self._lock:
+                del self._fetching[url]
+            future.set_exception(error)
+            raise
+        with self._lock:
+            if response[0] == 200 and response[1] is not None:
+                self.content[url] = response[1]
+            del self._fetching[url]
+        future.set_result(response)
+        return response
+
+    def reserve_ahead(self, url: str) -> bool:
+        """Claim room to fetch ``url`` for a coming frame, within the decoded-tile budget."""
+        with self._lock:
+            if url in self.content or url in self._fetching or url in self.ahead:
+                return False
+            if (len(self.ahead) + 1) * _TILE_PIXEL_BYTES > self.limit:
+                return False
+            self.ahead.add(url)
+            return True
+
+    def drawn(self, urls: Iterable[str]) -> None:
+        """Hand the room of tiles fetched ahead back once a frame has drawn them."""
+        with self._lock:
+            self.ahead.difference_update(urls)
 
     def decode(self, url: str, content: bytes) -> Image.Image:
         """Reuse pixels while keeping their retained allocation within the budget."""
@@ -86,12 +145,14 @@ class CachedStaticMap(StaticMap):
 
     def get(self, url: str, **kwargs):
         """Keep the existing download cache and request options."""
-        if url in tile_cache.content:
-            return 200, tile_cache.content[url]
-        status, content = super().get(url, **kwargs)
-        if status == 200:
-            tile_cache.content[url] = content
-        return status, content
+        return tile_cache.fetch(url, lambda: StaticMap.get(self, url, **kwargs))
+
+    def tile_urls(self, lon: float, lat: float, zoom: int) -> list[str]:
+        """The tiles ``render(zoom, [lon, lat])`` draws, without drawing them."""
+        self.zoom = zoom
+        self.x_center = _lon_to_x(lon, zoom)
+        self.y_center = _lat_to_y(lat, zoom)
+        return [url for *_, url in self._tiles()]
 
     def _tiles(self):
         left = math.floor(self.x_center - self.width / (2 * self.tile_size))
@@ -115,6 +176,7 @@ class CachedStaticMap(StaticMap):
     def _draw_base_layer(self, image):
         tiles = list(self._tiles())
         tile_cache.in_view = frozenset(url for *_, url in tiles)
+        tile_cache.drawn(tile_cache.in_view)
         undecoded = []
         # Consume resident pixels first: a miss must not evict a tile this frame
         # still needs when the view is larger than the cache's memory budget.
@@ -135,8 +197,8 @@ class CachedStaticMap(StaticMap):
 
     def _download_tiles(self, image, missing):
         # Cold tiles retain StaticMap's four requests, three attempts and delay.
-        with ThreadPoolExecutor(4) as pool:
-            for attempt in range(3):
+        with ThreadPoolExecutor(_FETCH_THREADS) as pool:
+            for attempt in range(_FETCH_ATTEMPTS):
                 if attempt and self.delay_between_retries:
                     time.sleep(self.delay_between_retries)
                 missing = self._fetch_tiles(pool, image, missing)
@@ -162,3 +224,48 @@ class CachedStaticMap(StaticMap):
             else:
                 self._paste(image, tile, content)
         return failed
+
+
+class TilePrefetcher:
+    """Fetches the tiles of a card's coming frames while the current frame renders.
+
+    Same host, same request options and the same three attempts as a frame's own
+    fetch. Room is claimed in the tile cache first, so what is fetched ahead and not
+    yet drawn never outgrows its memory budget; a full cache simply waits for frames.
+    """
+
+    def __init__(self, renderer: CachedStaticMap) -> None:
+        self._renderer = renderer
+        self._pool = ThreadPoolExecutor(_FETCH_THREADS, thread_name_prefix="map-tiles")
+
+    def __enter__(self) -> TilePrefetcher:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        # A card that ends drops what it queued and waits out what is on the wire,
+        # so nothing lands in the cache after the card has released it.
+        self._pool.shutdown(wait=True, cancel_futures=True)
+        tile_cache.ahead.clear()
+
+    def ahead(self, urls: Iterable[str]) -> None:
+        """Queue the tiles of a coming frame that are neither stored nor on their way."""
+        for url in urls:
+            if tile_cache.reserve_ahead(url):
+                self._pool.submit(self._fetch, url)
+
+    def _fetch(self, url: str) -> None:
+        renderer = self._renderer
+        for attempt in range(_FETCH_ATTEMPTS):
+            if attempt and renderer.delay_between_retries:
+                time.sleep(renderer.delay_between_retries)
+            try:
+                status, _ = renderer.get(
+                    url, timeout=renderer.request_timeout, headers=renderer.headers
+                )
+            except Exception:  # noqa: BLE001
+                # A failed request is retried, like a frame's own fetch.
+                status = None
+            if status == 200:
+                return
+        # The frame that needs it fetches it again, with its own attempts.
+        tile_cache.drawn([url])

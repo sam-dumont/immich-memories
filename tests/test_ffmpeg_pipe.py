@@ -162,6 +162,8 @@ class TestFailuresCarryStderrTail:
             patch("immich_memories.titles.map_animation.subprocess.Popen") as popen,
             # WHY: replaces map tile rendering, which would fetch tiles over the network
             patch("immich_memories.titles.map_animation._frame_at") as get_frame,
+            # WHY: fetching the coming frames' tiles ahead would reach the tile host too
+            patch("immich_memories.titles.map_animation._LOOKAHEAD_VIEWS", 0),
         ):
             popen.return_value = self._failing_process()
             get_frame.return_value = (Image.new("RGB", (32, 18)), 9.0)
