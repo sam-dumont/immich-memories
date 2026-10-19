@@ -494,3 +494,17 @@ def test_the_import_check_fails_a_module_that_no_longer_imports(
     failures = hook_scope.import_failures(tmp_path, ["src/immich_memories/changed.py"])
 
     assert bool(failures) is fails
+
+
+def test_the_import_check_imports_a_module_whose_name_starts_with_a_digit(hook_scope, tmp_path):
+    versions = tmp_path / "src" / "immich_memories" / "versions"
+    versions.mkdir(parents=True)
+    (tmp_path / "src" / "immich_memories" / "__init__.py").write_text("")
+    (versions / "__init__.py").write_text("")
+    (versions / "0016_phase_event_rows.py").write_text("VALUE = 1\n")
+
+    failures = hook_scope.import_failures(
+        tmp_path, ["src/immich_memories/versions/0016_phase_event_rows.py"]
+    )
+
+    assert failures == []
