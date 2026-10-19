@@ -1,16 +1,19 @@
 """Detector portability, refusal reporting and cancellation, on synthetic probabilities."""
 
+import io
 import json
 import logging
+import os
 import signal
 import sys
+import threading
 from types import ModuleType, SimpleNamespace
 
 import numpy as np
 import pytest
 from PIL import Image
 
-from immich_memories.analysis.preparation import detectors
+from immich_memories.analysis.preparation import detector_workers, detectors
 from immich_memories.operations.cancellation import PipelineCancelled
 from tests.annotation_rows import annotation_store
 
@@ -168,6 +171,7 @@ def test_cancellation_terminates_detector_process_group(monkeypatch, tmp_path):
     class Process:
         pid = 12345
         returncode = None
+        stdin = io.StringIO()
 
         def poll(self):
             return None
@@ -190,9 +194,10 @@ def test_cancellation_terminates_detector_process_group(monkeypatch, tmp_path):
     # checks the mount table through subprocess.run, which the same module-level
     # patch would otherwise catch too.
     store = annotation_store()
+    monkeypatch.setattr(detector_workers, "_IDLE", {})
     # WHY: both replace the detector subprocess boundary itself.
-    monkeypatch.setattr(detectors.subprocess, "Popen", popen)
-    monkeypatch.setattr(detectors.os, "killpg", lambda *args: killed.append(args))
+    monkeypatch.setattr(detector_workers.subprocess, "Popen", popen)
+    monkeypatch.setattr(detector_workers.os, "killpg", lambda *args: killed.append(args))
     with pytest.raises(PipelineCancelled):
         detectors.prepare_detectors(
             pending={"nsfw_marqo": ["a"]},
@@ -232,6 +237,18 @@ class FakeSession:
         return [np.zeros((1, len(detectors.DOCLING_LABELS)), dtype=np.float32)]
 
 
+class FakeSessionOptions:
+    """ONNX Runtime's session options, down to the settings the worker makes."""
+
+    def __init__(self):
+        self.intra_op_num_threads = 0
+        self.graph_optimization_level = None
+        self.entries: dict[str, str] = {}
+
+    def add_session_config_entry(self, key, value):
+        self.entries[key] = value
+
+
 def _fake_onnxruntime(monkeypatch, available, opened, *, refuse=(), running=None):
     """# WHY: ONNX Runtime is the boundary under test -- which execution providers
     a session is opened with, and what it answers when one turns the graph down.
@@ -248,9 +265,7 @@ def _fake_onnxruntime(monkeypatch, available, opened, *, refuse=(), running=None
         "onnxruntime",
         SimpleNamespace(
             get_available_providers=lambda: list(available),
-            SessionOptions=lambda: SimpleNamespace(
-                intra_op_num_threads=0, graph_optimization_level=None
-            ),
+            SessionOptions=FakeSessionOptions,
             GraphOptimizationLevel=SimpleNamespace(ORT_ENABLE_EXTENDED="extended"),
             disable_telemetry_events=lambda: None,
             InferenceSession=session,
@@ -433,3 +448,215 @@ def test_a_clip_the_preview_alone_holds_stays_held(monkeypatch, tmp_path):
     assert [(row["label"], row["confidence"]) for row in _banked_facts(facts_path)] == [
         ("yes", 0.61)
     ]
+
+
+def test_a_worker_session_sizes_its_pool_from_the_job_and_sleeps_when_idle(monkeypatch, tmp_path):
+    """The parent knows the CPUs the process may use; the worker's sessions follow it."""
+    captured = []
+
+    def session(path, sess_options, providers):
+        captured.append(sess_options)
+        return FakeSession(path, sess_options, providers)
+
+    _fake_onnxruntime(monkeypatch, ("CPUExecutionProvider",), [])
+    monkeypatch.setattr(sys.modules["onnxruntime"], "InferenceSession", session)
+    _fake_snapshot(monkeypatch, tmp_path)
+    _facts_path, job = _job(tmp_path, {"doc_docling": ["a"]})
+    job["threads"] = 3
+
+    detectors._open_detector("doc_docling", job)
+
+    (options,) = captured
+    assert options.intra_op_num_threads == 3
+    assert options.entries == {
+        "session.intra_op.allow_spinning": "0",
+        "session.inter_op.allow_spinning": "0",
+    }
+
+
+class InProcessWorker:
+    """The detector worker's job loop on a thread, fed through a pipe like the real child.
+
+    It runs this module's own loop, so a stand-in producer patched here reaches it.
+    """
+
+    spawned: list[list[str]] = []
+
+    def __init__(self, argv, **kwargs):
+        InProcessWorker.spawned.append(argv)
+        self.env = kwargs["env"]
+        self.pid = 4242
+        read_end, write_end = os.pipe()
+        self.stdin = os.fdopen(write_end, "w")
+        self._jobs = os.fdopen(read_end, "r")
+        self._thread = threading.Thread(
+            target=detectors._serve, args=(self._jobs, 30.0), daemon=True
+        )
+        self._thread.start()
+
+    def poll(self):
+        return None if self._thread.is_alive() else 0
+
+    def wait(self, timeout=None):
+        self._thread.join(timeout)
+        return 0
+
+
+@pytest.fixture
+def worker_pool(monkeypatch):
+    """A pool of in-process workers this test owns, retired when it ends."""
+    InProcessWorker.spawned = []
+    monkeypatch.setattr(detector_workers, "_IDLE", {})
+    # WHY: the detector subprocess is the boundary; its job loop runs here on a thread.
+    monkeypatch.setattr(detector_workers.subprocess, "Popen", InProcessWorker)
+    yield InProcessWorker.spawned
+    detector_workers.retire_detector_workers()
+
+
+def _previews(tmp_path, ids):
+    paths = {}
+    for asset_id in ids:
+        path = tmp_path / f"{asset_id}.jpg"
+        Image.new("RGB", (80, 60), "white").save(path)
+        paths[asset_id] = path
+    return paths
+
+
+def test_one_worker_decides_every_batch_of_a_preparation(monkeypatch, tmp_path, worker_pool):
+    """Each batch used to start a fresh interpreter, import ONNX Runtime and load its models."""
+    from immich_memories.store.editorial_preparation import heads_missing_for
+
+    opened = []
+
+    class CountingDocling(FakeDocling):
+        def __init__(self, **kwargs):
+            opened.append(kwargs)
+
+    # WHY: the real Docling seat downloads a pinned snapshot from Hugging Face.
+    monkeypatch.setattr(detectors, "Docling", CountingDocling)
+    store = annotation_store()
+    batches = [["a1", "a2"], ["b1"], ["c1", "c2", "c3"]]
+
+    results = [
+        detectors.prepare_detectors(
+            pending={"doc_docling": batch},
+            store=store,
+            preview_paths=_previews(tmp_path, batch),
+            python=sys.executable,
+            cache_dir="",
+            marqo_onnx=tmp_path / "nsfw-marqo-384.onnx",
+            allow_downloads=False,
+            batch_size=16,
+            check_cancelled=lambda: None,
+            progress=lambda *_: None,
+        )
+        for batch in batches
+    ]
+
+    assert results == [{}, {}, {}]
+    assert len(worker_pool) == 1
+    assert len(opened) == 1
+    every = [asset_id for batch in batches for asset_id in batch]
+    assert heads_missing_for(store, every, "doc_docling", detectors.DOCLING_VERSION) == ()
+
+
+def test_the_worker_is_told_the_cpus_the_process_may_use(monkeypatch, tmp_path, worker_pool):
+    from immich_memories import onnx_session
+
+    # WHY: the CPU count is the host boundary (affinity and cgroup quota).
+    monkeypatch.setattr(onnx_session, "available_cpus", lambda: 4)
+    # WHY: the real Docling seat downloads a pinned snapshot from Hugging Face.
+    monkeypatch.setattr(detectors, "Docling", FakeDocling)
+
+    detectors.prepare_detectors(
+        pending={"doc_docling": ["a"]},
+        store=annotation_store(),
+        preview_paths=_previews(tmp_path, ["a"]),
+        python=sys.executable,
+        cache_dir="",
+        marqo_onnx=tmp_path / "nsfw-marqo-384.onnx",
+        allow_downloads=False,
+        batch_size=16,
+        check_cancelled=lambda: None,
+        progress=lambda *_: None,
+    )
+
+    assert detector_workers._IDLE, "the worker was not kept for the next batch"
+    (worker,) = detector_workers._IDLE.values()
+    assert worker.process.env["OMP_NUM_THREADS"] == "3"
+
+
+def test_the_real_worker_answers_job_after_job_from_one_interpreter(monkeypatch, tmp_path):
+    """The packaged script itself, run as the child: each job gets its answer, one spawn."""
+    spawned = []
+    real_popen = detector_workers.subprocess.Popen
+
+    def counting(argv, **kwargs):
+        spawned.append(argv)
+        return real_popen(argv, **kwargs)
+
+    store = annotation_store()
+    monkeypatch.setattr(detector_workers, "_IDLE", {})
+    # WHY: counts spawns at the subprocess boundary; the real interpreter still starts.
+    monkeypatch.setattr(detector_workers.subprocess, "Popen", counting)
+    try:
+        answers = [
+            detectors.prepare_detectors(
+                pending={detectors.MARQO_HEAD: [asset_id]},
+                store=store,
+                preview_paths=_previews(tmp_path, [asset_id]),
+                python=sys.executable,
+                cache_dir="",
+                marqo_onnx=tmp_path / "absent-nsfw-marqo-384.onnx",
+                allow_downloads=False,
+                batch_size=16,
+                check_cancelled=lambda: None,
+                progress=lambda *_: None,
+            )
+            for asset_id in ("a", "b")
+        ]
+    finally:
+        detector_workers.retire_detector_workers()
+
+    assert len(spawned) == 1
+    assert [detectors.MARQO_ONNX_ID in answer[detectors.MARQO_HEAD] for answer in answers] == [
+        True,
+        True,
+    ]
+
+
+def test_a_worker_that_died_before_its_first_job_still_names_why(tmp_path):
+    broken = tmp_path / "python"
+    broken.write_text("#!/bin/sh\necho 'No module named numpy' >&2\nexit 1\n")
+    broken.chmod(0o700)
+    worker = detector_workers._spawn(str(broken), "", False, 1)
+    # The death lands in the log before the job is ever written: the race CI lost.
+    worker.process.wait()
+
+    with pytest.raises(RuntimeError, match="No module named numpy"):
+        worker.run(tmp_path / "job.json", tmp_path / "result.json", lambda: None, lambda: None)
+    worker.stop()
+
+
+def test_an_interpreter_without_the_detector_dependencies_says_so(monkeypatch, tmp_path):
+    broken = tmp_path / "python"
+    broken.write_text("#!/bin/sh\necho 'No module named numpy' >&2\nexit 1\n")
+    broken.chmod(0o700)
+    monkeypatch.setattr(detector_workers, "_IDLE", {})
+
+    with pytest.raises(RuntimeError, match="No module named numpy") as raised:
+        detectors.prepare_detectors(
+            pending={detectors.MARQO_HEAD: ["a"]},
+            store=annotation_store(),
+            preview_paths=_previews(tmp_path, ["a"]),
+            python=str(broken),
+            cache_dir="",
+            marqo_onnx=tmp_path / "absent-nsfw-marqo-384.onnx",
+            allow_downloads=False,
+            batch_size=16,
+            check_cancelled=lambda: None,
+            progress=lambda *_: None,
+        )
+
+    assert "install required detector dependencies" in str(raised.value)
+    assert detector_workers._IDLE == {}

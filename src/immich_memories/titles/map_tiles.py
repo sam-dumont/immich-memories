@@ -48,6 +48,9 @@ class TileCache:
         self.images.clear()
         self.in_view = frozenset()
         self.ahead.clear()
+        # Set once the tile host refuses, or a tile fails every attempt: the card stops
+        # asking and its frames take the grey fallback instead of hammering the host.
+        self.unreachable = False
         self.size = 0
         budget = memory_budget()
         self.limit = min(128 * 2**20, budget.size // 32) if budget else 32 * 2**20
@@ -72,6 +75,8 @@ class TileCache:
         with self._lock:
             if url in self.content:
                 return 200, self.content[url]
+            if self.unreachable:
+                return None, None
             pending = self._fetching.get(url)
             future: Future[TileResponse] = Future()
             if pending is None:
@@ -83,11 +88,18 @@ class TileCache:
         except BaseException as error:
             with self._lock:
                 del self._fetching[url]
+                # A refused connection answers the same a moment later; a reset or a
+                # DNS hiccup may not, so those get the usual attempts.
+                if _refused(error):
+                    self.unreachable = True
             future.set_exception(error)
             raise
         with self._lock:
-            if response[0] == 200 and response[1] is not None:
-                self.content[url] = response[1]
+            status, content = response
+            if status == 200 and content is not None:
+                self.content[url] = content
+            elif _refusal(status):
+                self.unreachable = True
             del self._fetching[url]
         future.set_result(response)
         return response
@@ -95,12 +107,19 @@ class TileCache:
     def reserve_ahead(self, url: str) -> bool:
         """Claim room to fetch ``url`` for a coming frame, within the decoded-tile budget."""
         with self._lock:
+            if self.unreachable:
+                return False
             if url in self.content or url in self._fetching or url in self.ahead:
                 return False
             if (len(self.ahead) + 1) * _TILE_PIXEL_BYTES > self.limit:
                 return False
             self.ahead.add(url)
             return True
+
+    def give_up(self) -> None:
+        """A tile failed every attempt: stop asking the host for the rest of the card."""
+        with self._lock:
+            self.unreachable = True
 
     def drawn(self, urls: Iterable[str]) -> None:
         """Hand the room of tiles fetched ahead back once a frame has drawn them."""
@@ -125,6 +144,30 @@ class TileCache:
             self.images[url] = image
             self.size += size
         return image
+
+
+def _refusal(status: int | None) -> bool:
+    """A 4xx other than 429: asking again gets the same answer (a block, a wrong host)."""
+    return status is not None and 400 <= status < 500 and status != 429
+
+
+def _refused(error: BaseException) -> bool:
+    """Whether the host turned the connection away, anywhere in the error's chain.
+
+    The HTTP client wraps the socket's ConnectionRefusedError a few levels deep
+    (through causes, contexts and a ``reason`` attribute), so it is looked for there.
+    """
+    seen: set[int] = set()
+    pending: list[object] = [error]
+    while pending:
+        current = pending.pop()
+        if not isinstance(current, BaseException) or id(current) in seen:
+            continue
+        if isinstance(current, ConnectionRefusedError):
+            return True
+        seen.add(id(current))
+        pending += [current.__cause__, current.__context__, getattr(current, "reason", None)]
+    return False
 
 
 def _pixel_bytes(image: Image.Image) -> int:
@@ -199,11 +242,14 @@ class CachedStaticMap(StaticMap):
         # Cold tiles retain StaticMap's four requests, three attempts and delay.
         with ThreadPoolExecutor(_FETCH_THREADS) as pool:
             for attempt in range(_FETCH_ATTEMPTS):
+                if tile_cache.unreachable:
+                    break
                 if attempt and self.delay_between_retries:
                     time.sleep(self.delay_between_retries)
                 missing = self._fetch_tiles(pool, image, missing)
                 if not missing:
                     return
+        tile_cache.give_up()
         # Avoid including URLs: they contain the camera's precise coordinates.
         raise RuntimeError(f"could not download {len(missing)} tiles")
 
@@ -256,6 +302,8 @@ class TilePrefetcher:
     def _fetch(self, url: str) -> None:
         renderer = self._renderer
         for attempt in range(_FETCH_ATTEMPTS):
+            if tile_cache.unreachable:
+                break
             if attempt and renderer.delay_between_retries:
                 time.sleep(renderer.delay_between_retries)
             try:
@@ -267,5 +315,7 @@ class TilePrefetcher:
                 status = None
             if status == 200:
                 return
-        # The frame that needs it fetches it again, with its own attempts.
+        # Out of attempts: the frame that needs it takes the fallback, and nothing more
+        # is fetched ahead for this card.
+        tile_cache.give_up()
         tile_cache.drawn([url])

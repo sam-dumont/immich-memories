@@ -35,6 +35,9 @@ class ImmichPrintedText:
 
     def __init__(self, immich: _Search) -> None:
         self._immich = immich
+        # Each story reading asks the same word over the same event window again; Immich's
+        # answer cannot change within one reader's life, so it is asked once (#2711).
+        self._screen_answers: dict[tuple[str, datetime, datetime], bool] = {}
 
     def pictures_reading(self, text: str) -> frozenset[str]:
         """Every picture Immich's OCR search finds for `text`, page after page."""
@@ -50,7 +53,14 @@ class ImmichPrintedText:
         """Whether a screen or document (a still no camera made) taken in the window reads `text`.
 
         A camera photo of a sign reads words too; only what a phone shows or a scan holds counts.
+        Asked once per word and window for this reader's life.
         """
+        key = (text, taken_after, taken_before)
+        if key not in self._screen_answers:
+            self._screen_answers[key] = self._screen_reads(text, taken_after, taken_before)
+        return self._screen_answers[key]
+
+    def _screen_reads(self, text: str, taken_after: datetime, taken_before: datetime) -> bool:
         page: int | None = 1
         while page is not None and page <= _MOST_PAGES:
             result = self._immich.search_metadata(

@@ -33,10 +33,12 @@ from immich_memories_inference.producers import (
     DOC_DOCLING,
     HEADS,
     NSFW_MARQO,
+    OBSTRUCTION,
     Producer,
     ProducerFacts,
     detector_loader,
     heads_loader,
+    obstruction_loader,
 )
 from immich_memories_inference.queue import InferenceQueue, QueueFull
 from immich_memories_inference.runtime import ProducerRuntime, ProducerUnavailable
@@ -91,6 +93,13 @@ def default_loaders(settings: InferenceSettings) -> dict[str, Callable[[], Produ
             allow_downloads=settings.allow_model_downloads,
             cache_dir=settings.detector_cache,
             marqo_onnx=settings.marqo_onnx_path,
+        ),
+        # Served after the heads, so a request asking both finds their encoder call held.
+        OBSTRUCTION: obstruction_loader(
+            settings.encoder_path,
+            settings.obstruction_bundle_path,
+            provider=settings.provider,
+            allow_downloads=settings.allow_model_downloads,
         ),
     }
 

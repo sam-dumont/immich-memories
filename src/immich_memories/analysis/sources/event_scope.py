@@ -134,7 +134,9 @@ def select_source_members(
         for source in fetched
         if _asset_of(source).id in allowed
     } - {None}
-    return tuple(source for source in fetched if _asset_of(source).id in allowed | companions)
+    # Built once: a union inside the generator cost one copy of both per source (quadratic).
+    members = allowed | companions
+    return tuple(source for source in fetched if _asset_of(source).id in members)
 
 
 def _asset_of(source: Asset | VideoClipInfo) -> Asset:

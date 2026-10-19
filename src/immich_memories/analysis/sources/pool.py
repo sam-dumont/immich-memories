@@ -77,11 +77,11 @@ def resolve_source_pool(
     ]
     linked = {asset.live_photo_video_id for asset in photos}
     requested = dict.fromkeys(asset_of(source).id for source in selected)
+    # Built once: a union inside the generator cost one copy of both per source (quadratic).
+    outside_context = requested.keys() | linked
     return EditorialSourcePool(
         selectable=tuple(by_id[key] for key in requested if key in by_id and key not in linked),
-        context=tuple(
-            source for source in sources if asset_of(source).id not in requested.keys() | linked
-        ),
+        context=tuple(source for source in sources if asset_of(source).id not in outside_context),
         companions=_resolve_companions(client, sources, photos),
     )
 

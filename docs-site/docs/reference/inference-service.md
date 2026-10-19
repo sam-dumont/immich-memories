@@ -133,8 +133,9 @@ compute check. Change the inference URL in Settings for an existing install, or 
 The app detects remote GPU capability from the top-level `/health` fields `status: "ok"` and
 `provider: "CUDAExecutionProvider"`; that probe loads no models and sends no pictures.
 `/health` also names the provider per producer, in `producers.heads.providers`,
-`producers.nsfw_marqo.providers` and `producers.doc_docling.providers`, each empty until that
-producer has loaded. `CPUExecutionProvider` on a GPU host means the image is the CPU one, the
+`producers.nsfw_marqo.providers`, `producers.doc_docling.providers` and
+`producers.obstruction.providers`, each empty until that producer has loaded. The app reads the
+producer names there once per run and asks only for the ones the service serves. `CPUExecutionProvider` on a GPU host means the image is the CPU one, the
 device reservation did not reach the container, `PROVIDER` names `cpu`, or the driver and the CUDA
 runtime in the image do not match. Check the tag first: it is the usual one. A graph ONNX Runtime
 turns down gets one WARNING naming the seat and the fallback, so the service never serves CPU

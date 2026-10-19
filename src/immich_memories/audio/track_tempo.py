@@ -24,6 +24,7 @@ from pathlib import Path
 import numpy as np
 
 from immich_memories.audio.audio_decode import decode_mono_float
+from immich_memories.cache.file_facts import remembered_fact
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,8 @@ def track_for_cadence(candidates: list[Path], cadence_seconds: float) -> Path | 
 
     aligned = []
     for track in candidates:
-        bpm = detect_bpm(track)
+        # A bundled track's tempo never changes, and reading it is a full ffmpeg decode.
+        bpm = remembered_fact("track-tempo", track, detect_bpm)
         if bpm is None:
             logger.debug("No tempo read from %s; skipping it for cadence matching", track.name)
             continue

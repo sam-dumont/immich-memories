@@ -23,6 +23,7 @@ from typing import TypeVar
 
 import httpx
 
+from immich_memories.cache.file_facts import remembered_fact
 from immich_memories.config.models.llm import DEFAULT_LOCAL_MODEL, LLMConfig
 from immich_memories.operations.bounded_process import stop_process_group
 
@@ -61,10 +62,15 @@ def local_reader_paths(config: LLMConfig) -> list[Path]:
     return [Path(p).expanduser().resolve() for p in (config.model, config.local_mmproj) if p]
 
 
-@lru_cache(maxsize=8)
-def _weight_digest(path: Path, _signature: tuple[int, ...]) -> str:
+def _sha256(path: Path) -> str:
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+@lru_cache(maxsize=8)
+def _weight_digest(path: Path, _signature: tuple[int, ...]) -> str:
+    # The checkpoint is gigabytes: read it once per version of the file, not per process.
+    return remembered_fact("reader-weights", path, _sha256) or _sha256(path)
 
 
 def local_reader_identity(config: LLMConfig) -> tuple:

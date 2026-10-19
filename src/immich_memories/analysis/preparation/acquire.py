@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import sqlalchemy as sa
 
@@ -27,6 +27,7 @@ from immich_memories.analysis.facts.clip_frames import (
 )
 from immich_memories.analysis.facts.subject_framing import FaceBox
 from immich_memories.analysis.llm.providers import resolved_llm_config
+from immich_memories.analysis.preparation.bounded_reads import read_each
 from immich_memories.analysis.preparation.detector_frames import DetectorFrames
 from immich_memories.analysis.preparation.detectors import prepare_detectors
 from immich_memories.analysis.preparation.edits import (
@@ -50,13 +51,9 @@ from immich_memories.analysis.preparation.motion_lines import (
     prepare_motion_lines,
     seat_asker,
 )
-from immich_memories.analysis.preparation.obstruction_bank import (
-    prepare_obstruction_frames,
-    prepare_obstruction_heads,
-)
 from immich_memories.analysis.preparation.pixels import (
     PRODUCER_KEY,
-    pixel_row,
+    measured_rows,
     refresh_threshold,
     remember_pixels,
 )
@@ -77,6 +74,7 @@ from immich_memories.db import Store
 from immich_memories.db.tables import pixel_facts_thresholds
 from immich_memories.operations.cancellation import check_cancelled as current_check_cancelled
 from immich_memories.process_scratch import active_scratch
+from immich_memories.processing.memory_budget import available_cpus
 from immich_memories.store.caption_provenance import CaptionOrigin, origins_for
 from immich_memories.store.caption_selection import conflicting_caption_ids
 from immich_memories.store.editorial_preparation import (
@@ -206,8 +204,6 @@ class PreparationPorts:
     motion: Callable = prepare_motion_lines
     clip_frames: Callable = prepare_clip_frames
     video_motion: Callable = bank_video_motion
-    obstruction: Callable = prepare_obstruction_heads
-    obstruction_frames: Callable = prepare_obstruction_frames
 
 
 # Pictures per write while a producer banks as it goes: a crash costs at most this many.
@@ -256,6 +252,10 @@ class _Acquisition:
     pictures: dict[str, int] = field(default_factory=dict)
     service_seconds: dict[str, float] = field(default_factory=dict)
     transfer: dict[str, dict[str, int]] = field(default_factory=dict)
+    # How many preview and face reads may be in flight at once; 1 reads one at a time.
+    read_workers: int = 1
+    # Where selection reads scene prints; the heads pass banks each pack it decides there.
+    scene_prints: Path | None = None
 
     def scoped(self, scope: str) -> _Acquisition:
         """Keep video and attached-clip work distinct without changing their fact producers."""
@@ -311,19 +311,25 @@ class _Acquisition:
     ) -> tuple[dict[str, Path], list[str]]:
         paths: dict[str, Path] = {}
         unusable: list[str] = []
+
+        def path_of(asset_id: str) -> Path:
+            subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
+            return cache_path / subdir / f"{asset_id}_preview.jpg"
+
+        def fetch(asset_id: str) -> int:
+            edited = (edited_by_id or {}).get(asset_id, False)  # #2114: may be stale
+            return ensure_preview(path_of(asset_id), asset_id, fetch_preview, edited=edited)
+
         with self.timed("previews", len(ids)):
-            for index, asset_id in enumerate(ids, 1):
-                self.check()
-                subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
-                path = cache_path / subdir / f"{asset_id}_preview.jpg"
-                try:
-                    edited = (edited_by_id or {}).get(asset_id, False)  # #2114: may be stale
-                    self.wrote(ensure_preview(path, asset_id, fetch_preview, edited=edited))
-                    paths[asset_id] = path
+            answers = read_each(ids, fetch, workers=self.read_workers, check=self.check)
+            for index, (asset_id, written, exc) in enumerate(answers, 1):
+                if exc is None:
+                    self.wrote(written or 0)
+                    paths[asset_id] = path_of(asset_id)
                     self.note(asset_id)
-                except AccountReadFailed:
-                    raise
-                except Exception as exc:
+                elif isinstance(exc, AccountReadFailed):
+                    raise exc
+                else:
                     unusable.append(asset_id)
                     if preview_refused(exc):
                         self.unservable[asset_id] = PREVIEW_UNAVAILABLE
@@ -334,17 +340,17 @@ class _Acquisition:
 
     def pixels(self, asset_ids: Sequence[str]) -> None:
         measured: list[dict[str, Any]] = []
+        rows = measured_rows(
+            asset_ids, self.preview_for, check=self.check, workers=min(4, available_cpus() - 1)
+        )
         with self.timed("pixels", len(asset_ids)):
             try:
-                for index, asset_id in enumerate(asset_ids, 1):
-                    self.check()
-                    try:
-                        measured.append(pixel_row(asset_id, self.preview_for(asset_id)))
+                for index, (asset_id, row) in enumerate(rows, 1):
+                    if isinstance(row, Exception):
+                        self.failures[f"pixel:{asset_id}"] = f"{type(row).__name__}: {row}"
+                    else:
+                        measured.append(row)
                         self.note(asset_id)
-                    except AccountReadFailed:
-                        raise
-                    except Exception as exc:
-                        self.failures[f"pixel:{asset_id}"] = f"{type(exc).__name__}: {exc}"
                     if len(measured) >= BANK_BATCH:
                         remember_pixels(self.store, measured)
                         measured.clear()
@@ -370,13 +376,15 @@ class _Acquisition:
         read: dict[str, Sequence[FaceBox]] = {}
         with self.timed("faces", len(asset_ids)):
             try:
-                for index, asset_id in enumerate(asset_ids, 1):
-                    self.check()
-                    try:
-                        read[asset_id] = fetch_faces(asset_id)
-                    except AccountReadFailed:
-                        raise
-                    except Exception as exc:
+                answers = read_each(
+                    asset_ids, fetch_faces, workers=self.read_workers, check=self.check
+                )
+                for index, (asset_id, boxes, exc) in enumerate(answers, 1):
+                    if exc is None:
+                        read[asset_id] = cast(Sequence[FaceBox], boxes)
+                    elif isinstance(exc, AccountReadFailed):
+                        raise exc
+                    else:
                         self.failures[f"faces:{asset_id}"] = f"{type(exc).__name__}: {exc}"
                     if len(read) >= BANK_BATCH:
                         remember_faces(self.store, read)
@@ -385,11 +393,18 @@ class _Acquisition:
             finally:
                 remember_faces(self.store, read)
 
-    def public_heads(self, asset_ids: Sequence[str], head_versions: Mapping[str, str]) -> None:
+    def public_heads(
+        self,
+        asset_ids: Sequence[str],
+        head_versions: Mapping[str, str],
+        obstruction_ids: Sequence[str] = (),
+    ) -> None:
+        """One encoder pass: the public heads, and the rank-only obstruction head (#2022)
+        that `complete` never waits on."""
         self.check()
         try:
-            with self.timed("public_heads", len(asset_ids)):
-                self.providers.heads(
+            with self.timed("public_heads", len({*asset_ids, *obstruction_ids})):
+                failures = self.providers.heads(
                     asset_ids=asset_ids,
                     store=self.store,
                     bundle_path=self.preparation_config.head_bundle_path,
@@ -400,32 +415,18 @@ class _Acquisition:
                     check_cancelled=self.check,
                     progress=self.report,
                     provider=self.triage_config.provider,
+                    obstruction_ids=obstruction_ids,
+                    obstruction_bundle_path=self.preparation_config.obstruction_bundle_path,
+                    scene_prints=self.scene_prints,
                 )
+            self.failures.update(failures or {})
         except AccountReadFailed:
             raise
         except Exception as exc:
-            self.failures["public_heads"] = f"{type(exc).__name__}: {exc}"
-
-    def obstruction_heads(self, asset_ids: Sequence[str]) -> None:
-        """Bank the rank-only finger-over-the-lens reading (#2022); see `complete`."""
-        self.check()
-        try:
-            with self.timed("obstruction", len(asset_ids)):
-                failures = self.providers.obstruction(
-                    asset_ids=asset_ids,
-                    store=self.store,
-                    bundle_path=self.preparation_config.obstruction_bundle_path,
-                    encoder_path=self.triage_config.encoder_path,
-                    preview_for=self.preview_for,
-                    check_cancelled=self.check,
-                    progress=self.report,
-                    provider=self.triage_config.provider,
-                )
-            self.failures.update({f"obstruction:{k}": v for k, v in failures.items()})
-        except AccountReadFailed:
-            raise
-        except Exception as exc:
-            self.failures["obstruction"] = f"{type(exc).__name__}: {exc}"
+            # A pass only the rank-only head asked for fails as that head, never the cut.
+            self.failures["public_heads" if asset_ids else "obstruction"] = (
+                f"{type(exc).__name__}: {exc}"
+            )
 
     def remote_facts(self, pending: Mapping[str, Mapping[str, str]]) -> bool:
         """Bank the offloaded producers from the service; False when it did not answer.
@@ -493,12 +494,20 @@ class _Acquisition:
         except Exception as exc:
             self.failures["detectors"] = f"{type(exc).__name__}: {exc}"
 
-    def clip_frames(self, frame_paths: Mapping[str, Sequence[Path]]) -> None:
-        """Read each clip's sampled frames with the frame head; a clip it cannot read, or a
-        producer that cannot run, leaves the clip on its preview's reading and never the cut."""
+    def clip_frames(
+        self,
+        frame_paths: Mapping[str, Sequence[Path]],
+        obstruction: Mapping[str, Sequence[Path]] | None = None,
+        videos: Mapping[str, Asset] | None = None,
+    ) -> None:
+        """Read each clip's sampled frames once: the frame head for the clips that owe it,
+        the obstruction head (#2022) for the videos in ``obstruction``. A clip it cannot
+        read, or a producer that cannot run, leaves the clip on its preview's reading and
+        never the cut."""
         self.check()
+        obstruction = obstruction or {}
         try:
-            with self.timed(CLIP_FRAMES_HEAD, len(frame_paths)):
+            with self.timed(CLIP_FRAMES_HEAD, len({*frame_paths, *obstruction})):
                 errors = self.providers.clip_frames(
                     frame_paths=frame_paths,
                     store=self.store,
@@ -507,8 +516,11 @@ class _Acquisition:
                     check_cancelled=self.check,
                     provider=self.triage_config.provider,
                     progress=self.report,
+                    obstruction=obstruction,
+                    videos=videos or {},
+                    obstruction_bundle_path=self.preparation_config.obstruction_bundle_path,
                 )
-            self.failures.update({f"{CLIP_FRAMES_HEAD}:{k}": v for k, v in errors.items()})
+            self.failures.update(errors)
         except AccountReadFailed:
             raise
         except Exception as exc:
@@ -530,29 +542,6 @@ class _Acquisition:
             raise
         except Exception as exc:
             self.failures[VIDEO_MOTION] = f"{type(exc).__name__}: {exc}"
-
-    def obstruction_frames(
-        self, frame_paths: Mapping[str, Sequence[Path]], videos: Mapping[str, Asset]
-    ) -> None:
-        """Bank each video's flagged detector-frame seconds (#2022); see `complete`."""
-        self.check()
-        try:
-            with self.timed("obstruction_frames", len(frame_paths)):
-                errors = self.providers.obstruction_frames(
-                    store=self.store,
-                    videos=videos,
-                    frame_paths=frame_paths,
-                    bundle_path=self.preparation_config.obstruction_bundle_path,
-                    encoder_path=self.triage_config.encoder_path,
-                    check_cancelled=self.check,
-                    provider=self.triage_config.provider,
-                    progress=self.report,
-                )
-            self.failures.update({f"obstruction_frames:{k}": v for k, v in errors.items()})
-        except AccountReadFailed:
-            raise
-        except Exception as exc:
-            self.failures["obstruction_frames"] = f"{type(exc).__name__}: {exc}"
 
     def captions(self, asset_ids: Sequence[str]) -> None:
         self.check()
@@ -682,6 +671,8 @@ def prepare_editorial_annotations(
     read_playback: Callable[[str, int, int], tuple[bytes, int]] | None = None,
     inspect_clips: bool = True,
     acquire_motion: bool = True,
+    read_workers: int = 1,
+    scene_prints: Path | None = None,
 ) -> PreparationResult:
     """Prepare the supplied source scope, reusing facts under their exact producer identity.
 
@@ -696,6 +687,9 @@ def prepare_editorial_annotations(
     Cuts set ``acquire_motion=False``: their rules draft/refinement does not consume
     motion sentences, so this pass neither acquires nor reports them as missing.
     Explicit prepare retains motion acquisition and its completeness report.
+    ``read_workers`` bounds how many preview and face reads are in flight at once; above 1,
+    ``fetch_preview`` and ``fetch_faces`` must be safe to call from several threads.
+    ``scene_prints`` is the bank selection reads scene prints from; the heads pass fills it.
     """
     cache_path = Path(getattr(thumbnail_cache, "cache_dir", thumbnail_cache))
     source = tuple({asset.id: asset for asset in assets}.values())
@@ -715,6 +709,8 @@ def prepare_editorial_annotations(
         note=on_asset or _noop_asset,
         failures={},
         wrote=getattr(thumbnail_cache, "note_written", None) or (lambda _bytes: None),
+        read_workers=read_workers,
+        scene_prints=scene_prints,
     )
     stage.check()
     flipped_edits = edited_mismatch_ids(store, source)  # before `remember_assets` overwrites it

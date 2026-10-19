@@ -125,3 +125,53 @@ def test_two_pictures_are_not_answered_with_one_set_of_facts(bundle):
     second = served(bundle, encoder, photograph(2))
 
     assert [fact[2:4] for fact in first] != [fact[2:4] for fact in second]
+
+
+BUNDLED_OBSTRUCTION = BUNDLED_HEADS.with_name("public-obstruction-v1.npz")
+
+
+class CountingGraph(PinnedGraph):
+    """The same stand-in, counting the pictures it is asked to encode."""
+
+    def __init__(self) -> None:
+        self.encoded = 0
+
+    def run(self, outputs: object, feed: dict[str, np.ndarray]) -> list[np.ndarray]:
+        self.encoded += len(next(iter(feed.values())))
+        return super().run(outputs, feed)
+
+
+def test_heads_and_obstruction_asked_together_pay_for_one_encoder_call(bundle):
+    from immich_memories.analysis.preparation.obstruction_bank import obstruction_facts
+    from immich_memories.triage.heads import PatchHeadBundle
+    from immich_memories.triage.preprocess import preprocess_image_bytes
+    from immich_memories_inference.producers import OBSTRUCTION, ObstructionProducer
+
+    graph = CountingGraph()
+    encoder = DinoEncoder(session=graph, key=bundle.encoder_key)
+    patch = PatchHeadBundle.load(BUNDLED_OBSTRUCTION)
+    runtime = ProducerRuntime(
+        {
+            HEADS: lambda: HeadsProducer(encoder, bundle),
+            OBSTRUCTION: lambda: ObstructionProducer(encoder, patch),
+        }
+    )
+    image = photograph(5)
+    with TestClient(create_app(InferenceSettings(), runtime=runtime)) as client:
+        response = client.post(
+            "/facts",
+            json={"image": base64.b64encode(image).decode(), "producers": [HEADS, OBSTRUCTION]},
+        )
+    response.raise_for_status()
+
+    assert graph.encoded == 1
+    served_fact = response.json()["producers"][OBSTRUCTION]["facts"][0]
+    pixels = preprocess_image_bytes(image)[np.newaxis]
+    _packs, patches = DinoEncoder(session=PinnedGraph(), key="k").embed_with_patches(pixels)
+    local = obstruction_facts(patch, pixels, patches)[0]
+    assert (served_fact["head"], served_fact["version"], served_fact["label"]) == (
+        local.head,
+        local.version,
+        local.label,
+    )
+    assert served_fact["confidence"] == local.confidence

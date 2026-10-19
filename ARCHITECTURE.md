@@ -243,7 +243,9 @@ The separate model-planning route can read banked lines or use plain clip facts.
   context retain the original caption producer; the bank is never erased to build the draft.
 - **Heads**: eight small linear classifiers over one pinned DINOv2 ONNX embedding: location,
   people, children, activity, venue, frame_kind, screen, uncovered_person
-  (`triage/bundled_heads/public-8heads-v4.npz`, `preparation/heads.py`). Beside them sit
+  (`triage/bundled_heads/public-8heads-v4.npz`, `preparation/heads.py`). The obstruction head
+  reads the patch tokens of the same encoder call, and the pooled pack is banked as the
+  preview's scene print: one DINOv2 pass per preview and per sampled clip frame. Beside them sit
   two detectors, `nsfw_marqo` (exposure) and `doc_docling` (documents)
   (`preparation/detectors.py`). `EditorialConfig.active_head_versions` filters both
   out when tier-owned `detectors_enabled` is false on NAS. Raw `head_versions`, banked rows and
@@ -310,13 +312,10 @@ The separate model-planning route can read banked lines or use plain clip facts.
   word, an MRZ line, a Luhn/IBAN-checked number or a named gift voucher corroborates the frame
   head otherwise. `document_ocr_port` (`preparation/document_ocr.py`) reads that OCR: a server
   below 2.2, or a failed read, turns the signal off for the run rather than holding the library.
-  Its bulk keyword search is built from the same word tuples the content check reads
-  (`PERSONAL_RECORD_FIELD_WORDS`, `DOCUMENT_TITLE_WORDS` in `facts/carrier_eligibility.py`)
-  so the two can't drift apart, runs against every configured account (not the primary's
-  alone), and narrows which assets pay for the expensive per-asset read; a candidate the frame
-  head already calls document-like is read anyway, since an MRZ line or a card number can't be
-  found by a keyword search. Every read is memoised per asset, shared across the material
-  build, a candidate refresh and the audience gate. Only an explicit owner pin exempts a
+  It reads only a frame the head leaves document-like, the only frames whose OCR text
+  `personal_document` looks at, and never searches the library by keyword. Every read is
+  memoised per asset and per client, shared across the material build, a candidate refresh,
+  the audience gate and the period account. Only an explicit owner pin exempts a
   picture. The document head's map label is corrected at the read, before any of this sees it:
   `corroborated_document` turns it into `photograph` when the public `frame_kind` head is all but
   certain the frame is a place (a view from a summit, a plane or a drone), in
@@ -425,8 +424,9 @@ The separate model-planning route can read banked lines or use plain clip facts.
 ## Two Trees
 
 `src/immich_memories/` is the app. `services/inference/immich_memories_inference/` is a second
-top-level package — the inference service, which serves the encoder, the eight public heads and the
-two detectors and Demucs over HTTP (`/ping`, `/health`, `/queue`, `/facts`, `/audio/stems`) in its own image with its own device
+top-level package — the inference service, which serves the encoder, the eight public heads, the
+obstruction head (off the heads' own encoder call, `producers.SharedEncoding`), the two detectors
+and Demucs over HTTP (`/ping`, `/health`, `/queue`, `/facts`, `/audio/stems`) in its own image with its own device
 variant (`docker/Dockerfile.inference`, `docker/hwaccel.inference.yml`). It imports the app's
 triage engine and detector module rather than reimplementing them, which is what keeps a fact
 computed there identical to one computed in process; two import-linter contracts hold the
@@ -808,15 +808,17 @@ src/immich_memories/
 │   │   └── wall_rows.py        # Lossless wall rows shared by the production structure editor and replay tools.
 │   ├── preparation/            # The facts each picture owes, produced and banked before a film is read.
 │   │   ├── acquire.py          # Acquire the accepted annotation producers before any story selection calls.
+│   │   ├── bounded_reads.py    # Per-picture Immich reads, a bounded few at a time, answered in the order asked (#2711).
 │   │   ├── demanded_previews.py # Fetch a missing preview only when native hashing or picture evidence demands its source.
 │   │   ├── detector_frames.py  # The frames a video is decided on: eight across its length, not one early preview.
+│   │   ├── detector_workers.py # Long-lived detector workers, reused across batches and rounds instead of respawned.
 │   │   ├── detectors.py        # Portable detector producers, isolated in a cancellable configured Python worker.
 │   │   ├── document_ocr.py     # The run's per-asset OCR text reader, bounded to a cold year under an hour (#2062).
 │   │   ├── edits.py            # What a picture owes again once Immich's own editor has touched it (#2114).
-│   │   ├── heads.py            # Required public context heads, using the existing verified DINO encoder.
+│   │   ├── heads.py            # The DINOv2 readers (public heads, obstruction, scene print) off one encoder call per picture.
 │   │   ├── model_facts.py      # Which model producer still owes a fact, and who is allowed to answer for it.
 │   │   ├── motion_lines.py     # One line of motion per video, asked once of the caption seat and banked like a caption.
-│   │   ├── obstruction_bank.py # Bank the finger-over-the-lens reading for every preview, on the same encoder (#2022).
+│   │   ├── obstruction_bank.py # The finger-over-the-lens reading off tokens the heads pass already holds (#2022).
 │   │   ├── pixels.py           # The accepted pixel-facts-v1 recipe (its JPEG quality is deliberately 85).
 │   │   ├── prepared_captions.py # Read prepared captions for text consumers outside the selection reader.
 │   │   ├── previews.py         # The preview every preparation stage reads: fetched once, verified, and cached.
@@ -824,7 +826,7 @@ src/immich_memories/
 │   │   ├── remote_facts.py     # HTTP transport for the same frozen facts the in-process producers bank.
 │   │   ├── remote_frames.py    # Remote readings of sampled frames, banked only after a complete clip answer.
 │   │   ├── report.py           # What preparation cost, per picture and per producer, in units a person can act on.
-│   │   ├── scene_prints.py     # CachedScenePrints: a preview's pooled DINOv2 pack, banked, for the scene half of that review
+│   │   ├── scene_prints.py     # CachedScenePrints: a preview's pooled DINOv2 pack, banked by the heads pass, for the scene half of that review
 │   │   ├── scope.py            # Prepare a scope's annotations: the pipeline `prepare` and `--ask` share.
 │   │   └── thumbnail_hashes.py # Reuse the exact duplicate hash without decoding unchanged preview bytes again.
 │   ├── captions/               # The optional caption producer: its request wire, the measured contract and banked outcomes.
@@ -1224,6 +1226,7 @@ src/immich_memories/
 │   ├── thumbnail_cache.py      # File-based thumbnails; web filenames bind bytes to an account-set fingerprint
 │   ├── thumbnail_sizes.py      # The sizes the grid and avatars ask for, and the downscale to them
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
+│   ├── file_facts.py           # A costly fact about a file (checkpoint digest, track tempo), kept while the file is unchanged
 │   ├── prepared_source_bank.py # PreparedSourceBank: prepared sources by key, digest-verified, hard-linked
 │   │                           # into the run, capped by disk_budget (`<cache>/prepared-sources`)
 │   └── video_cache.py          # Downloaded video file cache
@@ -1577,7 +1580,8 @@ Immich answers, so connection failures still have history without paying for GPU
 `titles/map_tiles.py` owns satellite tile fetching and the bounded decoded-pixel cache.
 Map animations reuse tiles across frames and release both caches when a card finishes or fails.
 While a frame renders, `TilePrefetcher` fetches the tiles of the next views, one request per tile,
-within the decoded-tile budget.
+within the decoded-tile budget. A tile host that refuses (a 4xx, a refused connection) or a tile that fails
+every attempt stops the card asking: its frames take the grey fallback.
 
 ### Assembly Flow
 

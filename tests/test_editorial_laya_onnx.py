@@ -38,6 +38,13 @@ def checkpoint(tmp_path):
     return tmp_path
 
 
+class _Options(SimpleNamespace):
+    """ONNX Runtime's session options, down to the switches the app sets."""
+
+    def add_session_config_entry(self, _key, _value):
+        pass
+
+
 def test_onnx_preserves_input_order_across_length_sorted_batches(monkeypatch, checkpoint):
     from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer
 
@@ -67,7 +74,7 @@ def test_onnx_preserves_input_order_across_length_sorted_batches(monkeypatch, ch
             get_available_providers=lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
             disable_telemetry_events=lambda: None,
             InferenceSession=Session,
-            SessionOptions=SimpleNamespace,
+            SessionOptions=_Options,
             GraphOptimizationLevel=SimpleNamespace(ORT_ENABLE_ALL=1),
         ),
     )
@@ -171,7 +178,7 @@ def test_released_sessions_drop_and_reload_same_probabilities(monkeypatch, check
             get_available_providers=lambda: ["CPUExecutionProvider"],
             disable_telemetry_events=lambda: None,
             InferenceSession=Session,
-            SessionOptions=SimpleNamespace,
+            SessionOptions=_Options,
             GraphOptimizationLevel=SimpleNamespace(ORT_ENABLE_ALL=1),
         ),
     )

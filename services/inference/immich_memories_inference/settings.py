@@ -57,5 +57,10 @@ class InferenceSettings(BaseSettings):
         return (self.bundle or EditorialPreparationConfig().head_bundle_path).expanduser()
 
     @property
+    def obstruction_bundle_path(self) -> Path:
+        # Packaged with the app and never configured, like the app's own copy.
+        return EditorialPreparationConfig().obstruction_bundle_path
+
+    @property
     def detector_cache(self) -> str | None:
         return str(self.detector_cache_dir.expanduser()) if self.detector_cache_dir else None

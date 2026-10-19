@@ -29,7 +29,8 @@ class AnalysisConfig(BaseModel):
         default=3,
         ge=1,
         le=8,
-        description="Concurrent isolated clients used for video and thumbnail prefetching",
+        description="Concurrent isolated clients used for video downloads and for preview "
+        "and face reads while preparing pictures",
     )
     source_prepare_workers: Annotated[int, Field(ge=1, le=4)] | Literal["auto"] = Field(
         default="auto",

@@ -24,6 +24,7 @@ from immich_memories_inference.producers import (
     ENCODER_HINT,
     HEADS,
     NSFW_MARQO,
+    OBSTRUCTION,
     DetectorProducer,
     Fact,
     ProducerFacts,
@@ -317,7 +318,12 @@ def test_the_entrypoint_serves_one_worker_on_the_configured_port(monkeypatch):
 
 
 def test_the_default_loaders_serve_every_producer_the_client_asks_for():
-    assert set(default_loaders(InferenceSettings())) == {HEADS, NSFW_MARQO, DOC_DOCLING}
+    assert set(default_loaders(InferenceSettings())) == {
+        HEADS,
+        NSFW_MARQO,
+        DOC_DOCLING,
+        OBSTRUCTION,
+    }
 
 
 class RecordingDetector:

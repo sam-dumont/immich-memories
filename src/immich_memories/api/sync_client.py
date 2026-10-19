@@ -41,6 +41,7 @@ class SyncImmichClient:
         self._async_client = ImmichClient(*args, **kwargs)
         self._loop: asyncio.AbstractEventLoop | None = None
         self._loop_lock = threading.Lock()
+        self._windows: dict[tuple[Any, ...], list[Asset]] | None = None
 
     @property
     def base_url(self) -> str:
@@ -80,6 +81,33 @@ class SyncImmichClient:
             return self._drive(coro)
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             return pool.submit(self._drive, coro).result()
+
+    def remember_windows(self) -> None:
+        """Read each date window's videos and photos from Immich once for this client's life.
+
+        For a client that serves one run: discovery and the editor read the same windows,
+        and nothing the run reads can change in between (#2711). A long-lived client must
+        not call this, or it would keep answering with what a window held when first read.
+        """
+        if self._windows is None:
+            self._windows = {}
+
+    def _window(self, key: tuple[Any, ...], read: Callable[[], list[Asset]]) -> list[Asset]:
+        if self._windows is None:
+            return read()
+        if key not in self._windows:
+            self._windows[key] = read()
+        return self._windows[key].copy()
+
+    def sibling(self) -> SyncImmichClient:
+        """A client for another thread: the same server, key and API version, its own
+        connections and loop, so the two never queue behind each other."""
+        return SyncImmichClient(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            timeout=self.timeout,
+            api_version=self._async_client.api_version_policy,
+        )
 
     def close(self) -> None:
         """Close the client and its event loop."""
@@ -245,9 +273,14 @@ class SyncImmichClient:
         date_range: DateRange,
         progress_callback: Callable[[int, int], None] | None = None,
     ) -> list[Asset]:
-        return self._run(
-            self._async_client.get_videos_for_date_range(date_range, progress_callback)
-        )
+        def read() -> list[Asset]:
+            return self._run(
+                self._async_client.get_videos_for_date_range(date_range, progress_callback)
+            )
+
+        if progress_callback is not None:
+            return read()
+        return self._window(("videos", date_range), read)
 
     def get_assets_for_date_range(
         self,
@@ -293,11 +326,16 @@ class SyncImmichClient:
         person_id: str | None = None,
         person_ids: list[str] | None = None,
     ) -> list[Asset]:
-        return self._run(
-            self._async_client.get_photos_for_date_range(
-                date_range, progress_callback, person_id=person_id, person_ids=person_ids
+        def read() -> list[Asset]:
+            return self._run(
+                self._async_client.get_photos_for_date_range(
+                    date_range, progress_callback, person_id=person_id, person_ids=person_ids
+                )
             )
-        )
+
+        if progress_callback is not None:
+            return read()
+        return self._window(("photos", date_range, person_id, tuple(person_ids or ())), read)
 
     def get_assets_for_person_and_date_range(
         self,

@@ -279,7 +279,8 @@ def test_a_measurement_that_fails_never_blocks_the_cut_and_is_owed_next_pass(tmp
         "previews": 1,
         "detector_frames": 1,
         STAGE: 1,
-        "obstruction_frames": 1,
+        # One encoder pass over the frames reads the obstruction head (#2022).
+        "clip_frames": 1,
     }
     assert "room" in read_motion_residuals(annotation_store(), [clip_video("room")])
 

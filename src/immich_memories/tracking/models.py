@@ -50,6 +50,8 @@ class SystemInfo:
     ffmpeg_version: str | None = None
     opencv_version: str | None = None
     gpu_kernels_available: bool = False
+    # False when the run never started title kernels, so `gpu_kernels_available` is no verdict.
+    gpu_kernels_probed: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -67,6 +69,7 @@ class SystemInfo:
             "ffmpeg_version": self.ffmpeg_version,
             "opencv_version": self.opencv_version,
             "gpu_kernels_available": self.gpu_kernels_available,
+            "gpu_kernels_probed": self.gpu_kernels_probed,
         }
 
     @classmethod
@@ -86,6 +89,7 @@ class SystemInfo:
             ffmpeg_version=data.get("ffmpeg_version"),
             opencv_version=data.get("opencv_version"),
             gpu_kernels_available=data.get("gpu_kernels_available", False),
+            gpu_kernels_probed=data.get("gpu_kernels_probed", True),
         )
 
 

@@ -58,9 +58,22 @@ def edited_by_id(assets: Sequence[Asset | VideoClipInfo]) -> dict[str, bool]:
 
     `_fetch_preview` reuses this instead of a `get_asset` round trip per picture:
     unasked, that would double every Immich call a cold year or a whole library
-    already pays, against the owner's "a cold year under an hour" (#2114).
+    already pays, against the owner's "a cold year under an hour" (#2114). A clip
+    carries its own asset, and a Live Photo's companion clips are never touched by
+    Immich's editor, so they read as unedited without a request either (#2711).
     """
-    return {asset.id: asset.is_edited for asset in assets if isinstance(asset, Asset)}
+    known: dict[str, bool] = {}
+    for source in assets:
+        asset = source.asset if isinstance(source, VideoClipInfo) else source
+        if not isinstance(asset, Asset):
+            continue
+        companions = [asset.live_photo_video_id] if asset.live_photo_video_id else []
+        if isinstance(source, VideoClipInfo):
+            companions.extend(source.live_burst_video_ids or ())
+        for companion in companions:
+            known.setdefault(companion, False)
+        known[asset.id] = asset.is_edited
+    return known
 
 
 def _fetch_preview(

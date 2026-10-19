@@ -196,7 +196,7 @@ advanced:
     forwarded_copies_when_short: false  # Let forwarded copies fill gaps in the film's camera timeline
 
     # Downloads
-    download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
+    download_workers: 3            # Parallel Immich clients for downloads, previews and faces (1-8)
     source_prepare_workers: auto   # Sources prepared at once (1-4); auto: reserve 1 GiB, then 3 GiB per worker; 1-2, capped by available CPUs
     prepared_source_cache_max_size_gb: 10.0  # Disk for prepared sources a later render reuses (0-500 GB; 0 keeps none)
 
@@ -726,7 +726,7 @@ advanced:
     facts_base_url: ""          # blank: the heads and detectors run in the app process
     timeout_seconds: 60         # one picture, one request; the service answers all producers at once; greater than 0, at most 300 seconds
     facts_concurrency: 8        # how many of those requests are in flight at once (1-32)
-    producers: [heads, nsfw_marqo, doc_docling]   # what the service answers for; the rest stay local
+    producers: [heads, nsfw_marqo, doc_docling, obstruction]   # what the service answers for; the rest stay local
     fallback_to_local: true     # when the service cannot be reached, run the in-process producers
 ```
 
@@ -740,7 +740,9 @@ provider or the host and nothing is re-derived.
 
 `producers` narrows what is offloaded. `[heads]` sends the DINOv2 encoder and the eight context heads
 and keeps Marqo and Docling in the app when the tier enables them. Offloading does not
-enable producers disabled by the tier.
+enable producers disabled by the tier. `obstruction` is the finger-over-the-lens check: it reads
+the same encoder call as the heads, so the service answers both off one pass. Leave it out, or
+run a service older than the app, and the app runs the encoder for it locally.
 
 `facts_concurrency` is how many pictures are in the air at once. One at a time, measured on a
 cluster against a T1000, costs 0.69 s a picture whatever the card is doing, because almost all of

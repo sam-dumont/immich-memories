@@ -156,3 +156,40 @@ def test_no_membership_at_all_keeps_every_requested_source():
     sources = [make_asset("one"), make_asset("two")]
 
     assert select_source_members(sources, None) == tuple(sources)
+
+
+class _PairedId(str):
+    """An id that hashes with its Live companion's, so every set holding both compares them.
+
+    The comparisons count how many times the scope rebuilds its member set.
+    """
+
+    comparisons = 0
+
+    def __hash__(self) -> int:
+        return hash(self[1:])
+
+    def __eq__(self, other: object) -> bool:
+        type(self).comparisons += 1
+        return str.__eq__(self, other)
+
+
+@pytest.mark.parametrize("members", [200, 400])
+def test_event_members_are_one_set_however_many_sources(members):
+    """The member set (pictures plus their companions) was rebuilt for every source."""
+    stills = []
+    for number in range(members):
+        still = make_asset(f"p{number}")
+        still.id = _PairedId(f"p{number}")
+        still.live_photo_video_id = _PairedId(f"v{number}")
+        stills.append(still)
+    companions = [make_clip(f"v{number}", duration=2) for number in range(members)]
+    for clip in companions:
+        clip.asset.id = _PairedId(clip.asset.id)
+    outsider = make_asset("x0")
+    _PairedId.comparisons = 0
+
+    kept = select_source_members([*stills, outsider, *companions], [s.id for s in stills])
+
+    assert _PairedId.comparisons <= 6 * members
+    assert kept == (*stills, *companions)

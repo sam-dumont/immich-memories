@@ -96,3 +96,62 @@ def test_a_video_with_a_malformed_live_link_remains_an_ordinary_video(link):
     assert pool.selectable == (video,)
     assert pool.companions == ()
     client.get_asset.assert_not_called()
+
+
+class _PairedId(str):
+    """An id that hashes with its partner's (a still with its own Live companion).
+
+    Every time a set holding both is built, the pair collides and is compared once, so the
+    comparisons count how many times the pool rebuilds its membership.
+    """
+
+    comparisons = 0
+
+    def __hash__(self) -> int:
+        return hash(self[1:])
+
+    def __eq__(self, other: object) -> bool:
+        type(self).comparisons += 1
+        return str.__eq__(self, other)
+
+
+def _live_library(count: int) -> list:
+    sources = []
+    for number in range(count):
+        still = photo(f"p{number}", live=f"v{number}")
+        still.id = _PairedId(f"p{number}")
+        still.live_photo_video_id = _PairedId(f"v{number}")
+        companion = make_asset(f"v{number}", duration=2.7)
+        companion.id = _PairedId(f"v{number}")
+        sources.extend((still, companion))
+    return sources
+
+
+@pytest.mark.parametrize("stills", [200, 400])
+def test_the_pool_builds_its_membership_once_however_many_sources(stills):
+    """The context split read a fresh union of the requested and linked ids per source."""
+    sources = _live_library(stills)
+    # WHY: every companion is captured; the client must not be read at all.
+    client = create_autospec(SyncImmichClient, instance=True)
+    _PairedId.comparisons = 0
+
+    pool = resolve_source_pool(client, sources)
+
+    # Linear: about 16 per still (coalescing, lookups); a rebuild per source made 6 per still².
+    assert _PairedId.comparisons <= 30 * stills
+    assert [source.id for source in pool.selectable] == [f"p{n}" for n in range(stills)]
+    assert pool.context == ()
+    assert [companion.id for companion in pool.companions] == [f"v{n}" for n in range(stills)]
+    client.get_asset.assert_not_called()
+
+
+def test_context_keeps_what_was_neither_requested_nor_a_companion():
+    sources = _live_library(3)
+    neighbour = photo("neighbour")
+    # WHY: every companion is captured; the client must not be read at all.
+    client = create_autospec(SyncImmichClient, instance=True)
+
+    pool = resolve_source_pool(client, sources[:2], context=[*sources, neighbour])
+
+    assert [source.id for source in pool.selectable] == ["p0"]
+    assert [source.id for source in pool.context] == ["p1", "p2", "neighbour"]
