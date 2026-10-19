@@ -149,7 +149,7 @@ def test_decoded_cache_evicts_pixels_without_invalidating_borrowed_frames(tmp_pa
     from immich_memories.processing import memory_budget
     from immich_memories.titles.map_tiles import TileCache
 
-    # WHY: a real cgroup file fixture makes the cache's memory budget one RGBA tile.
+    # WHY: a real cgroup file fixture makes the cache's memory budget one tile.
     (tmp_path / "memory.max").write_text(str(256 * 256 * 4 * 32))
     monkeypatch.setattr(memory_budget, "_CGROUP", tmp_path)
     cache = TileCache()
@@ -161,7 +161,7 @@ def test_decoded_cache_evicts_pixels_without_invalidating_borrowed_frames(tmp_pa
     second = cache.decode("second", content)
     assert cache.decode("second", content) is second
     assert cache.decode("first", content) is not first
-    assert first.getpixel((0, 0)) == (10, 20, 30, 255)
+    assert first.getpixel((0, 0)) == (10, 20, 30)
     cache.clear()
     assert cache.decode("second", content) is not second
 
@@ -193,7 +193,7 @@ def test_frame_uses_resident_tiles_before_eviction(tile_server, tmp_path, monkey
     from immich_memories.processing import memory_budget
 
     # WHY: the cgroup fixture leaves room for half of this view's six tiles.
-    (tmp_path / "memory.max").write_text(str(3 * 256 * 256 * 4 * 32))
+    (tmp_path / "memory.max").write_text(str(3 * 256 * 256 * 3 * 32))
     monkeypatch.setattr(memory_budget, "_CGROUP", tmp_path)
     map_animation.tile_cache.clear()
     decodes = []
@@ -421,3 +421,72 @@ def test_parallel_map_card_preserves_every_encoded_frame_and_audio(
         )
     assert strips
     assert hashes[0] == hashes[1]
+
+
+@pytest.mark.parametrize(
+    "tile_server,masked",
+    [("JPEG", False), ("PNG", False), ("transparent", True)],
+    indirect=["tile_server"],
+)
+def test_only_a_see_through_tile_is_pasted_through_a_mask(tile_server, monkeypatch, masked):
+    masks = []
+    original = Image.Image.paste
+
+    def paste(self, im, box=None, mask=None):
+        masks.append(mask is not None)
+        return original(self, im, box, mask)
+
+    # WHY: count real masked pastes; the pixels match either way, only the cost differs.
+    monkeypatch.setattr(Image.Image, "paste", paste)
+    map_animation._render_satellite(48.86, 2.35, 12.0, 320, 180)
+
+    assert masks and set(masks) == {masked}
+
+
+class _DiscardingEncoder:
+    """Stands in for the FFmpeg process and its stderr reader; every frame is dropped."""
+
+    returncode = 0
+    stderr = None
+
+    def __init__(self, *_args, **_kwargs):
+        self.stdin = self
+
+    def write(self, data):
+        return len(data)
+
+    def close(self):
+        pass
+
+    def wait(self):
+        return 0
+
+    def start(self):
+        return self
+
+    def stop(self):
+        return ""
+
+
+def test_the_next_card_takes_off_without_fetching_the_view_the_last_one_landed_on(
+    tile_server, tile_requests, tmp_path, monkeypatch
+):
+    from urllib.parse import urlparse
+
+    # WHY: the tile requests are what this test counts; the FFmpeg encode is not.
+    monkeypatch.setattr(map_animation.subprocess, "Popen", _DiscardingEncoder)
+    # WHY: the stderr reader thread needs a real encoder pipe.
+    monkeypatch.setattr(map_animation, "StderrDrain", _DiscardingEncoder)
+
+    def card(came_from, destination):
+        map_animation.create_map_move_video(
+            came_from, destination, "", tmp_path / "card.mp4", 6.0, 320, 180, 5
+        )
+
+    card((10.0, 20.0), (10.3, 20.4))
+    landing = {urlparse(url).path for url in map_animation.tile_cache.in_view}
+    card((10.3, 20.4), (10.6, 20.8))
+
+    # Only the view the last card ended on stays downloaded, and it was fetched once.
+    assert landing and len(map_animation.tile_cache) == len(map_animation.tile_cache.in_view)
+    assert {tile_requests[path] for path in landing} == {1}

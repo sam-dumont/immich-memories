@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -41,23 +42,27 @@ class TripService:
         home_lat: float | None = None,
         home_lon: float | None = None,
         location_names: list[str] | None = None,
+        frame_progress: Callable[[int, int], None] | None = None,
     ) -> GeneratedScreen:
         """Generate a trip map overview screen.
 
         When home coordinates are provided, renders an animated satellite
-        map fly-over. Falls back to static map otherwise.
+        map fly-over, reporting its frames to ``frame_progress``. Falls back
+        to a static map otherwise.
         """
         if home_lat is not None and home_lon is not None:
-            return self._generate_map_fly(locations, title_text, home_lat, home_lon, location_names)
+            return self._generate_map_fly(
+                locations, title_text, (home_lat, home_lon), location_names, frame_progress
+            )
         return self._generate_static_map(locations, title_text, subtitle_text, location_names)
 
     def _generate_map_fly(
         self,
         destinations: list[tuple[float, float]],
         title_text: str,
-        home_lat: float,
-        home_lon: float,
-        location_names: list[str] | None = None,
+        home: tuple[float, float],
+        location_names: list[str] | None,
+        frame_progress: Callable[[int, int], None] | None,
     ) -> GeneratedScreen:
         """Animated satellite map fly-over from home to destinations."""
         from .generator import GeneratedScreen
@@ -67,11 +72,11 @@ class TripService:
         timing = self.config.map_move
         # A map move's own length, not the title's: the seconds past the title's are
         # added on top of the film's requested length (see processing/map_time_budget).
-        duration = timing.intro_seconds((home_lat, home_lon), destinations)
+        duration = timing.intro_seconds(home, destinations)
 
         output_path = self.output_dir / f"trip_map_fly_intro{self.config.output_suffix}"
         create_map_fly_video(
-            departure=(home_lat, home_lon),
+            departure=home,
             destinations=destinations,
             title_text=title_text,
             output_path=output_path,
@@ -83,6 +88,7 @@ class TripService:
             encoding_plan=self.config.encoding_plan,
             animated_background=self.config.animated_background,
             destination_names=location_names,
+            frame_progress=frame_progress,
         )
 
         logger.info(f"Map fly animation generated: {output_path}")
@@ -133,6 +139,7 @@ class TripService:
         came_from: tuple[float, float],
         destination: tuple[float, float],
         seconds: float,
+        frame_progress: Callable[[int, int], None] | None = None,
     ) -> GeneratedScreen:
         """A location card that flies from the last place to this one and holds on its name."""
         from .generator import GeneratedScreen
@@ -155,5 +162,6 @@ class TripService:
             timing=self.config.map_move,
             encoding_plan=self.config.encoding_plan,
             animated_background=self.config.animated_background,
+            frame_progress=frame_progress,
         )
         return GeneratedScreen(path=output_path, duration=seconds, screen_type="location_card")

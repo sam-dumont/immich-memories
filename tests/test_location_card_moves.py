@@ -31,7 +31,9 @@ class _Cards:
         self.stills.append(location_name)
         return GeneratedScreen(Path(f"/still/{location_name}.mp4"), 2.0, "location_card")
 
-    def generate_location_move_screen(self, location_name, came_from, destination, seconds):
+    def generate_location_move_screen(
+        self, location_name, came_from, destination, seconds, frame_progress=None
+    ):
         self.moves.append((location_name, came_from, destination, seconds))
         return GeneratedScreen(Path(f"/move/{location_name}.mp4"), seconds, "location_card")
 

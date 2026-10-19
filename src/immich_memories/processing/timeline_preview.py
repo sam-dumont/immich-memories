@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -40,6 +41,7 @@ class _PreviewCards:
         came_from: tuple[float, float],
         destination: tuple[float, float],
         seconds: float,
+        frame_progress: Callable[[int, int], None] | None = None,
     ) -> GeneratedScreen:
         return GeneratedScreen(Path(), seconds, "location")
 

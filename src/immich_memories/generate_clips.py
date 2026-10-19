@@ -433,7 +433,16 @@ def _prepared_clip(extraction: _Extraction, clip, progress: float, name: str):
 
 
 def _prepare_in_workers(
-    params, video_cache, output_dir, directives, coordinator, report, prepared_sources, scratch
+    params,
+    video_cache,
+    output_dir,
+    directives,
+    coordinator,
+    report,
+    prepared_sources,
+    scratch,
+    *,
+    counted: tuple[int, int],
 ):
     from immich_memories.processing.memory_budget import source_prepare_workers
     from immich_memories.processing.output_canvas import resolve_generation_canvas
@@ -489,7 +498,8 @@ def _prepare_in_workers(
     ):
         if rendered is not None:
             ordered[index] = rendered
-        report("extract", completed / len(jobs) * 0.7, f"Prepared {completed}/{len(jobs)} sources")
+        done = counted[0] + completed
+        report("extract", done / counted[1] * 0.7, f"Prepared {done}/{counted[1]} sources")
     return sorted(ordered.items())
 
 
@@ -567,12 +577,15 @@ def _extract_clips_into(
     moving = [i for i, is_still in enumerate(still) if not is_still]
     stills = [i for i, is_still in enumerate(still) if is_still]
     prepared: dict[int, AssemblyClip] = {}
-    for position, clip in prepare(replace(params, clips=[params.clips[i] for i in moving])):
+    # One count over both passes, so the reported progress never starts over (#2694).
+    overall = len(params.clips)
+    moving_params = replace(params, clips=[params.clips[i] for i in moving])
+    for position, clip in prepare(moving_params, counted=(0, overall)):
         prepared[moving[position]] = clip
     cache = probe_cache or ProbeCache()
     rate = film_frame_rate(list(prepared.values()), partial(probe_rate, cache))
     at_film_rate = replace(params, clips=[params.clips[i] for i in stills], photo_fps=rate)
-    for position, clip in prepare(at_film_rate):
+    for position, clip in prepare(at_film_rate, counted=(len(moving), overall)):
         prepared[stills[position]] = clip
     return _note_departed(params, [prepared[i] for i in sorted(prepared)])
 
@@ -596,8 +609,13 @@ def _prepare_part(
     probe_cache: ProbeCache | None,
     prepared_sources: PreparedSourceBank | None,
     directives: dict[str, EditorialSelection],
+    counted: tuple[int, int] | None = None,
 ) -> list[tuple[int, AssemblyClip]]:
-    """Prepare ``params.clips``; each prepared clip with its position among them."""
+    """Prepare ``params.clips``; each prepared clip with its position among them.
+
+    ``counted`` is (sources prepared before this part, sources in the whole run), for a
+    run that prepares its sources in more than one part.
+    """
 
     def _report(phase: str, progress: float, msg: str) -> None:
         if params.progress_callback:
@@ -606,7 +624,7 @@ def _prepare_part(
     if not params.clips:
         return []
     assembly_clips: list[tuple[int, AssemblyClip]] = []
-    total = len(params.clips)
+    before, total = counted or (0, len(params.clips))
     prefetched: dict[str, DownloadResult] | None = None
     if download_coordinator is not None:
         return _prepare_in_workers(
@@ -618,6 +636,7 @@ def _prepare_part(
             _report,
             prepared_sources,
             scratch,
+            counted=(before, total),
         )
     extraction = _Extraction(
         params,
@@ -632,7 +651,7 @@ def _prepare_part(
     )
 
     for i, clip in enumerate(params.clips):
-        progress = (i / total) * 0.7
+        progress = ((before + i) / total) * 0.7
         clip_name = clip.asset.original_file_name or clip.asset.id[:8]
         _report("extract", progress, f"Downloading: {clip_name}")
 
