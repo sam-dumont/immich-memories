@@ -557,6 +557,7 @@ def _extract_clips_into(
     is decided before its bank lookup, so a re-render never reuses a still made at another.
     """
     from immich_memories.processing.ffmpeg_prober import film_frame_rate, probe_rate
+    from immich_memories.processing.output_canvas import resolve_generation_canvas
     from immich_memories.processing.probe_cache import ProbeCache
 
     directives = validated_render_directives(params)
@@ -576,6 +577,11 @@ def _extract_clips_into(
     )
     if not any(still):
         return _note_departed(params, [clip for _position, clip in prepare(params)])
+    # WHY (#2708): each pass copies the parameters with only its own sources. Decided
+    # after the split, the canvas was voted by the stills alone (a tie falls back to
+    # landscape), so a portrait still in a portrait film was fitted twice. The whole cut
+    # decides it here, and both copies carry it.
+    resolve_generation_canvas(params)
     moving = [i for i, is_still in enumerate(still) if not is_still]
     stills = [i for i, is_still in enumerate(still) if is_still]
     prepared: dict[int, AssemblyClip] = {}

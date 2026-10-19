@@ -132,6 +132,7 @@ class TestTheRendererAsksWhatTheCandidateCarries:
         from unittest.mock import MagicMock, patch
 
         from immich_memories.api.models import VideoClipInfo
+        from immich_memories.config.loader import Config
         from immich_memories.generate import GenerationParams
         from immich_memories.processing.assembly_config import AssemblyClip
 
@@ -141,7 +142,7 @@ class TestTheRendererAsksWhatTheCandidateCarries:
         params = GenerationParams(
             clips=[clip],
             output_path=tmp_path / "out.mp4",
-            config=MagicMock(),
+            config=Config(),
             client=MagicMock(),
         )
         rendered = AssemblyClip(

@@ -275,6 +275,11 @@ def _convert_still_once(
     back as RGB in the film's own transfer (16-bit for HDR, 8-bit for SDR). Each frame
     then needs only the matrix and range conversion to the encoder's planar format.
     """
+    rows, columns = source.shape[:2]
+    # WHY (#2708): the chain passes through 4:2:0, whose chroma covers two pixels a side,
+    # so zscale refuses an odd side. The picture is rounded up to that grid with a copy of
+    # its edge, as the film's encode rounds its own frame, and cropped back afterwards.
+    source = np.pad(source, ((0, rows % 2), (0, columns % 2), (0, 0)), mode="edge")
     height, width = source.shape[:2]
     if hdr:
         matrix, back, out_fmt = "bt2020", "rgb48le", "rgb48le"
@@ -326,7 +331,7 @@ def _convert_still_once(
             f"Photo colour conversion failed: {result.stderr.decode(errors='replace')[-1500:]}"
         )
     converted = np.frombuffer(result.stdout, dtype=dtype).reshape(height, width, 3)
-    return converted, out_fmt, frame_vf
+    return np.ascontiguousarray(converted[:rows, :columns]), out_fmt, frame_vf
 
 
 def _stream_render_to_mp4(
