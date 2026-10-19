@@ -336,6 +336,7 @@ def test_strict_merge_never_filters_sources_or_rewrites_video_trims(source, tmp_
 @pytest.fixture
 def extraction_config():
     return SimpleNamespace(
+        tier="gpu",
         hardware=HardwareAccelConfig(enabled=False),
         output=OutputConfig(),
         analysis=AnalysisConfig(),
