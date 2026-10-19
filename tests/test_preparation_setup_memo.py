@@ -73,7 +73,7 @@ def test_onnx_threads_follow_the_cpu_limit_the_process_has(tmp_path, monkeypatch
     )
     monkeypatch.setitem(sys.modules, "onnxruntime", fake_ort)
     # WHY: the cgroup limit and the ONNX session are the two boundaries.
-    monkeypatch.setattr(encoder_module, "available_cpus", lambda: 3)
+    monkeypatch.setattr("immich_memories.onnx_session.available_cpus", lambda: 3)
     monkeypatch.setattr(
         encoder_module,
         "open_inference_session",

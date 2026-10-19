@@ -15,8 +15,7 @@ from typing import Any, Protocol
 
 import numpy as np
 
-from immich_memories.onnx_session import open_inference_session
-from immich_memories.processing.memory_budget import available_cpus
+from immich_memories.onnx_session import cpu_bounded_options, open_inference_session
 from immich_memories.triage.preprocess import PREPROCESS_VERSION
 
 LAYOUT_VERSION = "cls+mean+quad2x2/pca256/fp16"
@@ -167,10 +166,6 @@ def _create_session(model_path: Path, provider: str) -> Any:
     import onnxruntime as ort
 
     providers = list(provider_chain(provider, ort.get_available_providers()))
-    options = ort.SessionOptions()
-    # WHY: os.cpu_count() is the host's core count inside a container; the pod's CPU limit
-    # (cgroup cpu.max) is what the process can actually use.
-    options.intra_op_num_threads = max(1, min(8, available_cpus() - 1))
-    options.inter_op_num_threads = 1
-    options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-    return open_inference_session(ort, model_path, options=options, providers=providers)
+    return open_inference_session(
+        ort, model_path, options=cpu_bounded_options(ort), providers=providers
+    )

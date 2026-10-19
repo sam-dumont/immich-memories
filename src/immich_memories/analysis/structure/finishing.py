@@ -428,7 +428,7 @@ def apply_audience_gate(
         pool_for=alternatives_pool(selection, material.units, wall.anchor_label),
         audience=gate.audience,
         admits=admits,
-        prepare=gate.prepare,
+        prepare=gate.read_ahead,
     )
     open_share_log(share_log, funded_acquisition={})
     run.selection_stages["after_shareability"] = len(run.carriers)

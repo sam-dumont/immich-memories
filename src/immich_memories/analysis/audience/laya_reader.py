@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import tarfile
+import threading
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Protocol
@@ -49,6 +50,9 @@ _NUDITY = "nudity_shirtless_or_underwear"
 
 logger = logging.getLogger(__name__)
 
+# Captions whose scores one reader keeps; a year's film reads a few thousand.
+_SCORED_LIMIT = 50_000
+
 
 class LayaScorer(Protocol):
     """Option probabilities for one question over many states, in the question's option order."""
@@ -68,11 +72,27 @@ class LayaReader:
             f"{type(scorer).__module__}.{type(scorer).__qualname__}"
         )
         self.cache_identity = f"laya|{backend}|{checkpoint_id}|threshold={threshold.hex()}"
+        # Option probabilities by caption text: the only thing the scores depend on. A
+        # carrier's evidence key also changes when a later round banks a head or a neighbour's
+        # exposure run, and a key the library never kept is asked again; the text is not.
+        self._scored: dict[str, list[float]] = {}
 
     def close(self) -> None:
         """Release loaded weights; a later audience check loads the same scorer again."""
         if close := getattr(self._scorer, "close", None):
             close()
+
+    def _probabilities(self, states: Sequence[str]) -> list[list[float]]:
+        """Each state's probabilities, scoring only the texts this reader has not scored."""
+        fresh = [state for state in dict.fromkeys(states) if state not in self._scored]
+        if fresh:
+            found = self._scorer.probabilities(fresh, AUDIENCE_QUESTION)
+            self._scored.update(zip(fresh, found, strict=True))
+        scored = [self._scored[state] for state in states]
+        # Bounded for a long-lived server; the oldest texts go first.
+        while len(self._scored) > _SCORED_LIMIT:
+            del self._scored[next(iter(self._scored))]
+        return scored
 
     def activity_answers(self, pending: Mapping[str, tuple[Sequence[str], bool]]) -> dict[str, str]:
         """Each carrier's activity answer, in the JSON form the audience check reads.
@@ -85,9 +105,7 @@ class LayaReader:
         keys = [key for key, (captions, _allow) in pending.items() if any(captions)]
         if not keys:
             return {}
-        found = self._scorer.probabilities(
-            ["\n".join(c for c in pending[key][0] if c) for key in keys], AUDIENCE_QUESTION
-        )
+        found = self._probabilities(["\n".join(c for c in pending[key][0] if c) for key in keys])
         answers = {}
         for key, probabilities in zip(keys, found, strict=True):
             allowed = pending[key][1]
@@ -217,12 +235,39 @@ def laya_reader_for(editorial_config) -> LayaReader | None:
     checkpoint = (
         archive if archive.is_dir() else unpack_checkpoint(archive, archive.with_suffix(""))
     )
+    threshold = editorial_config.laya_audience_threshold
+    # One reader per checkpoint and threshold for the process: each edit asks for one, and
+    # a new one would hash the weights again and score captions the last one already scored.
+    key = (str(checkpoint), _file_signature(checkpoint), threshold)
+    with _READERS_LOCK:
+        reader = _READERS.get(key)
+    if reader is None:
+        reader = _new_reader(checkpoint, threshold)
+        if reader is not None:
+            with _READERS_LOCK:
+                reader = _READERS.setdefault(key, reader)
+    return reader
+
+
+_READERS: dict[tuple[Any, ...], LayaReader] = {}
+_READERS_LOCK = threading.Lock()
+
+
+def _file_signature(checkpoint: Path) -> tuple[tuple[str, int, int], ...]:
+    return tuple(
+        (str(path.relative_to(checkpoint)), stat.st_size, stat.st_mtime_ns)
+        for path in sorted(checkpoint.rglob("*"))
+        if path.is_file() and (stat := path.stat())
+    )
+
+
+def _new_reader(checkpoint: Path, threshold: float) -> LayaReader | None:
     if (checkpoint / "model.onnx").is_file():
         from immich_memories.analysis.audience.laya_onnx import OnnxLayaScorer
 
         return LayaReader(
             OnnxLayaScorer(checkpoint),
-            threshold=editorial_config.laya_audience_threshold,
+            threshold=threshold,
             checkpoint_id=checkpoint_identity(checkpoint),
         )
     try:
@@ -236,6 +281,6 @@ def laya_reader_for(editorial_config) -> LayaReader | None:
         return None
     return LayaReader(
         MlxLayaScorer(checkpoint),
-        threshold=editorial_config.laya_audience_threshold,
+        threshold=threshold,
         checkpoint_id=checkpoint_identity(checkpoint),
     )

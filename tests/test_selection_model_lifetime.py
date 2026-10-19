@@ -37,6 +37,8 @@ def test_mlx_close_drops_live_weights_and_reloads_identically(monkeypatch, tmp_p
     assert agent() is None
     assert reader.cache_identity == identity
     assert reader.activity_answers(pending) == before
+    # A caption not read before loads the weights again.
+    reader.activity_answers({"two": (["another caption"], True)})
     assert scorer._agent is not None
     reader.close()
 
