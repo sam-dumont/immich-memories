@@ -23,7 +23,9 @@ def story_candidates(
     story_of = {row["key"]: row for row in selection.story.stories}
     chapter_of = {row["episode"]: number for number, row in enumerate(selection.episodes, 1)}
 
-    def candidates_of(story_key: str) -> list[dict]:
+    built: dict[str, list[dict]] = {}
+
+    def rows_of(story_key: str) -> list[dict]:
         story = story_of.get(story_key)
         if story is None:
             return []
@@ -39,7 +41,18 @@ def story_candidates(
             if asset in unit_by_asset
         ]
 
+    def candidates_of(story_key: str) -> list[dict]:
+        # The polish asks for every story the cut holds on every slot; a row's reason is
+        # worded once per story, and each caller gets rows of its own to edit.
+        if story_key not in built:
+            built[story_key] = rows_of(story_key)
+        return [_own_copy(row) for row in built[story_key]]
+
     return candidates_of
+
+
+def _own_copy(row: dict[str, Any]) -> dict[str, Any]:
+    return row | {"moment_alternatives": list(row["moment_alternatives"])}
 
 
 def _carrier(entry, story, selection, chapter_of, wall: Wall) -> dict[str, Any]:

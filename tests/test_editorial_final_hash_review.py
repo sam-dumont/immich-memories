@@ -10,6 +10,7 @@ HASHES = {
     "twin": "ffffffffffffff3f",  # two bits from "early"
     "far": "ffffffffffff0000",  # sixteen bits from "early"
     "other": "0000ffff0000ffff",
+    "fresh": "f0f0f0f00f0f0f0f",
 }
 
 
@@ -291,3 +292,25 @@ def test_a_unit_from_another_story_is_offered_last_and_labelled_elsewhere():
         ("moment", "sibling"),
         ("elsewhere", "far-story"),
     ]
+
+
+def test_replacements_are_built_only_for_a_frame_that_leaves():
+    """Offers cost a carrier row per pool picture; a frame with no look-alike needs none."""
+    cut = [
+        _carrier("early", minute=0),
+        _carrier("other", minute=10),
+        _carrier("far", minute=20),
+        _carrier("late", minute=30),
+    ]
+    asked: list[str] = []
+
+    def replacements_for(carrier):
+        asked.append(carrier["asset_id"])
+        return [("moment", _unit("twin", minute=31)), ("story", _unit("fresh", minute=45))]
+
+    survivors, record = _review(cut, replacements_for=replacements_for)
+
+    assert asked == ["late"]
+    assert [c["asset_id"] for c in survivors] == ["early", "other", "far", "fresh"]
+    assert record["removals"] == [{"asset_id": "late", "keeper": "early", "replacement": "fresh"}]
+    assert record["replaced_from"] == {"story": 1}
