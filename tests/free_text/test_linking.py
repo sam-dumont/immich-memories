@@ -65,6 +65,33 @@ def test_a_role_or_a_name_requires_that_persons_face(lexicon: Lexicon) -> None:
     assert "faces required" in by_role.reasons[-1].rule
 
 
+def test_my_son_links_the_person_whose_role_is_child_and_dates_the_birth(
+    lexicon: Lexicon,
+) -> None:
+    child = LibraryPerson("p-child", "Cy Example", "child", date(2020, 3, 10))
+    people = {"p-owner": OWNER, "p-child": child, "p-friend": FRIEND}
+    household = Household(people, "p-owner")
+
+    who = link_who("the birth of my son", ("my son",), household, lexicon, _unasked())
+    not_an_age = {
+        "reason": "",
+        "is_age": False,
+        "whose_age": "Ada Example",
+        "age_from": 0,
+        "age_to": 0,
+    }
+    # WHY: stands in for the model server; the age gate says no in each of the three orders of asking, then
+    # the dates question is answered from the birth date.
+    asker = BankedAsker(*[not_an_age] * 3, {"date_from": "2020-03-10", "date_to": "2020-03-10"})
+    when = link_when(
+        "the birth of my son", ("the birth of my son",), who, household, asker, today=TODAY
+    )
+
+    assert who.present == ("p-child",)
+    assert '"born": "2020-03-10"' in asker.questions[-1][0]
+    assert (when.start, when.end) == (date(2020, 3, 10), date(2020, 3, 10))
+
+
 def test_a_plural_word_for_people_asks_for_company(lexicon: Lexicon) -> None:
     friends = link_who("me and friends", ("me", "friends"), HOUSEHOLD, lexicon, _unasked())
     kids = link_who("at the park with kids", ("kids",), STRANGERS, lexicon, _unasked())

@@ -32,6 +32,10 @@ WORDNET_SHA256 = "cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab
 _INHERITED_LEVELS = 3
 # How far down its kinds go: a car's kinds and their kinds, not every model of every car.
 _KIND_DEPTH = 2
+# How many kinds up a word's senses a people-file role is looked for. WordNet files "son" under
+# male_offspring and only then under "child", so one level up misses the role the owner wrote
+# in the people file; a third level would let a word name any relative or person in general.
+_ROLE_LEVELS = 2
 
 
 @dataclass(frozen=True)
@@ -168,9 +172,19 @@ class WordNetLexicon:
         return any(
             lemma.name().lower().replace("_", " ") == wanted
             for sense in self._reader.synsets(base, pos=NOUN)[:2]
-            for synset in (sense, *sense.hypernyms())
+            for synset in self._with_kinds(sense, _ROLE_LEVELS)
             for lemma in synset.lemmas()
         )
+
+    @staticmethod
+    def _with_kinds(sense: Any, levels: int) -> list[Any]:
+        """The synset and the kinds it is, up to `levels` hypernym steps."""
+        found = [sense]
+        frontier = [sense]
+        for _ in range(levels):
+            frontier = [up for synset in frontier for up in synset.hypernyms()]
+            found.extend(frontier)
+        return found
 
     def verb_base(self, word: str) -> str | None:
         base = self._reader.morphy(word.strip().lower(), VERB)
