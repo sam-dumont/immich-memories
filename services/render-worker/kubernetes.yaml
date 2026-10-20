@@ -64,10 +64,11 @@ spec:
               value: compute,video,utility
           resources:
             requests:
-              cpu: 500m
+              cpu: "2"
               memory: 1Gi
             limits:
-              cpu: "2"
+              # Frames are composed on the CPU; the card only encodes. Four CPUs throttle.
+              cpu: "8"
               memory: 4Gi
               nvidia.com/gpu: "1"
           startupProbe:

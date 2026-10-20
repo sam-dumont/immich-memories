@@ -16,7 +16,13 @@ __author__ = "Immich Memories Contributors"
 # WHY first: a run's `startup` span measures from here, so it must precede the config imports.
 from immich_memories import process_start  # noqa: F401, I001
 
-from immich_memories._version import __version__
-from immich_memories.config import Config, get_config
+# WHY before the config imports: torch, NumPy and OpenCV size their OpenMP and BLAS pools
+# when they load, from the host's cores rather than the container's CPU limit (#2683).
+from immich_memories.processing.ffmpeg_threads import limit_native_pools  # noqa: I001
+
+limit_native_pools()
+
+from immich_memories._version import __version__  # noqa: E402
+from immich_memories.config import Config, get_config  # noqa: E402
 
 __all__ = ["Config", "get_config", "__version__"]

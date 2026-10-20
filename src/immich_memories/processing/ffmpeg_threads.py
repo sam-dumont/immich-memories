@@ -1,20 +1,25 @@
-"""Size FFmpeg's and OpenCV's thread pools from the CPU this process may use.
+"""Size FFmpeg's, OpenCV's, OpenMP's and BLAS's thread pools from the CPU this process may use.
 
 FFmpeg's default is one thread per core of the host. In a container with a CPU
 limit that is far more than the limit allows: the threads fight over the quota
 and the render burns its budget on contention. Every FFmpeg a render starts goes
-through `with_cpu_threads`, which reads the limit from `available_cpus`.
+through `with_cpu_threads`, which reads the limit from `available_cpus`. torch's
+OpenMP pool and the OpenBLAS copies NumPy and OpenCV carry make the same mistake
+when they load, so `limit_native_pools` runs when the package is imported.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import os
+from collections.abc import MutableMapping, Sequence
 
 from immich_memories.processing.memory_budget import available_cpus
 
 # libx265 reads the output's `-threads` as its frame threads and refuses to open past 16.
 _MOST_ENCODER_THREADS = 16
 _THREAD_OPTIONS = ("-threads", "-filter_threads", "-filter_complex_threads")
+# Read once, when torch (OpenMP), NumPy and OpenCV (OpenBLAS) or an MKL build load.
+_NATIVE_POOL_VARIABLES = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
 def with_cpu_threads(
@@ -60,3 +65,29 @@ def limit_opencv_threads(cpus: int | None = None) -> None:
     import cv2
 
     cv2.setNumThreads(max(1, cpus if cpus is not None else available_cpus()))
+
+
+def limit_native_pools(
+    environ: MutableMapping[str, str] | None = None, cpus: int | None = None
+) -> None:
+    """Size the OpenMP and BLAS pools from the CPU limit before any library reads them.
+
+    Left unset, each sizes itself from the host's cores: on a 16-core node with a 12-CPU
+    limit torch separated stems on 16 threads, and under a 4-CPU limit on a 10-core host
+    NumPy and OpenCV each kept 9 OpenBLAS threads. A value the operator set is kept.
+    """
+    environ = os.environ if environ is None else environ
+    count = str(max(1, cpus if cpus is not None else available_cpus()))
+    for name in _NATIVE_POOL_VARIABLES:
+        environ.setdefault(name, count)
+
+
+def limit_torch_threads() -> None:
+    """Keep torch's intra-op pool inside the CPU limit, even if torch loaded before the package.
+
+    An operator's OMP_NUM_THREADS is the count; otherwise the limit is.
+    """
+    import torch
+
+    configured = os.environ.get("OMP_NUM_THREADS", "")
+    torch.set_num_threads(max(1, int(configured)) if configured.isdigit() else available_cpus())

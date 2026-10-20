@@ -80,6 +80,14 @@ than a short one. On a 4-CPU worker with an entry-level NVIDIA card, a photo tak
 seconds to animate and the encode runs at about a third of real time: a one-minute month film
 takes about 11 minutes, a ten-minute film with 150 clips about an hour and a half.
 
+The card only encodes. Decoding, blur fills, photo moves, crossfades and captions run on the
+worker's CPU, so its CPU limit sets the pace more than the card does. A one-minute, 13-clip film
+kept about four cores busy on average for its 75 seconds of assembly, with peaks above that.
+Give the worker 8 CPUs, or at least 6: under a 4-CPU limit, long films kept it throttled in 44% of
+its scheduler periods. The worker sizes its FFmpeg, OpenCV, OpenMP and BLAS thread pools from that
+limit. The standalone worker manifest and the sidecar component request 2 CPUs and set an
+8-CPU limit.
+
 Both sides size their deadline from the film itself: 60 seconds per clip plus 10 seconds per
 second of film, capped at 12 hours. The app's `render.timeout_seconds` and the worker's
 `IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS` (both 3,600 seconds by default) are the least

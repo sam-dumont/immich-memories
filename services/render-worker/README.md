@@ -18,6 +18,15 @@ roughly half of it. So a worker that cannot open NVENC renders the film anyway,
 about 15% slower, and reports the degradation on `/health` and in the job
 record. A dropped selected asset is still a failed job, never a different film.
 
+The card encodes; the CPU does everything else. Decoding the sources, the blur fill, photo
+moves, crossfades and captions all run on the CPU, and that is most of the render. On one
+cluster node with a T1000, a one-minute, 13-clip film took 73 to 78 seconds to assemble
+and used about 96 CPU seconds in the worker plus 210 in FFmpeg: four cores busy on average,
+more at peaks. Give the worker 8 CPUs, or at least 6; `kubernetes.yaml` requests 2 and limits
+it to 8. Under a 4-CPU limit, long films kept
+the worker throttled in 44% of its scheduler periods. The worker sizes FFmpeg, OpenCV, OpenMP
+and BLAS thread pools from its CPU limit, so a higher limit is used rather than fought over.
+
 ## Deploy and connect
 
 The app image includes the worker. Use the same versioned image for both roles;

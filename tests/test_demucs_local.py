@@ -152,3 +152,36 @@ class TestRelease:
         backend = DemucsLocalBackend()
         backend.release()  # No model loaded
         assert backend._model is None
+
+
+class TestDemucsThreads:
+    """Demucs separates on torch's CPU pool, which torch sizes from the host's cores."""
+
+    @pytest.fixture
+    def torch_threads(self):
+        torch = pytest.importorskip("torch")
+        before = torch.get_num_threads()
+        yield torch
+        torch.set_num_threads(before)
+
+    def test_loading_the_model_sizes_torch_from_the_cpu_limit(self, torch_threads, monkeypatch):
+        # WHY: a fake 3-CPU container limit, below any host this suite runs on.
+        monkeypatch.setattr("immich_memories.processing.ffmpeg_threads.available_cpus", lambda: 3)
+        monkeypatch.delenv("OMP_NUM_THREADS", raising=False)
+        # WHY: the pretrained weights are a download; the thread count is set before it.
+        monkeypatch.setattr("demucs.pretrained.get_model", lambda _name: MagicMock())
+        torch_threads.set_num_threads(8)
+
+        DemucsLocalBackend(device="cpu")._load_model()
+
+        assert torch_threads.get_num_threads() == 3
+
+    def test_an_operator_thread_count_wins(self, torch_threads, monkeypatch):
+        # WHY: same fake limit; the operator's OMP_NUM_THREADS must beat it.
+        monkeypatch.setattr("immich_memories.processing.ffmpeg_threads.available_cpus", lambda: 3)
+        monkeypatch.setenv("OMP_NUM_THREADS", "2")
+        monkeypatch.setattr("demucs.pretrained.get_model", lambda _name: MagicMock())
+
+        DemucsLocalBackend(device="cpu")._load_model()
+
+        assert torch_threads.get_num_threads() == 2
