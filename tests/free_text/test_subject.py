@@ -286,3 +286,33 @@ def test_a_negation_word_left_after_the_people_are_taken_out_is_never_the_subjec
 
     assert without.heads == ("landscapes",)
     assert sans.heads == ("paysages",)
+
+
+def test_a_people_word_in_the_what_span_is_never_the_subject_head(lexicon: Lexicon) -> None:
+    """#2724: the reading files "landscapes without people" under what, with who empty."""
+    cases = {
+        "landscapes without people": "landscapes",
+        "landscapes with no people": "landscapes",
+        "paysages sans gens": "paysages",
+        "Landschaften ohne Menschen": "landschaften",
+    }
+    for text, head in cases.items():
+        what_only = subject_words(_reading(text, what=(text,)), NOBODY, lexicon)
+        who_span = subject_words(
+            _reading(text, who=(text.split()[-1],), what=(text,)), NOBODY, lexicon
+        )
+        assert what_only.heads == (head,), text
+        assert who_span.heads == (head,), text
+
+
+def test_a_people_word_is_never_the_subject_head_without_a_negation(lexicon: Lexicon) -> None:
+    """#2724: "kids at the beach" filed under what alone still has the beach as its subject."""
+    cases = {
+        "beach with kids": "beach",
+        "mountains with people": "mountains",
+        "snow with friends": "snow",
+        "gens en montagne": "montagne",
+    }
+    for text, head in cases.items():
+        what_only = subject_words(_reading(text, what=(text,)), NOBODY, lexicon)
+        assert what_only.heads == (head,), text

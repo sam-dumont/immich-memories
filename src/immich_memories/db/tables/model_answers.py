@@ -59,6 +59,8 @@ editorial_episode_refusals = Table(
     Column("evidence_key", Text, primary_key=True),
     Column("reason", Text, nullable=False),
     Column("answered_at", DateTime, nullable=False),
+    # A bounded excerpt of the answer the refusal was filed over; NULL when there was none.
+    Column("answer_excerpt", Text, nullable=True),
 )
 
 library_overviews = Table(

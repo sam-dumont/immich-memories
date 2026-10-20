@@ -78,6 +78,10 @@ def test_final_plan_and_trace_report_the_latest_demand_health(tmp_path, recover)
     assert health["unavailable_episodes"] == (0 if recover else 1)
     assert health["episodes"][0]["status"] == ("recovered" if recover else "unavailable")
     assert (
-        any("1 demanded episode" in warning and "fallback" in warning for warning in trace.warnings)
+        any(
+            "1 demanded episode(s) unread (1 this run, 0 remembered from earlier runs)" in warning
+            and "fallback" in warning
+            for warning in trace.warnings
+        )
         != recover
     )

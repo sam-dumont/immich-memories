@@ -17,7 +17,7 @@ from itertools import pairwise
 from immich_memories.free_text.facts import PICTURE_WORDS
 from immich_memories.free_text.lexicon import Lexicon, Relative
 from immich_memories.free_text.linking import FIRST_PERSON, GLUE, Household, Reason, time_cut
-from immich_memories.free_text.negation import is_skip_word
+from immich_memories.free_text.negation import is_skip_word, request_kind_of
 from immich_memories.free_text.reading import Asker, Reading, choose, choose_several, words_of
 
 _COORDINATORS = frozenset({"and", "or"})
@@ -69,8 +69,11 @@ def subject_words(reading: Reading, household: Household, lexicon: Lexicon) -> S
     reasons: list[Reason] = []
     for span in reading.what:
         for part in _parts(time_cut(span, lexicon)):
+            people = _people_in(part, lexicon)
             subject_tokens = [
-                word for word in part if word not in skipped and not is_skip_word(word)
+                word
+                for word in part
+                if word not in skipped and word not in people and not is_skip_word(word)
             ]
             if part[-1] in PICTURE_WORDS:
                 subject_tokens = [word for word in subject_tokens if not lexicon.is_adjective(word)]
@@ -99,6 +102,21 @@ def subject_words(reading: Reading, household: Household, lexicon: Lexicon) -> S
         heads=tuple(dict.fromkeys(heads)),
         words=tuple(found),
         reasons=(Reason(said, rule, outcome), *reasons),
+    )
+
+
+def _people_in(part: Sequence[str], lexicon: Lexicon) -> frozenset[str]:
+    """The part's words for people: never its subject, whichever span the reading filed them in.
+
+    Faces prove people and the who-span carries them. A reading that files "landscapes without
+    people" or "kids at the beach" under what alone must not make the people word the head
+    (#2724). WordNet does not know the bare "people" or "gens" as human, so the curated people
+    words of every locale decide too.
+    """
+    return frozenset(
+        word
+        for word in part
+        if lexicon.is_human(word) or request_kind_of(word, negated=True) is not None
     )
 
 

@@ -8,11 +8,15 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import sha256
 from typing import TypeGuard
 
-from immich_memories.analysis.judgments.strict_json import bounded_model_text, final_json_object
+from immich_memories.analysis.judgments.strict_json import (
+    bounded_model_text,
+    final_json_object,
+    without_trailing_commas,
+)
 from immich_memories.analysis.reading.cull_answer import CULL_BUCKETS
 from immich_memories.store.episode_readings import (
     EpisodeCullDecision,
@@ -77,6 +81,10 @@ class TextEpisodeReadDiagnostics:
 class _EpisodeResponse:
     readings: tuple[EpisodePageReading, ...]
     diagnostic: EpisodeResponseDiagnostic | None
+    # What the reader wrote, and why each page it left unread was not read: a refusal keeps
+    # both, so it can be explained after the fact (#2682).
+    answer: str = ""
+    problems: Mapping[tuple[str, int], str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -85,16 +93,37 @@ class _EpisodePageParse:
     discarded_invalid_representative_rows: int = 0
     discarded_invalid_cull_rows: int = 0
     discarded_conflicting_cull_rows: int = 0
+    problem: str = ""
 
 
-def _unreadable(response_hash: str, scopes, *, embedded: bool = False) -> _EpisodeResponse:
+def _unreadable(raw: str, scopes, problem: str) -> _EpisodeResponse:
     return _EpisodeResponse(
         (),
         EpisodeResponseDiagnostic(
-            response_sha256=response_hash,
+            response_sha256=sha256(raw.encode("utf-8")).hexdigest(),
             unreadable_or_omitted_pages=len(scopes),
         ),
+        answer=raw,
+        problems={_page_key(scope): problem for scope in scopes},
     )
+
+
+def _page_key(scope: EpisodeRequestScope) -> tuple[str, int]:
+    return scope.identity.group_id, scope.page_number
+
+
+def _json_problem(raw: str) -> str:
+    """Why an answer holding no readable reading object could not be read."""
+    if not raw.strip():
+        return "the answer was empty"
+    body = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    try:
+        json.loads(body)
+    except json.JSONDecodeError as exc:
+        if exc.pos >= len(body) - 1 or exc.msg.startswith("Unterminated"):
+            return "the answer stopped before its JSON was complete"
+        return f"the answer was not valid JSON ({exc.msg} at line {exc.lineno} column {exc.colno})"
+    return f'the answer had no object with schema_version "{TEXT_EPISODE_SCHEMA_VERSION}"'
 
 
 def _rows_by_alias(values: list) -> dict[int, list[object]]:
@@ -126,20 +155,32 @@ def read_response_result(
     payload, embedded = _episode_payload(raw)
     response_hash = sha256(raw.encode("utf-8")).hexdigest()
     if payload is None:
-        return _unreadable(response_hash, scopes)
+        return _unreadable(raw, scopes, _json_problem(raw))
     values = payload.get("episodes")
     if not isinstance(values, list):
-        return _unreadable(response_hash, scopes, embedded=embedded)
+        return _unreadable(raw, scopes, 'the answer had no "episodes" list')
+    if not values:
+        return _unreadable(raw, scopes, 'the answer\'s "episodes" list was empty')
     by_alias = _rows_by_alias(values)
     if any(alias > len(scopes) for alias in by_alias):
         # Numbered past the episodes asked: an entry per picture, not per episode, so even its
         # first row describes one picture rather than the episode it would be banked for.
-        return _unreadable(response_hash, scopes, embedded=embedded)
+        return _unreadable(
+            raw,
+            scopes,
+            f'the answer had {len(values)} entries in "episodes" for {len(scopes)} episode(s)',
+        )
     readings: list[EpisodePageReading] = []
+    problems: dict[tuple[str, int], str] = {}
     discarded = [0, 0, 0]
     for episode_alias, scope in enumerate(scopes, start=1):
         matches = by_alias.get(episode_alias, [])
         if len(matches) != 1 or not isinstance(matches[0], dict):
+            problems[_page_key(scope)] = (
+                "the answer had no entry for this episode"
+                if not matches
+                else f"the answer had {len(matches)} entries for this episode"
+            )
             continue
         parsed = _one_reading(matches[0], scope)
         discarded[0] += parsed.discarded_invalid_representative_rows
@@ -147,16 +188,27 @@ def read_response_result(
         discarded[2] += parsed.discarded_conflicting_cull_rows
         if parsed.reading is not None:
             readings.append(parsed.reading)
+        else:
+            problems[_page_key(scope)] = parsed.problem
     diagnostic = _response_diagnostic(
         response_hash,
         embedded=embedded,
         omitted=len(scopes) - len(readings),
         counts=discarded,
     )
-    return _EpisodeResponse(tuple(readings), diagnostic)
+    return _EpisodeResponse(tuple(readings), diagnostic, answer=raw, problems=problems)
 
 
 def _episode_payload(raw: str) -> tuple[dict[str, object] | None, bool]:
+    for text in dict.fromkeys((raw, without_trailing_commas(raw))):
+        payload, embedded = _complete_payload(text)
+        if payload is not None:
+            return payload, embedded
+    salvaged = _salvage_truncated_episodes(raw)
+    return (salvaged, True) if salvaged is not None else (None, False)
+
+
+def _complete_payload(raw: str) -> tuple[dict[str, object] | None, bool]:
     payload = final_json_object(raw)
     if payload is not None and payload.get("schema_version") == TEXT_EPISODE_SCHEMA_VERSION:
         return payload, False
@@ -171,10 +223,7 @@ def _episode_payload(raw: str) -> tuple[dict[str, object] | None, bool]:
             continue
         if isinstance(value, dict) and value.get("schema_version") == TEXT_EPISODE_SCHEMA_VERSION:
             candidates.append(value)
-    if len(candidates) == 1:
-        return candidates[0], True
-    salvaged = _salvage_truncated_episodes(raw)
-    return (salvaged, True) if salvaged is not None else (None, False)
+    return (candidates[0], True) if len(candidates) == 1 else (None, False)
 
 
 def _salvage_truncated_episodes(raw: str) -> dict[str, object] | None:
@@ -228,6 +277,11 @@ def _one_reading(
         return _EpisodePageParse(
             None,
             discarded_invalid_representative_rows=discarded_representatives,
+            problem=(
+                "its what_happened was missing or not one plain line"
+                if what_happened is None
+                else "it named no usable representative"
+            ),
         )
     # A page may name a record on any of its own pictures, so this list is not capped at
     # three the way the representatives are: it is not a choice of which frames to show.

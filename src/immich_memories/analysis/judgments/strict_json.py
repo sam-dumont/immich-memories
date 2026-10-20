@@ -77,6 +77,39 @@ def final_json_object(
     )
 
 
+def without_trailing_commas(raw: str) -> str:
+    """The text with every comma that only precedes a closing bracket removed.
+
+    A small reader closes a reading with `"notable_moments":[...],` and then `}`: JSON forbids
+    the comma, though it carries no meaning, and the whole episode was refused for it (#2682,
+    17 of the 30 recorded unparseable answers). Commas inside strings are left alone.
+    """
+    kept: list[str] = []
+    in_string = escaped = False
+    for index, character in enumerate(raw):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+        elif character == '"':
+            in_string = True
+        elif character == "," and _next_visible(raw, index + 1) in ("}", "]"):
+            continue
+        kept.append(character)
+    return "".join(kept)
+
+
+def _next_visible(raw: str, start: int) -> str:
+    """The first non-whitespace character at or after `start`, or "" at the end."""
+    for character in raw[start:]:
+        if not character.isspace():
+            return character
+    return ""
+
+
 def _first_complete_object(
     raw: str, *, allow_trailing_commentary: bool = False
 ) -> dict[str, Any] | None:

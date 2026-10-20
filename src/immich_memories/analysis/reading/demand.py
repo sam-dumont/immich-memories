@@ -142,14 +142,27 @@ class DemandEpisodeReadings:
                     ),
                     "reason": evidence.unavailable_reason,
                     "cache_hit": evidence.cache_hit,
+                    # Refused by an earlier run and remembered, not asked by this one.
+                    "remembered_refusal": evidence.remembered_refusal,
                 }
             )
         unavailable = sum(row["status"] == "unavailable" for row in episodes)
         return {
             "status": "degraded" if unavailable else "complete",
             "unavailable_episodes": unavailable,
+            "remembered_refusals": sum(
+                row["status"] == "unavailable" and row["remembered_refusal"] for row in episodes
+            ),
             "episodes": episodes,
         }
+
+
+def unread_line(unread: int, remembered: int, consequence: str) -> str:
+    """`!! 13 demanded episode(s) unread (2 this run, 11 remembered from earlier runs); ...`."""
+    return (
+        f"!! {unread} demanded episode(s) unread ({unread - remembered} this run, "
+        f"{remembered} remembered from earlier runs); {consequence}"
+    )
 
 
 ReaderFactory = Callable[["PreparedEditorialSource"], "EpisodeReader"]

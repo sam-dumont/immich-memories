@@ -153,6 +153,16 @@ class BankedEpisodeReading:
             raise ValueError("episode reading may reference only full episode members")
 
 
+@dataclass(frozen=True)
+class EpisodeRefusal:
+    """One episode this exact question could not read, why, and what the reader wrote."""
+
+    identity: EpisodeReadingIdentity
+    reason: str
+    # A bounded excerpt of the answer the refusal was filed over; None when nothing answered.
+    answer_excerpt: str | None = None
+
+
 class EpisodeReadingStore:
     """Persist immutable episode readings in the store."""
 
@@ -204,24 +214,28 @@ class EpisodeReadingStore:
             recalled[reading.identity.group_id] = reading
         return recalled
 
-    def remember_refusals(self, refusals: Iterable[tuple[EpisodeReadingIdentity, str]]) -> None:
+    def remember_refusals(
+        self, refusals: Iterable[EpisodeRefusal | tuple[EpisodeReadingIdentity, str]]
+    ) -> None:
         """Keep "this exact question could not be read" so it is asked once, not every run.
 
         Only a refusal the same question would earn again belongs here: a reader that answered
         and whose answer could not be used, or evidence too large to ask about. A provider that
-        was unreachable has refused nothing, and the caller keeps those out.
+        was unreachable has refused nothing, and the caller keeps those out. The answer's
+        excerpt is kept with it, so a later run that reports the episode unread can say why.
         """
         answered_at = now_db()
         rows = [
             {
-                "group_id": identity.group_id,
-                "producer_key": identity.producer_key,
-                "evidence_key": identity.evidence_key,
-                "reason": reason,
+                "group_id": refusal.identity.group_id,
+                "producer_key": refusal.identity.producer_key,
+                "evidence_key": refusal.identity.evidence_key,
+                "reason": refusal.reason,
+                "answer_excerpt": refusal.answer_excerpt,
                 "answered_at": answered_at,
             }
-            for identity, reason in refusals
-            if reason.strip()
+            for refusal in map(_refusal, refusals)
+            if refusal.reason.strip()
         ]
         if not rows:
             return
@@ -251,6 +265,10 @@ class EpisodeReadingStore:
                 wanted = [(i.group_id, i.producer_key, i.evidence_key) for i in chunk]
                 rows.extend(connection.execute(query.where(key.in_(wanted))))
         return rows
+
+
+def _refusal(item: EpisodeRefusal | tuple[EpisodeReadingIdentity, str]) -> EpisodeRefusal:
+    return item if isinstance(item, EpisodeRefusal) else EpisodeRefusal(*item)
 
 
 def _row_for(reading: BankedEpisodeReading) -> dict[str, str]:

@@ -38,7 +38,7 @@ from immich_memories.analysis.preparation.scene_prints import (
 )
 from immich_memories.analysis.preparation.thumbnail_hashes import CachedThumbnailHasher
 from immich_memories.analysis.reading.case import Case
-from immich_memories.analysis.reading.demand import DemandEpisodeReadings
+from immich_memories.analysis.reading.demand import DemandEpisodeReadings, unread_line
 from immich_memories.analysis.reading.people_identities import EditorialPeople
 from immich_memories.analysis.runtime.film_preparation import CandidateEvidence
 from immich_memories.analysis.runtime.live_source_integrity import (
@@ -186,10 +186,9 @@ class ProductionPostCardBackend:
         if self._episode_demand is not None:
             health = self._episode_demand.reading_health()
             result.plan["episode_reading_health"] = health
-            if health["unavailable_episodes"]:
-                warning = (
-                    f"!! {health['unavailable_episodes']} demanded episode(s) unread; "
-                    "using factual fallback"
+            if unread := health["unavailable_episodes"]:
+                warning = unread_line(
+                    unread, health["remembered_refusals"], "using factual fallback"
                 )
                 trace.warnings.append(warning)
                 logger.warning(warning)
