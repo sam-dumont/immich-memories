@@ -49,10 +49,10 @@ def test_a_month_the_facts_carry_as_a_date_is_not_an_invention():
     assert invented_name("Porto in January", facts + "Places by day:\n  01-04: Porto\n") is None
 
 
-def test_a_weekday_or_month_in_another_film_language_is_not_an_invention():
+def test_a_weekday_or_month_in_the_films_own_language_is_not_an_invention():
     facts = "Span: 2024-03-03 to 2024-03-03 (1 day)\nPlaces by day:\n  03-03: Berlin\n"
-    assert invented_name("Berlin am Sonntag im März", facts) is None
-    assert invented_name("Ein Sonntag im März", facts) is None
+    assert invented_name("Berlin am Sonntag im März", facts, "de") is None
+    assert invented_name("Ein Sonntag im März", facts, "de") is None
 
 
 def test_a_name_beside_a_month_is_still_caught():
@@ -118,3 +118,13 @@ def test_a_word_the_app_itself_writes_in_the_films_language_is_not_an_invention(
 def test_a_holiday_the_facts_never_name_is_still_caught_in_the_films_language():
     facts = "Memory type: person_spotlight\nOccasion: birthday\nPeople: Korhan Kale\n"
     assert invented_name("Korhan à Noël", facts, "fr") == "Noel"
+
+
+def test_a_month_named_in_another_language_than_the_films_is_caught():
+    """#2139: "Un jour à June 2031" passed as a French title because a month name in any
+    language counted as a date. Only the film's own language spells its dates."""
+    facts = "Memory type: special_day\nSpan: 2031-06-21 to 2031-06-21 (1 day)\n"
+
+    assert invented_name("Un jour à June 2031", facts, "fr") == "June"
+    assert invented_name("Un dimanche de Juin 2031", facts, "fr") is None
+    assert invented_name("A day in June 2031", facts, "en") is None

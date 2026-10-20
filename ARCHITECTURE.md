@@ -1319,11 +1319,14 @@ src/immich_memories/
 │   ├── translate.py            # translate(): reading -> link_who -> link_when -> build_subject ->
 │   │                           # link_where (Subject.heads) -> link_facts -> build_pool, as an Ask
 │   │                           # (Translation + Pool); household_of(): people file, owner, homes
-│   ├── handoff.py              # film_for(): one occasion of one day (the pool's found day, a one-day
-│   │                           # date range, or the model's voted "one day or longer") -> special day,
-│   │                           # the model picking between the catalogue's occasions that day; else the
-│   │                           # pool as the film's whole reach with the request as written subject;
-│   │                           # "not possible" -> no film
+│   ├── handoff.py              # film_for(): "not possible" -> no film, before any route, unless the
+│   │                           # request dates one occasion to one day that has pictures past every
+│   │                           # filter but the caption subject (-> that special day); one occasion
+│   │                           # of one day (the pool's found day, a one-day date range, or, for a
+│   │                           # start-only date, the model's voted "one day or longer") -> special day,
+│   │                           # the model picking between the catalogue's occasions that day; a
+│   │                           # multi-day window is never one day; else the pool as the film's whole
+│   │                           # reach with the request as written subject
 │   ├── rule_preview.py         # preview_rules(): a dry run asks the editor's rules about the pool
 │   │                           # before render, through the run's own functions (source pass, screen
 │   │                           # gate, never_auto, carrier sources, video frames); count + hashed ids
@@ -1345,7 +1348,9 @@ src/immich_memories/
 │   │                           # said or formed from the request; the model votes the main subject (2-of-3,
 │   │                           # fallback: the request's words); a quality stays when the model says it
 │   │                           # narrows AND captions say it; own parts/kinds are the subject, inherited
-│   │                           # parts only for a place. Subject.heads feed link_where; subject_kind()
+│   │                           # parts only for a place. in_caption_language(): a head no caption
+│   │                           # writes is named in English by the reader first (the word as written
+│   │                           # stays a head). Subject.heads feed link_where; subject_kind()
 │   │                           # (the model's place/animal/thing/activity vote)
 │   ├── pool.py                 # build_pool(Translation, LibraryView, ...): the funnel, each Step keeps a
 │   │                           # count and a Reason: when; who (a face on the picture itself, strict per
@@ -1360,8 +1365,10 @@ src/immich_memories/
 │   │                           # looks at a picture
 │   ├── pool_questions.py       # Text-only votes the pool asks, each gated by grammar: left_out (only what
 │   │                           # follows a negation), other_names (WordNet synonyms + caption subject-slot
-│   │                           # words the model picks; quality carried), one_particular_place (GPS
-│   │                           # required), printed_words (for OCR), one_occasion (a plural is many)
+│   │                           # words the model picks, for a thing only; quality carried; the pool counts
+│   │                           # them only as a caption's subject), one_particular_place (GPS required),
+│   │                           # printed_words (for OCR; never a where, people or negation word),
+│   │                           # one_occasion (a plural is many)
 │   ├── scopes.py               # in_place(): at a home (150 m), home of the picture's time, near it (home
 │   │                           # radius), or trips detected per home; no GPS stays unless one place
 │   ├── preparation_scope.py    # place_filter(): the window's pictures the home scopes can keep, by the

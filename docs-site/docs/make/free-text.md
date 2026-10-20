@@ -76,7 +76,7 @@ This saves an actual cut for review. Render it from **Runs**, or use [`runs rend
 
 ## How it works
 
-The sentence becomes filters over facts and captions already prepared from your library. Those filters build a pool; the normal editor chooses shots from it. An empty pool makes no film.
+The sentence becomes filters over facts and captions already prepared from your library. Those filters build a pool; the normal editor chooses shots from it. An empty pool makes no film, unless your sentence dates one occasion to a single day that has pictures ("the birth of my son"): that day is the film.
 
 The pool only holds pictures the run's accounts can see. In a [household setup](../run/multi-account.mdx), a plain ask reads your primary account only. Add `--accounts primary,partner`, or select both accounts in the web UI, to search both libraries.
 

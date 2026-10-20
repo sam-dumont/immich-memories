@@ -341,6 +341,7 @@ def test_a_request_the_library_cannot_show_makes_no_film_and_says_why(ask) -> No
             **ANSWERS["Split the owner's request"],
             "what": ["our horse"],
         },
+        "captions are written in English": {"reason": "banked", "english": "horse"},
     }
 
     result = ask("--ask", "our horse along the years", answers=horse)
@@ -1118,6 +1119,7 @@ def test_an_impossible_request_on_a_prepared_library_still_says_not_possible(ask
             **ANSWERS["Split the owner's request"],
             "what": ["our horse"],
         },
+        "captions are written in English": {"reason": "banked", "english": "horse"},
     }
 
     result = ask("--ask", "our horse along the years", answers=horse)

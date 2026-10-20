@@ -18,7 +18,16 @@ from immich_memories.free_text.facts import PICTURE_WORDS
 from immich_memories.free_text.lexicon import Lexicon, Relative
 from immich_memories.free_text.linking import FIRST_PERSON, GLUE, Household, Reason, time_cut
 from immich_memories.free_text.negation import is_skip_word, request_kind_of
-from immich_memories.free_text.reading import Asker, Reading, choose, choose_several, words_of
+from immich_memories.free_text.reading import (
+    Asker,
+    Reading,
+    ask_again_if_cut,
+    choose,
+    choose_several,
+    object_schema,
+    question,
+    words_of,
+)
 
 _COORDINATORS = frozenset({"and", "or"})
 # WordNet handles time periods; its first sense of day is a time unit, not a period.
@@ -45,6 +54,11 @@ assume the quality just because the owner requested it. Judge only the supplied 
 other coordinated subjects. Pick one. Give a brief reason. Return JSON."""
 _NARROWS = "it narrows which ones belong"
 _QUALITIES = (_NARROWS, "every one the request means has it anyway")
+_IN_ENGLISH = """The photos' captions are written in English. The owner's request may be in another
+language. What is the English noun for the word, as the request uses it? Keep it singular or
+plural as written. Reason first. Return JSON."""
+_LONGEST_NOUN = 40
+
 # A quality filters captions only when enough of them say it: "black cat" is written hundreds of
 # times, "live concert" hardly ever (a concert caption says "a band on stage").
 _QUALITY_CAPTIONS = 3
@@ -217,6 +231,10 @@ class _CaptionWords:
         self._floor = max(2, len(said) // _CAPTIONS_PER_USE)
         self._said = said
 
+    def knows(self, word: str) -> bool:
+        """Whether any caption writes the word, in either number; vacuous with none read."""
+        return not self._said or any(self._counts[form] for form in (word, f"{word}s", f"{word}es"))
+
     def says(self, quality: str, noun: str) -> bool:
         # Either word order ("closed eyes" is written "eyes closed"), the noun in either number.
         said = re.escape(quality.lower())
@@ -272,10 +290,12 @@ def build_subject(
     subject; a part it only inherits (a wheel is any wheeled vehicle's) counts for a place,
     whose GPS proves which one, and the model says whether the subject is a place.
     """
-    found = subject_words(reading, household, lexicon)
+    index = _CaptionWords(captions)
+    found = in_caption_language(
+        reading.request, subject_words(reading, household, lexicon), index, lexicon, asker
+    )
     reasons = list(found.reasons)
     allowed = _people_rule(reading, household, lexicon)
-    index = _CaptionWords(captions)
     relatives, candidates, labels = _candidates(found, allowed, index, lexicon, reasons)
     main, votes = _vote_main(reading.request, candidates, labels, asker, reasons)
     if not main and (own := [word for word in found.words if allowed(word)]):
@@ -303,6 +323,55 @@ def build_subject(
         votes=dict(votes),
         reasons=tuple(reasons),
     )
+
+
+def in_caption_language(
+    request: str, found: SubjectWords, index: _CaptionWords, lexicon: Lexicon, asker: Asker
+) -> SubjectWords:
+    """The subject words in English, the captions' language, before WordNet expands them.
+
+    A head no caption writes, nor its WordNet noun forms, kinds and parts, may be another
+    language's noun ("gâteaux", "plage"): the reader names it in English, and an answer
+    WordNet holds as a noun takes its place (#2136). The word as written stays a head, so a
+    place phrase or a printed-text question never reads it as something else.
+    """
+    english: dict[str, str] = {}
+    for head in found.heads:
+        forms = {lexicon.noun_base(head) or head} | lexicon.derived_nouns(head)
+        forms |= {relative.word for relative in lexicon.relatives(head)}
+        if any(index.knows(form) for form in forms):
+            continue
+        named = english_noun(request, head, asker)
+        if named and named != head and lexicon.noun_base(named):
+            english[head] = named
+    if not english:
+        return found
+    reason = Reason(
+        ", ".join(english),
+        "no caption writes it; the reader named it in English, the captions' language",
+        ", ".join(f"{said} -> {word}" for said, word in english.items()),
+    )
+    return SubjectWords(
+        heads=tuple(dict.fromkeys((*found.heads, *english.values()))),
+        words=tuple(dict.fromkeys(english.get(word, word) for word in found.words)),
+        reasons=(*found.reasons, reason),
+    )
+
+
+def english_noun(request: str, word: str, asker: Asker) -> str | None:
+    """The reader's English noun for a word of the request, its last word when it wrote more
+    ("birthday cakes": cakes, the head in English); None when it gave none."""
+    got = ask_again_if_cut(
+        asker,
+        question(_IN_ENGLISH, {"owner_request": request, "word": word}),
+        object_schema(
+            reason={"type": "string", "maxLength": 200},
+            english={"type": "string", "maxLength": _LONGEST_NOUN},
+        ),
+        max_tokens=300,
+    )
+    named = words_of(str(got.get("english") or "")) if got else []
+    return named[-1] if named else None
 
 
 def _candidates(

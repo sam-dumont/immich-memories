@@ -90,3 +90,21 @@ def test_a_genuine_quoted_printed_word_still_survives() -> None:
 
     assert "bienvenue" in words
     assert reason.outcome != "none"
+
+
+def test_a_place_people_and_negation_words_are_never_offered_as_printed_text() -> None:
+    """#2138: "la plage sans les enfants en 2031" searched OCR for "plage". A word the
+    reading filed as where is a place (GPS and place names prove it), a word for people
+    is proven by faces, and "sans" is grammar: none is offered as printed text."""
+    # WHY: stands in for the model server; whatever is left over is voted down each time.
+    asker = BankedAsker(_picks(), _picks(), _picks())
+
+    printed_words(
+        "la plage sans les enfants en 2031",
+        ("en 2031",),
+        Subject(),
+        asker,
+        where=("la plage",),
+    )
+
+    assert _offered(asker).isdisjoint({"plage", "sans", "enfants"})

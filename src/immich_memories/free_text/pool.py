@@ -29,7 +29,7 @@ from immich_memories.free_text.facts import (
     last_pictures,
     occasion_day,
 )
-from immich_memories.free_text.grammar import free_tier
+from immich_memories.free_text.grammar import free_tier, is_about
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, Reason, WhenLink, WhereLink, WhoLink
@@ -408,7 +408,10 @@ def _printed(funnel: _Funnel, translation: Translation, printed: PrintedText, as
     # event decides where, and the subject is then read inside it. A name no picture reads is
     # not found, and the pool says so rather than filming any ride.
     request = translation.reading.request
-    words, reason = printed_words(request, translation.reading.when, translation.subject, asker)
+    reading = translation.reading
+    words, reason = printed_words(
+        request, reading.when, translation.subject, asker, where=reading.where
+    )
     if not words:
         return False
     funnel.printed = words
@@ -515,16 +518,32 @@ def _subject(
     # the neighbour's cats" still films a cat.
     own = {_head(word, lexicon) for word in subject.heads}
     gone = {_head(phrase, lexicon) for phrase in excluded} - own
-    phrases = [
+    asked = [
         phrase
-        for phrase in dict.fromkeys((*subject.main, *subject.extent, *names))
+        for phrase in dict.fromkeys((*subject.main, *subject.extent))
         if _head(phrase, lexicon) not in gone
     ]
+    inferred = [
+        phrase
+        for phrase in dict.fromkeys(names)
+        if phrase not in asked and _head(phrase, lexicon) not in gone
+    ]
+    phrases = asked + inferred
     if not phrases:
         return
-    about = {p.asset_id for p in free_tier(funnel.pictures, phrases, lexicon, excluded)}
+    about = (
+        {p.asset_id for p in free_tier(funnel.pictures, asked, lexicon, excluded)}
+        if asked
+        else set()
+    )
+    # Another name for the subject is a guess about what the request means: it counts only as
+    # what the caption is about, never as a place it merely mentions ("a toy on the beach"
+    # is no scenery, #2125).
+    about |= {p.asset_id for p in funnel.pictures if is_about(p.caption, inferred, excluded)}
     kept = [p for p in funnel.pictures if p.asset_id in about or p.asset_id in funnel.anchors]
     rule = "caption grammar: a thing is the caption's subject, a scene counts anywhere"
+    if inferred:
+        rule += f"; {', '.join(inferred)} only as the caption's subject"
     if subject.also:
         rule += f"; a photo may also show {', '.join(subject.also)}, which alone does not count"
     rule += "".join(f"; {note.rule}: {note.outcome}" for note in notes if note)

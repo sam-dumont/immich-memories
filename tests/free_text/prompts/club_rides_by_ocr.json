@@ -35,6 +35,10 @@
       "choices": [
         "rides"
       ]
+    },
+    "captions are written in English": {
+      "reason": "banked",
+      "english": "rides"
     }
   },
   "expect": {

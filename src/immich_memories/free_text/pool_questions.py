@@ -11,9 +11,10 @@ from collections import Counter
 from collections.abc import Iterable
 
 from immich_memories.free_text.facts import PICTURE_WORDS
-from immich_memories.free_text.grammar import Captioned, subject_head
+from immich_memories.free_text.grammar import Captioned, is_thing, subject_head
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.linking import FIRST_PERSON, GLUE, Reason
+from immich_memories.free_text.negation import is_skip_word, request_kind_of
 from immich_memories.free_text.reading import Asker, Reading, choose, choose_several, words_of
 from immich_memories.free_text.subject import PLACE, Subject, subject_kind
 
@@ -72,16 +73,19 @@ def other_names(
 ) -> tuple[tuple[str, ...], Reason | None]:
     """Other names the captions give the main subject, with its stated quality carried over.
 
-    WordNet's other names for it count as they are. The words the captions put in the
-    subject slot ("A black kitten is playing": kitten) are offered to the model, which picks
-    those naming the subject too; a word for people never is (faces prove people).
+    WordNet's other names for it count as they are. For a thing, the words the captions put
+    in the subject slot ("A black kitten is playing": kitten) are offered to the model,
+    which picks those naming the subject too; a word for people never is (faces prove
+    people). A place, an event or an activity keeps WordNet's names only: asked, the model
+    names the setting around it ("landscape" for a beach), which is no narrower (#2125).
     """
     if not subject.main:
         return (), None
     taken = {word for phrase in (*subject.main, *subject.extent) for word in words_of(phrase)}
     heads = [words_of(phrase)[-1] for phrase in subject.main if words_of(phrase)]
     same = [name for head in heads for name in lexicon.synonyms(head) if name not in taken]
-    offered = _slot_words(subject, pictures, taken | set(same), lexicon)
+    things = any(is_thing(phrase, lexicon) for phrase in subject.main)
+    offered = _slot_words(subject, pictures, taken | set(same), lexicon) if things else []
     votes: Counter[str] = Counter()
     if offered:
         picked, votes = choose_several(
@@ -188,7 +192,12 @@ _YEAR = re.compile(r"^(?:1[89]\d{2}|20\d{2})$")
 
 
 def printed_words(
-    request: str, when: tuple[str, ...], subject: Subject, asker: Asker
+    request: str,
+    when: tuple[str, ...],
+    subject: Subject,
+    asker: Asker,
+    *,
+    where: tuple[str, ...] = (),
 ) -> tuple[tuple[str, ...], Reason]:
     """The request's words the model says are printed on things in the photos (read by OCR).
 
@@ -197,6 +206,8 @@ def printed_words(
     model voted both in as "printed" at once, OCR then read no photo, and the pool emptied
     (#2046). A written year is dropped the same way; any other number ("ses 40 ans") is still a
     genuine candidate, a birthday banner or a jersey number. Decided in code, never asked.
+    Nor is a word of the reading's `where` (GPS and place names prove a place), a word for
+    people (faces prove people) or a negation in any locale ("sans", #2138).
     """
     dated = {
         word
@@ -205,6 +216,7 @@ def printed_words(
         if not word.isdigit() or _YEAR.match(word)
     }
     named = {word.lower() for word in (*subject.heads, *subject.words)}
+    named |= {word for phrase in where for word in words_of(phrase)}
     offered = [
         word
         for word in dict.fromkeys(words_of(request))
@@ -212,6 +224,8 @@ def printed_words(
         and word not in GLUE | FIRST_PERSON | PICTURE_WORDS
         and word not in dated
         and word not in named
+        and not is_skip_word(word)
+        and request_kind_of(word, negated=True) is None
     ]
     if not offered:
         return (), Reason("", "no word to read", "none")

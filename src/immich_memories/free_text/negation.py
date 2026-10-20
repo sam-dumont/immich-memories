@@ -669,6 +669,11 @@ def is_self_negating(token: str) -> bool:
     return _fold(token) in _NEGATION_ALSO_COMPANY
 
 
+def is_negation(token: str) -> bool:
+    """Whether the token is a pure negation marker ("not", "sans", "ohne"), in any locale."""
+    return _fold(token) in _NEGATION
+
+
 def is_skip_word(token: str) -> bool:
     """Whether the token is a pure function word, never itself a company or a name.
 

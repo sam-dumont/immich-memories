@@ -19,7 +19,7 @@ from immich_memories.free_text.linking import (
 from immich_memories.free_text.pool import Pool, Translation
 from immich_memories.free_text.pool_questions import left_out, printed_words
 from immich_memories.free_text.reading import Reading, WireAsker, read_request
-from immich_memories.free_text.subject import Subject, subject_kind
+from immich_memories.free_text.subject import Subject, english_noun, subject_kind
 from immich_memories.free_text.translate import Ask
 
 _COMMON = frozenset({"free_text.reading:WireAsker.ask", "free_text.reading:ask_again_if_cut"})
@@ -29,6 +29,12 @@ def kind(llm: LLMConfig) -> str:
     answer, votes = subject_kind("photos of cats", ("cat",), WireAsker(llm))
     assert answer == "an animal" and votes[answer] >= 2, "cats were not identified as animals"
     return "majority identifies cats as animals"
+
+
+def subject_in_english(llm: LLMConfig) -> str:
+    answer = english_noun("les gâteaux d'anniversaire en 2030", "gâteaux", WireAsker(llm))
+    assert answer in {"cake", "cakes"}, "the French subject was not named in English"
+    return "names gâteaux as cakes"
 
 
 def request_reading(llm: LLMConfig) -> str:
@@ -135,6 +141,11 @@ def free_text_cases(llm: LLMConfig) -> tuple[Case, ...]:
             "free-text calendar dates",
             partial(calendar_dates, llm),
             _COMMON | {"free_text.linking:_dates"},
+        ),
+        Case(
+            "free-text subject in English",
+            partial(subject_in_english, llm),
+            _COMMON | {"free_text.subject:english_noun"},
         ),
         Case(
             "free-text request reading",

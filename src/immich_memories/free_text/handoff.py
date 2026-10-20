@@ -77,21 +77,29 @@ def film_for(
 ) -> Film:
     """Decide what the request is filmed as; `events_on` reads the catalogue for a day.
 
-    One single occasion with a day, found by its pictures or dated by the request, is that
-    special day; the model picks between the occasions the catalogue holds on it. Otherwise
-    a pool the library can show is the film's whole reach, and "not possible" is no film.
-    A window a caption-dependent request still needs prepared is "needs preparation": not
-    yet known either way, and never reported as "not possible" (#2045).
+    "Not possible" is no film (#2138), with one exception: a single occasion the request
+    itself dates to one day ("the birth of my son", from the people file) whose day has
+    pictures past every filter but the caption subject is that special day; the occasion is
+    the day, not something a caption must show. A window a
+    caption-dependent request still needs prepared is "needs preparation": not yet known
+    either way, and never reported as "not possible" (#2045). One single occasion with a
+    day, found by its pictures or dated by the request, is that special day; the model picks
+    between the occasions the catalogue holds on it. Otherwise the pool is the film's whole
+    reach.
     """
     pool = ask.pool
+    if pool.verdict == NOT_POSSIBLE:
+        if (dated := _dated_day(ask)) is not None:
+            why = "one occasion the request dates to one day, with pictures that day"
+            why += f"; no caption shows {', '.join(ask.translation.subject.main) or 'it'}"
+            return _special_day(ask.request, dated, why, events_on(dated), asker)
+        return Film("none", Reason("", "not possible: no film", pool.why))
+    if pool.verdict == NEEDS_PREPARATION:
+        return Film("none", Reason("", "needs preparation: no film yet", pool.why))
     one_day = _one_day(ask, asker)
     if one_day is not None:
         day, why = one_day
         return _special_day(ask.request, day, why, events_on(day), asker)
-    if pool.verdict == NOT_POSSIBLE:
-        return Film("none", Reason("", "not possible: no film", pool.why))
-    if pool.verdict == NEEDS_PREPARATION:
-        return Film("none", Reason("", "needs preparation: no film yet", pool.why))
     return Film(
         "pool",
         Reason("", "the pool is the film's whole reach", f"{len(pool.pictures)} pictures"),
@@ -106,6 +114,19 @@ def film_for(
     )
 
 
+def _dated_day(ask: Ask) -> date | None:
+    """The day an empty pool still films: one occasion dated to one day by the request,
+    emptied only by the caption subject, with pictures that day before it."""
+    pool, when = ask.pool, ask.translation.when
+    if not pool.one_occasion or when.start is None or when.start != when.end:
+        return None
+    steps = list(pool.funnel)
+    emptied = next((at for at, step in enumerate(steps) if step.kept == 0), None)
+    if emptied is None or emptied == 0 or steps[emptied].name != "subject":
+        return None
+    return when.start
+
+
 def _one_day(ask: Ask, asker: Asker) -> tuple[date, str] | None:
     pool, when = ask.pool, ask.translation.when
     if not pool.one_occasion:
@@ -116,6 +137,10 @@ def _one_day(ask: Ask, asker: Asker) -> tuple[date, str] | None:
         return None
     if when.end == when.start:
         return when.start, "one occasion, dated to one day"
+    if when.end is not None:
+        # The request dates a window of several days (a season, a month, a year, a range):
+        # it asks for that window, never for the one day it starts on (#2139).
+        return None
     answer, votes = choose(
         asker,
         _HOW_LONG,

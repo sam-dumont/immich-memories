@@ -239,6 +239,30 @@ def test_negation_the_reader_puts_in_what_or_drops_is_still_read(lexicon: Lexico
     assert dropped.absent_company == "people"
 
 
+@pytest.mark.parametrize(
+    ("request_", "span"),
+    [
+        ("la plage sans les enfants en 2031", "les enfants"),
+        ("the beach without the kids in 2031", "the kids"),
+    ],
+)
+def test_a_who_span_read_without_its_negation_is_still_negated(
+    request_: str, span: str, lexicon: Lexicon
+) -> None:
+    """#2138: the reader picks "les enfants" as who, leaving "sans" before it. The negation
+    the request says right before the span is the span's own: children are asked away,
+    never required as well."""
+    who = link_who(request_, (span,), STRANGERS, lexicon, _unasked())
+
+    assert (who.company, who.absent_company) == (None, "children")
+
+
+def test_a_named_person_after_sans_outside_the_span_is_excluded(lexicon: Lexicon) -> None:
+    who = link_who("le jardin sans Cy en 2031", ("cy",), HOUSEHOLD, lexicon, _unasked())
+
+    assert (who.present, who.absent_present) == ((), ("p-son",))
+
+
 def test_a_whole_text_scan_never_overrides_a_more_specific_who_span(lexicon: Lexicon) -> None:
     # The who span already says "children" required; the fallback whole-text scan must not
     # also read "no rain" elsewhere in the request as anything about company.
