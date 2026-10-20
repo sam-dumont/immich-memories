@@ -357,10 +357,11 @@ def test_worker_failures_stop_without_publishing_or_leaking_tokens(tmp_path, mon
 class _SlowMusic:
     """The music backend: a real tone, made while the test watches whether the render runs."""
 
-    def __init__(self, rendering):
+    def __init__(self, rendering, *, expect_overlap):
         import threading
 
         self.rendering = rendering
+        self.expect_overlap = expect_overlap
         self.started = threading.Event()
         self.heard_render_running: list[bool] = []
         self.stems_during_render: list[bool] = []
@@ -373,6 +374,9 @@ class _SlowMusic:
             MusicGenerationResult,
         )
 
+        if self.expect_overlap:
+            # The music may start a moment before the worker's render call: wait for it.
+            self.rendering.wait(30)
         self.heard_render_running.append(self.rendering.is_set())
         self.started.set()
         track = output_dir / f"take_{len(self.heard_render_running)}.wav"
@@ -405,7 +409,7 @@ def _music_run(tmp_path, monkeypatch, *, fails, music_url="http://music.example.
     overlaps = music_url != "http://localhost:8000"
     params.original_audio = False  # the stub film is silent: music is its only sound
     rendering = threading.Event()
-    music = _SlowMusic(rendering)
+    music = _SlowMusic(rendering, expect_overlap=overlaps)
     # WHY: the music model is the boundary; mood, plan, mix and the worker API stay real.
     monkeypatch.setattr("immich_memories.audio.music_generator.generate_music_for_video", music)
 
