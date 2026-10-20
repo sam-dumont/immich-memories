@@ -355,3 +355,34 @@ def test_every_progress_report_reaches_the_job_status_a_stall_guard_reads(tmp_pa
         assert _settle(client, job_id).json()["state"] == "ready"
 
     assert statuses == reports
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_a_finished_film_hands_its_freed_heap_back(tmp_path, monkeypatch, fails):
+    """Freed frame buffers stayed in malloc arenas: the worker grew about 0.13 GB a film."""
+    from immich_memories_render_worker import jobs
+
+    order = []
+
+    class Renderer:
+        def health(self):
+            return {"ready": True}
+
+        def render(self, request, directory, progress):
+            order.append("render")
+            if fails:
+                raise RuntimeError("synthetic failure")
+            return stub_artifact(directory)
+
+    # WHY: libc's malloc_trim is the boundary; test_heap_release covers its RSS effect.
+    monkeypatch.setattr(jobs, "release_freed_heap", lambda: order.append("trim") or True)
+    with TestClient(worker_app(tmp_path, Renderer()), headers=AUTH) as client:
+        job_id = client.post("/jobs", json=render_request_body()).json()["job_id"]
+        status = _settle(client, job_id)
+        assert status.json()["state"] == ("failed" if fails else "ready")
+        for _ in range(100):
+            if order == ["render", "trim"]:
+                break
+            time.sleep(0.02)
+
+    assert order == ["render", "trim"]

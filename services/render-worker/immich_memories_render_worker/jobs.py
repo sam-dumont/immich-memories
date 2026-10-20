@@ -1,5 +1,6 @@
 """One GPU lane, bounded admission and validated, single-use artifacts."""
 
+import ctypes
 import hashlib
 import json
 import os
@@ -62,6 +63,22 @@ def _plan_record(artifact: RenderArtifact, probe) -> dict:
         "clips": artifact.clips,
         "degradations": artifact.degradations,
     }
+
+
+def release_freed_heap() -> bool:
+    """Hand memory the process has freed but glibc still holds back to the system.
+
+    Every thread that allocates gets its own malloc arena, and a freed frame buffer
+    stays in that arena. A long-lived worker, whose thread pools come and go film
+    after film, kept about 0.13 GB more after each one. Returns whether the C
+    library offers the trim (glibc does; macOS and musl do not).
+    """
+    try:
+        trim = ctypes.CDLL(None).malloc_trim
+    except (AttributeError, OSError):
+        return False
+    trim(0)
+    return True
 
 
 class RenderJobs:
@@ -187,7 +204,11 @@ class RenderJobs:
                 directory.mkdir(mode=0o700)
                 self.store.update(job_id, state="running", started_at=_now())
             with self._controls[job_id]:
-                artifact = self.renderer.render(request, directory, progress)
+                try:
+                    artifact = self.renderer.render(request, directory, progress)
+                finally:
+                    # The film's frame buffers are freed now; give their pages back.
+                    release_freed_heap()
             self._publish(job_id, directory, artifact)
         except RenderStopped:
             # A deadline or a discard stopped it; the job is already closed and its
