@@ -280,22 +280,22 @@ _TEMPO_ENERGY: dict[str, float] = {"slow": 0.0, "medium": 0.5, "fast": 1.0}
 # orchestral, ambient and metal sounded wrong unasked and stay explicit-only. Update the counts
 # after each listening round.
 MOOD_STYLE_TESTS: dict[str, dict[str, tuple[int, int]]] = {
-    "calm": {"piano": (2, 2), "lofi": (1, 2), "downtempo": (2, 3), "neosoul": (2, 2)},
-    "tender": {"piano": (3, 5), "lofi": (2, 5), "neosoul": (3, 3), "downtempo": (1, 3)},
-    "nostalgic": {"piano": (2, 2), "lofi": (2, 2), "postrock": (2, 3), "neosoul": (2, 3)},
+    "calm": {"piano": (5, 6), "lofi": (4, 6), "downtempo": (3, 7), "neosoul": (4, 6)},
+    "tender": {"piano": (5, 9), "lofi": (6, 9), "neosoul": (5, 7), "downtempo": (1, 3)},
+    "nostalgic": {"piano": (4, 6), "lofi": (5, 6), "postrock": (3, 7), "neosoul": (5, 7)},
     "happy": {
-        "piano": (1, 2),
-        "lofi": (2, 2),
-        "electronic": (2, 2),
+        "piano": (2, 6),
+        "lofi": (4, 6),
+        "electronic": (2, 6),
         "funk": (1, 3),
-        "citypop": (3, 3),
+        "citypop": (6, 7),
     },
     "energetic": {
-        "piano": (2, 2),
-        "lofi": (2, 2),
+        "piano": (2, 6),
+        "lofi": (3, 6),
         "electronic": (0, 2),
-        "funk": (2, 3),
-        "postrock": (1, 1),
+        "funk": (4, 7),
+        "postrock": (2, 5),
     },
 }
 # A style kept less often than this is left out of its mood, however few takes were heard.

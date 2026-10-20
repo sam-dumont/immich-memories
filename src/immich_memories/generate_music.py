@@ -86,6 +86,23 @@ def music_config_available(config: Config) -> bool:
     return bool((ace and ace.enabled) or (mg and mg.enabled))
 
 
+def ace_step_bundled_reason(config: Config) -> str | None:
+    """Why films play the bundled library although ACE-Step is on, or None when it generates.
+
+    Generated music is only worth making on the XL model (`ace_step_music_path`). This is
+    set when ACE-Step is the only generator and will not run XL; with MusicGen also on, the
+    pipeline skips ACE-Step and MusicGen generates.
+    """
+    ace = getattr(config, "ace_step", None)
+    mg = getattr(config, "musicgen", None)
+    if not (ace and ace.enabled) or (mg and mg.enabled):
+        return None
+    from immich_memories.audio.generators.ace_step_music_path import music_path_for
+
+    path = music_path_for(ace)
+    return None if path.generate else path.reason
+
+
 def resolve_music(
     config: Config,
     music_path: Path | None,
@@ -128,7 +145,11 @@ def resolve_music(
     )
 
     warning: str | None = None
-    if source is MusicSource.AUTO and music_config_available(config):
+    bundled_because = ace_step_bundled_reason(config) if source is MusicSource.AUTO else None
+    if bundled_because:
+        warning = f"Generated music skipped: {bundled_because}"
+        logger.info(warning)
+    elif source is MusicSource.AUTO and music_config_available(config):
         if report_fn:
             report_fn("music", 0.85, "Generating AI music...")
         try:

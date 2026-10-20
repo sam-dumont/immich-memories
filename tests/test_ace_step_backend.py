@@ -417,32 +417,43 @@ class TestACEStepBackendV15Library:
             backend._init_pipeline()
         return backend
 
-    @pytest.mark.parametrize(("unified_gib", "expected"), [(128.0, "xl"), (32.0, "")])
-    def test_auto_loads_xl_on_a_mac_that_holds_it(self, tmp_path, unified_gib, expected):
+    def test_auto_loads_xl_on_a_mac_that_holds_it(self, tmp_path):
         captured: dict = {}
 
-        backend = self._load(tmp_path, captured, "auto", unified_gib=unified_gib)
+        backend = self._load(tmp_path, captured, "auto", unified_gib=128.0)
 
-        model = f"acestep-v15-{expected}-turbo" if expected else "acestep-v15-turbo"
-        assert captured["dit_attempts"] == [model]
-        assert backend._pipeline.dit_model == model
+        assert captured["dit_attempts"] == ["acestep-v15-xl-turbo"]
+        assert backend._pipeline.dit_model == "acestep-v15-xl-turbo"
 
-    def test_auto_falls_back_to_2b_when_xl_fails_to_load(self, tmp_path, caplog):
+    def test_auto_never_loads_2b_on_a_mac_without_room_for_xl(self, tmp_path):
+        captured: dict = {}
+
+        with pytest.raises(RuntimeError, match="no room for the ACE-Step XL model"):
+            self._load(tmp_path, captured, "auto", unified_gib=32.0)
+
+        assert captured.get("dit_attempts", []) == []
+
+    def test_auto_does_not_fall_back_to_2b_when_xl_fails_to_load(self, tmp_path):
         captured: dict = {"refuse": {"acestep-v15-xl-turbo"}}
 
-        with caplog.at_level("WARNING"):
-            backend = self._load(tmp_path, captured, "auto")
+        with pytest.raises(RuntimeError, match="weights rejected"):
+            self._load(tmp_path, captured, "auto")
 
-        assert captured["dit_attempts"] == ["acestep-v15-xl-turbo", "acestep-v15-turbo"]
-        assert backend._pipeline.dit_model == "acestep-v15-turbo"
-        assert "falling back to the 2B turbo model" in caplog.text
+        assert captured["dit_attempts"] == ["acestep-v15-xl-turbo"]
 
-    def test_auto_falls_back_to_2b_when_xl_does_not_fit_in_free_memory(self, tmp_path):
+    def test_auto_does_not_fall_back_to_2b_when_xl_does_not_fit_in_free_memory(self, tmp_path):
         captured: dict = {}
 
-        backend = self._load(tmp_path, captured, "auto", available_gib=12)
+        with pytest.raises(RuntimeError):
+            self._load(tmp_path, captured, "auto", available_gib=12)
 
-        assert captured["dit_attempts"] == ["acestep-v15-turbo"]
+        assert "acestep-v15-turbo" not in captured.get("dit_attempts", [])
+
+    def test_a_written_2b_variant_still_loads_as_written(self, tmp_path):
+        captured: dict = {}
+
+        backend = self._load(tmp_path, captured, "turbo", unified_gib=32.0)
+
         assert backend._pipeline.dit_model == "acestep-v15-turbo"
 
     def test_a_written_xl_that_fails_to_load_is_an_error_not_a_quiet_2b(self, tmp_path):

@@ -27,7 +27,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 from immich_memories.audio.generators import ace_step_isolated
+from immich_memories.audio.generators.ace_step_api_retry import send_with_retry
 from immich_memories.audio.generators.ace_step_captions import (
     build_ace_caption_structured,
 )
@@ -39,12 +42,15 @@ from immich_memories.audio.generators.ace_step_runtime import (
     run_v15_generation,
 )
 from immich_memories.audio.generators.base import (
+    GenerationFailure,
     GenerationRequest,
     GenerationResult,
     MusicGenerator,
 )
 
 logger = logging.getLogger(__name__)
+
+_HEALTH_RETRY_SECONDS = 10.0
 
 
 @dataclass
@@ -213,19 +219,24 @@ class ACEStepBackend(MusicGenerator):
     async def _check_api(self) -> bool:
         """Check if ACE-Step REST API server is reachable."""
         try:
-            import httpx
-
             async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"{self.config.api_url}/health")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if data.get("data", {}).get("status") == "ok":
-                        return True
-                    logger.warning("ACE-Step API returned an unhealthy status")
+                # One dropped connection is not an unreachable server: retry briefly.
+                resp = await send_with_retry(
+                    lambda: client.get(f"{self.config.api_url}/health"),
+                    "health check",
+                    window=_HEALTH_RETRY_SECONDS,
+                )
+                if resp.status_code != 200:
+                    logger.warning("ACE-Step API returned HTTP %d", resp.status_code)
                     return False
-                logger.warning("ACE-Step API returned HTTP %d", resp.status_code)
+                if resp.json().get("data", {}).get("status") == "ok":
+                    return True
+                logger.warning("ACE-Step API returned an unhealthy status")
                 return False
-        except (OSError, RuntimeError, ValueError, ExceptionGroup) as exc:
+        except httpx.HTTPStatusError as exc:
+            logger.warning("ACE-Step API returned HTTP %d", exc.response.status_code)
+            return False
+        except (httpx.TransportError, OSError, RuntimeError, ValueError, ExceptionGroup) as exc:
             # WHY: anyio wraps connection failures in ExceptionGroup on Linux
             logger.warning("ACE-Step API unreachable (%s)", type(exc).__name__)
             return False
@@ -489,11 +500,13 @@ class ACEStepBackend(MusicGenerator):
                     f"ACE-Step task {task_id} timed out after {self.config.timeout_seconds}s"
                 )
 
-            poll_resp = await client.post(
-                f"{self.config.api_url}/query_result",
-                json={"task_id_list": [task_id]},
+            poll_resp = await send_with_retry(
+                lambda: client.post(
+                    f"{self.config.api_url}/query_result",
+                    json={"task_id_list": [task_id]},
+                ),
+                "poll",
             )
-            poll_resp.raise_for_status()
             poll_data = poll_resp.json()
 
             results = poll_data.get("data", [])
@@ -502,7 +515,10 @@ class ACEStepBackend(MusicGenerator):
                 status = result_item.get("status", 0)
 
                 if status == 2:
-                    raise RuntimeError(f"ACE-Step task {task_id} failed: {result_item}")
+                    raise GenerationFailure(
+                        f"ACE-Step task {task_id} failed: {result_item}",
+                        reason="the server reported the task failed (status 2)",
+                    )
 
                 if status == 1:
                     await self._download_result(
@@ -535,8 +551,9 @@ class ACEStepBackend(MusicGenerator):
         if not file_url:
             raise RuntimeError(f"No file URL in result: {result_files[0]}")
 
-        audio_resp = await client.get(f"{self.config.api_url}{file_url}")
-        audio_resp.raise_for_status()
+        audio_resp = await send_with_retry(
+            lambda: client.get(f"{self.config.api_url}{file_url}"), "result download"
+        )
         output_path.write_bytes(audio_resp.content)
 
     @staticmethod

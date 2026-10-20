@@ -131,20 +131,20 @@ def test_a_body_over_the_cap_is_refused(tmp_path: Path) -> None:
 
 @pytest.fixture(autouse=True)
 def music_installs(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
-    """Record the music-v2 install instead of downloading the 61 MB library.
+    """Record the music-v3 install instead of downloading the 118 MB library.
 
     WHY: the pinned archive lives on a GitHub release; its unpacking has its own tests.
     """
     calls: list[dict] = []
     monkeypatch.setattr(
         cli_models,
-        "install_music_v2",
+        "install_music_v3",
         lambda dest, **kw: calls.append({"dest": dest, **kw}) or "present",
     )
     return calls
 
 
-def test_fetch_installs_music_v2_and_force_reaches_it_unless_music_is_off(
+def test_fetch_installs_music_v3_and_force_reaches_it_unless_music_is_off(
     music_installs: list[dict], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # WHY: the other artifacts are not under test here and live on the network.

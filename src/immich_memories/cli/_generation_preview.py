@@ -76,6 +76,10 @@ def music_policy(*, config, music: str | None, no_music: bool) -> str:
     from immich_memories.generate_music import music_config_available, own_music_available
 
     if music_config_available(config):
+        from immich_memories.generate_music import ace_step_bundled_reason
+
+        if reason := ace_step_bundled_reason(config):
+            return f"bundled track ({reason})"
         return "automatic"
     if own_music_available(config):
         return "your music folder (bundled tracks for moods it lacks)"

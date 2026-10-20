@@ -8,11 +8,12 @@ Start with [Generate music](../better/music.md) for the supported backend choice
 
 ## Memory and disk
 
-`model_variant: auto`, the default, picks the generator from the machine: the 4B XL turbo model
-on a Mac with 64 GB or more of unified memory or an NVIDIA GPU with 16 GB or more, the 2B turbo
-model everywhere else. XL sounds brighter and gets stuck in a loop less often. If XL fails to
-load, or doesn't fit in the memory free at that moment, the render loads 2B and logs a warning.
-A model you write yourself (`turbo`, `base`, `xl-turbo`) is used as written, with no fallback.
+`model_variant: auto`, the default, generates with the 4B XL turbo model on a Mac with 64 GB or
+more of unified memory or an NVIDIA GPU with 16 GB or more. XL sounds brighter and gets stuck in a
+loop less often. A smaller host never loads the 2B model: the film plays a bundled track. The same
+happens when XL fails to load, or doesn't fit in the memory free at that moment. A model you write
+yourself is used as written: `xl-turbo` loads XL, while `turbo` and `base` load the 2B model and
+log a warning that names `auto`, `xl-turbo` and the bundled library.
 
 `lib` mode checks free memory against the weights the profile has to keep resident, and refuses
 with a named shortfall rather than letting macOS kill the process mid-render. A refusal is an

@@ -1,7 +1,7 @@
-"""The music-v2 library: pinned, fetched ahead of time, never at film time.
+"""The music-v3 library: pinned, fetched ahead of time, never at film time.
 
-``immich-memories models fetch`` (and the Docker build) call ``install_music_v2``;
-a film only calls ``installed_music_v2``, which reads the disk and nothing else.
+``immich-memories models fetch`` (and the Docker build) call ``install_music_v3``;
+a film only calls ``installed_music_v3``, which reads the disk and nothing else.
 The archive is digest-pinned like the model artifacts, unpacked into a scratch
 folder next to its destination and renamed into place, so a half-written library
 never looks installed.
@@ -16,37 +16,37 @@ import tarfile
 import tempfile
 from pathlib import Path, PurePosixPath
 
-from immich_memories.pinned_models import MUSIC_V2, MUSIC_V2_MAX_BYTES, fetch_pinned_model
+from immich_memories.pinned_models import MUSIC_V3, MUSIC_V3_MAX_BYTES, fetch_pinned_model
 
 logger = logging.getLogger(__name__)
 
 MUSIC_DIR_ENV = "IMMICH_MEMORIES_MUSIC_DIR"
-MUSIC_V2_MOODS = ("calm", "tender", "nostalgic", "happy", "energetic")
-MARKER = ".music-v2.sha256"
-_ARCHIVE_ROOT = "music-v2"
+MUSIC_V3_MOODS = ("calm", "tender", "nostalgic", "happy", "energetic")
+MARKER = ".music-v3.sha256"
+_ARCHIVE_ROOT = "music-v3"
 _SUFFIXES = (".opus", ".mp3", ".m4a", ".flac", ".ogg", ".wav")
-# 61 MB of Opus today; room for a later batch, not for a bomb.
+# 118 MB of Opus today; room for a later batch, not for a bomb.
 MUSIC_UNPACKED_MAX_BYTES = 256 * 1024 * 1024
 _CHUNK = 1024 * 1024
 
 
-def music_v2_dir() -> Path:
-    """Where the library lives: $IMMICH_MEMORIES_MUSIC_DIR, else ~/.immich-memories/models/music-v2."""
+def music_v3_dir() -> Path:
+    """Where the library lives: $IMMICH_MEMORIES_MUSIC_DIR, else ~/.immich-memories/models/music-v3."""
     configured = os.environ.get(MUSIC_DIR_ENV)
     if configured:
         return Path(configured).expanduser()
-    return Path.home() / ".immich-memories" / "models" / "music-v2"
+    return Path.home() / ".immich-memories" / "models" / "music-v3"
 
 
-def installed_music_v2(
-    directory: Path | None = None, *, sha256: str = MUSIC_V2.sha256
+def installed_music_v3(
+    directory: Path | None = None, *, sha256: str = MUSIC_V3.sha256
 ) -> Path | None:
     """The library folder when it is complete and was installed from the pinned archive."""
-    root = directory or music_v2_dir()
+    root = directory or music_v3_dir()
     try:
         if (root / MARKER).read_text().strip() != sha256:
             return None
-        for mood in MUSIC_V2_MOODS:
+        for mood in MUSIC_V3_MOODS:
             folder = root / mood
             if not any(p.suffix.lower() in _SUFFIXES for p in folder.iterdir() if p.is_file()):
                 return None
@@ -55,17 +55,17 @@ def installed_music_v2(
     return root
 
 
-def install_music_v2(
+def install_music_v3(
     destination: Path | None = None,
     *,
-    url: str = MUSIC_V2.url,
-    sha256: str = MUSIC_V2.sha256,
+    url: str = MUSIC_V3.url,
+    sha256: str = MUSIC_V3.sha256,
     force: bool = False,
-    max_bytes: int = MUSIC_V2_MAX_BYTES,
+    max_bytes: int = MUSIC_V3_MAX_BYTES,
 ) -> str:
     """Fetch, verify and unpack the library; ``"present"`` or ``"downloaded"``."""
-    target = destination or music_v2_dir()
-    if not force and installed_music_v2(target, sha256=sha256) is not None:
+    target = destination or music_v3_dir()
+    if not force and installed_music_v3(target, sha256=sha256) is not None:
         return "present"
     target.parent.mkdir(parents=True, exist_ok=True)
     scratch = Path(tempfile.mkdtemp(prefix=f".{target.name}.", dir=target.parent))
@@ -76,7 +76,7 @@ def install_music_v2(
         )
         staged = scratch / "library"
         unpack_music(archive, staged)
-        missing = [m for m in MUSIC_V2_MOODS if not _has_tracks(staged / m)]
+        missing = [m for m in MUSIC_V3_MOODS if not _has_tracks(staged / m)]
         if missing:
             raise ValueError(f"the archive has no tracks for: {', '.join(missing)}")
         (staged / MARKER).write_text(sha256 + "\n")
@@ -93,7 +93,7 @@ def _has_tracks(folder: Path) -> bool:
 
 
 def unpack_music(archive: Path, destination: Path) -> None:
-    """Write the archive's ``music-v2/`` tree to ``destination``, refusing anything unsafe.
+    """Write the archive's ``music-v3/`` tree to ``destination``, refusing anything unsafe.
 
     The archive is digest-pinned, but a name that climbs out of the folder, a link or a
     device node is refused outright rather than skipped, and the unpacked size is capped.
@@ -139,7 +139,7 @@ def _write_member(bundle: tarfile.TarFile, member: tarfile.TarInfo, target: Path
 
 
 def _relative_name(name: str) -> PurePosixPath | None:
-    """The member's path below ``music-v2/``; None for the root itself."""
+    """The member's path below ``music-v3/``; None for the root itself."""
     path = PurePosixPath(name)
     if path.is_absolute() or ".." in path.parts:
         raise ValueError(f"refused a path outside the library: {name}")

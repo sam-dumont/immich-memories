@@ -31,6 +31,7 @@ def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capa
 
     installed = isolated_python() is not None or is_ace_step_importable()
     configured = config.ace_step
+    path_row = _music_path_row(config)
     profiles = dict.fromkeys(
         [
             (
@@ -41,7 +42,7 @@ def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capa
             ("turbo", "0.6B"),
         ]
     )
-    rows = []
+    rows = [path_row] if path_row else []
     for variant, planner in profiles:
         available = available_memory_bytes()
         name = f"ACE-Step {variant} / {planner + ' planner' if planner else 'no planner'}"
@@ -75,6 +76,18 @@ def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capa
                 )
             )
     return rows
+
+
+def _music_path_row(config: Config) -> Capability | None:
+    """Which source a film's music takes and why, when ACE-Step is on."""
+    from immich_memories.audio.generators.ace_step_music_path import music_path_for
+
+    if not config.ace_step.enabled:
+        return None
+    path = music_path_for(config.ace_step)
+    if path.generate:
+        return Capability("Music source", "ok", "Films generate their music with the XL model")
+    return Capability("Music source", "bundled", f"Films play a bundled track: {path.reason}")
 
 
 def _test_music(name: str, variant: str, planner: str | None) -> Capability:

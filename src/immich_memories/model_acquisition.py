@@ -7,7 +7,7 @@ from immich_memories.config.loader import Config
 from immich_memories.config.models.llm import DEFAULT_LOCAL_MODEL
 from immich_memories.laya_checkpoints import LAYA_ONNX_NAME
 from immich_memories.local_inference import local_reader_paths
-from immich_memories.music_library import music_v2_dir
+from immich_memories.music_library import music_v3_dir
 from immich_memories.pinned_models import (
     ENCODER,
     LAYA_AUDIENCE,
@@ -15,8 +15,8 @@ from immich_memories.pinned_models import (
     LAYA_MAX_BYTES,
     MARQO_ONNX,
     MAX_MODEL_BYTES,
-    MUSIC_V2,
-    MUSIC_V2_MAX_BYTES,
+    MUSIC_V3,
+    MUSIC_V3_MAX_BYTES,
     READER_MAX_BYTES,
     READER_MODEL,
     READER_PROJECTOR,
@@ -79,11 +79,11 @@ def acquisition_plan(
     if not config.audio.no_music:
         plan.append(
             ModelAcquisition(
-                MUSIC_V2,
-                music_v2_dir(),
-                MUSIC_V2.url,
-                "61 MB",
-                MUSIC_V2_MAX_BYTES,
+                MUSIC_V3,
+                music_v3_dir(),
+                MUSIC_V3.url,
+                "118 MB",
+                MUSIC_V3_MAX_BYTES,
                 cli_label="music",
                 unpack=True,
             )

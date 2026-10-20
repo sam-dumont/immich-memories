@@ -135,10 +135,12 @@ class ACEStepConfig(BaseModel):
     model_variant: str = Field(
         default="auto",
         description=(
-            "ACE-Step DiT model. 'auto' loads the 4B XL turbo model on a Mac with 64 GB "
-            "or more of unified memory or a GPU with 16 GB or more, and the 2B 'turbo' "
-            "below that, falling back to 2B if XL fails to load. 'turbo'/'base' pin the "
-            "2B family; 'xl-turbo' pins the 4B XL model"
+            "ACE-Step DiT model. 'auto' generates with the 4B XL turbo model on a Mac with "
+            "64 GB or more of unified memory or a GPU with 16 GB or more, and plays the "
+            "bundled library on a smaller host or when XL fails to load (never the 2B "
+            "model). In API mode it generates only when the server reports an XL model. "
+            "'xl-turbo' pins XL (in API mode: states that the server runs XL); 'turbo'/'base' "
+            "pin the weaker 2B family and log a warning"
         ),
     )
     lm_model_size: str = Field(

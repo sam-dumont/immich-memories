@@ -1,5 +1,6 @@
 """Local capability reports distinguish configuration from actual execution."""
 
+from immich_memories.audio.generators.ace_step_model_choice import HostMemory
 from immich_memories.config import Config
 from immich_memories.local_capabilities import local_capabilities
 
@@ -336,19 +337,25 @@ def _installed_local_music(monkeypatch, *, unified_gib: float, available_gib: fl
     return Config(ace_step={"enabled": True, "mode": "lib"})
 
 
-def test_auto_music_is_judged_on_the_model_it_would_load(monkeypatch):
+def test_auto_music_is_blocked_when_xl_does_not_fit_in_free_memory(monkeypatch):
     config = _installed_local_music(monkeypatch, unified_gib=128, available_gib=12)
 
     music = next(row for row in local_capabilities(config) if row.name == "Local music")
 
-    # XL does not fit in 12 GB free, but a render falls back to 2B, which does.
-    assert music.status == "unverified"
+    # There is no 2B fallback behind `auto`: a render that cannot hold XL plays a bundled track.
+    assert music.status == "blocked"
+    assert "xl-turbo" in music.message
 
 
-def test_auto_music_is_blocked_when_not_even_2b_fits(monkeypatch):
-    config = _installed_local_music(monkeypatch, unified_gib=128, available_gib=4)
+def test_auto_music_on_a_small_host_says_films_play_the_bundled_library(monkeypatch):
+    config = _installed_local_music(monkeypatch, unified_gib=32, available_gib=20)
+    # WHY: the music-path decision measures the host itself; this is a 32 GB Mac.
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_music_path.measure_host",
+        lambda: HostMemory(unified_gib=32.0),
+    )
 
     music = next(row for row in local_capabilities(config) if row.name == "Local music")
 
-    assert music.status == "blocked"
-    assert "acestep-v15-turbo" in music.message
+    assert music.status == "disabled"
+    assert "bundled" in music.message and "32 GB" in music.message

@@ -8,7 +8,7 @@ def test_first_start_lists_nas_downloads_without_creating_files_or_jobs(tmp_path
     config.tier = "basic"
     config.triage.encoder = str(tmp_path / "models/encoder.onnx")
     config.free_text.wordnet = str(tmp_path / "models/wordnet.zip")
-    monkeypatch.setenv("IMMICH_MEMORIES_MUSIC_DIR", str(tmp_path / "models/music-v2"))
+    monkeypatch.setenv("IMMICH_MEMORIES_MUSIC_DIR", str(tmp_path / "models/music-v3"))
     client = api_client(config)
 
     response = client.get("/api/v1/models")
@@ -19,7 +19,7 @@ def test_first_start_lists_nas_downloads_without_creating_files_or_jobs(tmp_path
     encoder, wordnet, music = manifest["artifacts"]
     assert encoder["host"] == "github.com" and encoder["size"] == "88 MB"
     assert wordnet["host"] == "raw.githubusercontent.com" and wordnet["size"] == "11 MB"
-    assert music["host"] == "github.com" and music["size"] == "61 MB"
+    assert music["host"] == "github.com" and music["size"] == "118 MB"
     assert all(len(item["sha256"]) == 64 and not item["ready"] for item in manifest["artifacts"])
     assert not (tmp_path / "models").exists()
     assert client.get("/api/v1/jobs/active").json() is None

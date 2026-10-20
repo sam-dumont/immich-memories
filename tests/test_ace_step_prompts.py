@@ -170,9 +170,9 @@ class TestReaderJudgmentDrivesTheCaption:
     def test_genre_yields_pick_the_style(self):
         from immich_memories.audio.mood_analyzer import VideoMood
 
-        # Piano is in happy's listening-test table, so the yield is honoured.
-        detail = VideoMood(primary_mood="happy", genre_suggestions=["piano"])
-        result = build_ace_caption_structured("happy", mood_detail=detail)
+        # Piano is in calm's listening-test table, so the yield is honoured.
+        detail = VideoMood(primary_mood="calm", genre_suggestions=["piano"])
+        result = build_ace_caption_structured("calm", mood_detail=detail)
 
         assert result.caption.startswith("solo piano")
 

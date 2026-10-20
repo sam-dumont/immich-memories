@@ -1,4 +1,4 @@
-"""The music-v2 library: resolution order, pinned install, safe unpacking, the plan."""
+"""The music-v3 library: resolution order, pinned install, safe unpacking, the plan."""
 
 from __future__ import annotations
 
@@ -18,12 +18,12 @@ from immich_memories.model_acquisition import acquisition_plan
 from immich_memories.music_library import (
     MARKER,
     MUSIC_DIR_ENV,
-    MUSIC_V2_MOODS,
-    install_music_v2,
-    installed_music_v2,
-    music_v2_dir,
+    MUSIC_V3_MOODS,
+    install_music_v3,
+    installed_music_v3,
+    music_v3_dir,
 )
-from immich_memories.pinned_models import MUSIC_V2
+from immich_memories.pinned_models import MUSIC_V3
 
 
 def _tar(entries: dict[str, bytes | None], extra: Callable[[tarfile.TarFile], None] | None = None):
@@ -44,10 +44,10 @@ def _tar(entries: dict[str, bytes | None], extra: Callable[[tarfile.TarFile], No
 
 
 def _library_entries() -> dict[str, bytes | None]:
-    entries: dict[str, bytes | None] = {"music-v2/": None, "music-v2/LICENSE-MUSIC": b"MIT"}
-    for mood in MUSIC_V2_MOODS:
-        entries[f"music-v2/{mood}/"] = None
-        entries[f"music-v2/{mood}/{mood}_a.opus"] = b"opus"
+    entries: dict[str, bytes | None] = {"music-v3/": None, "music-v3/LICENSE-MUSIC": b"MIT"}
+    for mood in MUSIC_V3_MOODS:
+        entries[f"music-v3/{mood}/"] = None
+        entries[f"music-v3/{mood}/{mood}_a.opus"] = b"opus"
     return entries
 
 
@@ -96,57 +96,57 @@ def _sha(body: bytes) -> str:
 def test_install_unpacks_a_pinned_archive_and_marks_it_complete(serve, tmp_path: Path) -> None:
     body = _tar(_library_entries())
     server = serve(body)
-    target = tmp_path / "music-v2"
+    target = tmp_path / "music-v3"
 
-    outcome = install_music_v2(target, url=server.url, sha256=_sha(body))
+    outcome = install_music_v3(target, url=server.url, sha256=_sha(body))
 
     assert outcome == "downloaded"
     assert (target / "calm" / "calm_a.opus").read_bytes() == b"opus"
     assert (target / "LICENSE-MUSIC").is_file()
-    assert installed_music_v2(target, sha256=_sha(body)) == target
-    assert [p.name for p in tmp_path.iterdir()] == ["music-v2"]
+    assert installed_music_v3(target, sha256=_sha(body)) == target
+    assert [p.name for p in tmp_path.iterdir()] == ["music-v3"]
 
 
 def test_install_is_a_no_op_until_forced(serve, tmp_path: Path) -> None:
     body = _tar(_library_entries())
     server = serve(body)
-    target = tmp_path / "music-v2"
-    install_music_v2(target, url=server.url, sha256=_sha(body))
+    target = tmp_path / "music-v3"
+    install_music_v3(target, url=server.url, sha256=_sha(body))
 
-    assert install_music_v2(target, url=server.url, sha256=_sha(body)) == "present"
+    assert install_music_v3(target, url=server.url, sha256=_sha(body)) == "present"
     assert server.requests == 1
-    assert install_music_v2(target, url=server.url, sha256=_sha(body), force=True) == "downloaded"
+    assert install_music_v3(target, url=server.url, sha256=_sha(body), force=True) == "downloaded"
     assert server.requests == 2
 
 
 def test_a_digest_mismatch_installs_nothing(serve, tmp_path: Path) -> None:
     server = serve(_tar(_library_entries()))
-    target = tmp_path / "music-v2"
+    target = tmp_path / "music-v3"
 
     with pytest.raises(ValueError, match="is not the pinned"):
-        install_music_v2(target, url=server.url, sha256="0" * 64)
+        install_music_v3(target, url=server.url, sha256="0" * 64)
 
     assert list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.parametrize(
     "bad_name",
-    ["music-v2/../escape.opus", "/etc/escape.opus", "other/calm/a.opus"],
+    ["music-v3/../escape.opus", "/etc/escape.opus", "other/calm/a.opus"],
 )
 def test_unpacking_refuses_names_outside_the_library(serve, tmp_path: Path, bad_name: str) -> None:
     body = _tar({**_library_entries(), bad_name: b"x"})
     server = serve(body)
 
     with pytest.raises(ValueError, match="refused"):
-        install_music_v2(tmp_path / "lib" / "music-v2", url=server.url, sha256=_sha(body))
+        install_music_v3(tmp_path / "lib" / "music-v3", url=server.url, sha256=_sha(body))
 
-    assert not (tmp_path / "lib" / "music-v2").exists()
+    assert not (tmp_path / "lib" / "music-v3").exists()
     assert not (tmp_path / "lib" / "escape.opus").exists()
 
 
 def test_unpacking_refuses_links(serve, tmp_path: Path) -> None:
     def link(bundle: tarfile.TarFile) -> None:
-        info = tarfile.TarInfo("music-v2/calm/evil.opus")
+        info = tarfile.TarInfo("music-v3/calm/evil.opus")
         info.type = tarfile.SYMTYPE
         info.linkname = "/etc/passwd"
         bundle.addfile(info)
@@ -155,7 +155,7 @@ def test_unpacking_refuses_links(serve, tmp_path: Path) -> None:
     server = serve(body)
 
     with pytest.raises(ValueError, match="non-file"):
-        install_music_v2(tmp_path / "music-v2", url=server.url, sha256=_sha(body))
+        install_music_v3(tmp_path / "music-v3", url=server.url, sha256=_sha(body))
 
 
 def test_an_archive_missing_a_mood_is_refused(serve, tmp_path: Path) -> None:
@@ -164,19 +164,19 @@ def test_an_archive_missing_a_mood_is_refused(serve, tmp_path: Path) -> None:
     server = serve(body)
 
     with pytest.raises(ValueError, match="tender"):
-        install_music_v2(tmp_path / "music-v2", url=server.url, sha256=_sha(body))
+        install_music_v3(tmp_path / "music-v3", url=server.url, sha256=_sha(body))
 
-    assert not (tmp_path / "music-v2").exists()
+    assert not (tmp_path / "music-v3").exists()
 
 
 def test_the_directory_follows_the_environment(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setenv(MUSIC_DIR_ENV, str(tmp_path / "baked"))
-    assert music_v2_dir() == tmp_path / "baked"
+    assert music_v3_dir() == tmp_path / "baked"
     monkeypatch.delenv(MUSIC_DIR_ENV)
-    assert music_v2_dir() == Path.home() / ".immich-memories" / "models" / "music-v2"
+    assert music_v3_dir() == Path.home() / ".immich-memories" / "models" / "music-v3"
 
 
-def _installed_library(root: Path, *, moods=MUSIC_V2_MOODS, marker=MUSIC_V2.sha256) -> Path:
+def _installed_library(root: Path, *, moods=MUSIC_V3_MOODS, marker=MUSIC_V3.sha256) -> Path:
     for mood in moods:
         (root / mood).mkdir(parents=True)
         (root / mood / f"{mood}.opus").write_bytes(b"opus")
@@ -209,7 +209,7 @@ def test_a_complete_v1_library_wins(monkeypatch, tmp_path: Path) -> None:
     "build",
     [
         lambda _root: None,
-        lambda root: _installed_library(root, moods=MUSIC_V2_MOODS[:3]),
+        lambda root: _installed_library(root, moods=MUSIC_V3_MOODS[:3]),
         lambda root: _installed_library(root, marker="deadbeef"),
         lambda root: _installed_library(root, marker=""),
     ],
@@ -252,8 +252,8 @@ def test_the_plan_fetches_music_unless_music_is_off() -> None:
     off = Config()
     off.audio.no_music = True
 
-    planned = [item for item in acquisition_plan(on) if item.artifact == MUSIC_V2]
+    planned = [item for item in acquisition_plan(on) if item.artifact == MUSIC_V3]
     assert len(planned) == 1
     assert planned[0].unpack
-    assert planned[0].destination == music_v2_dir()
-    assert not [item for item in acquisition_plan(off) if item.artifact == MUSIC_V2]
+    assert planned[0].destination == music_v3_dir()
+    assert not [item for item in acquisition_plan(off) if item.artifact == MUSIC_V3]

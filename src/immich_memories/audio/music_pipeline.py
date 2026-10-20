@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 
 from immich_memories.audio.generated_audio import validate_generated_audio
 from immich_memories.audio.generators.base import (
+    GenerationFailure,
     GenerationRequest,
     GenerationResult,
     MusicGenerator,
@@ -445,15 +446,30 @@ class _VersionProgress:
             self._callback(self._version_idx, status, progress * 0.8, detail)
 
 
+def _why(exc: Exception) -> str:
+    """The reason a backend failed, safe for a log: no URL, no key, no config value."""
+    import httpx
+
+    if isinstance(exc, httpx.HTTPStatusError):
+        return f"HTTP {exc.response.status_code}"
+    if isinstance(exc, httpx.HTTPError):
+        return type(exc).__name__
+    if isinstance(exc, GenerationFailure):
+        return exc.reason
+    if isinstance(exc, TimeoutError):
+        return "timed out waiting for the server"
+    return type(exc).__name__
+
+
 async def _is_ready(gen: MusicGenerator, progress: _VersionProgress) -> bool:
     try:
         progress("Checking music service", 0, None)
         if await gen.is_available():
             return True
         logger.info(f"{gen.name} unavailable, trying next...")
-    except Exception:
+    except Exception as exc:
         # WHY broad: see _run; a backend's availability probe fails in its own vocabulary.
-        logger.warning("Music backend %s failed; trying next backend", gen.name)
+        logger.warning("Music backend %s failed (%s); trying next backend", gen.name, _why(exc))
     return False
 
 
@@ -465,7 +481,7 @@ async def _run(
         logger.info(f"Generating with {gen.name}")
         progress("Generating music", 0, None)
         result = await gen.generate(request, progress)
-    except Exception:
+    except Exception as exc:
         # WHY broad: the point of a backend chain is that one backend
         # failing is not the run failing, and each backend fails in its
         # own vocabulary — a hosted one raises httpx.HTTPStatusError,
@@ -473,14 +489,41 @@ async def _run(
         # the chain entirely. CancelledError is a BaseException and
         # still propagates.
         # No exc_info: a backend's exception text can carry its URL or
-        # key, and these logs are kept deliberately quiet about that.
+        # key, so the log gets the reason from `_why`, never the raw text.
         progress("Music service failed; trying the next service", 0, None)
-        logger.warning("Music backend %s failed; trying next backend", gen.name)
+        logger.warning("Music backend %s failed (%s); trying next backend", gen.name, _why(exc))
         return None
     if reason := validate_generated_audio(result.audio_path):
         logger.warning("Music backend %s rejected: %s; trying next backend", gen.name, reason)
         return None
     return result
+
+
+def _ace_step_generator(app_config) -> tuple[MusicGenerator | None, str]:
+    """The ACE-Step generator when it is on and will run XL, else None and why not."""
+    from immich_memories.audio.generators.ace_step_music_path import music_path_for
+    from immich_memories.audio.generators.factory import create_generator
+
+    ace = getattr(app_config, "ace_step", None)
+    if not (ace and ace.enabled):
+        return None, ""
+    path = music_path_for(ace)
+    if not path.generate:
+        logger.info(f"Pipeline: ACE-Step skipped: {path.reason}")
+        return None, path.reason
+    logger.info(f"Pipeline: ACE-Step enabled (mode={ace.mode})")
+    return create_generator("ace_step", ace), ""
+
+
+def _require_generators(generators: list[MusicGenerator], skipped_because: str) -> None:
+    if generators:
+        return
+    if skipped_because:
+        raise ValueError(f"ACE-Step will not generate: {skipped_because}")
+    raise ValueError(
+        "No music generation backends enabled. "
+        "Enable at least one of: musicgen.enabled, ace_step.enabled"
+    )
 
 
 def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline:
@@ -503,10 +546,10 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
     stem_separator: StemSeparator | None = None
 
     # ACE-Step as primary generator (if enabled)
-    ace_step_enabled = getattr(app_config, "ace_step", None) and app_config.ace_step.enabled
-    if ace_step_enabled:
-        generators.append(create_generator("ace_step", app_config.ace_step))
-        logger.info(f"Pipeline: ACE-Step enabled (mode={app_config.ace_step.mode})")
+    ace_step, skipped_because = _ace_step_generator(app_config)
+    ace_step_enabled = ace_step is not None
+    if ace_step is not None:
+        generators.append(ace_step)
 
     # MusicGen: stem separator always, and generation behind ACE-Step in the chain.
     # It used to be added as a generator only when ACE-Step was off, which left
@@ -541,11 +584,7 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
     if separate_stems and stem_separator is None:
         stem_separator = _try_local_demucs()
 
-    if not generators:
-        raise ValueError(
-            "No music generation backends enabled. "
-            "Enable at least one of: musicgen.enabled, ace_step.enabled"
-        )
+    _require_generators(generators, skipped_because)
 
     return MusicPipeline(
         generators=generators,

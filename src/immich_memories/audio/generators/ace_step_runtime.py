@@ -25,8 +25,8 @@ from typing import Any
 
 from immich_memories.audio.generators.ace_step_checkpoints import pinned_checkpoints
 from immich_memories.audio.generators.ace_step_model_choice import (
-    BASE_VARIANT,
     is_auto,
+    is_xl,
     resolve_model_variant,
 )
 from immich_memories.audio.generators.memory_budget import memory_shortfall
@@ -305,11 +305,17 @@ def build_v15_runtime(
 ) -> ACEStepV15Runtime:
     """Initialize the pinned ACE-Step 1.5 direct-library runtime.
 
-    `auto` loads the model this host's memory holds (`ace_step_model_choice`). When that
-    is XL and it does not load, or does not fit in the memory free right now, the 2B
-    turbo model loads instead. A variant written in the config is never swapped.
+    `auto` loads the XL model when this host's memory holds it (`ace_step_model_choice`).
+    It never loads the 2B model: a host below the XL bar, or an XL load that fails, raises,
+    and the film plays a bundled track (`ace_step_music_path`). A variant written in the
+    config is never swapped.
     """
     chosen = resolve_model_variant(model_variant)
+    if is_auto(model_variant) and not is_xl(chosen):
+        raise RuntimeError(
+            "This host has no room for the ACE-Step XL model; set model_variant to 'turbo' "
+            "to run the weaker 2B model anyway"
+        )
     load = partial(
         _load_v15_runtime,
         lm_model_size=lm_model_size,
@@ -319,14 +325,6 @@ def build_v15_runtime(
     )
     try:
         return load(chosen)
-    except Exception as e:  # WHY: plugin boundary — ACE-Step init can fail in many ways
-        if not is_auto(model_variant) or chosen == BASE_VARIANT:
-            logger.error(f"Failed to initialize ACE-Step pipeline: {e}")
-            raise
-        logger.warning("ACE-Step XL did not load (%s); falling back to the 2B turbo model", e)
-    release_runtime_memory()
-    try:
-        return load(BASE_VARIANT)
     except Exception as e:  # WHY: plugin boundary — ACE-Step init can fail in many ways
         logger.error(f"Failed to initialize ACE-Step pipeline: {e}")
         raise
