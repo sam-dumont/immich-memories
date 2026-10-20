@@ -1364,6 +1364,8 @@ src/immich_memories/
 │   │                           # required), printed_words (for OCR), one_occasion (a plural is many)
 │   ├── scopes.py               # in_place(): at a home (150 m), home of the picture's time, near it (home
 │   │                           # radius), or trips detected per home; no GPS stays unless one place
+│   ├── preparation_scope.py    # place_filter(): the window's pictures the home scopes can keep, by the
+│   │                           # pool's own test, so --ask prepares only those (#2749)
 │   ├── linking.py              # Code links the spans: link_who (I = the owner for dates, never a face;
 │   │                           # we adds the partner; names/roles need faces; plural people = company),
 │   │                           # link_when (an age read as numbers, calendar in code; dates question only

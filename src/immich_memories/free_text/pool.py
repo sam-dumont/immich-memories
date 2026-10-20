@@ -41,7 +41,7 @@ from immich_memories.free_text.pool_questions import (
     printed_words,
 )
 from immich_memories.free_text.reading import Asker, Reading, words_of
-from immich_memories.free_text.scopes import in_place
+from immich_memories.free_text.scopes import PER_PICTURE_SCOPES, in_place
 from immich_memories.free_text.subject import Subject
 
 # Fewer pictures than this make a short film: the engine used about four a year from a pet's pool.
@@ -50,8 +50,6 @@ THIN_BELOW = 12
 # The document head's label for an ordinary photograph; None is a picture nothing labelled.
 _PHOTOGRAPH = frozenset({None, "photograph"})
 
-# The scopes around a home, where one particular place must prove it was there by GPS.
-_AT_HOMES = frozenset({"home", "home_at_time", "near_home"})
 
 POSSIBLE, THIN, NOT_POSSIBLE = "possible", "thin", "not possible"
 # A caption-dependent request whose window still needs preparing (#2045): never answered
@@ -224,11 +222,7 @@ def _where(
         named = ", ".join(value for _, value in facts.places)
         funnel.keep("place names", kept, Reason(named, "Immich's place names", named))
         return
-    require_gps, why = False, None
-    if translation.where.scope in _AT_HOMES and translation.subject.main:
-        require_gps, why = one_particular_place(
-            translation.reading, translation.subject, lexicon, asker
-        )
+    require_gps, why = needs_gps(translation, lexicon, asker)
     placed = in_place(
         translation.where, funnel.pictures, household.homes, trips, require_gps=require_gps
     )
@@ -237,6 +231,16 @@ def _where(
         if why:
             reason = Reason(reason.said, f"{reason.rule}; {why.rule}", reason.outcome)
         funnel.keep("where", kept, reason)
+
+
+def needs_gps(
+    translation: Translation, lexicon: Lexicon, asker: Asker
+) -> tuple[bool, Reason | None]:
+    """Whether the place scope must see GPS on a picture: the scopes around a home, where the
+    subject is one particular place ("our house"). The pool and preparation both ask here."""
+    if translation.where.scope in PER_PICTURE_SCOPES and translation.subject.main:
+        return one_particular_place(translation.reading, translation.subject, lexicon, asker)
+    return False, None
 
 
 def _measured(funnel: _Funnel, facts: LibraryFacts) -> None:

@@ -32,6 +32,7 @@ from immich_memories.free_text.pool import (
     build_pool,
 )
 from immich_memories.free_text.preparation import NeedsPreparationPreview
+from immich_memories.free_text.preparation_scope import PlaceFilter, place_filter
 from immich_memories.free_text.reading import Asker, read_request
 from immich_memories.free_text.subject import Subject, build_subject, recover_undated_subject
 
@@ -70,15 +71,17 @@ def translate(
     printed: PrintedText | None = None,
     face_accounts: Mapping[str, str | frozenset[str]] = MappingProxyType({}),
     picture_accounts: Mapping[str, str] = MappingProxyType({}),
-    prepare_window: Callable[[WhenLink], _PreparedView] | None = None,
+    prepare_window: Callable[[WhenLink, PlaceFilter | None], _PreparedView] | None = None,
 ) -> Ask:
     """Translate a request against the library: every decision keeps its reason for the trace.
 
     In a household run (#2044), `view` already holds only the pictures the asking accounts
     can see, and `face_accounts`/`picture_accounts` carry that same scope into the pool.
 
-    `prepare_window`, when given, is called with the request's own dates once the subject
-    is known, and only when the reading depends on a caption (`_depends_on_captions`): a
+    `prepare_window`, when given, is called with the request's own dates, and the test for
+    the pictures its place could keep when metadata alone settles that place (#2749: "at
+    home" never prepares the pictures taken away), once the subject is known, and only when
+    the reading depends on a caption (`_depends_on_captions`): a
     person or a computed selection (a trip, someone's first or last picture) reads faces
     and GPS, never a caption, so it never pays to prepare a window (#2045). It returns the
     freshly prepared view and the account scope read fresh from it, both of which replace
@@ -97,19 +100,21 @@ def translate(
         reading = recover_undated_subject(reading, lexicon)
     captions = [picture.caption for picture in view.pictures]
     subject = build_subject(reading, household, captions, lexicon, asker)
-    if prepare_window is not None and _depends_on_captions(subject, who):
-        try:
-            view, picture_accounts, face_accounts = prepare_window(when)
-        except NeedsPreparationPreview as preview:
-            where = link_where(request, reading.where, subject.heads, household, asker)
-            facts = link_facts(request, view, lexicon)
-            translation = Translation(reading, who, when, where, facts, subject)
-            return Ask(translation, Pool((), (), NEEDS_PREPARATION, preview.why))
-        captions = [picture.caption for picture in view.pictures]
-        subject = build_subject(reading, household, captions, lexicon, asker)
+    # Linking a place reads no caption (the subject's heads come from the request's words),
+    # so it comes first and tells preparation which pictures are worth reading.
     where = link_where(request, reading.where, subject.heads, household, asker)
     facts = link_facts(request, view, lexicon)
     translation = Translation(reading, who, when, where, facts, subject)
+    if prepare_window is not None and _depends_on_captions(subject, who):
+        place = place_filter(translation, household, lexicon, asker, trips=trips, printed=printed)
+        try:
+            view, picture_accounts, face_accounts = prepare_window(when, place)
+        except NeedsPreparationPreview as preview:
+            return Ask(translation, Pool((), (), NEEDS_PREPARATION, preview.why))
+        captions = [picture.caption for picture in view.pictures]
+        subject = build_subject(reading, household, captions, lexicon, asker)
+        facts = link_facts(request, view, lexicon)
+        translation = Translation(reading, who, when, where, facts, subject)
     pool = build_pool(
         translation,
         view,

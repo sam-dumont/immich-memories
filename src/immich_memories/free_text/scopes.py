@@ -26,6 +26,11 @@ _SCOPES = {
 }
 
 
+# The scopes decided picture by picture from GPS and the home of the picture's time: the
+# only ones a picture's own metadata settles, so a window can be narrowed to them early.
+PER_PICTURE_SCOPES = frozenset(_SCOPES)
+
+
 def in_place(
     where: WhereLink,
     pictures: Sequence[LibraryPicture],
