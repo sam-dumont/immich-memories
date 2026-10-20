@@ -308,6 +308,15 @@ def _resolve_source_transfer(
     return source_transfer, has_hdr_input
 
 
+def hdr_pipe_format(plan: EncodingPlan) -> str:
+    """The 10-bit layout an HDR film's raw frames travel in between decoder and encoder.
+
+    P010 when the encoder reads P010 (every hardware encoder): a GPU decode
+    downloads P010 too, so no CPU repack runs at either end of the pipe.
+    """
+    return "p010le" if plan.pixel_format == "p010le" else "yuv420p10le"
+
+
 def _pixel_format_for(codec: OutputCodec, encoder: str, *, hdr: bool) -> str:
     if codec is OutputCodec.PRORES:
         return "yuv422p10le"

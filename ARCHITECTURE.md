@@ -511,7 +511,12 @@ three borrowed slots when CPU/memory limits permit; the assembler closes every d
 on clip completion and failure, including when an exception traceback remains live.
 With `hardware.gpu_decode`, 4:2:0 H.264/HEVC clips decode on the hardware and are repacked
 to the software decoder's format first, so every filter sees the same pixels; a failed
-hardware decode re-runs the assembly in software. Photo moves, title cards and their
+hardware decode re-runs the assembly in software. On CUDA and VideoToolbox, when
+`gpu_frame_graph.gpu_filters_work` passes its one-off probe, `GpuFrameGraph` keeps the clip in
+GPU memory through scaling, the display turn and the blur fill (the sharp picture stacked
+between strips of its enlarged background) and downloads once at canvas size; transfer
+conversions stay zscale on the CPU, at the smaller of source and canvas. HDR frames cross the
+pipe as P010 when the plan's encoder reads P010 (`encoding_plan.hdr_pipe_format`). Photo moves, title cards and their
 backgrounds are intermediates (`intermediate_encoding_plan`: fast near-lossless x264 when
 the film encodes in software), and Live merges and certified cuts are lossless, so the
 film's encode is a Live clip's only lossy step. Stills are rendered in the HDR film's
@@ -962,6 +967,7 @@ src/immich_memories/
 │   ├── assembly_config.py      # Dataclasses: AssemblySettings, AssemblyClip, etc.
 │   ├── streaming_assembler.py  # StreamingEncoder + assemble_streaming(): low-memory 4K assembly
 │   ├── streaming_frame_decoder.py # FrameDecoder / make_decoder(): clip -> normalized raw frames
+│   ├── gpu_frame_graph.py      # GpuFrameGraph: decode-to-canvas on CUDA/VideoToolbox + its probe
 │   ├── streaming_frame_blender.py # FrameBlender: frames -> sink, crossfades, progress/preview
 │   ├── streaming_audio.py      # Streaming audio processing helpers
 │   ├── ffmpeg_prober.py        # FFmpegProber: ffprobe-based duration/resolution

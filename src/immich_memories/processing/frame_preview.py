@@ -48,6 +48,13 @@ def _to_rgb8(frame: np.ndarray, height: int, width: int) -> np.ndarray:
     return np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
 
 
+def p010_to_planar(frame: np.ndarray, height: int, width: int) -> np.ndarray:
+    """Repack a flat P010 buffer (Y, then interleaved UV, top 10 bits) as yuv420p10le."""
+    y_size = width * height
+    chroma = frame[y_size:].reshape(-1, 2)
+    return np.concatenate((frame[:y_size], chroma[:, 0], chroma[:, 1])) >> 6
+
+
 def _i420_to_rgb8(frame: np.ndarray, height: int, width: int) -> np.ndarray:
     """Convert a flat 8-bit yuv420p buffer (planar SDR) to RGB8."""
     return cv2.cvtColor(frame.reshape(height * 3 // 2, width), cv2.COLOR_YUV2RGB_I420)
@@ -60,6 +67,7 @@ def maybe_emit_preview(
     is_hdr: bool,
     height: int,
     width: int,
+    semi_planar: bool = False,
 ) -> float:
     """Emit a JPEG preview if enough time has elapsed since last emission.
 
@@ -73,7 +81,8 @@ def maybe_emit_preview(
         return last_preview_time
 
     if is_hdr:
-        rgb = _to_rgb8(frame, height, width)
+        planar = p010_to_planar(frame, height, width) if semi_planar else frame
+        rgb = _to_rgb8(planar, height, width)
     elif frame.ndim == 1:
         rgb = _i420_to_rgb8(frame, height, width)
     else:

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.processing import hardware, streaming_frame_decoder
+from immich_memories.processing import gpu_frame_graph, hardware, streaming_frame_decoder
 from immich_memories.processing.ffmpeg_runner import AssemblyContext
 from immich_memories.processing.hardware import (
     HWAccelBackend,
@@ -116,6 +116,8 @@ def test_the_assembly_decodes_in_software_when_the_hardware_fails(tmp_path, monk
     monkeypatch.setattr(
         hardware, "get_ffmpeg_hwaccel_args", lambda *_a, **_k: ["-hwaccel", "no-such-hwaccel"]
     )
+    # WHY: the GPU filter graph has its own hwaccel arguments; this test is about the other path.
+    monkeypatch.setattr(gpu_frame_graph, "gpu_filters_work", lambda _backend: False)
     # WHY: a spy on the process boundary, to count the decoders that ran.
     monkeypatch.setattr(streaming_frame_decoder.subprocess, "Popen", recording_popen)
 
