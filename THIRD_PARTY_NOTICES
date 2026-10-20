@@ -405,7 +405,7 @@ babel 2.18.0
   License: BSD
   URL: https://github.com/python-babel/babel
 
-certifi 2026.2.25
+certifi 2026.10.19
   License: MPL-2.0
   URL: https://github.com/certifi/python-certifi
 
