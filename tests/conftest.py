@@ -106,6 +106,7 @@ def pytest_configure(config: pytest.Config) -> None:
     _refuse_a_literal_tilde_path()
     if sealed:
         _refuse_the_accounts_config()
+        _refuse_any_file_under_the_accounts_data()
         _refuse_outside_connections()
 
 
@@ -288,6 +289,47 @@ def no_real_store_opened() -> Iterator[None]:
         pytest.fail(f"this test tried to open the developer's own store: {opened}")
 
 
+_ACCOUNT_FILE_OPENS: list[str] = []
+_AUDITING_ACCOUNT_FILES = False
+_AUDIT_HOOK_INSTALLED = False
+
+
+def _refuse_any_file_under_the_accounts_data() -> None:
+    """Record every file a sealed test opens under the account's own ~/.immich-memories.
+
+    The guards above cover the config loader and the store engine; a test that opens a model
+    file or a cache by path walks round both (a WordNet test did, until it built its own
+    corpus). An audit hook sees every `open` in this process, whatever called it.
+    """
+    global _AUDITING_ACCOUNT_FILES, _AUDIT_HOOK_INSTALLED
+    protected = tuple(str(d) for d in _account_config_dirs())
+
+    def audit(event: str, args: tuple[Any, ...]) -> None:
+        if event != "open" or not _AUDITING_ACCOUNT_FILES or not args:
+            return
+        target = args[0]
+        if isinstance(target, (str, bytes, os.PathLike)):
+            opened = os.fsdecode(target)
+            if opened.startswith(protected):
+                _ACCOUNT_FILE_OPENS.append(opened)
+
+    _AUDITING_ACCOUNT_FILES = True
+    if not _AUDIT_HOOK_INSTALLED:
+        sys.addaudithook(audit)
+        _AUDIT_HOOK_INSTALLED = True
+
+
+@pytest.fixture(autouse=True)
+def no_account_file_opened() -> Iterator[None]:
+    """Fail the test that opened a file under the developer's own ~/.immich-memories."""
+    _ACCOUNT_FILE_OPENS.clear()
+    yield
+    if _ACCOUNT_FILE_OPENS:
+        opened = sorted(set(_ACCOUNT_FILE_OPENS))
+        _ACCOUNT_FILE_OPENS.clear()
+        pytest.fail(f"this test opened files under the developer's own data: {opened}")
+
+
 def _account_home() -> Path:
     """The account's own home, whatever $HOME says.
 
@@ -401,7 +443,9 @@ def _pin_the_cli_width() -> None:
 def pytest_unconfigure(config: pytest.Config) -> None:
     """Restore the process environment and remove the validated test root."""
     del config
-    global _TEST_ROOT
+    global _TEST_ROOT, _AUDITING_ACCOUNT_FILES
+
+    _AUDITING_ACCOUNT_FILES = False
 
     _TERMINAL_PATCHES.undo()
 

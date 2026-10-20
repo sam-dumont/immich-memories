@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Mapping
 from datetime import date
 from pathlib import Path
@@ -89,24 +88,24 @@ def test_a_negation_asks_the_company_be_absent_not_required(lexicon: Lexicon) ->
     assert "ABSENT" in no_humans.reasons[0].outcome
 
 
-def test_real_wordnet_no_injected_vocab_still_reads_no_humans_as_absent() -> None:
+def test_wordnet_without_an_injected_company_word_still_reads_no_humans_as_absent(
+    tmp_path: Path,
+) -> None:
     """#2061: the actual bug was `noun_base("humans")` staying "humans" on the real corpus
     (an irregular plural WordNet's morphy does not reduce), so the old WordNet-dependent
     path never classified it. Company words are now a curated list independent of
-    WordNet, read against the real pinned corpus, with no word injected for this test."""
-    import pwd
+    WordNet, read against a corpus written in the pinned layout, with no word injected
+    for this test. The corpus is built under the test's own directory: this test never
+    opens anything under the account's home."""
+    from immich_memories.free_text.lexicon import load_wordnet
+    from tests.free_text.conftest import EXCEPTIONS, VOCABULARY
+    from tests.free_text.wordnet_corpus import write_corpus
 
-    from immich_memories.free_text.lexicon import WordNetUnavailable, load_wordnet
-
-    # The real account's home, not the disposable one the unit suite seals HOME to
-    # (tests/conftest.py `_leave_the_accounts_home`): a read-only pinned corpus, never a
-    # store, so reading it here carries none of the mutation risk that seal guards against.
-    real_home = Path(pwd.getpwuid(os.getuid()).pw_dir)
-    path = real_home / ".immich-memories" / "models" / "wordnet" / "wordnet.zip"
-    try:
-        real_lexicon = load_wordnet(path)
-    except WordNetUnavailable:
-        pytest.skip("the real pinned WordNet corpus is not installed (`models fetch`)")
+    # The real corpus lists "humans" as an entry of its own (not a person), which
+    # is why morphy leaves it alone.
+    corpus = tmp_path / "wordnet" / "wordnet.zip"
+    words = {**VOCABULARY, "humans": ("noun.cognition",)}
+    real_lexicon = load_wordnet(corpus, sha256=write_corpus(corpus, words, EXCEPTIONS))
 
     assert real_lexicon.noun_base("humans") == "humans"  # confirms the bug would still exist
     assert real_lexicon.is_human("humans") is False  # if anything here still asked WordNet

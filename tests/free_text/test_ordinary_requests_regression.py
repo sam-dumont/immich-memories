@@ -9,35 +9,37 @@ WordNet's own breadth.
 
 from __future__ import annotations
 
-import os
-import pwd
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
 from immich_memories.free_text.facts import LibraryFacts
-from immich_memories.free_text.lexicon import Lexicon, WordNetUnavailable, load_wordnet
+from immich_memories.free_text.lexicon import Lexicon, load_wordnet
 from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, WhenLink, WhereLink, WhoLink, link_who
 from immich_memories.free_text.pool import Translation, build_pool
 from immich_memories.free_text.reading import Reading
 from immich_memories.free_text.subject import Subject
 from tests.free_text.banked import BankedAsker
+from tests.free_text.conftest import EXCEPTIONS, VOCABULARY
+from tests.free_text.wordnet_corpus import Sense, write_corpus
 
 NOBODY = Household({})
 
 
 @pytest.fixture(scope="module")
-def real_lexicon() -> Lexicon:
-    # The real account's home, not the disposable one the unit suite seals HOME to: a
-    # read-only pinned corpus, never a store, carries none of that seal's mutation risk.
-    real_home = Path(pwd.getpwuid(os.getuid()).pw_dir)
-    path = real_home / ".immich-memories" / "models" / "wordnet" / "wordnet.zip"
-    try:
-        return load_wordnet(path)
-    except WordNetUnavailable:
-        pytest.skip("the real pinned WordNet corpus is not installed (`models fetch`)")
+def real_lexicon(tmp_path_factory: pytest.TempPathFactory) -> Lexicon:
+    # A corpus written in the pinned layout under the run's own temp dir: these tests never
+    # open anything under the account's home.
+    corpus = tmp_path_factory.mktemp("wordnet") / "wordnet.zip"
+    words = {
+        **VOCABULARY,
+        "skier": (Sense("noun.person", kind_of="person.n.01"),),
+        "snowboarder": (Sense("noun.person", kind_of="person.n.01"),),
+        "group": ("noun.cognition",),
+        "family": (Sense("noun.person", kind_of="person.n.01"),),
+    }
+    return load_wordnet(corpus, sha256=write_corpus(corpus, words, EXCEPTIONS))
 
 
 def _picture(asset_id: str, caption: str) -> LibraryPicture:
