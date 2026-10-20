@@ -48,6 +48,7 @@ from immich_memories.free_text.preparation import (
     PreparationFailed,
     prepare_for_request,
 )
+from immich_memories.free_text.preparation_scope import PlaceFilter
 from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.free_text.reading import RequestUnreadable, WireAsker
 from immich_memories.free_text.trace import explain, pool_counts, save_with_run, trace_record
@@ -229,7 +230,7 @@ def translate_ask(
                 owner_id=view.owner_id,
             )
 
-            def prepare_window(when: WhenLink):
+            def prepare_window(when: WhenLink, place: PlaceFilter | None):
                 try:
                     refreshed, notice_of["notice"] = prepare_for_request(
                         client,
@@ -243,6 +244,7 @@ def translate_ask(
                         report=_progress_reporter(progress_file),
                         before_preparing=lambda: refuse_blocked_host(config, output_directory=None),
                         accounts=scope_accounts,
+                        place=place,
                     )
                 except NeedsPreparationPreview as preview:
                     notice_of["notice"] = preview.notice

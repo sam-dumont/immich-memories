@@ -73,7 +73,7 @@ def test_prepare_window_is_called_with_the_linked_dates_and_its_view_replaces_th
     stale = LibraryView(pictures=(), people={}, sharpness_line=None)
     seen: list[Any] = []
 
-    def prepare_window(when):
+    def prepare_window(when, place):
         seen.append(when)
         return _library(), {}, {}
 
@@ -97,7 +97,7 @@ def test_a_subject_with_no_caption_words_never_asks_to_prepare_its_window(lexico
     caption, so it never pays to prepare a window -- only a caption-only subject does."""
     answers = {**ANSWERS, "Split the owner's request": _read([], ["along the years"])}
 
-    def prepare_window(when):
+    def prepare_window(when, place):
         raise AssertionError("no caption-dependent subject: this must never be called")
 
     translate(
@@ -130,7 +130,7 @@ def test_the_subject_is_rebuilt_after_preparation_so_a_first_run_matches_a_secon
         lexicon,
         QuestionAsker(ANSWERS),
         today=TODAY,
-        prepare_window=lambda _when: (_library(), {}, {}),
+        prepare_window=lambda _when, _place: (_library(), {}, {}),
     )
     second_run = translate(
         "our cat along the years", _library(), NOBODY, lexicon, QuestionAsker(ANSWERS), today=TODAY
@@ -157,7 +157,7 @@ def test_a_company_word_alone_still_asks_to_prepare_its_window(lexicon: Lexicon)
     }
     seen: list[Any] = []
 
-    def prepare_window(when):
+    def prepare_window(when, place):
         seen.append(when)
         return _library(), {}, {}
 

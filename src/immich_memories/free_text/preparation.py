@@ -31,6 +31,7 @@ from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.db.tables import pipeline_runs
 from immich_memories.free_text.library import LibraryView, read_library
 from immich_memories.free_text.linking import WhenLink
+from immich_memories.free_text.preparation_scope import PlaceFilter, picture_of
 from immich_memories.progress_lines import StageLines
 from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 from immich_memories.timeperiod import DateRange, custom_range
@@ -106,10 +107,21 @@ def _household_source(client, config, accounts: Sequence[str], window: DateRange
     return admit_source(config, scope, sources)
 
 
-def assess(
-    client, config, store, when: WhenLink, *, today: date, accounts: Sequence[str] = ()
+def assess(  # noqa: PLR0913 - every argument is one external boundary or the request's scope
+    client,
+    config,
+    store,
+    when: WhenLink,
+    *,
+    today: date,
+    accounts: Sequence[str] = (),
+    place: PlaceFilter | None = None,
 ) -> Readiness:
     """The request's window, and the pictures in it with no caption yet.
+
+    `place`, when the request's place is settled by metadata alone (#2749), narrows the
+    window to the pictures that place could keep: the rest would be dropped by the pool, so
+    captioning them is wasted hours.
 
     `accounts`, in a household run, reads each chosen account's own library (#2044): a
     plain client/window search sees only the primary's.
@@ -121,6 +133,9 @@ def assess(
         _scope, _sources, assets = eligible_source(client, config, [window])
     if not assets:
         return Readiness(window=window, missing=())
+    if place is not None:
+        keep = place([picture_of(asset) for asset in assets])
+        assets = [asset for asset in assets if _asset_id(asset) in keep]
     ids = tuple(_asset_id(asset) for asset in assets)
     batch = AssetAnnotationFactRepository(
         store,
@@ -204,6 +219,7 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
     report: Callable[[str, float | None, float | None], None] | None = None,
     before_preparing: Callable[[], None] | None = None,
     accounts: Sequence[str] = (),
+    place: PlaceFilter | None = None,
 ) -> tuple[LibraryView, Notice | None]:
     """Prepare the request's window if it needs it, and return the view to read it with.
 
@@ -219,9 +235,10 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
     prints to the terminal, `report` or not. `PreparationFailed` is raised, never swallowed
     into a vague "not possible" later, when a producer could not finish. `accounts`, in a
     household run (#2044), discovers and prepares every chosen account's own pictures, not
-    just the primary's; the caller is the one that re-scopes the returned view to them.
+    just the primary's; the caller is the one that re-scopes the returned view to them. `place`
+    narrows the window to the pictures the request's place could keep (#2749).
     """
-    readiness = assess(client, config, store, when, today=today, accounts=accounts)
+    readiness = assess(client, config, store, when, today=today, accounts=accounts, place=place)
     if not readiness.missing:
         return view, None
     rate = estimate_seconds_per_picture(store)
