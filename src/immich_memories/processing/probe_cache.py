@@ -71,6 +71,9 @@ class VideoProbe:
     audio_sample_rate: int = 0
     # The software decoder's output format, e.g. yuv420p10le.
     pixel_format: str | None = None
+    # The clockwise turn FFmpeg's autorotate gives the picture (0, 90, 180 or 270).
+    # `rotation` drops the direction; a decoder that rotates frames itself needs it.
+    display_turn: int = 0
 
     @property
     def resolution(self) -> tuple[int, int] | None:
@@ -133,6 +136,14 @@ def _rotation(stream: dict[str, Any]) -> int:
     return 0
 
 
+def _display_turn(stream: dict[str, Any]) -> int:
+    for side_data in stream.get("side_data_list", []):
+        if "rotation" in side_data:
+            # ffprobe reports the display matrix's counter-clockwise angle.
+            return round(-_number(side_data["rotation"]) / 90) * 90 % 360
+    return 0
+
+
 def _parse_video_probe(data: dict[str, Any]) -> VideoProbe:
     streams = data.get("streams", [])
     video_streams = [stream for stream in streams if stream.get("codec_type") == "video"]
@@ -158,6 +169,7 @@ def _parse_video_probe(data: dict[str, Any]) -> VideoProbe:
         color_primaries=video.get("color_primaries"),
         bit_depth=None if bit_depth < 0 else bit_depth,
         rotation=_rotation(video),
+        display_turn=_display_turn(video),
         video_stream_index=_integer(video.get("index")),
         has_video=bool(video_streams),
         has_audio=bool(audio_streams),

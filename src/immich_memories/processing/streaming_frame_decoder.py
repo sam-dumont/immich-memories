@@ -23,6 +23,7 @@ import numpy as np
 
 from immich_memories.processing.clip_caption import ClipCaption, caption_filters
 from immich_memories.processing.ffmpeg_runner import stop_owned_process
+from immich_memories.processing.gpu_frame_graph import gpu_frame_graph_for_path
 from immich_memories.processing.hdr_utilities import (
     detect_color_primaries,
     detect_hdr_type,
@@ -42,6 +43,7 @@ logger = logging.getLogger(__name__)
 AUDIO_FINISH_SECONDS = 120.0
 
 if TYPE_CHECKING:
+    from immich_memories.processing.gpu_frame_graph import GpuFrameGraph
     from immich_memories.processing.hardware import HWAccelCapabilities
     from immich_memories.processing.probe_cache import VideoProbe
 
@@ -50,6 +52,8 @@ if TYPE_CHECKING:
 # sees the same pixels whichever decoder ran (#2709).
 _HARDWARE_DECODED_FORMATS = frozenset({"yuv420p", "yuv420p10le"})
 _HARDWARE_DECODED_CODECS = {"h264": "h264", "hevc": "h265"}
+# 10-bit pipes: planar for libx265 and the CPU filters, P010 for hardware encoders.
+_TEN_BIT_PIPES = frozenset({"yuv420p10le", "p010le"})
 
 
 class HardwareDecodeFailed(RuntimeError):
@@ -85,8 +89,13 @@ class FrameDecoder:
         probe_cache: ProbeCache | None = None,
         hardware_decode: tuple[tuple[str, ...], str] | None = None,
         from_seconds: float = 0.0,
+        gpu_graph: GpuFrameGraph | None = None,
     ) -> None:
         self._clip_path = clip_path
+        # Decoded, scaled and composed on the GPU; the CPU sees canvas-sized frames.
+        self._gpu_graph = gpu_graph
+        if gpu_graph is not None:
+            hardware_decode = (gpu_graph.hwaccel_args(), gpu_graph.download_format())
         # FFmpeg's hwaccel arguments and the software format its frames are repacked to.
         self._hardware_decode = hardware_decode
         # Frames before this point of the clip are dropped before any costly filter.
@@ -102,7 +111,7 @@ class FrameDecoder:
         self._height = height
         self._fps = fps
         self._pix_fmt = pix_fmt
-        # rgb24 and yuv420p10le are both width*height*3 bytes; 8-bit yuv420p is half that.
+        # rgb24, yuv420p10le and p010le are all width*height*3 bytes; 8-bit yuv420p is half.
         self._frame_size = width * height * 3 // 2 if pix_fmt == "yuv420p" else width * height * 3
         self._rotation = rotation
         self._privacy_blur = privacy_blur
@@ -165,7 +174,7 @@ class FrameDecoder:
             # because the frame is already blurred — adding more makes it unrecognizable.
             # WHY (#1527): overlay composites in 8-bit yuv420 unless told otherwise,
             # which rounded every HDR frame with a blur fill to multiples of 4.
-            overlay_format = ":format=yuv420p10" if self._pix_fmt == "yuv420p10le" else ""
+            overlay_format = ":format=yuv420p10" if self._ten_bit else ""
             self._use_filter_complex = True
             return [
                 "split[_bg][_fg]",
@@ -213,8 +222,50 @@ class FrameDecoder:
             parts.append(f"trim=start={self._from_seconds:.6f}")
         return parts
 
+    @property
+    def _ten_bit(self) -> bool:
+        return self._pix_fmt in _TEN_BIT_PIPES
+
+    def _build_gpu_vf(self, graph: GpuFrameGraph) -> str:
+        """The chain when the clip is decoded, scaled and filled on the GPU."""
+        parts = ["setpts=PTS-STARTPTS"]
+        if self._from_seconds > 0:
+            parts.append(f"trim=start={self._from_seconds:.6f}")
+        rate = self._source_frame_rate
+        early_fps = rate is not None and rate >= self._fps
+        if early_fps:
+            parts.append(f"fps={self._fps},settb=1/{self._fps}")
+        conversion = ",".join(
+            f.removeprefix(",") for f in (self._sdr_to_hdr_filter, self._hdr_conversion) if f
+        )
+        source_w, source_h = graph.coded_size
+        # A transfer conversion runs at whichever of source and canvas has fewer pixels.
+        convert_first = conversion if source_w * source_h < self._width * self._height else ""
+        parts.append(
+            graph.fill(
+                (self._width, self._height),
+                self._scale_mode,
+                convert_first=convert_first,
+                converted_ten_bit=self._ten_bit,
+            )
+        )
+        late = conversion if not convert_first else ""
+        defer_fps = bool(late) and rate is not None and 0 < rate < self._fps
+        if not (early_fps or defer_fps):
+            parts.append(f"fps={self._fps},settb=1/{self._fps}")
+        for color_filter in (late, self._colorspace_filter, self._output_pix_fmt):
+            if color_filter:
+                parts.append(color_filter.removeprefix(","))
+        if defer_fps:
+            parts.append(f"fps={self._fps},settb=1/{self._fps}")
+        parts.extend(self._closing_filters())
+        self._use_filter_complex = True
+        return ",".join(parts)
+
     def _build_vf(self) -> str:
         """Build the -vf filter chain applied to every decoded clip."""
+        if self._gpu_graph is not None:
+            return self._build_gpu_vf(self._gpu_graph)
         parts = self._leading_filters()
 
         # Normalize equal rates before overlay: FFmpeg 6 can lose the final
@@ -236,7 +287,7 @@ class FrameDecoder:
         # Keep the original order for privacy noise and unknown/ambiguous cadence.
         # Captions still see the final frame grid.
         defer_fps = (
-            self._pix_fmt == "yuv420p10le"
+            self._ten_bit
             and not self._privacy_blur
             and self._source_frame_rate is not None
             and 0 < self._source_frame_rate < self._fps
@@ -276,7 +327,7 @@ class FrameDecoder:
                     self._caption,
                     self._width,
                     self._height,
-                    is_hdr=self._pix_fmt == "yuv420p10le",
+                    is_hdr=self._ten_bit,
                     font_path=self._caption_font,
                     frame_window=self._caption_window,
                 )
@@ -409,7 +460,7 @@ class FrameDecoder:
                 proc.stdout.close()
 
     def _frame_view(self, raw: bytes | bytearray) -> np.ndarray:
-        if self._pix_fmt == "yuv420p10le":
+        if self._ten_bit:
             # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
             # Crossfade blends each sample independently which works for all planes.
             # The array retains `raw`; body writes, previews and crossfades
@@ -525,11 +576,13 @@ def make_decoder(
     probe_cache: ProbeCache | None = None,
     planar_sdr: bool = False,
     from_seconds: float = 0.0,
+    hdr_pipe_format: str = "yuv420p10le",
 ) -> FrameDecoder:
     """Create a FrameDecoder with per-clip normalization filters.
 
     SDR frames come as rgb24 unless `planar_sdr` asks for yuv420p, which the
-    streaming encoder takes without converting.
+    streaming encoder takes without converting. HDR frames come as
+    `hdr_pipe_format`: P010 when a hardware encoder takes them as they are.
     """
     probe_cache = probe_cache or ProbeCache()
     rotation = 0
@@ -558,7 +611,9 @@ def make_decoder(
     hdr_conversion, colorspace_filter, output_pix_fmt, sdr_to_hdr_filter, _ = resolve_clip_hdr(
         clip_idx, ctx, hdr_type
     )
-    pix_fmt = "yuv420p10le" if hdr_type else ("yuv420p" if planar_sdr else "rgb24")
+    pix_fmt = hdr_pipe_format if hdr_type else ("yuv420p" if planar_sdr else "rgb24")
+    if hdr_type and output_pix_fmt:
+        output_pix_fmt = f",format={pix_fmt}"
     logger.info(
         f"Decoder[{clip_idx}] pix={pix_fmt} title={is_title} hdr_type={hdr_type} "
         f"sdr2hdr={bool(sdr_to_hdr_filter)} {clip.path.name}"
@@ -569,9 +624,18 @@ def make_decoder(
         audio_output = audio_work_dir / f"clip_{clip_idx}_audio.wav"
 
     source_size, source_frame_rate = _source_properties(clip.path, probe_cache)
+    capabilities = getattr(ctx, "decode_capabilities", None)
+    privacy_blur = privacy_mode and not is_title
+    # Privacy's frosted glass and a forced turn are shaped at source size, on the CPU.
+    gpu_graph = (
+        None
+        if privacy_blur or rotation
+        else gpu_frame_graph_for_path(clip.path, capabilities, probe_cache)
+    )
     return FrameDecoder(
-        hardware_decode=hardware_decode_for(
-            clip.path, getattr(ctx, "decode_capabilities", None), probe_cache
+        gpu_graph=gpu_graph,
+        hardware_decode=(
+            None if gpu_graph else hardware_decode_for(clip.path, capabilities, probe_cache)
         ),
         clip_path=clip.path,
         probe_cache=probe_cache,
@@ -580,7 +644,7 @@ def make_decoder(
         fps=fps,
         pix_fmt=pix_fmt,
         rotation=rotation,
-        privacy_blur=privacy_mode and not is_title,
+        privacy_blur=privacy_blur,
         hdr_conversion=hdr_conversion,
         colorspace_filter=colorspace_filter,
         output_pix_fmt=output_pix_fmt,

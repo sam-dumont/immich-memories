@@ -27,8 +27,16 @@ The app tests a one-frame encode, not just whether FFmpeg lists the codec. Durin
 log names the encoder used. Prepared facts do not need rebuilding after an encoder change.
 
 With `advanced.hardware.gpu_decode` on (the default), the render also decodes H.264 and HEVC
-clips on the hardware. The frames are repacked to what the software decoder gives, so the film
-is the same either way; a clip the hardware fails to decode is decoded again in software.
+clips on the hardware. On an NVIDIA card (CUDA) or a Mac (VideoToolbox), the clip then stays on
+the GPU while it is scaled to the film's size, turned upright and given its blurred background,
+and reaches the CPU once, at film size. HDR frames go to the hardware encoder as P010, the
+format it reads, so nothing repacks them on the way. On a 4K test cut on an NVIDIA T1000 worker,
+the render's CPU time dropped from 241 s to 72 s.
+
+The picture stays within a few 10-bit code values of the CPU path. HDR/SDR conversions still run
+on the CPU, on the smaller of the clip and the film frame: no GPU filter in these FFmpeg builds
+gives the same colours. A clip the hardware fails to decode is decoded again in software, and an
+FFmpeg without the GPU filters (checked once per run) keeps the CPU path.
 
 ## Backends
 

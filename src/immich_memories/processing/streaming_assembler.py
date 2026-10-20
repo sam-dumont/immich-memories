@@ -24,6 +24,7 @@ from immich_memories.processing.encoding_plan import (
     EncodingPlan,
     HdrTransfer,
     OutputCodec,
+    hdr_pipe_format,
     software_fallback_plan,
     uses_hardware_encoder,
 )
@@ -144,9 +145,11 @@ class StreamingEncoder:
                 "bt2020nc",
             ]
 
-        # WHY: both arrive planar, so the encoder converts nothing: yuv420p10le
-        # for HDR, 8-bit yuv420p for SDR.
-        input_pix_fmt = "yuv420p10le" if self._encoding_plan.hdr else "yuv420p"
+        # WHY: frames arrive in the layout the encoder reads, so it converts
+        # nothing: P010 or yuv420p10le for HDR, 8-bit yuv420p for SDR.
+        input_pix_fmt = (
+            hdr_pipe_format(self._encoding_plan) if self._encoding_plan.hdr else "yuv420p"
+        )
 
         cmd = [
             *self._ffmpeg_command,
@@ -315,6 +318,7 @@ def assemble_streaming(
         height=height,
         is_hdr=hdr_type is not None,
         planar_sdr=hdr_type is None,
+        semi_planar=hdr_type is not None and hdr_pipe_format(plan) == "p010le",
         total_frames=total_frames,
         # WHY: Throttle callbacks to every ~0.5s worth of frames to avoid UI overhead
         report_interval=max(1, fps // 2),
@@ -382,6 +386,7 @@ def assemble_streaming(
             audio_work_dir=audio_work_dir,
             probe_cache=probe_cache,
             encoder_name=plan.encoder,
+            pipe_format=hdr_pipe_format(plan),
         )
     except StreamingEncoderWriteError:
         with contextlib.suppress(OSError, subprocess.TimeoutExpired, RuntimeError):
@@ -444,6 +449,7 @@ def _encode_clip_sequence(
     audio_work_dir: Path | None = None,
     probe_cache: ProbeCache | None = None,
     encoder_name: str = "",
+    pipe_format: str = "yuv420p10le",
 ) -> int:
     """Encode all clips with transitions, tracking frame count for progress."""
     active_iter: Generator[np.ndarray, None, None] | None = None
@@ -472,6 +478,7 @@ def _encode_clip_sequence(
             caption_window=caption_windows[clip_idx],
             probe_cache=probe_cache,
             planar_sdr=True,
+            hdr_pipe_format=pipe_format,
         ).iter_borrowed_frames(read_ahead=read_ahead)
         cleanup.callback(frames.close)
         return frames

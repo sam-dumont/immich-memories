@@ -51,7 +51,9 @@ def _alloc_blend_buf(width: int, height: int, is_hdr: bool, planar_sdr: bool) ->
     return np.zeros((height, width, 3), dtype=np.uint8)
 
 
-def _match_blend_bufs(ref: np.ndarray, blend_buf: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _match_blend_bufs(
+    ref: np.ndarray, blend_buf: np.ndarray, semi_planar: bool = False
+) -> tuple[np.ndarray, np.ndarray]:
     """Create black frame and ensure blend buffers match actual frame shape.
 
     WHY: HDR mode pre-allocates flat uint16 YUV buffers, but some clips
@@ -63,7 +65,8 @@ def _match_blend_bufs(ref: np.ndarray, blend_buf: np.ndarray) -> tuple[np.ndarra
     if ref.ndim == 1 and ref.dtype == np.uint16:
         # Y plane occupies first 2/3 of the flat array, U+V the last 1/3
         y_size = len(ref) * 2 // 3
-        black[y_size:] = 512
+        # P010 keeps its 10 bits at the top of each sample.
+        black[y_size:] = 512 << 6 if semi_planar else 512
     if ref.ndim == 1 and ref.dtype == np.uint8:
         # Planar 8-bit: limited-range black is Y=16, U=V=128.
         y_size = len(ref) * 2 // 3
@@ -95,6 +98,7 @@ class FrameBlender:
         height: int,
         is_hdr: bool = False,
         planar_sdr: bool = False,
+        semi_planar: bool = False,
         total_frames: int = 0,
         report_interval: int = 1,
         progress_callback: Callable[[int, int], None] | None = None,
@@ -104,6 +108,8 @@ class FrameBlender:
         self._width = width
         self._height = height
         self._is_hdr = is_hdr
+        # 10-bit frames arrive as P010 rather than planar yuv420p10le.
+        self._semi_planar = semi_planar
         self._total_frames = total_frames
         self._report_interval = report_interval
         self._progress_callback = progress_callback
@@ -156,7 +162,7 @@ class FrameBlender:
             if black is None:
                 ref = frame_a if frame_a is not None else frame_b
                 assert ref is not None  # noqa: S101
-                black, blend_buf = _match_blend_bufs(ref, blend_buf)
+                black, blend_buf = _match_blend_bufs(ref, blend_buf, self._semi_planar)
 
             frame_a, last_a = _hold_or_fallback(frame_a, last_a, black)
             frame_b, last_b = _hold_or_fallback(frame_b, last_b, black)
@@ -182,4 +188,5 @@ class FrameBlender:
             self._is_hdr,
             self._height,
             self._width,
+            self._semi_planar,
         )
