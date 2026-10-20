@@ -93,6 +93,10 @@ class DemucsLocalBackend:
 
         from demucs.pretrained import get_model  # type: ignore[import-not-found]
 
+        from immich_memories.processing.ffmpeg_threads import limit_torch_threads
+
+        # Separation on the CPU, and the preprocessing around a GPU one, run on this pool.
+        limit_torch_threads()
         logger.info(f"Loading Demucs model: {self._model_name}")
         self._model = get_model(self._model_name)
 

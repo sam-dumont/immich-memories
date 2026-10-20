@@ -616,7 +616,9 @@ class TestAFailedProbeIsRetried:
 
     def test_a_missed_probe_is_retried_by_the_next_job_and_a_hit_is_kept(self):
         _cached_hardware_detection.forget(hits=True)
-        nvidia = HWAccelCapabilities(backend=HWAccelBackend.NVIDIA, supports_h264_encode=True)
+        nvidia = HWAccelCapabilities(
+            backend=HWAccelBackend.NVIDIA, supports_h264_encode=True, supports_h265_encode=True
+        )
         calls: list[int] = []
 
         def busy_then_free():
@@ -637,4 +639,32 @@ class TestAFailedProbeIsRetried:
             assert detect_hardware_acceleration().backend == HWAccelBackend.NVIDIA
             assert detect_hardware_acceleration(retry_missed=True).backend == HWAccelBackend.NVIDIA
             assert len(calls) == 2  # a hit is kept
+        _cached_hardware_detection.forget(hits=True)
+
+    def test_an_encoder_that_failed_its_probe_is_retried_by_the_next_job(self):
+        """The card answered, but one encoder could not open for a moment.
+
+        The backend is found, so this used to count as a hit and every later job in the
+        worker encoded that codec in software.
+        """
+        _cached_hardware_detection.forget(hits=True)
+        busy = HWAccelCapabilities(
+            backend=HWAccelBackend.NVIDIA, supports_h264_encode=True, supports_h265_encode=False
+        )
+        free = HWAccelCapabilities(
+            backend=HWAccelBackend.NVIDIA, supports_h264_encode=True, supports_h265_encode=True
+        )
+        answers = iter([busy, free])
+        calls: list[int] = []
+
+        def probe():
+            calls.append(1)
+            return next(answers)
+
+        # WHY: a detector talks to ffmpeg and the GPU; no unit test may reach them.
+        with patch("immich_memories.processing.hardware_detection._detect_nvidia", probe):
+            assert not detect_hardware_acceleration("nvidia").supports_h265_encode
+            assert detect_hardware_acceleration("nvidia", retry_missed=True).supports_h265_encode
+            assert detect_hardware_acceleration("nvidia", retry_missed=True).supports_h265_encode
+        assert len(calls) == 2  # the complete answer is kept
         _cached_hardware_detection.forget(hits=True)

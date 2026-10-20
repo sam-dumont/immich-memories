@@ -281,9 +281,10 @@ def detect_hardware_acceleration(
 ) -> HWAccelCapabilities:
     """Resolve the default argument before caching a hardware probe.
 
-    A probe that found hardware is kept for the process. One that found nothing (a card
-    busy for a moment) is kept only until `retry_missed` asks for a new look, which a
-    long-lived worker does at the start of each job.
+    A probe where every encoder worked is kept for the process. One that found nothing,
+    or an encoder that could not open (a card busy for a moment), is kept only until
+    `retry_missed` asks for a new look, which a long-lived worker does at the start of
+    each job.
     """
     if retry_missed:
         _cached_hardware_detection.forget(hits=False)
@@ -291,7 +292,7 @@ def detect_hardware_acceleration(
 
 
 class _HardwareProbeCache:
-    """Remember a probe that found hardware for good, and one that found none for a job."""
+    """Remember a complete probe for good, and one with a missing encoder for a job."""
 
     def __init__(self) -> None:
         self._found: dict[str, HWAccelCapabilities] = {}
@@ -303,14 +304,15 @@ class _HardwareProbeCache:
         if backend in self._missed:
             return self._missed[backend]
         caps = _probe_hardware(backend)
-        if caps.backend is HWAccelBackend.NONE:
+        # A card without one of the codecs is probed again each job: one ffmpeg frame.
+        if not (caps.supports_h264_encode and caps.supports_h265_encode):
             self._missed[backend] = caps
         else:
             self._found[backend] = caps
         return caps
 
     def forget(self, *, hits: bool) -> None:
-        """Drop the probes that found nothing (a new job tries again), and the hits too if asked."""
+        """Drop the incomplete probes (a new job tries again), and the complete ones if asked."""
         self._missed.clear()
         if hits:
             self._found.clear()
