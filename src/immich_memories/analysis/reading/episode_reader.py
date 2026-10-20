@@ -18,6 +18,7 @@ from immich_memories.analysis.corpus.records import (
 from immich_memories.analysis.judgments.strict_json import bounded_model_text
 from immich_memories.analysis.reading.annotation_lines import AnnotationLineBatch
 from immich_memories.analysis.reading.cull_answer import CullDecision
+from immich_memories.analysis.reading.demand import unread_line
 from immich_memories.analysis.reading.episode_answers import (
     WHAT_HAPPENED_MAX_CHARS,
     EpisodePageReading,
@@ -36,6 +37,7 @@ from immich_memories.analysis.reading.episode_prompt import (
     AlbumNames,
     EpisodePromptFacts,
     episode_prompt,
+    episode_retry_prompt,
 )
 from immich_memories.analysis.reading.evidence_provenance import EpisodeEvidenceLines
 from immich_memories.analysis.reading.prose_shapes import episode_reading_shape
@@ -46,6 +48,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingIdentity,
     EpisodeReadingProducer,
     EpisodeReadingStore,
+    EpisodeRefusal,
     EpisodeRepresentative,
 )
 
@@ -53,6 +56,8 @@ logger = logging.getLogger(__name__)
 
 _PROVIDER_FAILED = "text episode provider failed"
 _UNUSABLE = "text episode response was missing or invalid; full membership retained"
+# What a refusal keeps of the answer it was filed over: enough to see its shape.
+_EXCERPT_CHARS = 1_200
 
 
 class AnnotationLineReader(Protocol):
@@ -120,6 +125,9 @@ class EpisodeEditorialEvidence:
     reading: BankedEpisodeReading | None
     cache_hit: bool
     unavailable_reason: str | None
+    # Unread because an earlier run's refusal of this exact question was remembered, not
+    # because this run asked and failed (#2682).
+    remembered_refusal: bool = False
 
     def __post_init__(self) -> None:
         if (self.reading is None) == (self.unavailable_reason is None):
@@ -132,6 +140,8 @@ class EpisodeEditorialEvidence:
             raise ValueError("episode evidence must preserve canonical identity and membership")
         if self.cache_hit and self.reading is None:
             raise ValueError("an unavailable episode cannot be a cache hit")
+        if self.remembered_refusal and self.reading is not None:
+            raise ValueError("a read episode cannot be a remembered refusal")
 
 
 @dataclass(frozen=True)
@@ -301,6 +311,7 @@ class CachedTextEpisodeReader:
         if self._request_plan_guard is not None:
             self._request_plan_guard(request_plan)
         actual_calls = 0
+        unread_answers: dict[tuple[str, int], tuple[str, str]] = {}
         if missing:
             actual_calls = self._fill(
                 missing=missing,
@@ -311,19 +322,15 @@ class CachedTextEpisodeReader:
                 banked=banked,
                 unavailable_by_group=unavailable_by_group,
                 diagnostics=response_diagnostics,
+                unread_answers=unread_answers,
             )
-            self._bank_refusals(missing, banked, unavailable_by_group)
+            self._bank_refusals(missing, banked, unavailable_by_group, unread_answers)
         episodes = _evidence(
-            projections, identities_by_group, banked, cache_hits, unavailable_by_group
+            projections, identities_by_group, banked, cache_hits, unavailable_by_group, refused
         )
-        unavailable = sum(episode.reading is None for episode in episodes)
         warnings = (
             *annotation_batch.warnings,
-            *(
-                (f"!! {unavailable} demanded episode(s) unread; full membership retained",)
-                if unavailable
-                else ()
-            ),
+            *unread_warning(episodes, "full membership retained"),
         )
         provenance = _episode_provenance(episodes, annotation_batch, self._producer)
         return TextEpisodeReadResult(
@@ -406,7 +413,13 @@ class CachedTextEpisodeReader:
         banked,
         unavailable_by_group,
         diagnostics,
+        unread_answers,
     ) -> int:
+        """Ask every missing page, then each still-unread page alone, told what went wrong.
+
+        `unread_answers` ends holding, for each page no answer read, why the last one could
+        not be used and what it said.
+        """
         page_readings: list[EpisodePageReading] = []
         failed: set[tuple[str, int]] = set()
         for scope in oversized:
@@ -421,7 +434,9 @@ class CachedTextEpisodeReader:
             announce_stage(
                 StageUpdate("event evidence", done=calls, total=len(packs), verb="Reading")
             )
-            fresh = self._record_response(pack, response, diagnostics, unavailable_by_group, failed)
+            fresh = self._record_response(
+                pack, response, diagnostics, unavailable_by_group, failed, unread_answers
+            )
             page_readings.extend(fresh)
             self._bank_complete(missing, request_scopes, page_readings, banked, fresh)
         for _round in range(self._limits.unread_retry_rounds):
@@ -433,20 +448,24 @@ class CachedTextEpisodeReader:
             # ever asks about -- so repeating its own (already too small) estimate just
             # buys the same truncation again. Ask at the full transport ceiling instead:
             # if one episode does not fit that, nothing short of a repair would help.
+            # It also says what was wrong with the last answer: the same question at
+            # temperature 0 gets the same unusable answer back (#2682).
+            problems = {key: problem for key, (problem, _answer) in unread_answers.items()}
             for pack, response in self._read_packs(
-                retries, facts, min_tokens=self._limits.max_output_tokens
+                retries, facts, min_tokens=self._limits.max_output_tokens, problems=problems
             ):
                 calls += 1
                 fresh = self._record_response(
-                    pack, response, diagnostics, unavailable_by_group, failed
+                    pack, response, diagnostics, unavailable_by_group, failed, unread_answers
                 )
                 page_readings.extend(fresh)
                 self._bank_complete(missing, request_scopes, page_readings, banked, fresh)
         return calls
 
-    def _read_packs(self, packs, facts, *, min_tokens: int | None = None):
+    def _read_packs(self, packs, facts, *, min_tokens: int | None = None, problems=None):
         def read(requester, pack):
-            return self._ask(requester, pack, facts, min_tokens=min_tokens)
+            problem = (problems or {}).get(_scope_key(pack[0])) if len(pack) == 1 else None
+            return self._ask(requester, pack, facts, min_tokens=min_tokens, problem=problem)
 
         run = getattr(self._requester, "iter_independent", None)
         if callable(run):
@@ -455,16 +474,18 @@ class CachedTextEpisodeReader:
             for pack in packs:
                 yield pack, read(self._requester, pack)
 
-    def _ask(self, requester, pack, facts, *, min_tokens: int | None = None):
+    def _ask(self, requester, pack, facts, *, min_tokens: int | None = None, problem=None):
         budget = episode_completion_budget(pack, self._limits)
         if min_tokens is not None:
             budget = max(budget, min_tokens)
         try:
-            return _read_missing(requester, pack, facts, max_tokens=budget)
+            return _read_missing(requester, pack, facts, max_tokens=budget, problem=problem)
         except Exception as exc:  # WHY: one failed pack cannot remove other episodes
             return exc
 
-    def _record_response(self, pack, response, diagnostics, unavailable_by_group, failed):
+    def _record_response(
+        self, pack, response, diagnostics, unavailable_by_group, failed, unread_answers
+    ):
         """Mutate diagnostics and semantic state only after returning to the store's thread."""
         if isinstance(response, Exception):
             exc = response
@@ -480,6 +501,12 @@ class CachedTextEpisodeReader:
             return ()
         if response.diagnostic is not None:
             diagnostics.append(response.diagnostic)
+        for scope in pack:
+            key = _scope_key(scope)
+            if key in response.problems:
+                unread_answers[key] = (response.problems[key], response.answer)
+            else:
+                unread_answers.pop(key, None)
         return response.readings
 
     def _bank_complete(self, missing, request_scopes, page_readings, banked, fresh) -> None:
@@ -508,16 +535,17 @@ class CachedTextEpisodeReader:
             self._verify_readback(completed)
         banked.update({reading.identity.group_id: reading for reading in completed})
 
-    def _bank_refusals(self, missing, banked, unavailable_by_group) -> None:
+    def _bank_refusals(self, missing, banked, unavailable_by_group, unread_answers) -> None:
         """File what this contract could not read, once its retries are spent.
 
         A provider that never answered has refused nothing: the next run may reach it, so its
         failure is not banked. Everything else is a verdict on this exact question -- a reply
         that could not be used, or evidence that will not fit a request -- and asking it again
-        every run costs the same and answers the same.
+        every run costs the same and answers the same. The refusal says what was wrong with
+        the last answer and keeps a bounded excerpt of it (#2682).
         """
         refusals = [
-            (identity, reason)
+            _refusal(identity, reason, unread_answers)
             for identity, _membership in missing
             if identity.group_id not in banked
             if not (reason := unavailable_by_group.get(identity.group_id, _UNUSABLE)).startswith(
@@ -561,6 +589,33 @@ def _evidence_lines(
     )
 
 
+def _refusal(
+    identity: EpisodeReadingIdentity,
+    reason: str,
+    unread_answers: Mapping[tuple[str, int], tuple[str, str]],
+) -> EpisodeRefusal:
+    """The refusal filed for one episode: its reason made specific, and what the reader said."""
+    if reason != _UNUSABLE:
+        return EpisodeRefusal(identity, reason)
+    last = [answer for key, answer in unread_answers.items() if key[0] == identity.group_id]
+    if not last:
+        return EpisodeRefusal(identity, _unusable("its pages' readings could not be combined"))
+    problem, answer = last[-1]
+    return EpisodeRefusal(identity, _unusable(problem), answer_excerpt(answer))
+
+
+def _unusable(problem: str) -> str:
+    return f"text episode response was missing or invalid ({problem}); full membership retained"
+
+
+def answer_excerpt(answer: str, *, limit: int = _EXCERPT_CHARS) -> str:
+    """The answer cut to `limit` characters, keeping its start and its end."""
+    if len(answer) <= limit:
+        return answer
+    tail = limit // 4
+    return f"{answer[: limit - tail - 3]}...{answer[-tail:]}"
+
+
 def _unread_scopes(request_scopes, page_readings, failed):
     received = {_scope_key(reading.scope) for reading in page_readings}
     return tuple(
@@ -570,8 +625,24 @@ def _unread_scopes(request_scopes, page_readings, failed):
     )
 
 
+def unread_warning(
+    episodes: Iterable[EpisodeEditorialEvidence], consequence: str
+) -> tuple[str, ...]:
+    """The run's one line about demanded episodes left unread, split by when each was refused.
+
+    A refusal is remembered until the prompt, the evidence or the reader changes, so a film
+    spanning episodes refused by earlier runs reports them too; counting those as this run's
+    failures made the warning grow with the film's span, not with what the run asked.
+    """
+    unread = [episode for episode in episodes if episode.reading is None]
+    if not unread:
+        return ()
+    remembered = sum(episode.remembered_refusal for episode in unread)
+    return (unread_line(len(unread), remembered, consequence),)
+
+
 def _evidence(
-    projections, identities_by_group, banked, cache_hits, unavailable_by_group
+    projections, identities_by_group, banked, cache_hits, unavailable_by_group, remembered
 ) -> tuple[EpisodeEditorialEvidence, ...]:
     return tuple(
         EpisodeEditorialEvidence(
@@ -584,6 +655,8 @@ def _evidence(
                 if projection.group.group_id in banked
                 else unavailable_by_group.get(projection.group.group_id, _UNUSABLE)
             ),
+            remembered_refusal=projection.group.group_id not in banked
+            and projection.group.group_id in remembered,
         )
         for projection in projections
     )
@@ -641,8 +714,13 @@ def _read_missing(
     facts: EpisodePromptFacts,
     *,
     max_tokens: int,
+    problem: str | None = None,
 ):
-    prompt = episode_prompt(scopes, facts)
+    prompt = (
+        episode_prompt(scopes, facts)
+        if problem is None
+        else episode_retry_prompt(scopes[0], facts, problem)
+    )
     budgeted_request = getattr(requester, "request_with_budget", None)
     raw = (
         budgeted_request(

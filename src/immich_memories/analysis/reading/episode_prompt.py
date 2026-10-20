@@ -54,7 +54,9 @@ _LEAN_PROMPT_NAME = "episode-prompt-v4-lean"
 # What a film's on-demand reading asks: the account's sentence and the records, with the one
 # representative a reading needs to be bankable. The full prompt's other asks (up to three
 # representatives with reasons, every Cull reject) were 62 % of the reader's output on the
-# measured cold year, and nothing a film reads on demand uses them.
+# measured cold year, and nothing a film reads on demand uses them. It names notable_moments
+# where it says "[]": a bare "Return []" was read as the whole answer, and 249 of 1,673
+# recorded answers were an empty episodes list (#2682).
 _LEAN_PROMPT = (
     """Read these episodes from one family's photo library. Every asset line contains
 all banked annotations for that asset. Use only those lines; do not invent names, places,
@@ -78,8 +80,8 @@ a finished build), or text naming the occasion. A small object can carry one whe
 record itself (a ring in its box, a hospital bracelet, the keys to a new home). An outing, a
 view, a meal, a pose, a game, a nice portrait or an animal is not a record, however good the
 picture. Do not infer a first, a relationship, a diagnosis or a feeling from the order things
-happened in. Name the asset and the observable reason. Return [] when no line shows such a
-record; that is the usual answer.
+happened in. Name the asset and the observable reason. notable_moments is [] when no line shows
+such a record; that is the usual answer.
 
 Return JSON only:
 {{"schema_version":"episode-reading-text-v1","episodes":[{{"episode":1,
@@ -137,6 +139,20 @@ def episode_prompt(
         blocks.append(f"episode {episode_alias}\n{albums}{page}{asset_lines}")
     template = _LEAN_PROMPT if facts.lean else _PROMPT
     return template.format(count=_count_line(len(scopes)), episodes="\n\n".join(blocks))
+
+
+def episode_retry_prompt(
+    scope: EpisodeRequestScope, facts: EpisodePromptFacts, problem: str
+) -> str:
+    """The episode asked alone again, told what made its last answer unusable.
+
+    At temperature 0 the same question earns the same answer byte for byte: the recorded
+    refusals got it three times running. Naming the problem is what changes the answer.
+    """
+    return (
+        f"{episode_prompt((scope,), facts)}\n\nYour last answer could not be used: {problem}. "
+        'Answer again with exactly 1 entry in "episodes".'
+    )
 
 
 def _count_line(episodes: int) -> str:

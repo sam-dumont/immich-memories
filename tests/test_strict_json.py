@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from immich_memories.analysis.judgments.strict_json import (
@@ -9,6 +11,7 @@ from immich_memories.analysis.judgments.strict_json import (
     final_json_object,
     is_safe_model_text,
     model_text_rows,
+    without_trailing_commas,
 )
 
 # Verbatim from the local model during the 2026-08-26 Selects probes. Nothing
@@ -110,3 +113,9 @@ def test_a_bare_string_is_read_as_the_one_row_it_says(value: object, expected: l
 def test_widening_the_container_does_not_widen_its_contents(value: object) -> None:
     """Only a list and a string are shapes this field can have; the rest still fail closed."""
     assert model_text_rows(value) is None
+
+
+def test_a_trailing_comma_goes_and_a_comma_inside_a_string_stays() -> None:
+    raw = '{"a":[1,2,],"b":"x, }","c":"q\\",]",}'
+
+    assert json.loads(without_trailing_commas(raw)) == {"a": [1, 2], "b": "x, }", "c": 'q",]'}

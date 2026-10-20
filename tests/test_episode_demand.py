@@ -68,7 +68,7 @@ def answer(prompt: str) -> str:
     )
 
 
-def demand_for(tmp_path, asked, *, respond=answer, prepared=None):
+def demand_for(tmp_path, asked, *, respond=answer, prepared=None, store=None):
     prepared = prepared or prepared_month()
     lines = Lines({asset: f"{asset} | one complete line" for asset in prepared.candidate_ids})
     producer = EpisodeReadingProducer(
@@ -78,7 +78,7 @@ def demand_for(tmp_path, asked, *, respond=answer, prepared=None):
         annotation_renderer_version="annotation-line-v1",
         annotation_versions=("description:student-v1",),
     )
-    store = EpisodeReadingStore(annotation_store())
+    store = store or EpisodeReadingStore(annotation_store())
 
     def text(_prepared):
         return CachedTextEpisodeReader(
@@ -284,3 +284,30 @@ def test_only_a_model_run_with_a_catalogued_period_reads_on_demand():
     assert factory(prepared) is demand
     assert demand is not None
     assert demand.readings_for(["not-in-this-film"]) == {}
+
+
+def test_a_refusal_from_an_earlier_run_is_counted_as_remembered_not_as_new(tmp_path):
+    """#2682: the warning grew with the film's span, counting old refusals as this run's."""
+    from immich_memories.analysis.reading.demand import unread_line
+
+    def empty(_prompt):
+        return '{"schema_version":"episode-reading-text-v1","episodes":[]}'
+
+    store = EpisodeReadingStore(annotation_store())
+    earlier, _prepared = demand_for(tmp_path, [], respond=empty, store=store)
+    earlier.readings_for(["day-two"])
+    first = earlier.reading_health()
+    asked: list[str] = []
+    later, _prepared = demand_for(tmp_path, asked, respond=empty, store=store)
+
+    later.readings_for(["day-two", "day-three"])
+
+    health = later.reading_health()
+    assert (first["unavailable_episodes"], first["remembered_refusals"]) == (1, 0)
+    assert (health["unavailable_episodes"], health["remembered_refusals"]) == (2, 1)
+    assert [row["remembered_refusal"] for row in health["episodes"]] == [True, False]
+    assert all("day-two" not in prompt for prompt in asked)
+    assert unread_line(2, 1, "using factual fallback") == (
+        "!! 2 demanded episode(s) unread (1 this run, 1 remembered from earlier runs); "
+        "using factual fallback"
+    )
