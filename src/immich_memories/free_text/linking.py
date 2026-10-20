@@ -179,7 +179,7 @@ def link_who(
     company_only = False
     for span in who:
         found, span_absent, span_company, span_reasons = _people_in(
-            request, span, people, lexicon, asker
+            request, _with_its_negation(request, span), people, lexicon, asker
         )
         present += found
         absent_present += span_absent
@@ -212,6 +212,23 @@ def link_who(
         company_only=company_only,
         reasons=tuple(reasons),
     )
+
+
+def _with_its_negation(request: str, span: str) -> str:
+    """The span with the negation markers the request says right before it (#2138).
+
+    The reader picks "les enfants" out of "la plage sans les enfants" and leaves "sans"
+    behind; read alone, the span would require the children the request asks away.
+    """
+    said = words_of(negation.elide(request))
+    words = words_of(negation.elide(span))
+    for start in range(len(said) - len(words) + 1):
+        if words and said[start : start + len(words)] == words:
+            before = start
+            while before > 0 and negation.is_negation(said[before - 1]):
+                before -= 1
+            return " ".join(said[before : start + len(words)])
+    return span
 
 
 def _company_in_text(text: str, lexicon: Lexicon) -> _SpanCompany:

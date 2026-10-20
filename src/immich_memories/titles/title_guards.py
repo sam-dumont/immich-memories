@@ -46,20 +46,31 @@ def _calendar_words() -> frozenset[str]:
     title that names something no fact names. Wide names only: an abbreviation such
     as "Jan" is also a first name.
     """
+    from immich_memories.i18n import SUPPORTED_LOCALES
+
+    return frozenset().union(*(_calendar_words_in(code) for code in SUPPORTED_LOCALES))
+
+
+@lru_cache(maxsize=32)
+def _calendar_words_in(locale: str) -> frozenset[str]:
+    """Month and weekday names as one film language spells them (#2139).
+
+    A title spells its dates in the film's own language: "June" in a French title is not
+    a date the film can show, it is English left in the line.
+    """
     from babel.dates import get_day_names, get_month_names
 
-    from immich_memories.i18n import SUPPORTED_LOCALES, babel_locale
+    from immich_memories.i18n import babel_locale
 
+    where = babel_locale(locale)
     words: set[str] = set()
-    for code in SUPPORTED_LOCALES:
-        where = babel_locale(code)
-        for context in ("format", "stand-alone"):
-            for names in (
-                get_month_names("wide", context, where),
-                get_day_names("wide", context, where),
-            ):
-                for name in names.values():
-                    words.update(word.casefold() for word in name_words(name))
+    for context in ("format", "stand-alone"):
+        for names in (
+            get_month_names("wide", context, where),
+            get_day_names("wide", context, where),
+        ):
+            for name in names.values():
+                words.update(word.casefold() for word in name_words(name))
     return frozenset(words)
 
 
@@ -120,7 +131,7 @@ def invented_name(line: str, facts: str, locale: str = "en") -> str | None:
         (
             word
             for word in named
-            if word.casefold() not in _calendar_words() and not _names_a_fact(word, known)
+            if word.casefold() not in _calendar_words_in(locale) and not _names_a_fact(word, known)
         ),
         None,
     )

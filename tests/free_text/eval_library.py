@@ -72,6 +72,14 @@ GROUPS: dict[str, tuple[str, int, str, int, dict[str, Any]]] = {
         0,
         {"people": frozenset({"p-partner"})},
     ),
+    # The son's birth date: a dated occasion whose pictures no caption calls a birth.
+    "newborn": (
+        "A newborn sleeping in a cot",
+        2,
+        "2018-04-02",
+        0,
+        {"people": frozenset({"p-child"})},
+    ),
 }
 
 

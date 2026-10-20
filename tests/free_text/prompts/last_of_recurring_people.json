@@ -23,6 +23,10 @@
     "name the main subject itself too": {
       "reason": "banked",
       "choices": []
+    },
+    "captions are written in English": {
+      "reason": "banked",
+      "english": "last"
     }
   },
   "expect": {

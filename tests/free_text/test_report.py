@@ -89,6 +89,7 @@ ANSWERS: dict[str, Any] = {
     "would be written on something": {"reason": "banked", "choices": [PRINTED.lower()]},
     "one single occasion": {"reason": "banked", "choice": "many occasions"},
     "name the main subject itself too": {"reason": "banked", "choices": []},
+    "captions are written in English": {"reason": "banked", "english": "rides"},
     "must mainly show": {"reason": "banked", "choices": ["cyclist"]},
 }
 

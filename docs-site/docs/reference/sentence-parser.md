@@ -89,11 +89,16 @@ commitment to pay the cost.
    measured qualities such as "best blurry pictures" still use the facts filter. "Best" does
    not become a subject just because the dictionary also lists it as a noun. Concrete heads such
    as "cat" in "black cat" keep their meaning. The trace names the modifier and the head it replaced.
-   WordNet adds the other everyday names and the thing's own kinds and parts, and the
-   model votes which one is the main subject. A thing has to be what the caption is about ("a
+   Captions are written in English, so a subject word no caption uses ("gâteaux", "plage") is
+   first named in English by the model. WordNet adds the other everyday names and the thing's
+   own kinds and parts, and the model votes which one is the main subject. For a thing, the
+   model also picks the caption subjects that name it too ("kitten" for a cat); a place or an
+   activity keeps WordNet's names only, since the model offers the setting around it
+   ("landscape" for a beach). A thing has to be what the caption is about ("a
    loaf of bread on a rack" yes, "a toddler holding toast" no). A place, a scene or something
    people do counts anywhere in the caption, since captions put the people first ("kids playing
-   in a park"). A word printed in the photos (a club's name on the jerseys, read by Immich's OCR)
+   in a park"). A name the model added only counts as what the caption is about: a scenery
+   film takes "a sandy beach under a blue sky", not "a toy bucket on the beach". A word printed in the photos (a club's name on the jerseys, read by Immich's OCR)
    vouches for the whole episode it appears in. Only what follows "not", "no", "without" or
    "except" is left out.
 6. **What the library measures.** Some words link straight to fields the library holds, no
@@ -108,7 +113,11 @@ commitment to pay the cost.
 7. **The film.** The pool goes whole to the editor, filmed like an album whose written subject is
    your sentence: stories, standing, the family-viewing check, duplicates and length all apply.
    Forwarded pictures are kept (a club's photos tend to arrive through a group chat). One occasion
-   of one day ("the birth of my son") goes to the special-day film instead. What the sentence
+   of one day ("the birth of my son") goes to the special-day film instead. A season, month,
+   year or range you wrote is filmed whole. An empty pool makes no film, with one exception: an
+   occasion your sentence dates to one day ("the birth of my son", dated by your people
+   registry) is still that day's film when the day has pictures, since no caption has to say
+   "birth". The trace's FILM line says so. What the sentence
    excluded travels with it as a hard rule of the editorial brief, so the run's report can name
    a shot that still showed it, not only filter the pool by it.
 

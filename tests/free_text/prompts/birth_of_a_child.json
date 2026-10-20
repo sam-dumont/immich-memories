@@ -1,6 +1,6 @@
 {
   "request": "the birth of my son",
-  "shape": "one day, dated by the people file, filmed as the special day",
+  "shape": "one day, dated by the people file, filmed as the special day though no caption says birth",
   "answers": {
     "Split the owner's request": {
       "who": [
@@ -36,6 +36,10 @@
     "name the main subject itself too": {
       "reason": "banked",
       "choices": []
+    },
+    "captions are written in English": {
+      "reason": "banked",
+      "english": "birth"
     }
   },
   "expect": {

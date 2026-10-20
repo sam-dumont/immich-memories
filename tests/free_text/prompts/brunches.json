@@ -27,6 +27,10 @@
     "Which of these places": {
       "reason": "banked",
       "choice": "anywhere"
+    },
+    "captions are written in English": {
+      "reason": "banked",
+      "english": "brunches"
     }
   },
   "expect": {

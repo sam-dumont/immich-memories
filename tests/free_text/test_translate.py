@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 from immich_memories.db import open_store
+from immich_memories.free_text.handoff import film_for
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household
@@ -288,3 +289,144 @@ def test_a_weather_noun_vote_keeps_the_requests_adjective_form(lexicon):
     )
     asked = translate("sunny days", view, NOBODY, lexicon, QuestionAsker(answers), today=TODAY)
     assert {p.asset_id for p in asked.pool.pictures} == {"sun"}
+
+
+def _party_library() -> LibraryView:
+    first = date(2031, 2, 3)
+    cakes = [
+        _picture(f"cake-{n}", first + timedelta(days=60 * n), "A birthday cake with candles")
+        for n in range(5)
+    ]
+    dogs = [_picture(f"dog-{n}", first + timedelta(days=n), "A dog on a beach") for n in range(5)]
+    return LibraryView(pictures=tuple(cakes + dogs), people={}, sharpness_line=None)
+
+
+def _cake_answers(what: str, when: str) -> dict[str, Any]:
+    return {
+        "Split the owner's request": _read([what], [when]),
+        "Give the date range": {"date_from": "2031-01-01", "date_to": "2031-12-31"},
+        "captions are written in English": {"reason": "banked", "english": "cakes"},
+        "one single occasion": {"reason": "banked", "choice": "many occasions"},
+        "name the main subject itself too": {"reason": "banked", "choices": []},
+    }
+
+
+def test_a_french_subject_finds_the_same_pictures_as_the_english_request(
+    lexicon: Lexicon,
+) -> None:
+    """#2136: "gâteaux" matched against English captions found nothing. A subject word no
+    caption uses is named in English by the reader before WordNet expands it."""
+    # WHY: stands in for the model server answering the translation's questions.
+    english = translate(
+        "birthday cakes in 2031",
+        _party_library(),
+        NOBODY,
+        lexicon,
+        QuestionAsker(_cake_answers("birthday cakes", "in 2031")),
+        today=TODAY,
+    )
+    french = translate(
+        "les gâteaux d'anniversaire en 2031",
+        _party_library(),
+        NOBODY,
+        lexicon,
+        QuestionAsker(_cake_answers("les gâteaux d'anniversaire", "en 2031")),
+        today=TODAY,
+    )
+
+    cakes = {f"cake-{n}" for n in range(5)}
+    assert {picture.asset_id for picture in english.pool.pictures} == cakes
+    assert {picture.asset_id for picture in french.pool.pictures} == cakes
+    assert french.translation.subject.main == english.translation.subject.main == ("cakes",)
+
+
+def _seaside_library() -> LibraryView:
+    first = date(2031, 7, 1)
+    shots = [
+        ("scenic", "A sandy beach with waves under a blue sky"),
+        ("toy", "A toy bucket on the beach"),
+        ("play", "Children playing on the beach"),
+        ("hills", "A landscape of hills and fields"),
+    ]
+    pictures = [
+        _picture(f"{name}-{n}", first + timedelta(days=4 * n + offset), caption)
+        for offset, (name, caption) in enumerate(shots)
+        for n in range(4)
+    ]
+    return LibraryView(pictures=tuple(pictures), people={}, sharpness_line=None)
+
+
+def _seaside_answers(what: str, other_names: list[str]) -> dict[str, Any]:
+    return {
+        "Split the owner's request": _read([what], ["in summer 2031"]),
+        "Give the date range": {"date_from": "2031-06-21", "date_to": "2031-09-22"},
+        "captions are written in English": {"reason": "banked", "english": what.split()[-1]},
+        "one single occasion": {"reason": "banked", "choice": "many occasions"},
+        "name the main subject itself too": {"reason": "banked", "choices": other_names},
+    }
+
+
+def _group(asked: Any) -> set[str]:
+    return {picture.asset_id.split("-")[0] for picture in asked.pool.pictures}
+
+
+def test_a_generic_name_the_model_offers_never_widens_a_place_subject(lexicon: Lexicon) -> None:
+    """#2125: "the beach" widened to "landscape" pulled hills and fields into a beach film.
+    A place is matched by its own words and WordNet's names for it; the beach shots,
+    people at the beach included, stay."""
+    # WHY: stands in for the model server, which names "landscape" as the beach too.
+    asker = QuestionAsker(_seaside_answers("the beach", ["landscape"]))
+
+    asked = translate(
+        "the beach in summer 2031", _seaside_library(), NOBODY, lexicon, asker, today=TODAY
+    )
+
+    assert _group(asked) == {"scenic", "toy", "play"}
+
+
+def test_a_place_word_the_model_infers_admits_the_place_not_objects_photographed_there(
+    lexicon: Lexicon,
+) -> None:
+    """#2125: a scenery request inferred "beach"; matched anywhere in a caption, it let in a
+    toy photographed on a beach. An inferred name must be what the caption is about."""
+    # WHY: stands in for the model server, which names the beach as scenery.
+    asker = QuestionAsker(_seaside_answers("the scenery", ["beach"]))
+
+    asked = translate(
+        "the scenery in summer 2031", _seaside_library(), NOBODY, lexicon, asker, today=TODAY
+    )
+
+    assert _group(asked) == {"scenic"}
+
+
+def test_a_french_beach_without_the_children_films_the_beach_shots_with_no_children(
+    lexicon: Lexicon,
+) -> None:
+    """#2138 and #2136 together: "sans les enfants" asks the children away, "plage" is the
+    beach the captions write, and the film is the pool, not one unrelated day."""
+    answers = {
+        **_seaside_answers("la plage", []),
+        "Split the owner's request": {
+            "who": ["les enfants"],
+            "when": ["en 2031"],
+            "where": [],
+            "what": ["la plage"],
+        },
+        "Give the date range": {"date_from": "2031-01-01", "date_to": "2031-12-31"},
+        "captions are written in English": {"reason": "banked", "english": "beach"},
+        "would be written on something": {"reason": "banked", "choices": []},
+    }
+    # WHY: stands in for the model server answering the translation's questions.
+    asker = QuestionAsker(answers)
+
+    asked = translate(
+        "la plage sans les enfants en 2031", _seaside_library(), NOBODY, lexicon, asker, today=TODAY
+    )
+    film = film_for(asked, asker, events_on=lambda _day: [])
+
+    assert (asked.translation.who.company, asked.translation.who.absent_company) == (
+        None,
+        "children",
+    )
+    assert _group(asked) == {"scenic", "toy"}
+    assert film.route == "pool"
