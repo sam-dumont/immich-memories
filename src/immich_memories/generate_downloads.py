@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -469,23 +469,39 @@ def _try_merge_burst(
             note_fallback("burst aligned on timestamps: spectrogram alignment failed")
             audio_trims = None
 
-    cmd = build_merge_command(
-        valid_paths,
-        valid_trims,
-        merged_path,
-        audio_trim_points=audio_trims,
-        hardware_enabled=hardware_enabled,
-        quantize_material=strict_material,
-        render_frame_rate=render_frame_rate,
-        config=config,
-        **({"segment_frame_holds": segment_frame_holds} if segment_frame_holds else {}),
-    )
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)  # noqa: S603
+    def command(hardware: bool) -> list[str]:
+        return build_merge_command(
+            valid_paths,
+            valid_trims,
+            merged_path,
+            audio_trim_points=audio_trims,
+            hardware_enabled=hardware,
+            quantize_material=strict_material,
+            render_frame_rate=render_frame_rate,
+            config=config,
+            **({"segment_frame_holds": segment_frame_holds} if segment_frame_holds else {}),
+        )
+
+    return _run_merge(command, merged_path, hardware_enabled)
+
+
+def _run_merge(
+    command: Callable[[bool], list[str]], merged_path: Path, hardware_enabled: bool
+) -> Path | None:
+    """Run the merge; one that fails on the GPU's decoder or encoder runs again in software."""
+    for hardware in dict.fromkeys((hardware_enabled, False)):
+        try:
+            result = subprocess.run(  # noqa: S603
+                command(hardware), capture_output=True, text=True, timeout=300
+            )
+        except (OSError, subprocess.SubprocessError) as e:
+            logger.warning(f"Live photo merge error: {e}")
+            continue
         if result.returncode == 0 and merged_path.exists():
             return merged_path
-        logger.warning("Live photo merge failed: %s", sanitize_error_message(result.stderr[-2000:]))
-    except (OSError, subprocess.SubprocessError) as e:
-        logger.warning(f"Live photo merge error: {e}")
-
+        logger.warning(
+            "Live photo merge failed%s: %s",
+            " with hardware, retrying in software" if hardware else "",
+            sanitize_error_message(result.stderr[-2000:]),
+        )
     return None

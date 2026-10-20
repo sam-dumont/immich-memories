@@ -92,7 +92,7 @@ Where my cluster differs from the shipped overlay:
   allocations. I run the CUDA inference image with
   `python -m immich_memories_inference.gpu_worker` as one Deployment, give it
   `IMMICH_MEMORIES_RENDER_WORKER_TOKEN`, `IMMICH_MEMORIES_RENDER_WORKER_IMMICH_URL` and
-  `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility` (NVENC needs `video`), and point all three
+  `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics` (NVENC needs `video`, GPU tone mapping `graphics`), and point all three
   URLs at its Service. No overlay ships that shape: start from `overlays/inference-cuda` and change
   the command and the environment. The [one GPU service](reference-setup.md) page has the same
   worker for Docker.

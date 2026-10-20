@@ -23,6 +23,8 @@ from math import ceil
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from immich_memories.processing.hardware import HWAccelCapabilities
     from immich_memories.processing.probe_cache import ProbeCache, VideoProbe
 
@@ -238,6 +240,44 @@ def gpu_backend(capabilities: HWAccelCapabilities | None) -> GpuBackend | None:
     if capabilities.backend == HWAccelBackend.APPLE:
         return "videotoolbox"
     return None
+
+
+# The 4:2:0 formats hardware decoders hand back as NV12 or P010. A format filter
+# repacks those into exactly the software decoder's frames, so every filter after it
+# sees the same pixels whichever decoder ran (#2709).
+_HARDWARE_DECODED_FORMATS = frozenset({"yuv420p", "yuv420p10le"})
+_HARDWARE_DECODED_CODECS = {"h264": "h264", "hevc": "h265"}
+
+
+def hardware_decode_for(
+    path: Path, capabilities: HWAccelCapabilities | None, probe_cache: ProbeCache
+) -> tuple[tuple[str, ...], str] | None:
+    """The hwaccel arguments for decoding ``path``, and the format its frames are repacked to.
+
+    None decodes in software: no capable hardware, a codec or format the hardware
+    decoders cannot hand back exactly, or a source the probe cannot read.
+    """
+    from immich_memories.processing.hardware import get_ffmpeg_hwaccel_args
+    from immich_memories.processing.probe_cache import ProbeError
+
+    if capabilities is None:
+        return None
+    try:
+        probe = probe_cache.get(path)
+    except (ProbeError, OSError, ValueError):
+        return None
+    codec = _HARDWARE_DECODED_CODECS.get(probe.codec)
+    if codec is None or probe.pixel_format not in _HARDWARE_DECODED_FORMATS:
+        return None
+    supported = (
+        capabilities.supports_h264_decode if codec == "h264" else capabilities.supports_h265_decode
+    )
+    args = get_ffmpeg_hwaccel_args(
+        capabilities, operation="decode", codec=codec, for_software_filters=True
+    )
+    if not supported or not args:
+        return None
+    return tuple(args), str(probe.pixel_format)
 
 
 def gpu_frame_graph_for(

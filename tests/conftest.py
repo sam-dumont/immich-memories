@@ -482,6 +482,15 @@ def isolated_inference_compute(monkeypatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def video_stages_on_the_cpu(monkeypatch) -> None:
+    # WHY: a host whose FFmpeg runs libplacebo on a GPU must not change the graphs tests read;
+    # tests of the GPU conversions set the probe's answer themselves.
+    monkeypatch.setattr("immich_memories.processing.gpu_transfer.gpu_transfer_works", lambda: False)
+    # WHY: likewise for photo moves, whose GPU path starts the kernel library's device.
+    monkeypatch.setattr("immich_memories.photos.gpu_moves.gpu_cutter", lambda _layers: None)
+
+
+@pytest.fixture(autouse=True)
 def test_clients_name_a_local_host(monkeypatch) -> None:
     """Point every TestClient that names no host at `http://localhost`, as a local browser would.
 

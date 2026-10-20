@@ -135,6 +135,12 @@ COPY --from=caption-runtime /app /opt/llama
 COPY docker/licenses/llama.cpp.LICENSE /opt/llama/LICENSE
 COPY docker/captioner-bundled.sh /usr/local/bin/immich-memories-captioner
 RUN chmod 755 /usr/local/bin/immich-memories-captioner
+# The render's tone mapping runs through Vulkan (libplacebo) on the card (#2760):
+# `graphics` mounts the driver's Vulkan libraries and `video` NVDEC and NVENC. The
+# runtime's own manifest names the GLX library, which needs an X server; this one
+# names the EGL library, which runs headless (the app image's Dockerfile has more).
+COPY docker/nvidia_egl_icd.json /usr/share/vulkan/icd.d/nvidia_egl_icd.json
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics
 ENV LD_LIBRARY_PATH=/opt/llama:/usr/local/cuda/lib64
 # Per-picture NumPy projections are small. A host-sized BLAS pool can consume
 # the pod CPU quota while CUDA and image preparation wait for CPU time.

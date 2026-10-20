@@ -1549,7 +1549,7 @@ def test_a_gpu_cell_selects_one_card_by_label(
     ]
     assert _job_env(container) == {
         "NVIDIA_VISIBLE_DEVICES": "all",
-        "NVIDIA_DRIVER_CAPABILITIES": "compute,video,utility",
+        "NVIDIA_DRIVER_CAPABILITIES": "compute,video,utility,graphics",
     }
 
 
@@ -1594,7 +1594,7 @@ def test_a_render_cell_takes_the_node_without_taking_the_card(
         assert "nvidia.com/gpu" not in container["resources"]["limits"], cell_id
         assert pod["runtimeClassName"] == "nvidia"
         assert pod["nodeSelector"][GPU_PRODUCT_LABEL]
-        assert _job_env(container)["NVIDIA_DRIVER_CAPABILITIES"] == "compute,video,utility"
+        assert _job_env(container)["NVIDIA_DRIVER_CAPABILITIES"] == "compute,video,utility,graphics"
 
 
 def test_a_cells_job_requests_are_in_its_own_record(manifest: dict, tmp_path: Path) -> None:
@@ -1627,7 +1627,7 @@ def test_the_driver_capabilities_are_what_puts_nvenc_in_the_container(
     for cell_id in ("k8s-gpu-t1000", "k8s-gpu-1070"):
         job = yaml.safe_load(_cell(manifest, tmp_path, cell_id).manifests["job.yaml"])
         container = job["spec"]["template"]["spec"]["containers"][0]
-        assert _job_env(container)["NVIDIA_DRIVER_CAPABILITIES"] == "compute,video,utility"
+        assert _job_env(container)["NVIDIA_DRIVER_CAPABILITIES"] == "compute,video,utility,graphics"
 
 
 def test_no_cpu_cell_asks_the_cluster_for_a_card(manifest: dict, tmp_path: Path) -> None:

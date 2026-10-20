@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-10-20T10:56:57",
+  "timestamp": "2026-10-20T17:46:13",
   "platform": "macOS-26.5.1-arm64-arm-64bit",
   "python": "3.12.11",
   "results": [
     {
       "scenario": "minimal",
-      "python_peak_mb": 10.691000938415527,
-      "wall_seconds": 0.7307107921224087,
-      "cpu_user_seconds": 2.147900000000001,
-      "cpu_sys_seconds": 0.28631899999999977,
-      "child_peak_rss_mb": 362.5625,
+      "python_peak_mb": 10.689265251159668,
+      "wall_seconds": 0.819495250005275,
+      "cpu_user_seconds": 2.1720630000000005,
+      "cpu_sys_seconds": 0.251738,
+      "child_peak_rss_mb": 367.828125,
       "output_size_mb": 0.9819459915161133,
       "clip_count": 2,
       "resolution": "720p",
@@ -20,45 +20,45 @@
       "python_version": "3.12.11",
       "platform": "macOS-26.5.1-arm64-arm-64bit",
       "cpu": "Apple M5 Max",
-      "git_revision": "0ba056955",
-      "warmup_wall_seconds": 0.9341494999825954,
+      "git_revision": "aa20fd1d2",
+      "warmup_wall_seconds": 1.1401302912272513,
       "raw_repetition_seconds": [
-        0.9897094590123743,
-        0.7295097499154508,
-        0.7307107921224087
+        0.6779905830044299,
+        0.819495250005275,
+        0.904042957816273
       ],
       "raw_repetition_metrics": [
         {
-          "python_peak_mb": 10.68366527557373,
-          "child_peak_rss_mb": 359.90625,
-          "wall_seconds": 0.9897094590123743,
-          "cpu_user_seconds": 2.147900000000001,
-          "cpu_sys_seconds": 0.328427
+          "python_peak_mb": 10.68323802947998,
+          "child_peak_rss_mb": 367.828125,
+          "wall_seconds": 0.6779905830044299,
+          "cpu_user_seconds": 2.1720630000000005,
+          "cpu_sys_seconds": 0.24911000000000016
         },
         {
-          "python_peak_mb": 10.691000938415527,
-          "child_peak_rss_mb": 362.5625,
-          "wall_seconds": 0.7295097499154508,
-          "cpu_user_seconds": 2.1487490000000005,
-          "cpu_sys_seconds": 0.28631899999999977
+          "python_peak_mb": 10.689265251159668,
+          "child_peak_rss_mb": 367.828125,
+          "wall_seconds": 0.819495250005275,
+          "cpu_user_seconds": 2.167148000000001,
+          "cpu_sys_seconds": 0.251738
         },
         {
-          "python_peak_mb": 10.696158409118652,
-          "child_peak_rss_mb": 362.5625,
-          "wall_seconds": 0.7307107921224087,
-          "cpu_user_seconds": 2.094455,
-          "cpu_sys_seconds": 0.26204399999999994
+          "python_peak_mb": 10.693415641784668,
+          "child_peak_rss_mb": 367.828125,
+          "wall_seconds": 0.904042957816273,
+          "cpu_user_seconds": 2.199307000000001,
+          "cpu_sys_seconds": 0.26950699999999994
         }
       ],
-      "median_wall_seconds": 0.7307107921224087
+      "median_wall_seconds": 0.819495250005275
     },
     {
       "scenario": "typical",
-      "python_peak_mb": 23.883551597595215,
-      "wall_seconds": 2.5982536249794066,
-      "cpu_user_seconds": 16.757247000000007,
-      "cpu_sys_seconds": 1.3723100000000006,
-      "child_peak_rss_mb": 725.484375,
+      "python_peak_mb": 23.88314723968506,
+      "wall_seconds": 2.812697665998712,
+      "cpu_user_seconds": 17.560381,
+      "cpu_sys_seconds": 1.4459939999999998,
+      "child_peak_rss_mb": 725.5,
       "output_size_mb": 8.006643295288086,
       "clip_count": 5,
       "resolution": "1080p",
@@ -69,45 +69,45 @@
       "python_version": "3.12.11",
       "platform": "macOS-26.5.1-arm64-arm-64bit",
       "cpu": "Apple M5 Max",
-      "git_revision": "0ba056955",
-      "warmup_wall_seconds": 3.208230750169605,
+      "git_revision": "aa20fd1d2",
+      "warmup_wall_seconds": 3.4132226249203086,
       "raw_repetition_seconds": [
-        2.958943541860208,
-        2.5668599160853773,
-        2.5982536249794066
+        3.7005277080461383,
+        2.812697665998712,
+        2.7916814170312136
       ],
       "raw_repetition_metrics": [
         {
-          "python_peak_mb": 23.87520122528076,
-          "child_peak_rss_mb": 725.484375,
-          "wall_seconds": 2.958943541860208,
-          "cpu_user_seconds": 17.163770999999997,
-          "cpu_sys_seconds": 1.270658
+          "python_peak_mb": 23.8750638961792,
+          "child_peak_rss_mb": 725.453125,
+          "wall_seconds": 3.7005277080461383,
+          "cpu_user_seconds": 18.103967000000004,
+          "cpu_sys_seconds": 1.431235
         },
         {
-          "python_peak_mb": 23.883551597595215,
-          "child_peak_rss_mb": 725.484375,
-          "wall_seconds": 2.5668599160853773,
-          "cpu_user_seconds": 16.642911000000005,
-          "cpu_sys_seconds": 1.373989
+          "python_peak_mb": 23.88314723968506,
+          "child_peak_rss_mb": 725.453125,
+          "wall_seconds": 2.812697665998712,
+          "cpu_user_seconds": 17.560381,
+          "cpu_sys_seconds": 1.4459939999999998
         },
         {
-          "python_peak_mb": 23.89578151702881,
-          "child_peak_rss_mb": 725.484375,
-          "wall_seconds": 2.5982536249794066,
-          "cpu_user_seconds": 16.757247000000007,
-          "cpu_sys_seconds": 1.3723100000000006
+          "python_peak_mb": 23.895682334899902,
+          "child_peak_rss_mb": 725.5,
+          "wall_seconds": 2.7916814170312136,
+          "cpu_user_seconds": 17.439869,
+          "cpu_sys_seconds": 1.4556560000000012
         }
       ],
-      "median_wall_seconds": 2.5982536249794066
+      "median_wall_seconds": 2.812697665998712
     },
     {
       "scenario": "heavy",
-      "python_peak_mb": 23.894634246826172,
-      "wall_seconds": 7.7534692080225796,
-      "cpu_user_seconds": 54.54741899999999,
-      "cpu_sys_seconds": 3.859427,
-      "child_peak_rss_mb": 727.296875,
+      "python_peak_mb": 23.894542694091797,
+      "wall_seconds": 7.974487249972299,
+      "cpu_user_seconds": 55.55206599999997,
+      "cpu_sys_seconds": 4.038823999999998,
+      "child_peak_rss_mb": 727.46875,
       "output_size_mb": 26.475836753845215,
       "clip_count": 8,
       "resolution": "1080p",
@@ -118,65 +118,65 @@
       "python_version": "3.12.11",
       "platform": "macOS-26.5.1-arm64-arm-64bit",
       "cpu": "Apple M5 Max",
-      "git_revision": "0ba056955",
-      "warmup_wall_seconds": 8.037506459048018,
+      "git_revision": "aa20fd1d2",
+      "warmup_wall_seconds": 8.404235417023301,
       "raw_repetition_seconds": [
-        7.900187999941409,
-        7.7534692080225796,
-        7.662387291900814
+        8.126570041989908,
+        7.974487249972299,
+        7.818183875177056
       ],
       "raw_repetition_metrics": [
         {
-          "python_peak_mb": 23.88854217529297,
-          "child_peak_rss_mb": 727.296875,
-          "wall_seconds": 7.900187999941409,
-          "cpu_user_seconds": 55.18079500000002,
-          "cpu_sys_seconds": 4.222534
+          "python_peak_mb": 23.888595581054688,
+          "child_peak_rss_mb": 727.3125,
+          "wall_seconds": 8.126570041989908,
+          "cpu_user_seconds": 56.714673000000005,
+          "cpu_sys_seconds": 4.172739000000002
         },
         {
-          "python_peak_mb": 23.894634246826172,
-          "child_peak_rss_mb": 727.296875,
-          "wall_seconds": 7.7534692080225796,
-          "cpu_user_seconds": 54.54741899999999,
-          "cpu_sys_seconds": 3.859427
+          "python_peak_mb": 23.894542694091797,
+          "child_peak_rss_mb": 727.46875,
+          "wall_seconds": 7.974487249972299,
+          "cpu_user_seconds": 55.55206599999997,
+          "cpu_sys_seconds": 4.038823999999998
         },
         {
-          "python_peak_mb": 23.91094207763672,
-          "child_peak_rss_mb": 727.296875,
-          "wall_seconds": 7.662387291900814,
-          "cpu_user_seconds": 53.33395299999995,
-          "cpu_sys_seconds": 3.8339800000000004
+          "python_peak_mb": 23.91114044189453,
+          "child_peak_rss_mb": 727.46875,
+          "wall_seconds": 7.818183875177056,
+          "cpu_user_seconds": 54.32371699999999,
+          "cpu_sys_seconds": 3.8145489999999995
         }
       ],
-      "median_wall_seconds": 7.7534692080225796
+      "median_wall_seconds": 7.974487249972299
     }
   ],
   "summary": [
     {
       "scenario": "minimal",
-      "median_wall_seconds": 0.7307107921224087,
+      "median_wall_seconds": 0.819495250005275,
       "raw_repetition_seconds": [
-        0.9897094590123743,
-        0.7295097499154508,
-        0.7307107921224087
+        0.6779905830044299,
+        0.819495250005275,
+        0.904042957816273
       ]
     },
     {
       "scenario": "typical",
-      "median_wall_seconds": 2.5982536249794066,
+      "median_wall_seconds": 2.812697665998712,
       "raw_repetition_seconds": [
-        2.958943541860208,
-        2.5668599160853773,
-        2.5982536249794066
+        3.7005277080461383,
+        2.812697665998712,
+        2.7916814170312136
       ]
     },
     {
       "scenario": "heavy",
-      "median_wall_seconds": 7.7534692080225796,
+      "median_wall_seconds": 7.974487249972299,
       "raw_repetition_seconds": [
-        7.900187999941409,
-        7.7534692080225796,
-        7.662387291900814
+        8.126570041989908,
+        7.974487249972299,
+        7.818183875177056
       ]
     }
   ]

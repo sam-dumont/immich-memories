@@ -515,10 +515,14 @@ hardware decode re-runs the assembly in software. On CUDA and VideoToolbox, when
 `gpu_frame_graph.gpu_filters_work` passes its one-off probe, `GpuFrameGraph` keeps the clip in
 GPU memory through scaling, the display turn and the blur fill (the sharp picture stacked
 between strips of its enlarged background) and downloads once at canvas size; transfer
-conversions stay zscale on the CPU, at the smaller of source and canvas. HDR frames cross the
+conversions run at the smaller of source and canvas, through libplacebo on the GPU where
+`gpu_transfer.gpu_transfer_works` finds its shader (zscale's maths) within a code value of
+zscale, through zscale on the CPU otherwise. Crossfades stay on the CPU: moving two frames up
+and one back costs more than the blend. HDR frames cross the
 pipe as P010 when the plan's encoder reads P010 (`encoding_plan.hdr_pipe_format`). Photo moves, title cards and their
 backgrounds are intermediates (`intermediate_encoding_plan`: fast near-lossless x264 when
-the film encodes in software), and Live merges and certified cuts are lossless, so the
+the film encodes in software), and Live merges and certified cuts are lossless
+(`lossless_encoding_plan`: NVENC's lossless mode on NVIDIA, x264 elsewhere), so the
 film's encode is a Live clip's only lossy step. Stills are rendered in the HDR film's
 transfer once its videos settle it (`generate_settings.still_render_transfer`).
 The full assembler quantizes each fade to a frame count once, shares that count with the video
@@ -649,6 +653,8 @@ src/immich_memories/
 ├── photos/                     # Photo-to-video animation (converts stills to .mp4 clips)
 │   ├── __init__.py             # Public API re-exports
 │   ├── renderer.py             # Frame-by-frame renderer: Ken Burns (frame shows 1/zoom of the picture), render_split (parked)
+│   ├── gpu_moves.py            # Whether a move's frames are cut on the GPU (title kernel library on CUDA/Metal)
+│   ├── move_kernels.py         # renderer.cut_frame as kernels; imported only once the kernel probe passed
 │   ├── ken_burns_moves.py      # Which move a still gets: whole picture <-> closest frame (person, group, pan, other)
 │   ├── animator.py             # Photo source prep: HEIC decode, downscale cap, HDR detection
 │   ├── photo_pipeline.py       # Render one photograph as a Ken Burns clip, streamed to FFmpeg
@@ -967,7 +973,8 @@ src/immich_memories/
 │   ├── assembly_config.py      # Dataclasses: AssemblySettings, AssemblyClip, etc.
 │   ├── streaming_assembler.py  # StreamingEncoder + assemble_streaming(): low-memory 4K assembly
 │   ├── streaming_frame_decoder.py # FrameDecoder / make_decoder(): clip -> normalized raw frames
-│   ├── gpu_frame_graph.py      # GpuFrameGraph: decode-to-canvas on CUDA/VideoToolbox + its probe
+│   ├── gpu_frame_graph.py      # GpuFrameGraph: decode-to-canvas on CUDA/VideoToolbox + its probe; hardware_decode_for
+│   ├── gpu_transfer.py         # Tone mapping and HDR/SDR conversions as a libplacebo shader of zscale's maths + its probe
 │   ├── streaming_frame_blender.py # FrameBlender: frames -> sink, crossfades, progress/preview
 │   ├── streaming_audio.py      # Streaming audio processing helpers
 │   ├── ffmpeg_prober.py        # FFmpegProber: ffprobe-based duration/resolution
@@ -1006,6 +1013,7 @@ src/immich_memories/
 │   ├── hardware_encode.py      # VAAPI/QSV device init + hwupload for built commands
 │   ├── rate_control.py         # CRF -> per-encoder constant-quality flags
 │   ├── live_geometry.py        # Shared burst canvas, with a 1080p limit on NAS intermediates
+│   ├── burst_encoding.py       # A merged burst's lossless plan and the hardware it may use
 │   └── live_photo_merger.py    # Live merging; measured transfer conversion and NAS hardware policy
 │
 ├── audio/                      # Audio processing

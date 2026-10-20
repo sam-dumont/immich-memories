@@ -181,7 +181,7 @@ def test_combined_compose_uses_one_address_and_one_gpu_allocation() -> None:
     worker = deployment["services"]["gpu-worker"]
     assert worker["command"] == ["python", "-m", "immich_memories_inference.gpu_worker"]
     assert len(worker["ports"]) == 1
-    assert worker["environment"]["NVIDIA_DRIVER_CAPABILITIES"] == "compute,video,utility"
+    assert worker["environment"]["NVIDIA_DRIVER_CAPABILITIES"] == "compute,video,utility,graphics"
     devices = worker["deploy"]["resources"]["reservations"]["devices"]
     assert devices == [{"driver": "nvidia", "count": 1, "capabilities": ["gpu"]}]
     assert "/render/health" in str(worker["healthcheck"])

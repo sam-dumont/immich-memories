@@ -11,7 +11,7 @@ services:
       IMMICH_MEMORIES_RENDER_WORKER_IMMICH_URL: ${IMMICH_URL:?Set the app's Immich URL}
       IMMICH_MEMORIES_RENDER_WORKER_DIRECTORY: /app/output/render-worker
       NVIDIA_VISIBLE_DEVICES: all
-      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
+      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility,graphics
     volumes:
       - render-scratch:/app/output
     deploy:

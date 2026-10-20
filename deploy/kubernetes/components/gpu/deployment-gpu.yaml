@@ -26,7 +26,7 @@ spec:
             - name: NVIDIA_VISIBLE_DEVICES
               value: "all"
             - name: NVIDIA_DRIVER_CAPABILITIES
-              value: "compute,video,utility"
+              value: "compute,video,utility,graphics"
           resources:
             requests:
               nvidia.com/gpu: "1"

@@ -178,77 +178,120 @@ def ken_burns_layers(
     )
 
 
-def ken_burns_frames(layers: KenBurnsLayers, params: KenBurnsParams) -> Iterator[np.ndarray]:
-    """Yield the move's frames one at a time (O(1) memory), cut from ``layers``."""
-    big, big_blur = layers.big, layers.blur
-    bh, bw = big.shape[:2]
+@dataclass(frozen=True)
+class FrameView:
+    """Where one frame of a move is cut from: affine maps from the layers into the frame.
+
+    ``sharp`` maps the resampled picture onto the photo window, or onto the whole
+    viewport when the picture fills it. ``blur`` maps the reduced blurred fill onto
+    the reduced canvas, when the window leaves bands to fill.
+    """
+
+    sharp: np.ndarray
+    blur: np.ndarray | None
+
+    def fills_viewport(self, layers: KenBurnsLayers) -> bool:
+        return self.blur is None and not layers.letterboxed
+
+
+def frame_views(layers: KenBurnsLayers, params: KenBurnsParams) -> Iterator[FrameView]:
+    """Each frame's view of the layers, one at a time."""
+    bh, bw = layers.big.shape[:2]
     vp_w, vp_h = layers.viewport
-    win_x, win_y, win_w, win_h = layers.window
+    _, _, win_w, win_h = layers.window
     bg_w, bg_h = layers.background
     bg_shrink = (bg_w / vp_w, bg_h / vp_h)
-    if big_blur is not None:
-        blur_scale = (big_blur.shape[1] / bw, big_blur.shape[0] / bh)
+    blur_scale = (1.0, 1.0)
+    if layers.blur is not None:
+        blur_scale = (layers.blur.shape[1] / bw, layers.blur.shape[0] / bh)
 
     n_frames = int(params.fps * params.duration)
-
     for i in range(n_frames):
-        t = i / max(n_frames - 1, 1)
-        centre_x, centre_y, size = crop_window(params, t)
-        vis_w = bw * size
-        vis_h = bh * size
-        cx = centre_x * bw
-        cy = centre_y * bh
-        x0 = cx - vis_w / 2
-        y0 = cy - vis_h / 2
+        centre_x, centre_y, size = crop_window(params, i / max(n_frames - 1, 1))
+        vis_w, vis_h = bw * size, bh * size
+        x0 = centre_x * bw - vis_w / 2
+        y0 = centre_y * bh - vis_h / 2
 
-        # Sharp crop → photo window
-        sx, sy = win_w / vis_w, win_h / vis_h
-        m_sharp = np.array([[sx, 0, -x0 * sx], [0, sy, -y0 * sy]], dtype=np.float32)
-        sharp = cv2.warpAffine(
-            big, m_sharp, (win_w, win_h), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE
-        )
-
-        if big_blur is not None:
-            # WHY: use uniform scale (max of x/y) to FILL viewport without stretch.
-            # Different x/y scales would distort the blur. The larger scale ensures
-            # the blur covers the entire viewport; excess is cropped by warpAffine.
-            fs = max(vp_w / vis_w, vp_h / vis_h)
-            # Center the crop on the same region as the sharp photo
-            blur_cx = x0 + vis_w / 2
-            blur_cy = y0 + vis_h / 2
-            blur_x0 = blur_cx - (vp_w / fs) / 2
-            blur_y0 = blur_cy - (vp_h / fs) / 2
-            # The same view, in the reduced picture's own pixels.
-            sx_b, sy_b = fs * bg_shrink[0] / blur_scale[0], fs * bg_shrink[1] / blur_scale[1]
-            m_blur = np.array(
-                [
-                    [sx_b, 0, -blur_x0 * blur_scale[0] * sx_b],
-                    [0, sy_b, -blur_y0 * blur_scale[1] * sy_b],
-                ],
-                dtype=np.float32,
-            )
-            bg_small = cv2.warpAffine(
-                big_blur,
-                m_blur,
-                (bg_w, bg_h),
-                flags=cv2.INTER_LINEAR,
-                borderMode=cv2.BORDER_REPLICATE,
-            )
-            bg = cv2.resize(
-                _rounded(bg_small, big.dtype), (vp_w, vp_h), interpolation=cv2.INTER_LINEAR
-            )
-            bg[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
-            yield bg
-        elif layers.letterboxed:
-            canvas = np.zeros((vp_h, vp_w, *big.shape[2:]), dtype=big.dtype)
-            canvas[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
-            yield canvas
+        if layers.blur is None and not layers.letterboxed:
+            sx, sy = vp_w / vis_w, vp_h / vis_h
         else:
-            vsx, vsy = vp_w / vis_w, vp_h / vis_h
-            m_vp = np.array([[vsx, 0, -x0 * vsx], [0, vsy, -y0 * vsy]], dtype=np.float32)
-            yield cv2.warpAffine(
-                big, m_vp, (vp_w, vp_h), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE
-            )
+            sx, sy = win_w / vis_w, win_h / vis_h
+        sharp = np.array([[sx, 0, -x0 * sx], [0, sy, -y0 * sy]], dtype=np.float32)
+        if layers.blur is None:
+            yield FrameView(sharp, None)
+            continue
+        # WHY: use uniform scale (max of x/y) to FILL viewport without stretch.
+        # Different x/y scales would distort the blur. The larger scale ensures
+        # the blur covers the entire viewport; excess is cropped by warpAffine.
+        fs = max(vp_w / vis_w, vp_h / vis_h)
+        # Center the crop on the same region as the sharp photo
+        blur_x0 = x0 + vis_w / 2 - (vp_w / fs) / 2
+        blur_y0 = y0 + vis_h / 2 - (vp_h / fs) / 2
+        # The same view, in the reduced picture's own pixels.
+        sx_b, sy_b = fs * bg_shrink[0] / blur_scale[0], fs * bg_shrink[1] / blur_scale[1]
+        blur = np.array(
+            [
+                [sx_b, 0, -blur_x0 * blur_scale[0] * sx_b],
+                [0, sy_b, -blur_y0 * blur_scale[1] * sy_b],
+            ],
+            dtype=np.float32,
+        )
+        yield FrameView(sharp, blur)
+
+
+def cut_frame(layers: KenBurnsLayers, view: FrameView) -> np.ndarray:
+    """One frame of the move, cut on the CPU."""
+    big, big_blur = layers.big, layers.blur
+    vp_w, vp_h = layers.viewport
+    win_x, win_y, win_w, win_h = layers.window
+    if view.fills_viewport(layers):
+        return cv2.warpAffine(
+            big, view.sharp, (vp_w, vp_h), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE
+        )
+    sharp = cv2.warpAffine(
+        big, view.sharp, (win_w, win_h), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE
+    )
+    if big_blur is not None and view.blur is not None:
+        bg_small = cv2.warpAffine(
+            big_blur,
+            view.blur,
+            layers.background,
+            flags=cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_REPLICATE,
+        )
+        canvas = cv2.resize(
+            _rounded(bg_small, big.dtype), (vp_w, vp_h), interpolation=cv2.INTER_LINEAR
+        )
+    else:
+        canvas = np.zeros((vp_h, vp_w, *big.shape[2:]), dtype=big.dtype)
+    canvas[win_y : win_y + win_h, win_x : win_x + win_w] = sharp
+    return canvas
+
+
+def ken_burns_frames(layers: KenBurnsLayers, params: KenBurnsParams) -> Iterator[np.ndarray]:
+    """Yield the move's frames one at a time (O(1) memory), cut from ``layers`` on the CPU."""
+    for view in frame_views(layers, params):
+        yield cut_frame(layers, view)
+
+
+def move_frames(layers: KenBurnsLayers, params: KenBurnsParams) -> Iterator[np.ndarray]:
+    """The move's frames, cut on the GPU where the title kernels run on one (#2760).
+
+    Within a code value of the CPU's frames. A GPU that fails part-way hands the
+    rest of the move to the CPU, which cuts the same views.
+    """
+    from immich_memories.photos.gpu_moves import gpu_cutter
+
+    cutter = gpu_cutter(layers)
+    for view in frame_views(layers, params):
+        if cutter is not None:
+            try:
+                yield cutter.cut(view)
+                continue
+            except RuntimeError as exc:
+                logger.warning("Photo move fell back to the CPU part-way: %s", exc)
+                cutter = None
+        yield cut_frame(layers, view)
 
 
 def render_ken_burns_streaming(

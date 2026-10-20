@@ -520,6 +520,22 @@ def quality_to_crf(quality: str) -> int:
     return _QUALITY_CRF.get(quality, _DEFAULT_QUALITY_CRF)
 
 
+def clip_transfer(
+    clip_idx: int, ctx: Any | None, hdr_type: str | None
+) -> tuple[str | None, str, str | None]:
+    """A clip's source transfer, the film's target transfer and the clip's primaries."""
+    target_type = hdr_type or "sdr"
+    if ctx is None:
+        return None, target_type, None
+    clip_hdr_types = getattr(ctx, "clip_hdr_types", [])
+    clip_primaries = getattr(ctx, "clip_primaries", [])
+    return (
+        clip_hdr_types[clip_idx] if clip_idx < len(clip_hdr_types) else None,
+        getattr(ctx, "hdr_type", target_type),
+        clip_primaries[clip_idx] if clip_idx < len(clip_primaries) else None,
+    )
+
+
 def resolve_clip_hdr(
     clip_idx: int, ctx: Any | None, hdr_type: str | None
 ) -> tuple[str, str, str, str, bool]:
@@ -527,25 +543,16 @@ def resolve_clip_hdr(
 
     Returns (hdr_conversion, colorspace_filter, output_pix_fmt, sdr_to_hdr_filter, clip_is_hdr).
     """
-    target_type = hdr_type or "sdr"
-    source_type: str | None = None
-    source_primaries: str | None = None
+    source_type, target_type, source_primaries = clip_transfer(clip_idx, ctx, hdr_type)
     output_pix_fmt = ""
     colorspace_filter = get_colorspace_filter(target_type)
 
     if ctx is not None:
-        target_type = getattr(ctx, "hdr_type", target_type)
         pix_fmt = getattr(ctx, "pix_fmt", "")
         output_pix_fmt = f",format={pix_fmt}" if pix_fmt else ""
         colorspace_filter = getattr(ctx, "colorspace_filter", "") or get_colorspace_filter(
             target_type
         )
-        clip_hdr_types = getattr(ctx, "clip_hdr_types", [])
-        clip_primaries = getattr(ctx, "clip_primaries", [])
-        if clip_idx < len(clip_hdr_types):
-            source_type = clip_hdr_types[clip_idx]
-        if clip_idx < len(clip_primaries):
-            source_primaries = clip_primaries[clip_idx]
 
     clip_is_hdr = source_type in {HdrTransfer.HLG.value, HdrTransfer.PQ.value}
     normalized_source = source_type or "sdr"

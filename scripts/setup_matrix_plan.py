@@ -137,7 +137,7 @@ GPU_RESOURCE = "nvidia.com/gpu"
 # still said GPU.
 GPU_ENV = (
     ("NVIDIA_VISIBLE_DEVICES", "all"),
-    ("NVIDIA_DRIVER_CAPABILITIES", "compute,video,utility"),
+    ("NVIDIA_DRIVER_CAPABILITIES", "compute,video,utility,graphics"),
 )
 # Dots are path separators in a jsonpath, so a label name has to escape its own.
 NODE_PRODUCT_PATH = "{.metadata.labels.nvidia\\.com/gpu\\.product}"

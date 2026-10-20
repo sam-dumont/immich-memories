@@ -17,6 +17,7 @@ import pytest
 
 from immich_memories.processing import gpu_frame_graph, hardware, streaming_frame_decoder
 from immich_memories.processing.ffmpeg_runner import AssemblyContext
+from immich_memories.processing.gpu_frame_graph import hardware_decode_for
 from immich_memories.processing.hardware import (
     HWAccelBackend,
     HWAccelCapabilities,
@@ -25,11 +26,7 @@ from immich_memories.processing.hardware import (
 from immich_memories.processing.hdr_utilities import get_colorspace_filter
 from immich_memories.processing.probe_cache import ProbeCache
 from immich_memories.processing.streaming_assembler import streaming_assemble_full
-from immich_memories.processing.streaming_frame_decoder import (
-    FrameDecoder,
-    HardwareDecodeFailed,
-    hardware_decode_for,
-)
+from immich_memories.processing.streaming_frame_decoder import FrameDecoder, HardwareDecodeFailed
 from tests.integration.conftest import requires_ffmpeg
 
 pytestmark = [pytest.mark.integration, requires_ffmpeg]

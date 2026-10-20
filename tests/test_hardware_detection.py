@@ -265,7 +265,7 @@ class TestNvencProbeAdvice:
             assert hardware.probe_ffmpeg_encode(["-c:v", "h264_nvenc"]) is False
 
         warning = "\n".join(record.getMessage() for record in caplog.records)
-        assert "NVIDIA_DRIVER_CAPABILITIES=compute,video,utility" in warning
+        assert "NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics" in warning
         assert "/dev/dri" not in warning
         assert "render group" not in warning
 
