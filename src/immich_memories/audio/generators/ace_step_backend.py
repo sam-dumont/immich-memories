@@ -54,6 +54,11 @@ _HEALTH_RETRY_SECONDS = 10.0
 # A task the server knows always answers with progress_text. Three polls in a row without it
 # is a restarted server, not a stray reply.
 _LOST_POLLS_BEFORE_GIVING_UP = 3
+# The server caches task results on disk and answers a dead task from that cache as status 0
+# with progress_text, so the rule above never fires after a crash. /v1/stats tells the truth:
+# a live task is always queued or running. One idle reading can race a task changing state,
+# three in a row (about 9 s at the poll interval) cannot.
+_IDLE_STATS_BEFORE_GIVING_UP = 3
 
 
 class _TaskLost(Exception):  # noqa: N818
@@ -532,6 +537,7 @@ class ACEStepBackend(MusicGenerator):
 
         start_time = time.time()
         lost_polls = 0
+        idle_stats = 0
 
         while True:
             if time.time() - start_time > self.config.timeout_seconds:
@@ -566,8 +572,35 @@ class ACEStepBackend(MusicGenerator):
                     )
                     return
 
+                idle_stats = await self._count_idle_stats(client, idle_stats)
+
             self._report_estimated_progress(time.time() - start_time, progress_callback)
             await asyncio.sleep(3.0)
+
+    async def _count_idle_stats(self, client: Any, idle_stats: int) -> int:
+        """Consecutive readings of ``/v1/stats`` with no queued and no running job.
+
+        Called while a task polls as status 0. A server without the endpoint, or one that
+        answers in a shape we do not know, gives no signal and resets the count, so the
+        timeout stays the only guard there. Raises once the server has been idle long enough
+        that the cached task cannot be alive.
+        """
+        try:
+            resp = await send_with_retry(
+                lambda: client.get(f"{self.config.api_url}/v1/stats"), "stats", window=0.0
+            )
+            data = resp.json()["data"]
+            idle = (
+                data["jobs"]["queued"] == data["jobs"]["running"] == data.get("queue_size", 0) == 0
+            )
+        except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
+            return 0
+        if not idle:
+            return 0
+        idle_stats += 1
+        if idle_stats >= _IDLE_STATS_BEFORE_GIVING_UP:
+            raise _TaskLost
+        return idle_stats
 
     @staticmethod
     def _count_lost_poll(results: list, lost_polls: int) -> int:

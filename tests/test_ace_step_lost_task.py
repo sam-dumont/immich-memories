@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from unittest.mock import patch
 
+import httpx
 import pytest
 
 from immich_memories.audio.generators.ace_step_backend import ACEStepBackend, ACEStepConfig
@@ -42,6 +43,9 @@ class FakeAceServer:
         self.submitted: list[dict] = []
         self.polls: dict[str, int] = {}
         self.always_forget = False
+        # None = no /v1/stats endpoint (404); a dict or a callable returning one otherwise.
+        self.stats = None
+        self.stats_calls = 0
 
     async def __aenter__(self):
         return self
@@ -64,6 +68,14 @@ class FakeAceServer:
         return _Reply({"data": [item]})
 
     async def get(self, url, **kwargs):
+        if url.endswith("/v1/stats"):
+            self.stats_calls += 1
+            if self.stats is None:
+                request = httpx.Request("GET", url)
+                raise httpx.HTTPStatusError(
+                    "not found", request=request, response=httpx.Response(404, request=request)
+                )
+            return _Reply(self.stats() if callable(self.stats) else self.stats)
         return _Reply(content=b"RIFFwav")
 
 
@@ -154,3 +166,106 @@ def test_running_task_with_progress_text_keeps_polling_until_done(tmp_path):
     assert server.polls["task-1"] == 25
     assert len(sleeps) == 24
     assert result.audio_path.exists()
+
+
+def _stats(queued=0, running=0, queue_size=0):
+    return {
+        "data": {
+            "jobs": {"total": 0, "queued": queued, "running": running},
+            "queue_size": queue_size,
+        },
+        "code": 200,
+    }
+
+
+def _server_that_knows_task_2(server: FakeAceServer) -> None:
+    """The restarted server runs the resubmitted task for real: it finishes after 3 polls."""
+    original_post = server.post
+
+    async def post(url, json=None, **kwargs):
+        if json and json.get("task_id_list") == ["task-2"]:
+            server.forget_after = None
+            server.finish_after = 3
+            server.stats = _stats(running=1)
+        return await original_post(url, json=json, **kwargs)
+
+    server.post = post
+
+
+def test_cached_running_task_absent_from_stats_is_resubmitted(tmp_path):
+    # The first task answers status 0 with progress_text forever, as the server's cache does.
+    server = FakeAceServer(forget_after=None)
+    server.stats = _stats()
+    _server_that_knows_task_2(server)
+
+    result = _generate(server, tmp_path, [])
+
+    assert len(server.submitted) == 2
+    assert result.metadata["task_id"] == "task-2"
+    assert server.polls["task-1"] < 10
+
+
+def test_cached_task_that_stays_dead_fails_after_one_resubmit(tmp_path):
+    server = FakeAceServer(forget_after=None)
+    server.stats = _stats()
+    sleeps: list[float] = []
+
+    with pytest.raises(GenerationFailure) as err:
+        _generate(server, tmp_path, sleeps)
+
+    assert "restarted" in err.value.reason
+    assert len(server.submitted) == 2
+    assert sum(sleeps) < 60
+
+
+def test_task_queued_behind_another_job_is_not_treated_as_lost(tmp_path):
+    server = FakeAceServer(forget_after=None, finish_after=25)
+    server.stats = _stats(queued=1, queue_size=1)
+
+    result = _generate(server, tmp_path, [])
+
+    assert len(server.submitted) == 1
+    assert server.stats_calls > 0
+    assert result.metadata["task_id"] == "task-1"
+
+
+def test_running_job_in_stats_is_not_treated_as_lost(tmp_path):
+    server = FakeAceServer(forget_after=None, finish_after=25)
+    server.stats = _stats(running=1)
+
+    result = _generate(server, tmp_path, [])
+
+    assert len(server.submitted) == 1
+    assert result.metadata["task_id"] == "task-1"
+
+
+def test_one_idle_stats_reading_does_not_count_as_lost(tmp_path):
+    server = FakeAceServer(forget_after=None, finish_after=25)
+    readings = iter([_stats()])
+    server.stats = lambda: next(readings, _stats(running=1))
+
+    result = _generate(server, tmp_path, [])
+
+    assert len(server.submitted) == 1
+    assert result.metadata["task_id"] == "task-1"
+
+
+def test_server_without_stats_endpoint_keeps_polling_a_cached_task(tmp_path):
+    server = FakeAceServer(forget_after=None, finish_after=25)
+    server.stats = None
+
+    result = _generate(server, tmp_path, [])
+
+    assert len(server.submitted) == 1
+    assert server.polls["task-1"] == 25
+    assert result.metadata["task_id"] == "task-1"
+
+
+def test_stats_with_unexpected_shape_keeps_old_behaviour(tmp_path):
+    server = FakeAceServer(forget_after=None, finish_after=25)
+    server.stats = {"unexpected": True}
+
+    result = _generate(server, tmp_path, [])
+
+    assert len(server.submitted) == 1
+    assert result.metadata["task_id"] == "task-1"
