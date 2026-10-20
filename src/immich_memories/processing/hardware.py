@@ -164,7 +164,7 @@ _NVENC_FAILURE_ADVICE: tuple[tuple[str, str], ...] = (
         "libnvidia-encode",
         "the NVENC library is missing. Requesting the GPU is not enough: `--gpus all` "
         "grants compute and utility only, so add the `video` driver capability "
-        "(NVIDIA_DRIVER_CAPABILITIES=compute,video,utility)",
+        "(NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics)",
     ),
 )
 
@@ -182,7 +182,7 @@ _LIBVA_FAILURE_ADVICE: tuple[tuple[str, str], ...] = (
 # which reads like a bad ffmpeg flag and names nothing a user can change (#936).
 _NVENC_CAPABILITY_HINT = (
     "NVENC is unavailable: the container sees the GPU for compute but not for video; "
-    "set NVIDIA_DRIVER_CAPABILITIES=compute,video,utility "
+    "set NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics "
     "(Docker: hwaccel.transcoding nvidia; Kubernetes: overlays/gpu) "
     "and the runtime class nvidia"
 )

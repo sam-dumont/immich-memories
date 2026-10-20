@@ -48,7 +48,7 @@ locals {
     } : {},
     var.gpu_enabled || var.render_worker_sidecar_enabled ? {
       NVIDIA_VISIBLE_DEVICES     = "all"
-      NVIDIA_DRIVER_CAPABILITIES = "compute,video,utility"
+      NVIDIA_DRIVER_CAPABILITIES = "compute,video,utility,graphics"
     } : {},
     # The schema only matters once the store is on PostgreSQL; unset stays SQLite.
     var.database_url != "" ? {
@@ -490,7 +490,7 @@ resource "kubernetes_deployment_v1" "this" {
             }
             env {
               name  = "NVIDIA_DRIVER_CAPABILITIES"
-              value = "compute,video,utility"
+              value = "compute,video,utility,graphics"
             }
 
             resources {

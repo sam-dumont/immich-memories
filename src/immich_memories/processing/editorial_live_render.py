@@ -222,7 +222,7 @@ def _hold_last_frame(
     merge passes the shortfall its source packets predicted, which a cut inside an
     irregular source can grow to one source interval.
     """
-    from immich_memories.processing.live_photo_merger import (
+    from immich_memories.processing.burst_encoding import (
         append_encoding_args,
         burst_encoding_plan,
     )

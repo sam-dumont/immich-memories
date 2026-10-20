@@ -25,11 +25,22 @@ def _apple() -> HWAccelCapabilities:
     )
 
 
+def _nvidia() -> HWAccelCapabilities:
+    return HWAccelCapabilities(
+        backend=HWAccelBackend.NVIDIA,
+        supports_h264_encode=True,
+        supports_h265_encode=True,
+        supports_h264_decode=True,
+        supports_h265_decode=True,
+    )
+
+
 def _merge_command(
     *,
     is_hdr: bool = False,
     hardware_enabled: bool = True,
     capabilities: HWAccelCapabilities | None = None,
+    clip: Path = Path("a.mov"),
 ) -> list[str]:
     caps = capabilities if capabilities is not None else HWAccelCapabilities()
     # WHY: build_merge_command probes the file and the host encoder; a.mov never exists.
@@ -47,12 +58,12 @@ def _merge_command(
         # WHY: the FFmpeg encoder probe, so the assertions do not depend on the
         # machine running the tests.
         patch(
-            "immich_memories.processing.live_photo_merger.detect_hardware_acceleration",
+            "immich_memories.processing.burst_encoding.detect_hardware_acceleration",
             return_value=caps,
         ),
     ):
         return build_merge_command(
-            [Path("a.mov")],
+            [clip],
             [(0.0, 1.0)],
             Path("out.mp4"),
             hardware_enabled=hardware_enabled,
@@ -72,10 +83,43 @@ def test_the_burst_is_lossless_so_the_film_encode_is_its_only_lossy_step() -> No
     assert "-crf" not in cmd
 
 
-def test_a_hardware_machine_merges_losslessly_in_software() -> None:
-    """No hardware encoder is lossless; x264 at its fastest preset costs a Live
+def test_a_mac_merges_losslessly_in_software() -> None:
+    """VideoToolbox has no lossless mode; x264 at its fastest preset costs a Live
     Photo about a second of CPU against twenty for the libx265 merge it replaces."""
     assert _encoder(_merge_command(capabilities=_apple())) == "libx264"
+
+
+@pytest.mark.parametrize(
+    ("is_hdr", "encoder", "pixel_format"),
+    [(False, "h264_nvenc", "yuv420p"), (True, "hevc_nvenc", "p010le")],
+)
+def test_an_nvidia_machine_merges_losslessly_on_the_card(is_hdr, encoder, pixel_format) -> None:
+    """NVENC's lossless mode decodes back to exactly its input (#2760), so the merge
+    leaves the CPU without becoming a second lossy generation."""
+    cmd = _merge_command(is_hdr=is_hdr, capabilities=_nvidia())
+
+    assert _encoder(cmd) == encoder
+    assert cmd[cmd.index("-tune") + 1] == "lossless"
+    assert cmd[cmd.index("-pix_fmt") + 1] == pixel_format
+    assert "-qp" not in cmd
+    assert "-cq" not in cmd
+
+
+def test_each_part_of_a_burst_is_decoded_on_the_gpu() -> None:
+    """A hardware decoder gives back the software decoder's frames (#2709)."""
+    clip = Path(__file__).parent / "fixtures" / "hdr_samples" / "dolby_vision_84.mov"
+
+    cmd = _merge_command(is_hdr=True, capabilities=_nvidia(), clip=clip)
+
+    assert cmd.index("-hwaccel") < cmd.index("-i")
+    assert cmd[cmd.index("-hwaccel") + 1] == "cuda"
+    assert "-hwaccel_output_format" not in cmd
+
+
+def test_a_burst_without_hardware_decodes_in_software() -> None:
+    clip = Path(__file__).parent / "fixtures" / "hdr_samples" / "dolby_vision_84.mov"
+
+    assert "-hwaccel" not in _merge_command(is_hdr=True, hardware_enabled=False, clip=clip)
 
 
 def test_disabling_hardware_is_still_honoured() -> None:
@@ -129,3 +173,33 @@ def test_the_download_path_carries_the_setting_into_the_merge() -> None:
         _try_merge_burst(clips, trims, Path("out.mp4"), hardware_enabled=False)
 
     assert build.call_args.kwargs["hardware_enabled"] is False
+
+
+def test_a_merge_that_fails_on_the_card_runs_again_in_software() -> None:
+    """A driver or session limit must not cost the Live Photo its motion."""
+    from immich_memories.generate_downloads import _try_merge_burst
+
+    clips = [Path("a.mov"), Path("b.mov")]
+    trims = [(0.0, 1.5), (0.0, 1.5)]
+
+    def ffmpeg(command, **_kwargs):
+        return CompletedProcess(command, 1, stdout="", stderr="encoder failed")
+
+    # WHY: _try_merge_burst validates, builds, and runs FFmpeg; a.mov and b.mov are names only.
+    with (
+        # WHY: the ffprobe validation of files that do not exist on disk.
+        patch(
+            "immich_memories.processing.live_photo_merger.filter_valid_clips",
+            return_value=(clips, trims),
+        ),
+        # WHY: what gets asked for is under test, not the command itself.
+        patch(
+            "immich_memories.processing.live_photo_merger.build_merge_command",
+            return_value=["ffmpeg"],
+        ) as build,
+        # WHY: replaces the FFmpeg runs; both fail, so both attempts are visible.
+        patch("immich_memories.generate_downloads.subprocess.run", side_effect=ffmpeg),
+    ):
+        assert _try_merge_burst(clips, trims, Path("out.mp4"), hardware_enabled=True) is None
+
+    assert [call.kwargs["hardware_enabled"] for call in build.call_args_list] == [True, False]

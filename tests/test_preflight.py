@@ -686,7 +686,7 @@ def test_hardware_row_names_the_nvidia_video_capability_when_a_card_is_present()
         result = check_hardware()
 
     assert result.status is CheckStatus.WARNING
-    assert "NVIDIA_DRIVER_CAPABILITIES=compute,video,utility" in result.message
+    assert "NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics" in result.message
 
 
 def test_hardware_row_says_nothing_about_nvidia_on_a_card_less_host() -> None:

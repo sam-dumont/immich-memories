@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from immich_memories.processing import burst_encoding
 from immich_memories.processing import editorial_live_render as renderer
 from immich_memories.processing import live_photo_merger as merger
 from immich_memories.processing.live_material import LiveRenderMaterial, LiveSourceEntry
@@ -182,10 +183,10 @@ def test_subframe_hold_preserves_encoded_frames_and_records_ceil_target(tmp_path
     # None. Stubbing None passed only while build_merge_command stopped at
     # _append_encoding_args; the hardware-encode pass reads plan.pixel_format, so a
     # None stub is a fiction that fails the moment that pass lands.
-    software_plan = merger.burst_encoding_plan(is_hdr=False, hardware_enabled=False)
-    monkeypatch.setattr(merger, "burst_encoding_plan", lambda **_kw: software_plan)
+    software_plan = burst_encoding.burst_encoding_plan(is_hdr=False, hardware_enabled=False)
+    monkeypatch.setattr(burst_encoding, "burst_encoding_plan", lambda **_kw: software_plan)
     monkeypatch.setattr(
-        merger, "append_encoding_args", lambda cmd, _p, _a, out: cmd.append(str(out))
+        burst_encoding, "append_encoding_args", lambda cmd, _p, _a, out: cmd.append(str(out))
     )
 
     def encode(command, **_kw):

@@ -61,7 +61,7 @@ spec:
                   name: immich-memories-render-worker
                   key: immich-url
             - name: NVIDIA_DRIVER_CAPABILITIES
-              value: compute,video,utility
+              value: compute,video,utility,graphics
           resources:
             requests:
               cpu: "2"

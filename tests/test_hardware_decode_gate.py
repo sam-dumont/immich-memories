@@ -11,8 +11,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from immich_memories.processing.gpu_frame_graph import hardware_decode_for
 from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
-from immich_memories.processing.streaming_frame_decoder import FrameDecoder, hardware_decode_for
+from immich_memories.processing.streaming_frame_decoder import FrameDecoder
 
 APPLE = HWAccelCapabilities(
     backend=HWAccelBackend.APPLE, supports_h264_decode=True, supports_h265_decode=True

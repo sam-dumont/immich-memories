@@ -173,6 +173,23 @@ def intermediate_encoding_plan(plan: EncodingPlan, *, lossless: bool = False) ->
     )
 
 
+# NVENC's lossless mode decodes back to exactly what it was given: checked frame by
+# frame on a T1000 for H.264 8-bit and HEVC 8- and 10-bit (#2760). VideoToolbox,
+# VAAPI and QSV have no lossless mode.
+_LOSSLESS_HARDWARE = frozenset({"h264_nvenc", "hevc_nvenc"})
+
+
+def lossless_encoding_plan(plan: EncodingPlan) -> EncodingPlan:
+    """A plan whose file decodes to exactly the frames it was given.
+
+    NVENC's lossless mode where the plan has an NVIDIA encoder, which takes the
+    encode off the CPU; x264 at its fastest preset everywhere else.
+    """
+    if plan.encoder in _LOSSLESS_HARDWARE:
+        return replace(plan, encoder_args=("-preset", "p1", "-tune", "lossless"), crf=0)
+    return intermediate_encoding_plan(software_fallback_plan(plan), lossless=True)
+
+
 @dataclass(frozen=True)
 class OutputSelection:
     """Codec/container choice with explicit override provenance already applied."""

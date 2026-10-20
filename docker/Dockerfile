@@ -126,6 +126,14 @@ FROM python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e57
 
 WORKDIR /app
 
+# WHY the Vulkan manifest: on an NVIDIA card FFmpeg's libplacebo runs the
+# render's tone mapping and transfer conversions through Vulkan (#2760). With the
+# `graphics` capability the NVIDIA runtime mounts the driver and a manifest naming
+# its GLX library, which cannot start Vulkan without an X server; this one names
+# the EGL library, which can. The loader skips whichever fails, and both on a
+# host without that driver.
+COPY docker/nvidia_egl_icd.json /usr/share/vulkan/icd.d/nvidia_egl_icd.json
+
 # Install runtime dependencies.
 # WHY the VA-API drivers: FFmpeg lists `vaapi` and `qsv` under -hwaccels because
 # it is compiled with them, but libva needs a backend `*_drv_video.so` to talk to

@@ -483,6 +483,7 @@ module = [
     "immich_memories.titles.sdf_font_rendering",
     "immich_memories.titles.kernel_video",
     "immich_memories.titles.hlg_kernel",
+    "immich_memories.photos.move_kernels",
 ]
 disable_error_code = ["valid-type", "assignment", "misc", "truthy-function", "union-attr", "import-untyped", "attr-defined", "has-type"]
 

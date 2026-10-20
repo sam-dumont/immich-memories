@@ -112,7 +112,7 @@ auto-detects the GPU (NVENC encoding and title kernels on CUDA). A card that can
 start the title kernels costs speed, not titles: they render on the CPU and the log says why in one
 warning line. Their compile cache lives on the `data` volume, since the root filesystem is read-only.
 
-`NVIDIA_DRIVER_CAPABILITIES=compute,video,utility` in that patch is required, not decoration.
+`NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics` in that patch is required, not decoration.
 Asking for `nvidia.com/gpu` gets you `compute,utility`, which is enough for CUDA and not for the
 encode chip: without `video` the NVENC probe dies with `-22 (Invalid argument)` and the render
 falls back to the CPU. Pods that skip the overlay hit this, so copy the `runtimeClassName` and the

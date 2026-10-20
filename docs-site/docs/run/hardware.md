@@ -33,10 +33,26 @@ and reaches the CPU once, at film size. HDR frames go to the hardware encoder as
 format it reads, so nothing repacks them on the way. On a 4K test cut on an NVIDIA T1000 worker,
 the render's CPU time dropped from 241 s to 72 s.
 
-The picture stays within a few 10-bit code values of the CPU path. HDR/SDR conversions still run
-on the CPU, on the smaller of the clip and the film frame: no GPU filter in these FFmpeg builds
-gives the same colours. A clip the hardware fails to decode is decoded again in software, and an
-FFmpeg without the GPU filters (checked once per run) keeps the CPU path.
+The picture stays within a few 10-bit code values of the CPU path. A clip the hardware fails to
+decode is decoded again in software, and an FFmpeg without the GPU filters (checked once per run)
+keeps the CPU path.
+
+Tone mapping an HDR clip into an SDR film, and converting an SDR clip into an HDR one, also run on
+the GPU when FFmpeg has libplacebo and a Vulkan device. The GPU runs the same maths as the CPU
+chain (zscale and the `tonemap` filter), so the picture lands within a code value of it. A
+one-frame comparison per run decides; anything that misses keeps the CPU. On the T1000 worker, 6 s
+of 4K HLG tone-mapped to SDR went from 107 s of CPU to 3 s.
+
+- **Docker and Kubernetes on NVIDIA:** the images' FFmpeg has libplacebo. The container needs the
+  `graphics` driver capability for Vulkan, next to `video` for NVENC.
+- **Mac:** Homebrew's `ffmpeg` has no libplacebo; `ffmpeg-full` does, through MoltenVK. It installs
+  beside `ffmpeg` without replacing it, so put `$(brew --prefix ffmpeg-full)/bin` first on the
+  `PATH` the app runs with. On an M-series Mac the same 6 s of 4K went from 17 s of CPU to 0.4 s.
+
+Photo moves are cut on the GPU when title effects run on one (CUDA or Metal), and a Live Photo
+burst is decoded on the GPU. On NVIDIA its merge is encoded with NVENC's lossless mode, which gives
+back exactly the frames x264 would. Crossfades stay on the CPU: sending two 4K frames to the card
+and one back costs more than the blend itself.
 
 ## Backends
 
@@ -66,11 +82,12 @@ that swap.
 ### NVIDIA
 
 Install the NVIDIA driver and container toolkit. `nvidia-smi` working is not enough: NVENC needs
-the **video** driver capability. Add this to the app service (merge with its existing `deploy:`):
+the **video** driver capability, and GPU tone mapping needs **graphics**. Add this to the app
+service (merge with its existing `deploy:`):
 
 ```yaml
     environment:
-      NVIDIA_DRIVER_CAPABILITIES: "compute,video,utility"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,video,utility,graphics"
     deploy:
       resources:
         limits:
@@ -79,7 +96,7 @@ the **video** driver capability. Add this to the app service (merge with its exi
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu, video]
+              capabilities: [gpu, video, graphics]
 ```
 
 Kubernetes's GPU overlay supplies the NVIDIA runtime and capabilities.

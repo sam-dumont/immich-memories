@@ -27,8 +27,8 @@ from immich_memories.photos.ken_burns_moves import film_subject, planned_move
 from immich_memories.photos.renderer import (
     KenBurnsLayers,
     KenBurnsParams,
-    ken_burns_frames,
     ken_burns_layers,
+    move_frames,
 )
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.clip_encoder import encoder_args_for_plan
@@ -526,7 +526,7 @@ def _stream_render_to_mp4(
         return
 
     def _frames() -> Iterator[memoryview]:
-        for frame in ken_burns_frames(layers, params):
+        for frame in move_frames(layers, params):
             # Each frame is a fresh C-contiguous array the renderer never touches again,
             # so FFmpeg can read it in place instead of from a copy.
             yield frame.data

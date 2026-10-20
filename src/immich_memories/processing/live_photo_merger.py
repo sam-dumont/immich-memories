@@ -24,19 +24,13 @@ if TYPE_CHECKING:
     from immich_memories.config.loader import Config
 
 from immich_memories.api.models import Asset
-from immich_memories.processing.encoding_plan import (
-    EncodingPlan,
-    EncodingRequest,
-    HdrMode,
-    HdrTransfer,
-    OutputCodec,
-    intermediate_encoding_plan,
-    resolve_encoding_plan,
-    software_fallback_plan,
+from immich_memories.processing.burst_encoding import (
+    append_encoding_args,
+    burst_capabilities,
+    burst_encoding_plan,
 )
+from immich_memories.processing.encoding_plan import HdrTransfer
 from immich_memories.processing.ffmpeg_threads import with_cpu_threads
-from immich_memories.processing.hardware import HWAccelCapabilities
-from immich_memories.processing.hardware_detection import detect_hardware_acceleration
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.live_geometry import burst_geometry_filter
 from immich_memories.processing.preparation_fallbacks import note_fallback
@@ -616,9 +610,7 @@ def build_merge_command(
     a_trims = audio_trim_points or trim_points
     n = len(clip_paths)
 
-    cmd: list[str] = ["ffmpeg", "-y"]
-    for path in clip_paths:
-        cmd.extend(["-i", str(path)])
+    cmd: list[str] = ["ffmpeg", "-y", *_merge_inputs(clip_paths, hardware_enabled, config)]
 
     parts, v_labels, a_labels = _build_trim_filters(
         trim_points,
@@ -644,6 +636,25 @@ def build_merge_command(
     return with_cpu_threads(
         apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label=video_label)
     )
+
+
+def _merge_inputs(
+    clip_paths: list[Path], hardware_enabled: bool, config: Config | None
+) -> list[str]:
+    """Each part as an input, decoded on the GPU where the machine can.
+
+    Hardware decoders give back the software decoder's frames (#2709); normalize stays CPU.
+    """
+    from immich_memories.processing.gpu_frame_graph import hardware_decode_for
+    from immich_memories.processing.probe_cache import ProbeCache
+
+    capabilities = burst_capabilities(hardware_enabled, config)
+    decoder = capabilities if config is None or config.hardware.gpu_decode else None
+    inputs: list[str] = []
+    for path in clip_paths:
+        hardware = hardware_decode_for(path, decoder, ProbeCache())
+        inputs.extend([*(hardware[0] if hardware else ()), "-i", str(path)])
+    return inputs
 
 
 def _build_trim_filters(
@@ -737,62 +748,3 @@ def _build_concat_and_map(
     if has_audio:
         cmd.extend(["-map", "[outa]" if n > 1 else f"[{a_labels[0].strip('[]')}]"])
     return video_label
-
-
-def burst_encoding_plan(
-    *,
-    is_hdr: bool,
-    hardware_enabled: bool = True,
-    config: Config | None = None,
-    input_transfer: HdrTransfer | None = None,
-) -> EncodingPlan:
-    """The encoding contract for a merged burst: lossless x264, in the transfer it keeps.
-
-    The source transfer survives preparation unless NAS hardware needs H.264.
-    That case explicitly tone-maps to SDR. Certified caches bind the tier and
-    hardware settings, so their intermediates cannot cross this policy boundary.
-    """
-    hardware_enabled = hardware_enabled and (config is None or config.hardware.enabled)
-    capabilities = (
-        detect_hardware_acceleration(config.hardware.backend if config else "auto")
-        if hardware_enabled
-        else HWAccelCapabilities()
-    )
-    nas = config is not None and config.tier == "basic"
-    preserve_hdr = is_hdr and not (
-        nas and capabilities.supports_h264_encode and not capabilities.supports_h265_encode
-    )
-    request = EncodingRequest(
-        codec=OutputCodec.H265 if preserve_hdr else OutputCodec.H264,
-        hdr_mode=HdrMode.HDR if preserve_hdr else HdrMode.SDR,
-        hardware_enabled=hardware_enabled,
-        # The plan only decides the codec and transfer: the merge itself is lossless.
-        preset="fast",
-        crf=0,
-        container="mp4",
-        # NAS preparation chooses a codec its verified hardware can encode.
-        codec_policy="prefer_hardware" if nas else "strict",
-    )
-    plan = resolve_encoding_plan(
-        request, capabilities, input_has_hdr=is_hdr, input_transfer=input_transfer
-    )
-    # WHY (#2692): the film decodes the merge and encodes it again, so a lossy merge
-    # was a second generation; its film encode is now the only lossy step.
-    return intermediate_encoding_plan(software_fallback_plan(plan), lossless=True)
-
-
-def append_encoding_args(cmd: list[str], plan: EncodingPlan, has_audio: bool, output: Path) -> None:
-    """Append video/audio codec arguments to the FFmpeg command.
-
-    Shares ``encoder_args_for_plan`` with the assembler rather than restating
-    the codec/pixel-format/colour-tag rules, which is how the two drifted apart
-    in the first place.
-    """
-    from immich_memories.processing.clip_encoder import encoder_args_for_plan
-
-    cmd.extend(encoder_args_for_plan(plan))
-
-    if has_audio:
-        cmd.extend(["-c:a", "aac"])
-
-    cmd.append(str(output))

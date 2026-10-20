@@ -23,7 +23,11 @@ import numpy as np
 
 from immich_memories.processing.clip_caption import ClipCaption, caption_filters
 from immich_memories.processing.ffmpeg_runner import stop_owned_process
-from immich_memories.processing.gpu_frame_graph import gpu_frame_graph_for_path
+from immich_memories.processing.gpu_frame_graph import (
+    gpu_frame_graph_for_path,
+    hardware_decode_for,
+)
+from immich_memories.processing.gpu_transfer import transfer_conversion
 from immich_memories.processing.hdr_utilities import (
     detect_color_primaries,
     detect_hdr_type,
@@ -44,14 +48,8 @@ AUDIO_FINISH_SECONDS = 120.0
 
 if TYPE_CHECKING:
     from immich_memories.processing.gpu_frame_graph import GpuFrameGraph
-    from immich_memories.processing.hardware import HWAccelCapabilities
     from immich_memories.processing.probe_cache import VideoProbe
 
-# The 4:2:0 formats hardware decoders hand back as NV12 or P010. A format filter
-# repacks those into exactly the software decoder's frames, so every filter after it
-# sees the same pixels whichever decoder ran (#2709).
-_HARDWARE_DECODED_FORMATS = frozenset({"yuv420p", "yuv420p10le"})
-_HARDWARE_DECODED_CODECS = {"h264": "h264", "hevc": "h265"}
 # 10-bit pipes: planar for libx265 and the CPU filters, P010 for hardware encoders.
 _TEN_BIT_PIPES = frozenset({"yuv420p10le", "p010le"})
 
@@ -614,6 +612,10 @@ def make_decoder(
     pix_fmt = hdr_pipe_format if hdr_type else ("yuv420p" if planar_sdr else "rgb24")
     if hdr_type and output_pix_fmt:
         output_pix_fmt = f",format={pix_fmt}"
+    # The same maths on the GPU where libplacebo proves it gives zscale's picture.
+    hdr_conversion = transfer_conversion(
+        hdr_conversion, clip.path, clip_idx, ctx, hdr_type, pix_fmt
+    )
     logger.info(
         f"Decoder[{clip_idx}] pix={pix_fmt} title={is_title} hdr_type={hdr_type} "
         f"sdr2hdr={bool(sdr_to_hdr_filter)} {clip.path.name}"
@@ -660,37 +662,6 @@ def make_decoder(
         frame_limit=int(clip.duration * fps) if audio_work_dir is not None else None,
         from_seconds=from_seconds,
     )
-
-
-def hardware_decode_for(
-    path: Path, capabilities: HWAccelCapabilities | None, probe_cache: ProbeCache
-) -> tuple[tuple[str, ...], str] | None:
-    """The hwaccel arguments for decoding ``path``, and the format its frames are repacked to.
-
-    None decodes in software: no capable hardware, a codec or format the hardware
-    decoders cannot hand back exactly, or a source the probe cannot read.
-    """
-    from immich_memories.processing.hardware import get_ffmpeg_hwaccel_args
-    from immich_memories.processing.probe_cache import ProbeError
-
-    if capabilities is None:
-        return None
-    try:
-        probe = probe_cache.get(path)
-    except (ProbeError, OSError, ValueError):
-        return None
-    codec = _HARDWARE_DECODED_CODECS.get(probe.codec)
-    if codec is None or probe.pixel_format not in _HARDWARE_DECODED_FORMATS:
-        return None
-    supported = (
-        capabilities.supports_h264_decode if codec == "h264" else capabilities.supports_h265_decode
-    )
-    args = get_ffmpeg_hwaccel_args(
-        capabilities, operation="decode", codec=codec, for_software_filters=True
-    )
-    if not supported or not args:
-        return None
-    return tuple(args), str(probe.pixel_format)
 
 
 def _source_properties(
