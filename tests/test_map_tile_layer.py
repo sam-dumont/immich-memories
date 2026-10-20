@@ -490,3 +490,102 @@ def test_the_next_card_takes_off_without_fetching_the_view_the_last_one_landed_o
     # Only the view the last card ended on stays downloaded, and it was fetched once.
     assert landing and len(map_animation.tile_cache) == len(map_animation.tile_cache.in_view)
     assert {tile_requests[path] for path in landing} == {1}
+
+
+@pytest.fixture
+def keepalive_tile_server(monkeypatch):
+    """A tile host that keeps connections open, as the real one does, and counts them."""
+    image = Image.new("RGB", (256, 256), (40, 80, 120))
+    ImageDraw.Draw(image).rectangle((0, 0, 127, 127), fill=(180, 40, 90))
+    encoded = io.BytesIO()
+    image.save(encoded, "PNG")
+    body = encoded.getvalue()
+    stats = {"connections": 0, "requests": 0}
+    lock = threading.Lock()
+
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def setup(self):
+            super().setup()
+            with lock:
+                stats["connections"] += 1
+
+        def do_GET(self):
+            with lock:
+                stats["requests"] += 1
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *_args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server.daemon_threads = True
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_port}/{{z}}/{{y}}/{{x}}"
+    # WHY: real HTTP against a local host, so the connections a card opens can be counted.
+    monkeypatch.setattr(map_animation, "_SAT_URL", url)
+    map_animation.tile_cache.clear()
+    try:
+        yield url, stats
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
+        map_animation.tile_cache.clear()
+
+
+def test_a_card_reuses_its_tile_connections(keepalive_tile_server, tmp_path, monkeypatch):
+    """A new TLS handshake per tile made a moving card wait on the network: ~7 fps at 1080p."""
+    url, stats = keepalive_tile_server
+    # WHY: the connections are what this test counts; the FFmpeg encode is not.
+    monkeypatch.setattr(map_animation.subprocess, "Popen", _DiscardingEncoder)
+    # WHY: the stderr reader thread needs a real encoder pipe.
+    monkeypatch.setattr(map_animation, "StderrDrain", _DiscardingEncoder)
+
+    map_animation.create_map_move_video(
+        (10.0, 20.0), (10.6, 20.8), "", tmp_path / "card.mp4", 6.0, 640, 360, 10
+    )
+
+    assert stats["requests"] > 40
+    # The frame's own fetches and the look-ahead each keep four connections at most.
+    assert stats["connections"] <= 8
+
+
+def test_card_frames_are_the_pixels_of_the_upstream_tile_client(
+    keepalive_tile_server, tmp_path, monkeypatch
+):
+    url, _ = keepalive_tile_server
+    frames: list[bytes] = []
+
+    class _Capture(_DiscardingEncoder):
+        def write(self, data):
+            frames.append(bytes(data))
+            return len(data)
+
+    # WHY: the frames piped to the encoder are what this test compares.
+    monkeypatch.setattr(map_animation.subprocess, "Popen", _Capture)
+    # WHY: the stderr reader thread needs a real encoder pipe.
+    monkeypatch.setattr(map_animation, "StderrDrain", _DiscardingEncoder)
+    map_animation.create_map_move_video(
+        (10.0, 20.0), (10.3, 20.4), "Somewhere", tmp_path / "card.mp4", 2.0, 320, 180, 5
+    )
+    cfg_frames = list(frames)
+    frames.clear()
+
+    def upstream_render(self, zoom, center):
+        old = StaticMap(self.width, self.height, url_template=url)
+        old.add_marker(CircleMarker(tuple(center), "#00000000", 1))
+        return old.render(zoom=zoom, center=center)
+
+    # WHY: the reference path draws each frame through staticmap's own HTTP client.
+    monkeypatch.setattr(map_animation.CachedStaticMap, "render", upstream_render)
+    map_animation.create_map_move_video(
+        (10.0, 20.0), (10.3, 20.4), "Somewhere", tmp_path / "card.mp4", 2.0, 320, 180, 5
+    )
+
+    assert cfg_frames and cfg_frames == frames

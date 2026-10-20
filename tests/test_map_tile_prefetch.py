@@ -242,19 +242,19 @@ def test_a_card_gives_up_on_a_tile_host_that_keeps_failing(card):
 def test_a_card_stops_asking_a_tile_host_that_refuses_the_connection(card, monkeypatch):
     import socket
 
-    import requests
+    from immich_memories.titles.map_tiles import _tile_client
 
     with socket.create_server(("127.0.0.1", 0)) as closed:
         port = closed.getsockname()[1]
     attempts = []
-    get = requests.get
+    get = _tile_client.get
 
     def counted(url, **kwargs):
         attempts.append(url)
         return get(url, **kwargs)
 
     # WHY: a refused connection never reaches a server, so the client side counts the tries.
-    monkeypatch.setattr(requests, "get", counted)
+    monkeypatch.setattr(_tile_client, "get", counted)
     server = _SlowTileServer(0)
     server.url = f"http://127.0.0.1:{port}/{{z}}/{{y}}/{{x}}"
     frames = card(server, lookahead=_AHEAD)
@@ -264,21 +264,23 @@ def test_a_card_stops_asking_a_tile_host_that_refuses_the_connection(card, monke
 
 
 def test_a_tile_that_fails_once_is_fetched_again_and_the_card_keeps_its_map(card, monkeypatch):
-    import requests
+    import httpx
+
+    from immich_memories.titles.map_tiles import _tile_client
 
     with _SlowTileServer(0) as server:
         expected = card(server, lookahead=_AHEAD)
         failed: list[str] = []
-        get = requests.get
+        get = _tile_client.get
 
         def blip(url, **kwargs):
             if not failed:
                 failed.append(url)
-                raise requests.ConnectionError("connection reset by peer")
+                raise httpx.ReadError("connection reset by peer")
             return get(url, **kwargs)
 
         # WHY: a reset on one request is a client-side error; the tile server cannot send one.
-        monkeypatch.setattr(requests, "get", blip)
+        monkeypatch.setattr(_tile_client, "get", blip)
         frames = card(server, lookahead=_AHEAD)
 
     assert failed

@@ -10,6 +10,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future, ThreadPoolExecutor
 
+import httpx
 from PIL import Image
 from staticmap import StaticMap
 from staticmap.staticmap import _lat_to_y, _lon_to_x
@@ -24,6 +25,21 @@ _FETCH_ATTEMPTS = 3
 _TILE_PIXEL_BYTES = 256 * 256 * 4
 
 TileResponse = tuple[int | None, bytes | None]
+
+# One client for every tile request: staticmap's own `requests.get` opened a new
+# connection (and TLS handshake) per tile, which left a moving card waiting on the
+# network at about 7 fps. A frame's fetches and the look-ahead each run four at a time.
+_tile_client = httpx.Client(
+    follow_redirects=True,
+    limits=httpx.Limits(
+        max_connections=2 * _FETCH_THREADS, max_keepalive_connections=2 * _FETCH_THREADS
+    ),
+)
+
+
+def _download(url: str, timeout: float | None, headers: dict[str, str]) -> TileResponse:
+    response = _tile_client.get(url, timeout=timeout, headers=headers)
+    return response.status_code, response.content
 
 
 class TileCache:
@@ -187,8 +203,10 @@ class CachedStaticMap(StaticMap):
             super()._draw_features(image)
 
     def get(self, url: str, **kwargs):
-        """Keep the existing download cache and request options."""
-        return tile_cache.fetch(url, lambda: StaticMap.get(self, url, **kwargs))
+        """Fetch through the download cache on a kept-alive connection, same request options."""
+        return tile_cache.fetch(
+            url, lambda: _download(url, kwargs.get("timeout"), kwargs.get("headers") or {})
+        )
 
     def tile_urls(self, lon: float, lat: float, zoom: int) -> list[str]:
         """The tiles ``render(zoom, [lon, lat])`` draws, without drawing them."""
