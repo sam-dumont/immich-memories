@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import io
 import re
+from itertools import chain
 
 import numpy as np
 
@@ -35,6 +36,10 @@ _FLAT_STD = 8.0
 _TEXTURED_STD = 20.0
 _EDGE_SHARE = 0.03
 _PAGE_DARK, _PAGE_LIGHT = 35.0, 220.0
+# A regular grid's tiles: each at least this share of the side, the largest at most this many
+# times the smallest.
+_MIN_TILE_SHARE = 0.2
+_EVEN_TILES = 1.1
 
 
 def composed_in_words(line: str) -> str | None:
@@ -56,7 +61,53 @@ def looks_composed(image: bytes) -> bool:
         return False
     across = _gutters(pixels)
     down = _gutters(pixels.T)
-    return across >= 1 and down >= 1
+    return (across >= 1 and down >= 1) or (_even_tiles(pixels) and _even_tiles(pixels.T))
+
+
+def _even_tiles(pixels: np.ndarray) -> bool:
+    """Whether page-coloured lines running the whole width cut `pixels` into tiles of one size.
+
+    A phone's collage of a few frames lays them on a page in a regular grid: a thin flat line
+    of the page between every two tiles, often a border of it around them, and every tile the
+    same height. The gutter check above wants texture right beside a gutter, which a tile's soft
+    background (a wall, a studio backdrop) does not have; the grid's regularity is the evidence
+    here instead. A photograph does not split into equal bands at flat lines across and down.
+    """
+    rows = pixels.shape[0]
+    spread = pixels.std(axis=1)
+    level = pixels.mean(axis=1)
+    flat = (spread < _FLAT_STD) & ((level > _PAGE_LIGHT) | (level < _PAGE_DARK))
+    runs = _runs(flat)
+    thin = max(2, int(rows * _GUTTER_SHARE))
+    gutters = [
+        (start, end) for start, end in runs if start > 0 and end < rows and end - start <= thin
+    ]
+    if not gutters:
+        return False
+    top = next((end for start, end in runs if start == 0), 0)
+    bottom = next((start for start, end in runs if end == rows), rows)
+    edges = [top, *chain.from_iterable(gutters), bottom]
+    tiles = [edges[i + 1] - edges[i] for i in range(0, len(edges), 2)]
+    return (
+        len(tiles) == len(gutters) + 1
+        and min(tiles) >= _MIN_TILE_SHARE * rows
+        and max(tiles) <= _EVEN_TILES * min(tiles)
+    )
+
+
+def _runs(flags: np.ndarray) -> list[tuple[int, int]]:
+    """The [start, end) runs where `flags` holds."""
+    runs: list[tuple[int, int]] = []
+    start = None
+    for index, flag in enumerate(flags.tolist()):
+        if flag and start is None:
+            start = index
+        elif not flag and start is not None:
+            runs.append((start, index))
+            start = None
+    if start is not None:
+        runs.append((start, len(flags)))
+    return runs
 
 
 def _gray(image: bytes) -> np.ndarray | None:

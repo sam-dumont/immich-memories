@@ -259,6 +259,25 @@ class DepthFill:
             host._admit(s, choice, row, [])
             # One frame at a time: the next is spread from the frames kept, this one included.
             return True
+        return self._back_from_its_place(s)
+
+    def _back_from_its_place(self, s) -> bool:
+        """Once the ladder has nothing left, bring back one of this story's pictures the place
+        bound held out, now that the bound is widened for the film's free slots (#2772).
+
+        A moment whose carrier waits for its place is marked used but never chosen, so the
+        ladder offers it neither as an unchosen moment nor as rungs of a chosen one: the event's
+        biggest moment stayed out of the depth fill and a rich day shipped four shots. Back in
+        the cut, it is chosen, and its further frames are the next round's rungs. Asked only
+        when the ladder is spent, so a picture that would come back after the fill anyway does
+        not take a place's seat a depth frame of that place could have had.
+        """
+        host = self._host
+        for row in host.lookalike.waiting_for_their_place(lambda _asset: True):
+            if row["story"] != s["key"] or host.places.full(s["key"], row["crowds"]):
+                continue
+            if host.lookalike.readmit_one(row):
+                return True
         return False
 
     def _lookahead(self, ladder, s, index) -> tuple[Lookahead, dict[str, int]]:

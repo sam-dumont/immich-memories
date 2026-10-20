@@ -330,7 +330,7 @@ def test_a_copy_whose_caption_says_it_was_made_is_refused_and_a_camera_picture_i
 
     refused = source_exclusions(
         source,
-        SimpleNamespace(document_ocr_text=None),
+        SimpleNamespace(document_ocr_text=None, composed=None),
         {copy.id: caption, camera.id: caption},
     )
 

@@ -136,8 +136,9 @@ def test_a_film_never_exceeds_what_a_thin_month_can_fill() -> None:
     assert decision.seconds < _MONTH_PRESET_SECONDS
 
 
-def test_an_occasion_keeps_the_length_its_active_hours_bought() -> None:
-    """A special day's preset already came from its material; its days are not coverage."""
+def test_an_occasion_asks_for_three_minutes_and_its_material_decides() -> None:
+    """A special day asks for at most three minutes, whatever preset it carries; its days are not
+    coverage, and what it fills is its distinct shots (#2772)."""
     noon = datetime(2024, 2, 7, 12, 0, tzinfo=UTC)
     all_day = [_photo(f"o-{index}", noon) for index in range(40)]
 
@@ -154,4 +155,6 @@ def test_an_occasion_keeps_the_length_its_active_hours_bought() -> None:
         ending_duration=4.0,
     )
 
-    assert decision.editorial_seconds == 90.0
+    assert decision.editorial_seconds == 180.0
+    # Forty pictures sharing one timestamp are one shot: the thin-day floor, not three minutes.
+    assert decision.seconds == 30.0 + 3.5 + 4.0

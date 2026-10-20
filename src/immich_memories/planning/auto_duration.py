@@ -22,10 +22,10 @@ _TRIP_BASE_SECONDS = 30.0
 _TRIP_SECONDS_PER_ACTIVE_DAY = 10.0
 _TRIP_MIN_EDITORIAL_SECONDS = 60.0
 _TRIP_MAX_EDITORIAL_SECONDS = 300.0
-_SPECIAL_DAY_BASE_SECONDS = 30.0
-_SPECIAL_DAY_SECONDS_PER_ACTIVE_HOUR = 6.0
-_SPECIAL_DAY_MIN_EDITORIAL_SECONDS = 60.0
-_SPECIAL_DAY_MAX_EDITORIAL_SECONDS = 180.0
+# A special day runs as long as its distinct shots allow, up to three minutes: a rich day is a
+# full short film, a thin one stays short (owner, #2772). Its material is measured the way every
+# film's is (`_Material.diverse_capacity_seconds`, #2099).
+SPECIAL_DAY_MAX_SECONDS = 180.0
 # However thin the day, a special day keeps this much of its pictures, its titles on top: shorter
 # is not a day (owner, 28 Sep).
 SPECIAL_DAY_MIN_CONTENT_SECONDS = 30.0
@@ -82,28 +82,6 @@ def trip_editorial_duration_seconds(active_days: int) -> float:
         max(
             _TRIP_MIN_EDITORIAL_SECONDS,
             _TRIP_BASE_SECONDS + active_days * _TRIP_SECONDS_PER_ACTIVE_DAY,
-        ),
-    )
-
-
-def special_day_editorial_duration_seconds(hours: float) -> float:
-    """How long one occasion runs, from how long it stayed awake.
-
-    ``hours`` is the recorded window's span when the catalogue trimmed one, and
-    the activity run's active hours when it did not. Active hours is the signal
-    already measured to separate an occasion from a busy afternoon, so keying
-    runtime off it is the same evidence twice rather than a new invention.
-
-    These constants are a **starting curve to be measured, not trusted**: check
-    them on a contact sheet across a real catalogue before treating any of the
-    three numbers as settled, and record which side of the content-first scoring
-    change the sheet came from.
-    """
-    return min(
-        _SPECIAL_DAY_MAX_EDITORIAL_SECONDS,
-        max(
-            _SPECIAL_DAY_MIN_EDITORIAL_SECONDS,
-            _SPECIAL_DAY_BASE_SECONDS + hours * _SPECIAL_DAY_SECONDS_PER_ACTIVE_HOUR,
         ),
     )
 
@@ -218,6 +196,8 @@ def _editorial_target(
     """The length this type's own curve asks for, before capacity caps it."""
     if memory_type in _TRIP_CURVE_TYPES:
         return trip_editorial_duration_seconds(photographed_days)
+    if memory_type == "special_day":
+        return SPECIAL_DAY_MAX_SECONDS
     return preset_seconds
 
 

@@ -9,6 +9,7 @@ that records how a selection was reached.
 __all__ = [
     "admission",
     "asset_merit",
+    "collages",
     "duplicate_hashing",
     "exact_copies",
     "favourite_law",

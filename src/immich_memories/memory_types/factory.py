@@ -436,7 +436,6 @@ def _special_day(
     title: str | None = None,
     subtitle: str | None = None,
     what: str | None = None,
-    active_hours: float = 0.0,
     **kwargs,  # noqa: ARG001
 ) -> MemoryPreset:
     """One occasion, named by the catalogue that found it, or by its own date.
@@ -453,9 +452,7 @@ def _special_day(
 
     name = (title or "").strip() or (what or "").strip() or f"{day.day} {day:%B %Y}"
 
-    from immich_memories.planning.auto_duration import special_day_editorial_duration_seconds
-
-    hours = (window[1] - window[0]).total_seconds() / 3600.0 if window else active_hours
+    from immich_memories.planning.auto_duration import SPECIAL_DAY_MAX_SECONDS
 
     return MemoryPreset(
         memory_type=MemoryType.SPECIAL_DAY,
@@ -465,5 +462,6 @@ def _special_day(
         # Not person-filtered on purpose: the memory is the occasion, and real
         # names would reach durable run history through it.
         person_filter=PersonFilter(),
-        default_duration_seconds=special_day_editorial_duration_seconds(hours),
+        # The most it may run; the day's distinct shots decide how much of it it fills (#2772).
+        default_duration_seconds=SPECIAL_DAY_MAX_SECONDS,
     )

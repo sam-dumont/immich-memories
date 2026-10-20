@@ -28,6 +28,7 @@ from immich_memories.analysis.clips.motion_rendering import (
     plan_before_measuring,
 )
 from immich_memories.analysis.clips.speech import banked_unit_regions, speech_buffer
+from immich_memories.analysis.corpus.collages import collage_exclusions
 from immich_memories.analysis.corpus.forwarded_fallback import is_forwarded_copy, refused_in_words
 from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
 from immich_memories.analysis.facts.clip_frames import clips_miss_subject
@@ -664,6 +665,11 @@ def source_exclusions(
         asset = source.assets.get(asset_id)
         copy = asset is not None and is_forwarded_copy(asset, source.config)
         if copy and (reason := refused_in_words(line)):
+            excluded.setdefault(asset_id, reason)
+    if ports.composed is not None:
+        for asset_id, reason in collage_exclusions(
+            source.assets, lines, composed=ports.composed
+        ).items():
             excluded.setdefault(asset_id, reason)
     return excluded
 

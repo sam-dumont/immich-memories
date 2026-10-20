@@ -284,6 +284,9 @@ class StructurePlannerPorts:
     ) = None
 
     burst_deduplicator: BurstDeduplicator | None = None
+    # Whether a picture's preview is a collage's page of tiles (`corpus.collages`); None reads
+    # no preview for it.
+    composed: Callable[[str], bool] | None = None
 
 
 @dataclass(frozen=True)

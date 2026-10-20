@@ -135,9 +135,9 @@ class TestSpecialDayPreset:
 
 
 class TestSpecialDayDuration:
-    """A day that stayed awake longer earns a longer memory, within bounds."""
+    """A special day asks for up to three minutes; its distinct shots decide what it fills."""
 
-    def test_a_short_window_runs_shorter_than_a_whole_long_day(self) -> None:
+    def test_any_day_asks_for_three_minutes_whatever_its_window(self) -> None:
         entry = {"day": date(2016, 6, 12), "title": "An afternoon at the track"}
         trimmed = create_preset(
             MemoryType.SPECIAL_DAY,
@@ -146,9 +146,7 @@ class TestSpecialDayDuration:
         )
         all_day = create_preset(MemoryType.SPECIAL_DAY, active_hours=18.0, **entry)
 
-        assert trimmed.default_duration_seconds < all_day.default_duration_seconds
-        for preset in (trimmed, all_day):
-            assert 60 <= preset.default_duration_seconds <= 180
+        assert trimmed.default_duration_seconds == all_day.default_duration_seconds == 180
 
     def test_the_cli_reads_the_preset_rather_than_the_month_curve(self) -> None:
         # duration_from_date_range is a quadratic fitted on 1-12 months; at a
@@ -164,5 +162,5 @@ class TestSpecialDayDuration:
             preset_params={"day": day, "title": "A day out", "active_hours": 18.0},
         )
 
-        assert duration == 138.0
+        assert duration == 180.0
         assert duration_from_date_range(scope) == 30.0

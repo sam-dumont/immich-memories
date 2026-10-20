@@ -21,7 +21,7 @@ install uses Immich metadata and the locally prepared picture facts (dates, plac
 | `holiday` | one recurring date across several years | 60 s | a few years of library |
 | `trip` | one trip found from GPS | 30 s + 10 s an active day | GPS on your pictures, and a home base |
 | `album` | one Immich album | 30 s + 10 s an active day | an album |
-| `special_days.detection` | one day the library says something happened on | 30 s + 6 s an active hour | nothing, or the `discover-days` catalogue |
+| `special_days.detection` | one day the library says something happened on | as long as its distinct shots allow, up to 3 min | nothing, or the `discover-days` catalogue |
 
 Every type except a trip, an album and a special day opens on a title the app writes from what
 the film is and when: "Kit · July 2025", "Christmas · 2019–2025", "October 14 · 2012–2025". See
@@ -49,9 +49,9 @@ length:
 | the preset floor | neither flag, and the period holds nothing to measure |
 
 A trip and an album count active days: 30 s plus 10 s a day, held between 60 s and 5 min. A special
-day counts active hours: 30 s plus 6 s an hour, held between 60 s and 3 min, and never fewer than
-30 s of pictures on top of its title and ending, however thin the day. Twelve one-minute months
-do not make a twelve-minute year: the year has its own ten-minute target. How the editor spends
+day runs as long as its distinct shots allow, up to 3 min: a rich day is a full short film, a thin
+one stays short, and never fewer than 30 s of pictures on top of its title and ending. Twelve
+one-minute months do not make a twelve-minute year: the year has its own ten-minute target. How the editor spends
 those seconds is in [Length, quiet weeks and filler](../how-it-chooses/length-and-filler.md).
 
 ## Filtering by people

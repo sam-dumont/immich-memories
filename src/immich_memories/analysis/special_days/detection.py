@@ -44,7 +44,7 @@ from typing import TYPE_CHECKING, Any
 from immich_memories.analysis.places.trip_detection import haversine_km
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Mapping
+    from collections.abc import Container, Iterable, Mapping, Sequence
     from datetime import date, datetime
 
     from immich_memories.config.models.llm import LLMConfig
@@ -358,19 +358,35 @@ def event_window(assets: list) -> tuple[datetime, datetime] | None:
 _CLOCK_SLACK = timedelta(hours=1)
 
 
-def _at_clock(written: Any, first: datetime, last: datetime) -> datetime | None:
-    """A written HH:MM placed on the day's own timeline.
+def _at_clock(written: Any, clocks: Sequence[datetime]) -> datetime | None:
+    """A written HH:MM placed on the clock of the line it was read off.
 
-    Placed rather than parsed: a run of activity can cross midnight, so an
-    02:00 end belongs to the following calendar date.
+    A day's lines are on each picture's own clock, and one day can hold two: a phone files its
+    photos on the local clock and many of its videos on UTC. A time placed on one picture's zone
+    lands hours away from the line that carried it, so it is placed beside the picture whose own
+    clock reads nearest it, on that picture's zone and calendar date: a run that crosses
+    midnight puts an 02:00 end on the following date.
     """
     match = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*", str(written))
-    if not match or int(match[1]) > 23 or int(match[2]) > 59:
+    if not match or int(match[1]) > 23 or int(match[2]) > 59 or not clocks:
         return None
-    moment = first.replace(hour=int(match[1]), minute=int(match[2]), second=0, microsecond=0)
-    if moment < first - _CLOCK_SLACK:
-        moment += timedelta(days=1)
+    hour, minute = int(match[1]), int(match[2])
+
+    def beside(clock: datetime) -> datetime:
+        moment = clock.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if moment - clock > timedelta(hours=12):
+            return moment - timedelta(days=1)
+        if clock - moment > timedelta(hours=12):
+            return moment + timedelta(days=1)
+        return moment
+
+    moment = min((beside(clock) for clock in clocks), key=lambda m: _nearest_gap(m, clocks))
+    first, last = min(clocks), max(clocks)
     return moment if first - _CLOCK_SLACK <= moment <= last + _CLOCK_SLACK else None
+
+
+def _nearest_gap(moment: datetime, clocks: Sequence[datetime]) -> timedelta:
+    return min(abs(moment - clock) for clock in clocks)
 
 
 def _window_the_model_gave(answer: dict, assets: list) -> tuple[datetime, datetime] | None:
@@ -381,17 +397,19 @@ def _window_the_model_gave(answer: dict, assets: list) -> tuple[datetime, dateti
     it leaves, so the cluster starts at arrival; the per-picture lines carry
     timestamps and say what is in the frame, so the model can tell arrival
     from the start of the thing that happened.
+
+    The lines carry minutes, so the end holds its whole minute: a last picture
+    at 14:11:40 is inside a window that ends at "14:11".
     """
     written = answer.get("window")
     if not isinstance(written, list) or len(written) != 2:
         return None
-    # On the pictures' own clock: the model read its HH:MM off lines written in it.
-    times = [capture_clock(a) for a in assets]
-    first, last = min(times), max(times)
-    start, end = _at_clock(written[0], first, last), _at_clock(written[1], first, last)
+    # On the pictures' own clocks: the model read its HH:MM off lines written in them.
+    clocks = [capture_clock(a) for a in assets]
+    start, end = _at_clock(written[0], clocks), _at_clock(written[1], clocks)
     if start is None or end is None or end - start < _MIN_WINDOW:
         return None
-    return start, end
+    return start, end + timedelta(minutes=1, microseconds=-1)
 
 
 def _facts_on(asset: Any, described: str | None) -> list[str]:
