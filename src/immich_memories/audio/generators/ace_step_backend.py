@@ -51,6 +51,13 @@ from immich_memories.audio.generators.base import (
 logger = logging.getLogger(__name__)
 
 _HEALTH_RETRY_SECONDS = 10.0
+# A task the server knows always answers with progress_text. Three polls in a row without it
+# is a restarted server, not a stray reply.
+_LOST_POLLS_BEFORE_GIVING_UP = 3
+
+
+class _TaskLost(Exception):  # noqa: N818
+    """The ACE-Step server no longer knows the task id it was given."""
 
 
 @dataclass
@@ -444,18 +451,8 @@ class ACEStepBackend(MusicGenerator):
             if (seed := _take_seed(request)) is not None:
                 task_payload |= {"use_random_seed": False, "seed": seed}
 
-            resp = await client.post(f"{self.config.api_url}/release_task", json=task_payload)
-            resp.raise_for_status()
-            task_result = resp.json()
-            task_id = task_result.get("data", {}).get("task_id") or task_result.get("task_id")
-
-            if not task_id:
-                raise RuntimeError(f"No task_id in ACE-Step response: {task_result}")
-
-            logger.info(f"ACE-Step task submitted: {task_id}")
-
             output_path = request.output_dir / f"ace_step_v{request.variation_index}.wav"
-            await self._poll_and_download(client, task_id, output_path, progress_callback)
+            task_id = await self._run_task(client, task_payload, output_path, progress_callback)
 
         if progress_callback:
             progress_callback("Complete!", 100, {})
@@ -478,6 +475,47 @@ class ACEStepBackend(MusicGenerator):
             },
         )
 
+    async def _submit_task(self, client: Any, task_payload: dict[str, Any]) -> str:
+        """Post the task and return the id the server gave it."""
+        resp = await client.post(f"{self.config.api_url}/release_task", json=task_payload)
+        resp.raise_for_status()
+        task_result = resp.json()
+        task_id = task_result.get("data", {}).get("task_id") or task_result.get("task_id")
+        if not task_id:
+            raise RuntimeError(f"No task_id in ACE-Step response: {task_result}")
+        logger.info(f"ACE-Step task submitted: {task_id}")
+        return task_id
+
+    async def _run_task(
+        self,
+        client: Any,
+        task_payload: dict[str, Any],
+        output_path: Path,
+        progress_callback: Any | None,
+    ) -> str:
+        """Submit, poll and download; submit once more if the server lost the task.
+
+        Returns the id of the task that produced the file.
+        """
+        task_id = await self._submit_task(client, task_payload)
+        try:
+            await self._poll_and_download(client, task_id, output_path, progress_callback)
+            return task_id
+        except _TaskLost:
+            logger.warning(
+                "The ACE-Step server lost the task (it probably restarted); resubmitting"
+            )
+        task_id = await self._submit_task(client, task_payload)
+        try:
+            await self._poll_and_download(client, task_id, output_path, progress_callback)
+        except _TaskLost:
+            logger.warning("The ACE-Step server lost the resubmitted task too; giving up")
+            raise GenerationFailure(
+                f"ACE-Step task {task_id} was lost twice",
+                reason="the music server lost the task, it probably restarted",
+            ) from None
+        return task_id
+
     async def _poll_and_download(
         self,
         client: Any,
@@ -493,6 +531,7 @@ class ACEStepBackend(MusicGenerator):
             progress_callback("LLM reasoning...", 5, {"task_id": task_id})
 
         start_time = time.time()
+        lost_polls = 0
 
         while True:
             if time.time() - start_time > self.config.timeout_seconds:
@@ -510,6 +549,7 @@ class ACEStepBackend(MusicGenerator):
             poll_data = poll_resp.json()
 
             results = poll_data.get("data", [])
+            lost_polls = self._count_lost_poll(results, lost_polls)
             if results:
                 result_item = results[0]
                 status = result_item.get("status", 0)
@@ -528,6 +568,22 @@ class ACEStepBackend(MusicGenerator):
 
             self._report_estimated_progress(time.time() - start_time, progress_callback)
             await asyncio.sleep(3.0)
+
+    @staticmethod
+    def _count_lost_poll(results: list, lost_polls: int) -> int:
+        """Consecutive polls the server answered as for an unknown task.
+
+        A task the server knows always carries ``progress_text``; an id it never heard of
+        (a restart wipes its tasks) comes back as status 0 without it. Raises once the run
+        is long enough that it cannot be a stray reply.
+        """
+        item = results[0] if results else None
+        if not item or item.get("status", 0) != 0 or "progress_text" in item:
+            return 0
+        lost_polls += 1
+        if lost_polls >= _LOST_POLLS_BEFORE_GIVING_UP:
+            raise _TaskLost
+        return lost_polls
 
     async def _download_result(
         self,
