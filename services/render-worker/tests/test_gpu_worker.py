@@ -212,6 +212,11 @@ def test_render_releases_models_then_refuses_model_work_until_it_finishes(tmp_pa
 
 
 def test_render_waits_for_native_facts_before_unloading(tmp_path):
+    # Ordering is asserted from recorded events, never from short sleeps: a loaded
+    # machine can stretch any one request, so every wait here is a generous
+    # deadline that only a hang can reach.
+    deadline = 60
+    order: list[str] = []
     deciding = threading.Event()
     finish_facts = threading.Event()
     rendering = threading.Event()
@@ -219,13 +224,15 @@ def test_render_waits_for_native_facts_before_unloading(tmp_path):
     class SlowProducer(SyntheticProducer):
         def decide(self, image):
             deciding.set()
-            assert finish_facts.wait(3)
+            assert finish_facts.wait(deadline)
+            order.append("facts finished")
             return super().decide(image)
 
     runtime = ProducerRuntime({"heads": SlowProducer})
 
     class ObservingRenderer(IdleRenderer):
         def render(self, request, directory, progress):
+            order.append("render started")
             assert runtime.loaded("heads") is None
             rendering.set()
             raise RuntimeError("synthetic render finished")
@@ -239,19 +246,27 @@ def test_render_waits_for_native_facts_before_unloading(tmp_path):
     with TestClient(app) as client, ThreadPoolExecutor(max_workers=1) as pool:
         facts = pool.submit(client.post, "/facts", json={"image": "cGl4ZWxz"})
         try:
-            assert deciding.wait(2)
+            assert deciding.wait(deadline)
             response = client.post(
                 "/render/jobs",
                 json=render_request_body(),
                 headers=AUTH,
             )
             assert response.status_code == 202
-            assert not rendering.wait(0.05)
+            # "running" is set just before the renderer is entered, where the
+            # render thread then waits for the facts call to finish.
+            job_url = f"/render/jobs/{response.json()['job_id']}"
+            deadline_at = time.monotonic() + deadline
+            while client.get(job_url, headers=AUTH).json()["state"] == "queued":
+                assert time.monotonic() < deadline_at, "the render never started"
+                time.sleep(0.01)
+            assert not rendering.is_set()
             assert runtime.loaded("heads") is not None
         finally:
             finish_facts.set()
-        assert facts.result(timeout=2).status_code == 200
-        assert rendering.wait(2)
+        assert facts.result(timeout=deadline).status_code == 200
+        assert rendering.wait(deadline)
+    assert order == ["facts finished", "render started"]
 
 
 async def test_render_wait_has_a_deadline_and_never_unloads_active_work():
