@@ -833,6 +833,24 @@ Fonts are not a switch: a render never downloads one, and `titles fonts --instal
 step that does ([Fonts](../run/privacy.md#fonts)). `preflight` prints a row
 for each switch you turn on, naming the host it will contact.
 
+## Update check
+
+Off by default. The button in Settings and `immich-memories version --check` need no setting:
+they ask when you do.
+
+```yaml
+updates:
+  check_daily: false      # api.github.com, at most once a day
+```
+
+| Key | What it sends | What you get |
+|---|---|---|
+| `check_daily` | one anonymous request for the public release list, at most once a day; no version, install id or setting goes with it | a dismissible banner in the web app and one line in the run log when a newer release is out |
+
+Stable installs are offered stable releases. A release candidate is offered newer candidates and
+stable releases. A nightly build is offered the next stable release. See
+[Updates](../run/reference/privacy-egress.md#update-check) for the request.
+
 ## Cache
 
 ```yaml

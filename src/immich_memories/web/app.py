@@ -27,6 +27,7 @@ from immich_memories.web import (
     session,
     settings,
     suggestions,
+    updates,
 )
 from immich_memories.web.request_validation import validate_json_request
 
@@ -76,6 +77,7 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     app.include_router(roster.router)
     app.include_router(people_accounts.router)
     app.include_router(settings.router)
+    app.include_router(updates.router)
     app.include_router(connection.router)
     app.include_router(session.router)
     app.include_router(media.router)

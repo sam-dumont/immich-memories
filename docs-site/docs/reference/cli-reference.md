@@ -1194,6 +1194,18 @@ immich-memories ui [OPTIONS]
 | `--host`, `-h` | text | - | Host to bind to (default: config or 127.0.0.1). -h is --host here; use --help for help |
 | `--reload`, `--no-reload` | boolean | false | Enable hot reload (for development only) |
 
+## `version`
+
+Print the running version, and with --check say whether a newer release is out.
+
+```bash
+immich-memories version [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--check` | boolean | false | Ask GitHub whether a newer release is out. One anonymous request; nothing about this install is sent |
+
 ## `years`
 
 List years with pictures or videos.

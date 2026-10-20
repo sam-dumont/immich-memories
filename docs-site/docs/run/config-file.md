@@ -135,6 +135,7 @@ the key means re-entering saved credentials. This is separate from the UI's
 | Titles, maps and music | `title_screens`, `audio` | [Titles, maps and music](../make/titles-maps-music.md) |
 | Upload destination | `upload` | [What Immich sees](./privacy.md#what-immich-sees) |
 | Place names and map tiles | `network` | [Outside calls](./privacy.md#geocoding-and-maps) |
+| A daily check for a newer release | `updates` | [Update check](./reference/privacy-egress.md#update-check) |
 | Disk usage and persistence | `cache`, `database` | [Caches](./maintenance/health-logs-cache.md#caches), [database](./database.md) |
 | A model or service | `advanced.llm`, `advanced.inference`, `render` | [Add-ons](../get-started/choose-your-setup.md) |
 | Login or daily schedule | `advanced.auth`, `advanced.automation` | [Authentication](./authentication.mdx), [automation](../make/automate.md) |

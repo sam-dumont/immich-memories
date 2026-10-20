@@ -42,6 +42,7 @@ dependencies = [
     "python-multipart>=0.0.31",  # music uploads: FastAPI reads multipart forms with it
     "opencv-python>=5,<6",  # photo rendering, thumbnail hashing, motion facts; YuNet freed the 4.x pin (#557)
     "pyyaml>=6.0",
+    "packaging>=24.0",  # compares the running version with the releases the update check lists
     "click>=8.5.0",
     "rich>=13.0",
     "pillow>=12.3.0",

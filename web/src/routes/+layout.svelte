@@ -5,6 +5,7 @@
   import { mdiAccountMultipleOutline, mdiCogOutline, mdiHistory, mdiLightbulbOutline, mdiMovieOpenStarOutline } from '@mdi/js';
   import { chooseLanguage, chosenLanguage, languages, t } from '$lib/i18n.svelte';
   import { demoMode } from '$lib/demo-mode.svelte';
+  import UpdateBanner from '$lib/UpdateBanner.svelte';
   import { mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js';
 
   let { children, data } = $props();
@@ -73,6 +74,7 @@
     </nav>
   </AppShellSidebar>
   <main class="mx-auto w-full max-w-7xl px-4 pt-6 pb-24 md:px-8 md:pb-6">
+    <UpdateBanner />
     {@render children()}
   </main>
 </AppShell>

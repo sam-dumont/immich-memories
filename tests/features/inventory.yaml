@@ -1291,6 +1291,20 @@ features:
     covers: ["web:settings"]
     tests:
       - tests/e2e/test_web_features.py::test_settings_names_each_source_locks_file_and_environment_values_and_masks_keys
+  - id: updates.check
+    promise: "A Check for updates button in Settings and version --check ask GitHub once, anonymously, and name the newer release, its notes and the update command for how this copy was installed."
+    doc: run/maintenance/upgrading.md#finding-out-a-release-is-out
+    covers: ["cli:version", "cli:version --check"]
+    tests:
+      - tests/test_update_check.py::TestCli::test_version_check_names_the_release_the_notes_and_the_command
+      - tests/test_update_check.py::TestRequest::test_one_unauthenticated_get_carries_no_version_id_or_config_value
+      - tests/e2e/test_update_check.py::test_the_button_checks_only_when_clicked_and_shows_the_command
+  - id: updates.daily
+    promise: "With updates.check_daily on, the app checks at most once a day and shows a dismissible banner."
+    doc: run/maintenance/upgrading.md#finding-out-a-release-is-out
+    tests:
+      - tests/test_update_check.py::TestDailyCheck::test_on_it_asks_once_a_day_and_answers_from_the_store_in_between
+      - tests/e2e/test_update_check.py::test_the_daily_banner_shows_a_new_release_and_stays_dismissed
   - id: web.settings-checks
     promise: "Settings shows what loading the config warns about (removed, unknown or unsupported keys) and runs the preflight checks on request, without reading the server log."
     doc: make/web-ui.mdx#change-settings

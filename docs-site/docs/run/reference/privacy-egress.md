@@ -24,6 +24,7 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 | `render.worker_base_url` | rendering on another box | Immich URL, primary API key and every partner key needed by the cut; account routes, asset IDs, selected intervals and Live Photo material; person names, title/subtitle, dates, preset and timing metadata, audio categories/emotions, home coordinates, output/title options and the full `network` configuration | unset: renders here; the worker can make enabled geocoding/map requests itself |
 | `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of the pictures in the film's own window, home included, rounded to about a kilometre, once per place ever | off |
 | The render worker's `IMMICH_MEMORIES_RENDER_WORKER_GEOCODING_URL` | a film rendered on the worker with `network.geocoding: true` | the same coordinates, from the worker; the app's `geocoding_url` is not used there | unset: the worker does not geocode |
+| `api.github.com` | **Check for updates** in Settings, `immich-memories version --check`, or `updates.check_daily: true` (at most once a day) | one anonymous `GET` of the public release list. No account, no install id, no version and no setting go with it, and the user agent is just `immich-memories`. The running version is compared locally | off: nothing goes out until you ask |
 | `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
 | Apprise notification URLs | `notifications.enabled: true` | memory type, outcome, duration, output path, the last 300 characters of the redacted error output; a frame if `attach_thumbnail: true` | off |
@@ -135,6 +136,31 @@ opens on the ordinary title card and location cards keep their text on the style
 
 Privacy mode stops the cut's places from being asked about, but not the trip names: with
 `geocoding: true` a trip's real centre has been asked about before the fake city is picked.
+
+
+## Update check
+
+Nothing in the app asks whether a newer release exists unless you ask. Three ways to ask:
+
+- **Check for updates** in Settings.
+- `immich-memories version --check`.
+- `updates.check_daily: true`, which checks at most once a day and shows a dismissible banner in the
+  web app and one line in the run log.
+
+```yaml
+updates:
+  check_daily: false      # api.github.com, once a day at most
+```
+
+Every one of them sends the same single request: an unauthenticated `GET` of
+`https://api.github.com/repos/sam-dumont/immich-memories/releases`. GitHub sees your IP address,
+as with any request. It does not see your version, an install id or any setting: the user agent is
+the plain word `immich-memories`, and the comparison with the running version happens on your
+machine. A failed check prints why it failed, without a traceback, and changes nothing.
+
+To turn the daily check off, set `updates.check_daily: false` (or leave it out). The result is kept
+in the [store](../database.md), as the list of release tags, so an upgrade changes the answer
+without a new request.
 
 
 ## Files on disk, and cancellation
