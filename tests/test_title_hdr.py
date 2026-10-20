@@ -195,7 +195,9 @@ class TestVideoEncodingPlan:
         ):
             video_filter = title_color_filter(_hardware_h265_hdr_plan())
 
-        assert video_filter.startswith("format=yuv444p16le,")
+        assert video_filter.startswith(
+            "scale=in_range=full:out_color_matrix=bt709:out_range=tv,format=yuv444p16le,"
+        )
         assert "format=yuv420p," not in video_filter
         assert "color_trc=arib-std-b67" in video_filter
 
