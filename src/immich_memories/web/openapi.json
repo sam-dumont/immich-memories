@@ -4200,6 +4200,90 @@
         "title": "Trips",
         "type": "object"
       },
+      "UpdateStatus": {
+        "description": "What a check found: a release to install, nothing newer, or why it could not tell.",
+        "properties": {
+          "command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Command"
+          },
+          "docs_url": {
+            "default": "https://sam-dumont.github.io/immich-memories/docs/run/maintenance/upgrading",
+            "title": "Docs Url",
+            "type": "string"
+          },
+          "install_method": {
+            "default": "unknown",
+            "enum": [
+              "docker",
+              "kubernetes",
+              "pip",
+              "unknown"
+            ],
+            "title": "Install Method",
+            "type": "string"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest"
+          },
+          "notes_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes Url"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "running": {
+            "title": "Running",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "current",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "running"
+        ],
+        "title": "UpdateStatus",
+        "type": "object"
+      },
       "UploadRequest": {
         "properties": {
           "album": {
@@ -7208,6 +7292,58 @@
         "summary": "Trips",
         "tags": [
           "library"
+        ]
+      }
+    },
+    "/api/v1/updates": {
+      "get": {
+        "description": "Ask GitHub now. Only the button calls this: nothing goes out until somebody asks.",
+        "operationId": "check_api_v1_updates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Check",
+        "tags": [
+          "updates"
+        ]
+      }
+    },
+    "/api/v1/updates/daily": {
+      "get": {
+        "description": "The daily check's answer for the banner; null when it is off or has no news to fail on.",
+        "operationId": "daily_api_v1_updates_daily_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/UpdateStatus"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Daily Api V1 Updates Daily Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Daily",
+        "tags": [
+          "updates"
         ]
       }
     }

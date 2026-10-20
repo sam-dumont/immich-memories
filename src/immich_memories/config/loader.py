@@ -51,6 +51,7 @@ from immich_memories.config.models.resources import (
 from immich_memories.config.models.server import WILDCARD_HOST, ServerConfig
 from immich_memories.config.models.soundtrack import ACEStepConfig, AudioConfig, MusicGenConfig
 from immich_memories.config.models.triage import TriageConfig
+from immich_memories.config.models.updates import UpdatesConfig
 from immich_memories.config.presets import PresetName, apply_preset
 from immich_memories.config.tiers import TierSetting, apply_tier
 from immich_memories.deployment_config import DEPLOYMENT_TIER, deployment_defaults, deployment_tier
@@ -422,6 +423,7 @@ class Config(BaseSettings):
     photos: PhotoConfig = Field(default_factory=PhotoConfig)
     trips: TripsConfig = Field(default_factory=TripsConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
+    updates: UpdatesConfig = Field(default_factory=UpdatesConfig)
     auth: AuthConfig = Field(default_factory=AuthConfig)
     automation: AutomationConfig = Field(default_factory=AutomationConfig)
     notifications: NotificationConfig = Field(default_factory=NotificationConfig)

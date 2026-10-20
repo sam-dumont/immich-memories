@@ -40,6 +40,7 @@ from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.timed import timed
+from immich_memories.update_check import log_daily_update_notice
 
 logger = logging.getLogger(__name__)
 
@@ -309,6 +310,7 @@ def run_pipeline_and_generate(
     from immich_memories.tracking.report_context import record_assets
 
     record_assets([*assets, *(photo_assets or [])])
+    log_daily_update_notice(config)
     from immich_memories.analysis.runtime.composition import build_smart_pipeline
     from immich_memories.analysis.runtime.smart_pipeline import PipelineConfig
     from immich_memories.cache.thumbnail_cache import ThumbnailCache

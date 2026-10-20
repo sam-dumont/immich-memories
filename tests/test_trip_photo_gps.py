@@ -18,6 +18,16 @@ def _trip_config():
     return config
 
 
+def _config_without_daily_update_check() -> MagicMock:
+    """A mock config whose `updates.check_daily` is off, as the default config has it.
+
+    A bare MagicMock attribute is truthy, which would read as the opt-in and call GitHub.
+    """
+    config = MagicMock()
+    config.updates.check_daily = False
+    return config
+
+
 class TestPhotoOnlyTripNotSkipped:
     """A trip with photos but no videos should not be skipped at the gate."""
 
@@ -43,7 +53,7 @@ class TestPhotoOnlyTripNotSkipped:
                     photo_assets=[MagicMock()],
                     include_photos=True,
                     client=MagicMock(),
-                    config=MagicMock(),
+                    config=_config_without_daily_update_check(),
                     progress=MagicMock(),
                     duration=60.0,
                     transition="smart",
@@ -87,7 +97,7 @@ class TestPhotoOnlyTripNotSkipped:
                     photo_assets=None,
                     include_photos=False,
                     client=MagicMock(),
-                    config=MagicMock(),
+                    config=_config_without_daily_update_check(),
                     progress=MagicMock(),
                     duration=60.0,
                     transition="smart",

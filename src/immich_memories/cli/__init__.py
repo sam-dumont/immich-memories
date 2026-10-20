@@ -242,6 +242,7 @@ from immich_memories.cli.runs import register_runs_commands  # noqa: E402
 from immich_memories.cli.special_days_cmd import register_special_day_commands  # noqa: E402
 from immich_memories.cli.store_cmd import register_store_commands  # noqa: E402
 from immich_memories.cli.titles import register_titles_commands  # noqa: E402
+from immich_memories.cli.version_cmd import register_version_command  # noqa: E402
 
 register_report_commands(main)
 register_generate_commands(main)
@@ -258,6 +259,7 @@ register_prepare_commands(main)
 register_models_commands(main)
 register_auto_commands(main)
 register_store_commands(main)
+register_version_command(main)
 register_auth_commands(main)
 
 

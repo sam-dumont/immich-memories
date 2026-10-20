@@ -9,6 +9,7 @@
   import ModelSetup from '$lib/ModelSetup.svelte';
   import SettingsChecks from '$lib/SettingsChecks.svelte';
   import SettingsEditor from '$lib/SettingsEditor.svelte';
+  import UpdateCheck from '$lib/UpdateCheck.svelte';
 
   type CacheStats = components['schemas']['CacheStats'];
   type Connection = components['schemas']['Connection'];
@@ -106,6 +107,8 @@
     <svg viewBox="0 0 24 24" class="size-6 fill-current text-primary" aria-hidden="true"><path d={mdiAccountGroupOutline} /></svg>
     <span><span class="block font-medium">{t('People')}</span><span class="text-sm text-gray-600 dark:text-gray-400">{t('Who is who, their roles and relationships.')}</span></span>
   </a>
+
+  <UpdateCheck />
 
   <SettingsChecks reloads={reloads + modelReloads} />
   <ModelSetup reloads={reloads + modelReloads} />

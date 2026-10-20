@@ -1337,6 +1337,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check
+         * @description Ask GitHub now. Only the button calls this: nothing goes out until somebody asks.
+         */
+        get: operations["check_api_v1_updates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/updates/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Daily
+         * @description The daily check's answer for the banner; null when it is off or has no news to fail on.
+         */
+        get: operations["daily_api_v1_updates_daily_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2838,6 +2878,38 @@ export interface components {
             refreshing: boolean;
             /** Trips */
             trips: components["schemas"]["TripChoice"][] | null;
+        };
+        /**
+         * UpdateStatus
+         * @description What a check found: a release to install, nothing newer, or why it could not tell.
+         */
+        UpdateStatus: {
+            /** Command */
+            command?: string | null;
+            /**
+             * Docs Url
+             * @default https://sam-dumont.github.io/immich-memories/docs/run/maintenance/upgrading
+             */
+            docs_url: string;
+            /**
+             * Install Method
+             * @default unknown
+             * @enum {string}
+             */
+            install_method: "docker" | "kubernetes" | "pip" | "unknown";
+            /** Latest */
+            latest?: string | null;
+            /** Notes Url */
+            notes_url?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Running */
+            running: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "current" | "failed";
         };
         /** UploadRequest */
         UploadRequest: {
@@ -4974,6 +5046,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_api_v1_updates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+        };
+    };
+    daily_api_v1_updates_daily_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"] | null;
                 };
             };
         };

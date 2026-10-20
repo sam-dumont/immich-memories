@@ -11,6 +11,28 @@ Read the [release notes](https://github.com/sam-dumont/immich-memories/releases)
 back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
 store to a revision older code will refuse.
 
+## Finding out a release is out
+
+Settings has a **Check for updates** button, and `immich-memories version --check` does the same
+from a terminal. Both make one anonymous request for GitHub's public release list and compare it
+with your version locally. The answer is the release, a link to its notes and the command for how
+this copy was installed:
+
+| Install | Command |
+|---|---|
+| Docker Compose | `docker compose pull && docker compose up -d`, after setting `IMMICH_MEMORIES_VERSION` to the new version in `.env` ([Docker](#docker)) |
+| Kubernetes | the new image tag, `ghcr.io/sam-dumont/immich-memories:X.Y.Z` ([Kubernetes](#kubernetes-and-terraform)) |
+| uv / pip | the `uv tool install` line with the new version ([uv / pip](#uv--pip)) |
+| anything else | a link to this page |
+
+Releases are offered by channel: stable installs get stable releases, a release candidate gets
+newer candidates and stable releases, and a nightly gets the next stable release.
+
+To hear about it without asking, set `updates.check_daily: true` in Settings (or under `updates:`
+in `config.yaml`). That checks at most once a day, shows a banner you can dismiss, and writes one
+line to the run log. It is off by default because it is a call to GitHub; the
+[request](../reference/privacy-egress.md#update-check) carries nothing about your install.
+
 ## From 1.0.0-rc.10 to 1.0.0
 
 ### Sign-in is on
