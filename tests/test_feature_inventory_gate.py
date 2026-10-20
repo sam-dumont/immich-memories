@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -327,3 +330,44 @@ def test_the_committed_inventory_parses_cleanly():
     assert inventory.errors == []
     assert duplicate_ids(inventory.rows) == []
     assert gap_ratchet(inventory.rows, inventory.gap_ceiling)[0] == []
+
+
+def test_collecting_the_feature_tests_never_reads_the_accounts_config(tmp_path):
+    # The real-Immich gate's conftest builds a Config while it is imported. Run unsealed,
+    # `make feature-check` read the maintainer's own config.yaml and pinged their server.
+    # A separate interpreter: collection is a nested pytest session that would reset this
+    # session's own sealing.
+    account_home = tmp_path / "account-home"
+    (account_home / ".immich-memories").mkdir(parents=True)
+    probe = textwrap.dedent(
+        """
+        import json, sys
+        from pathlib import Path
+        sys.path.insert(0, "scripts")
+        from immich_memories.config import loader
+        from check_feature_inventory import collect_feature_tests
+
+        read = []
+        original = loader.Config.from_yaml.__func__
+
+        def recording(cls, path=None, *args, **kwargs):
+            read.append(str(path or cls.get_default_path()))
+            return original(cls, path, *args, **kwargs)
+
+        loader.Config.from_yaml = classmethod(recording)
+        collect_feature_tests([])
+        print(json.dumps(read))
+        """
+    )
+    env = {**os.environ, "HOME": str(account_home), "USERPROFILE": str(account_home)}
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", probe],
+        cwd=Path(__file__).resolve().parent.parent,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    read = json.loads(result.stdout.strip().splitlines()[-1])
+    assert [p for p in read if str(account_home) in p] == []

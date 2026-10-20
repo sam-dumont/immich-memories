@@ -36,9 +36,11 @@ from __future__ import annotations
 import ast
 import contextlib
 import io
+import os
 import re
 import sys
-from collections.abc import Iterable, Mapping, Sequence
+import tempfile
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -406,6 +408,43 @@ class _FeatureCollector:
                 ids.extend(str(arg) for arg in marker.args if str(arg) not in ids)
 
 
+@contextlib.contextmanager
+def sealed_home() -> Iterator[Path]:
+    """Run with HOME, the XDG dirs and every IMMICH_* setting pointed at a throwaway home.
+
+    Collection imports the real-Immich gate's conftest, which builds a Config at import time.
+    Unsealed, that read the maintainer's own config.yaml and store and pinged their server.
+    """
+    moved = {
+        "HOME",
+        "USERPROFILE",
+        "XDG_CONFIG_HOME",
+        "XDG_CACHE_HOME",
+        "XDG_DATA_HOME",
+        "XDG_STATE_HOME",
+    }
+    saved = {k: v for k, v in os.environ.items() if k in moved or k.startswith("IMMICH_")}
+    with tempfile.TemporaryDirectory(prefix="feature-check-home-") as raw:
+        home = Path(raw)
+        for key in saved:
+            if key not in moved:
+                del os.environ[key]
+        os.environ.update(
+            HOME=raw,
+            USERPROFILE=raw,
+            XDG_CONFIG_HOME=str(home / ".config"),
+            XDG_CACHE_HOME=str(home / ".cache"),
+            XDG_DATA_HOME=str(home / ".local/share"),
+            XDG_STATE_HOME=str(home / ".local/state"),
+        )
+        try:
+            yield home
+        finally:
+            for key in moved:
+                os.environ.pop(key, None)
+            os.environ.update(saved)
+
+
 def collect_feature_tests(rows: Sequence[Row]) -> tuple[dict[str, list[str]], list[str]]:
     """Collect (never run) the files the rows name plus the feature test folders."""
     import pytest
@@ -419,7 +458,7 @@ def collect_feature_tests(rows: Sequence[Row]) -> tuple[dict[str, list[str]], li
     printed = io.StringIO()
     # WHY addopts cleared: the default `-m` deselects integration tests, which include the
     # real-Immich gate's feature tests. Collection imports them; nothing runs.
-    with contextlib.redirect_stdout(printed):
+    with contextlib.redirect_stdout(printed), sealed_home():
         code = pytest.main(
             ["--collect-only", "-q", "-p", "no:cacheprovider", "-o", "addopts=", *targets],
             plugins=[collector],
