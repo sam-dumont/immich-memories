@@ -31,7 +31,7 @@ The two dependency alerts remain open. GitHub reports no patched release for eit
   read-only lookups. See the [NLTK review](../../SECURITY.md#reviewed-nltk-advisory).
 - braces 3.0.3, GHSA-vfj7-8cjw-p6xm: nested glob patterns can stop the docs build. This sits
   inside the existing PR build-code execution boundary, not the published static site.
-  The owner-approved review expires October 17, 2026. See the
+  The owner-approved review expires November 16, 2026. See the
   [docs advisory review](../../SECURITY.md#approved-temporary-docs-advisory-review).
 
 These are reviewed exceptions, not patched dependencies. The audit gates still reject new

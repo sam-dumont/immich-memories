@@ -7,6 +7,8 @@ and leaves what each was asked beside the state dir, for the test to read.
 from __future__ import annotations
 
 import json
+import math
+import struct
 import wave
 from pathlib import Path
 
@@ -69,7 +71,13 @@ def install_fake_music(records: Path) -> None:
             track = request.output_dir / "preview.wav"
             with wave.open(str(track), "wb") as output:
                 output.setparams((1, 2, 8000, 0, "NONE", "not compressed"))
-                output.writeframes(b"\x00\x00" * 8000)
+                # WHY: the pipeline rejects silent audio, so the stand-in is a quiet 440 Hz tone.
+                output.writeframes(
+                    b"".join(
+                        struct.pack("<h", int(8000 * math.sin(2 * math.pi * 440 * n / 8000)))
+                        for n in range(8000)
+                    )
+                )
             return GenerationResult(audio_path=track)
 
     # WHY: the text model is a remote service; only its reply is scripted, the request is real.
