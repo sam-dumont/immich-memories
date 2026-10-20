@@ -46,13 +46,13 @@ def compile_hlg_finalize(
                 value = ti.cast(fade_in_white + value * fade_in_weight, ti.u32)
                 value = ti.cast(fade_out_white + value * fade_out_weight, ti.u32)
                 sdr[c] = ti.cast(value, ti.f32) / 65535.0
-            luma_sdr = 0.299 * sdr[0] + 0.587 * sdr[1] + 0.114 * sdr[2]
+            luma_sdr = 0.2126 * sdr[0] + 0.7152 * sdr[1] + 0.0722 * sdr[2]
             yy = (coefficients[1] + coefficients[0] * luma_sdr - 4096.0) / 56064.0
             cb = (
-                coefficients[3] + coefficients[2] * (sdr[2] - luma_sdr) / 1.772 - 32768.0
+                coefficients[3] + coefficients[2] * (sdr[2] - luma_sdr) / 1.8556 - 32768.0
             ) / 57344.0
             cr = (
-                coefficients[5] + coefficients[4] * (sdr[0] - luma_sdr) / 1.402 - 32768.0
+                coefficients[5] + coefficients[4] * (sdr[0] - luma_sdr) / 1.5748 - 32768.0
             ) / 57344.0
             red = yy + 1.5748 * cr
             blue = yy + 1.8556 * cb

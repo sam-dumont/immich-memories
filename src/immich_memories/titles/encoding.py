@@ -11,6 +11,7 @@ from __future__ import annotations
 from immich_memories.processing.clip_encoder import encoder_args_for_plan
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 from immich_memories.processing.hdr_utilities import (
+    RGB_TO_BT709_TV,
     get_colorspace_filter,
     get_hdr_conversion_filter,
 )
@@ -43,7 +44,12 @@ def title_color_filter(plan: EncodingPlan, *, rgb_input: bool = True) -> str:
         # WHY: HDR GPU frames arrive as rgb48le. Preserve their bit depth
         # and chroma until zscale applies the SDR-to-HLG/PQ transfer; an 8-bit
         # yuv420p intermediate would create banding in a nominal Main10 title.
-        parts.append("format=yuv444p16le" if plan.hdr else "format=yuv420p")
+        #
+        # WHY (#2726): a bare format= makes swscale convert with its BT.601
+        # default while the stream is tagged BT.709 (and zscale reads it as
+        # BT.709), so saturated colours shifted: pure red decoded as 255,24,0.
+        # Name the matrix and range so the pixels match the tags.
+        parts.append(f"{RGB_TO_BT709_TV},format={'yuv444p16le' if plan.hdr else 'yuv420p'}")
     conversion = get_hdr_conversion_filter(
         "sdr",
         target,

@@ -6,10 +6,10 @@ transfer functions. The renderer now applies the same conversion as it quantizes
 each frame, and FFmpeg keeps only zscale's matrix and chroma steps.
 
 The conversion reproduces what the FFmpeg chain did, including how its first
-step reads the SDR pixels (`title_color_filter`): swscale turns RGB into Y'CbCr
-with its own coefficients, which zscale then reads as BT.709 and converts with
-the BT.1886 curve, at 203 nits in a 1000-nit HLG signal. swscale's coefficients
-are measured on the FFmpeg that is installed, and the whole conversion has to
+step reads the SDR pixels (`title_color_filter`): swscale turns RGB into BT.709
+limited-range Y'CbCr, which zscale then reads as BT.709 and converts with
+the BT.1886 curve, at 203 nits in a 1000-nit HLG signal. swscale's scale and
+offset are measured on the FFmpeg that is installed, and the whole conversion has to
 land within one code of that chain on a reference picture before it is used:
 pixels qualify it, not a version number.
 """
@@ -25,6 +25,7 @@ from functools import cache
 import numpy as np
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
+from immich_memories.processing.hdr_utilities import RGB_TO_BT709_TV
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +65,10 @@ class SdrToHlg:
 def sdr_to_hlg(rgb16: np.ndarray, conversion: SdrToHlg) -> np.ndarray:
     """SDR 16-bit RGB to HLG 16-bit RGB in BT.2020, as the title chain converted it."""
     rgb = rgb16.astype(np.float64) / 65535.0
-    luma = rgb @ np.array((0.299, 0.587, 0.114))
+    luma = rgb @ np.array((0.2126, 0.7152, 0.0722))
     y = (conversion.luma_offset + conversion.luma_scale * luma - 4096.0) / 56064.0
-    cb = conversion.blue_offset + conversion.blue_scale * (rgb[..., 2] - luma) / 1.772 - 32768.0
-    cr = conversion.red_offset + conversion.red_scale * (rgb[..., 0] - luma) / 1.402 - 32768.0
+    cb = conversion.blue_offset + conversion.blue_scale * (rgb[..., 2] - luma) / 1.8556 - 32768.0
+    cr = conversion.red_offset + conversion.red_scale * (rgb[..., 0] - luma) / 1.5748 - 32768.0
     cb, cr = cb / 57344.0, cr / 57344.0
     red = y + 1.5748 * cr
     blue = y + 1.8556 * cb
@@ -138,12 +139,12 @@ def _ffmpeg(picture: np.ndarray, vf: str, pixel_format: str) -> np.ndarray:
 
 def _measured_coefficients(picture: np.ndarray) -> SdrToHlg:
     """swscale's RGB to Y'CbCr mapping on this FFmpeg, fitted plane by plane."""
-    planes = _ffmpeg(picture, "format=yuv444p16le", "yuv444p16le").reshape(3, -1)
+    planes = _ffmpeg(picture, f"{RGB_TO_BT709_TV},format=yuv444p16le", "yuv444p16le").reshape(3, -1)
     rgb = picture.reshape(-1, 3).astype(np.float64) / 65535.0
-    luma = rgb @ np.array((0.299, 0.587, 0.114))
+    luma = rgb @ np.array((0.2126, 0.7152, 0.0722))
     fitted: list[float] = []
     for plane, signal in zip(
-        planes, (luma, (rgb[:, 2] - luma) / 1.772, (rgb[:, 0] - luma) / 1.402), strict=True
+        planes, (luma, (rgb[:, 2] - luma) / 1.8556, (rgb[:, 0] - luma) / 1.5748), strict=True
     ):
         design = np.stack([signal, np.ones_like(signal)], -1)
         scale, offset = np.linalg.lstsq(design, plane.astype(np.float64), rcond=None)[0]

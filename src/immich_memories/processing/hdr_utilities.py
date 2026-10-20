@@ -216,6 +216,12 @@ def hdr_source_names(clips: list, *, probe_cache: ProbeCache | None = None) -> l
     return names
 
 
+# The RGB to Y'CbCr step for every rendered-RGB path into the film: full-range
+# RGB in, BT.709 limited range out, matching the bt709 tags set on the stream.
+# A bare format=yuv420p uses swscale's BT.601 default instead (#2726).
+RGB_TO_BT709_TV = "scale=in_range=full:out_color_matrix=bt709:out_range=tv"
+
+
 def get_colorspace_filter(hdr_type: str) -> str:
     """Get the setparams filter string for the given HDR type.
 
