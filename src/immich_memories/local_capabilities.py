@@ -60,6 +60,10 @@ def _music_capability(config: Config) -> Capability:
         )
     if isolated_python() is None and not is_ace_step_importable():
         return Capability("Local music", "missing", install_hint())
+    from immich_memories.audio.generators.ace_step_music_path import music_path_for
+
+    if not (path := music_path_for(config.ace_step)).generate:
+        return Capability("Local music", "disabled", f"Films play a bundled track: {path.reason}")
     if shortfall := _music_shortfall(config):
         return Capability("Local music", "blocked", str(shortfall))
     return Capability(
@@ -70,22 +74,15 @@ def _music_capability(config: Config) -> Capability:
 
 
 def _music_shortfall(config: Config):
-    """The memory gap of the model a render would load, after its automatic 2B fallback."""
-    from immich_memories.audio.generators.ace_step_model_choice import (
-        BASE_VARIANT,
-        is_auto,
-        resolve_model_variant,
-    )
+    """The memory gap of the model a render would load; there is no 2B fallback behind `auto`."""
+    from immich_memories.audio.generators.ace_step_model_choice import resolve_model_variant
     from immich_memories.audio.generators.ace_step_runtime import dit_model_name
     from immich_memories.audio.generators.memory_budget import memory_shortfall
 
     settings = config.ace_step
     planner = settings.lm_model_size if settings.use_lm else None
     variant = resolve_model_variant(settings.model_variant)
-    shortfall = memory_shortfall(dit_model_name(variant), planner)
-    if shortfall and is_auto(settings.model_variant) and variant != BASE_VARIANT:
-        return memory_shortfall(dit_model_name(BASE_VARIANT), planner)
-    return shortfall
+    return memory_shortfall(dit_model_name(variant), planner)
 
 
 async def verify_local_capabilities(config: Config, *, verifier=None) -> list[Capability]:

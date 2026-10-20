@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from immich_memories.audio.generators.ace_step_music_path import MusicPath
 from immich_memories.audio.generators.base import (
     GenerationRequest,
     GenerationResult,
@@ -124,7 +125,7 @@ class TestMusicPipeline:
             )
 
         assert len(result.versions) == 1
-        assert "Music backend Primary failed; trying next backend" in caplog.text
+        assert "Music backend Primary failed (RuntimeError); trying next backend" in caplog.text
         assert "unlabeled-secret-751" not in caplog.text
 
     @pytest.mark.asyncio
@@ -196,6 +197,21 @@ class TestCreatePipeline:
         config.musicgen.enabled = False
 
         with pytest.raises(ValueError, match="No music generation backends enabled"):
+            create_pipeline(config)
+
+    def test_ace_step_that_will_not_run_xl_is_skipped_and_named(self, monkeypatch):
+        from immich_memories.audio.music_pipeline import create_pipeline
+
+        # WHY: the host's memory is what the decision reads.
+        monkeypatch.setattr(
+            "immich_memories.audio.generators.ace_step_music_path.music_path_for",
+            lambda _settings: MusicPath(False, "this host has 32 GB"),
+        )
+        config = MagicMock()
+        config.ace_step.enabled = True
+        config.musicgen.enabled = False
+
+        with pytest.raises(ValueError, match="ACE-Step will not generate: this host has 32 GB"):
             create_pipeline(config)
 
 

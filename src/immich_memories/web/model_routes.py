@@ -16,7 +16,7 @@ from immich_memories.analysis.preparation.detectors import (
 )
 from immich_memories.config.loader import Config
 from immich_memories.model_acquisition import acquisition_plan
-from immich_memories.music_library import installed_music_v2
+from immich_memories.music_library import installed_music_v3
 from immich_memories.security import credential_fingerprint
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.job_routes import (
@@ -50,7 +50,7 @@ def model_status(config: Annotated[Config, Depends(current_config)]) -> ModelAcq
     artifacts = []
     for item in acquisition_plan(config):
         if item.unpack:
-            ready = installed_music_v2(item.destination, sha256=item.artifact.sha256) is not None
+            ready = installed_music_v3(item.destination, sha256=item.artifact.sha256) is not None
         else:
             try:
                 with item.destination.open("rb") as source:

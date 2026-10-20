@@ -422,7 +422,7 @@ advanced:
     mode: "api"                    # api (remote REST server) or lib (local, requires Python 3.12)
     api_url: "http://localhost:8000"
     api_key: ""                    # Bearer token for a protected ACE-Step server (api mode)
-    model_variant: "auto"          # auto: 4B XL on 64 GB+ Macs or 16 GB+ GPUs, else 2B turbo; or turbo, base, xl-turbo
+    model_variant: "auto"          # auto: XL on 64 GB+ Macs or 16 GB+ GPUs, else a bundled track; or xl-turbo, turbo, base
     lm_model_size: "1.7B"          # Default planner; use 4B with the XL production profile
     use_lm: false
     cpu_offload: true              # Local CUDA: move models back to CPU between phases

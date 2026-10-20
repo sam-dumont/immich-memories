@@ -42,6 +42,25 @@ Without a flag they follow `upload.enabled`; a flag wins for that run. `runs ren
 upload only with the flag and ignore `upload.enabled`, so with `upload.enabled: true` a render now
 uploads unless you pass `--no-upload-to-immich`. Every existing command line keeps working.
 
+### Generated music needs the XL model
+
+Generated music now comes only from the 4B XL model. `model_variant: auto` on a host below the XL
+bar (a Mac under 64 GB of unified memory, a GPU under 16 GB) no longer loads the 2B model: films
+play a bundled track, and the run log, the report and `immich-memories preflight` say why. An XL
+model that fails to load ends the same way. In `api` mode the app reads the server's `/health`
+and generates only when it reports an XL model; a server that runs the 2B model or does not
+report its model gets the bundled library, and `model_variant: xl-turbo` states that your server
+runs XL. A config that sets `model_variant: turbo` or `base` keeps working as written, with a
+warning that names `auto`, `xl-turbo` and the bundled library.
+
+### The bundled music library grew again
+
+`immich-memories models fetch` now downloads the `music-v3` library (76 tracks, 118 MB) beside the
+earlier ones; the Docker image already has it. The older `music-v1/` and `music-v2/` folders under
+`~/.immich-memories/models/` are no longer read and are safe to delete. The generated styles per mood
+follow the latest listening round: happy no longer picks piano or electronic, and energetic no longer
+picks piano.
+
 ### Sign-in is on
 
 Authentication is on by default now. An install that ran without it asks for a sign-in after the

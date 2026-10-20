@@ -21,6 +21,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class GenerationFailure(RuntimeError):
+    """A backend failed in a way it can describe safely.
+
+    ``reason`` is written by the backend and never holds a URL, key or config value, so the
+    music chain may log it; the exception's own text may carry the server's answer and is not.
+    """
+
+    def __init__(self, message: str, *, reason: str) -> None:
+        super().__init__(message)
+        self.reason = reason
+
+
 @dataclass
 class GenerationRequest:
     """Request to generate music.

@@ -83,7 +83,12 @@ def _add_music_rows(
     if music and music != "auto":
         table.add_row("Music", music)
     elif music == "auto" or _has_music_backends(config):
-        table.add_row("Music", "Auto (AI-generated)")
+        from immich_memories.generate_music import ace_step_bundled_reason
+
+        reason = ace_step_bundled_reason(config)
+        table.add_row(
+            "Music", f"Auto (bundled track: {reason})" if reason else "Auto (AI-generated)"
+        )
     else:
         return
     table.add_row("Music Volume", f"{int(music_volume * 100)}%")

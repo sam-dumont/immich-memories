@@ -172,7 +172,14 @@ def test_new_style_tempo_stays_in_its_band(style, low, high):
 
 @pytest.mark.parametrize(
     ("mood", "style"),
-    [("energetic", "electronic"), ("happy", "funk"), ("tender", "downtempo")],
+    [
+        ("energetic", "electronic"),
+        ("energetic", "piano"),
+        ("happy", "funk"),
+        ("happy", "piano"),
+        ("happy", "electronic"),
+        ("tender", "downtempo"),
+    ],
 )
 def test_a_style_kept_less_than_four_in_ten_is_never_sampled(mood, style):
     import random
@@ -200,12 +207,12 @@ def test_picks_follow_the_weights():
     for _ in range(6000):
         style = pick_style("happy", rng=rng)
         counts[style] = counts.get(style, 0) + 1
-    # happy: piano 2/4, lofi 3/4, electronic 3/4, citypop 4/5 (funk 2/5 excluded)
-    weights = {"piano": 0.5, "lofi": 0.75, "electronic": 0.75, "citypop": 0.8}
+    # happy: lofi 4/6, citypop 6/7 (piano, electronic 2/6 and funk 1/3 are below 0.4)
+    weights = {"lofi": 5 / 8, "citypop": 7 / 9}
     total = sum(weights.values())
     for style, weight in weights.items():
         assert abs(counts[style] / 6000 - weight / total) < 0.03, style
-    assert "funk" not in counts
+    assert set(counts) == {"lofi", "citypop"}
 
 
 def test_a_mood_without_its_own_folder_uses_its_nearest_folders_table():
@@ -228,11 +235,11 @@ def test_a_genre_suggestion_is_honoured_only_when_the_mood_allows_its_style():
     from immich_memories.audio.generators.ace_step_captions import pick_style
 
     assert pick_style("happy", genres=["city pop"]) == "citypop"
-    assert pick_style("happy", genres=["piano"]) == "piano"
-    # funk is excluded from happy, jazz has no table anywhere: the weighted table decides
-    for genre in ("funk", "jazz"):
+    assert pick_style("calm", genres=["piano"]) == "piano"
+    # piano and funk are excluded from happy, jazz has no table anywhere: the table decides
+    for genre in ("piano", "funk", "jazz"):
         picks = {pick_style("happy", genres=[genre], rng=random.Random(s)) for s in range(200)}
-        assert picks <= {"piano", "lofi", "electronic", "citypop"}
+        assert picks == {"lofi", "citypop"}
         assert len(picks) > 1
 
 

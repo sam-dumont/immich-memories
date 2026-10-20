@@ -2,12 +2,10 @@
 
 The 4B XL turbo model sounds brighter and degenerates less often than the 2B turbo model,
 but it needs about twice the memory. `auto` takes XL where the host has room for it: a Mac
-with 64 GB or more of unified memory, or an NVIDIA GPU with 16 GB or more. Everything
-else gets the 2B model. A variant written in the config is used as written.
-
-The runtime falls back to the 2B model when an automatic XL pick fails to load
-(`ace_step_runtime.build_v15_runtime`), so this choice only has to be right about the
-machine, not about what else is running on it.
+with 64 GB or more of unified memory, or an NVIDIA GPU with 16 GB or more. A host below
+that does not load the 2B model: `ace_step_music_path` sends its films to the bundled
+library, and an XL load that fails ends there too. A variant written in the config is used
+as written.
 """
 
 from __future__ import annotations
@@ -36,11 +34,19 @@ def choose_model_variant(configured: str, host: HostMemory) -> str:
     """The variant to load: the configured one, or for `auto` the one this host holds."""
     if configured.strip().lower() != AUTO_VARIANT:
         return configured
-    if (host.unified_gib or 0.0) >= _XL_UNIFIED_MEMORY_GIB:
-        return XL_VARIANT
-    if (host.gpu_gib or 0.0) >= _XL_GPU_MEMORY_GIB:
-        return XL_VARIANT
-    return BASE_VARIANT
+    return XL_VARIANT if xl_fits(host) else BASE_VARIANT
+
+
+def is_xl(variant: str) -> bool:
+    """Whether a variant or DiT model name is one of the 4B XL models."""
+    return "xl" in variant.strip().lower()
+
+
+def xl_fits(host: HostMemory) -> bool:
+    """Whether this host has the memory the XL model needs."""
+    return (host.unified_gib or 0.0) >= _XL_UNIFIED_MEMORY_GIB or (
+        host.gpu_gib or 0.0
+    ) >= _XL_GPU_MEMORY_GIB
 
 
 def is_auto(configured: str) -> bool:

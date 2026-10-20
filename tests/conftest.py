@@ -897,3 +897,17 @@ def _hardware_probe_advice_fresh():
     from immich_memories.processing import hardware
 
     hardware._advice_given.clear()
+
+
+@pytest.fixture(autouse=True)
+def _ace_step_host_runs_xl(monkeypatch):
+    """Tests see a host and an ACE-Step server that run XL, so generation is not gated away.
+
+    The decision itself is covered in `test_ace_step_music_path.py`, which overrides these.
+    """
+    # WHY: the gate reads this machine's memory and asks the configured ACE-Step server.
+    from immich_memories.audio.generators import ace_step_music_path
+    from immich_memories.audio.generators.ace_step_model_choice import HostMemory
+
+    monkeypatch.setattr(ace_step_music_path, "measure_host", lambda: HostMemory(unified_gib=128.0))
+    monkeypatch.setattr(ace_step_music_path, "server_model", lambda _url: "acestep-v15-xl-turbo")
