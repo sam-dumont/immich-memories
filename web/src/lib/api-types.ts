@@ -2242,11 +2242,8 @@ export interface components {
             title_style?: ("auto" | "random" | "modern_warm" | "elegant_minimal" | "vintage_charm" | "playful_bright" | "soft_romantic") | null;
             /** Transition */
             transition?: string | null;
-            /**
-             * Upload To Immich
-             * @default false
-             */
-            upload_to_immich: boolean;
+            /** Upload To Immich */
+            upload_to_immich?: boolean | null;
         };
         /** ReportResponse */
         ReportResponse: {
@@ -2586,6 +2583,11 @@ export interface components {
             provider: string | null;
             /** Signed In */
             signed_in: boolean;
+            /**
+             * Upload Enabled
+             * @default false
+             */
+            upload_enabled: boolean;
             /** Username */
             username: string | null;
         };

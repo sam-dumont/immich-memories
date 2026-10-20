@@ -49,7 +49,7 @@ def test_an_unknown_holiday_is_refused_by_name() -> None:
 
 def test_the_window_covers_the_days_around_the_holiday() -> None:
     """Christmas Eve and Boxing Day belong to Christmas."""
-    ranges = build_holiday("christmas", 2025, years_back=1, window_days=2)
+    ranges = build_holiday("christmas", 2025, years_back=0, window_days=2)
 
     assert len(ranges) == 1
     assert ranges[0].start.date() == date(2025, 12, 23)
@@ -57,14 +57,14 @@ def test_the_window_covers_the_days_around_the_holiday() -> None:
 
 
 def test_each_year_gets_its_own_range() -> None:
-    ranges = build_holiday("christmas", 2025, years_back=3, window_days=1)
+    ranges = build_holiday("christmas", 2025, years_back=2, window_days=1)
 
     assert [r.start.year for r in ranges] == [2025, 2024, 2023]
 
 
 def test_a_moving_holiday_moves_between_years() -> None:
     """The whole point of computing it: Easter is not on a fixed date."""
-    ranges = build_holiday("easter", 2025, years_back=2, window_days=0)
+    ranges = build_holiday("easter", 2025, years_back=1, window_days=0)
 
     assert [r.start.date() for r in ranges] == [date(2025, 4, 20), date(2024, 3, 31)]
 
@@ -76,20 +76,20 @@ def test_a_holiday_that_has_not_happened_yet_is_skipped() -> None:
     An explicit --year is honoured as given; it is only the default that has to
     know what today is.
     """
-    ranges = build_holiday("christmas", 2026, years_back=3, window_days=1, today=date(2026, 8, 21))
+    ranges = build_holiday("christmas", 2026, years_back=2, window_days=1, today=date(2026, 8, 21))
 
     assert [r.start.year for r in ranges] == [2025, 2024, 2023]
 
 
 def test_a_holiday_already_past_this_year_is_included() -> None:
-    ranges = build_holiday("easter", 2026, years_back=2, window_days=0, today=date(2026, 8, 21))
+    ranges = build_holiday("easter", 2026, years_back=1, window_days=0, today=date(2026, 8, 21))
 
     assert [r.start.year for r in ranges] == [2026, 2025]
 
 
 def test_an_explicit_year_is_still_honoured() -> None:
     """Asking for Christmas 2026 in August is a choice, not a mistake."""
-    ranges = build_holiday("christmas", 2026, years_back=1, window_days=1)
+    ranges = build_holiday("christmas", 2026, years_back=0, window_days=1)
 
     assert [r.start.year for r in ranges] == [2026]
 
@@ -124,7 +124,7 @@ def test_generate_holiday_by_hand_reads_the_same_years_as_the_default() -> None:
 
 
 def test_years_back_still_narrows_a_holiday_on_request() -> None:
-    assert len(build_holiday("christmas", 2025, years_back=3)) == 3
+    assert len(build_holiday("christmas", 2025, years_back=3)) == 4
 
 
 @pytest.mark.parametrize(
@@ -155,3 +155,28 @@ def test_a_holiday_films_window_says_which_holiday_it_was_built_around(holiday, 
 
 def test_a_window_built_around_no_holiday_names_none() -> None:
     assert holiday_of_window(date(2021, 3, 3), date(2025, 7, 9), country="US") is None
+
+
+def test_years_back_spans_the_same_years_for_holiday_on_this_day_and_birthday() -> None:
+    """`--years-back N` is the film's own year and the N before it, for every type (#2733).
+
+    On This Day has no window for the day it is run on, so its N windows are the N earlier
+    years; a holiday and a birthday also read the year they are made for.
+    """
+    from immich_memories.memory_types.date_builders import (
+        build_birthday_windows,
+        build_on_this_day,
+    )
+
+    holiday = build_holiday("christmas", 2025, years_back=3)
+    birthday = build_birthday_windows(date(2018, 2, 7), 2025, 3)
+    on_this_day = build_on_this_day(date(2025, 8, 31), 3)
+
+    assert [r.start.year for r in holiday] == [2025, 2024, 2023, 2022]
+    assert [r.start.year for r in birthday] == [2025, 2024, 2023, 2022]
+    assert [r.start.year for r in on_this_day] == [2024, 2023, 2022]
+
+
+def test_years_back_zero_is_the_holiday_alone_and_a_negative_one_reads_nothing() -> None:
+    assert [r.start.year for r in build_holiday("christmas", 2025, years_back=0)] == [2025]
+    assert build_holiday("christmas", 2025, years_back=-1) == []

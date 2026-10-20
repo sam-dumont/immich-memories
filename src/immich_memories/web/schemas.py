@@ -305,6 +305,8 @@ class SessionView(BaseModel):
     music_preview_offered: bool = False
     # `audio.no_music`: the render panel starts on No music, as generate and automation do.
     music_off: bool = False
+    # `upload.enabled`: the render panel's upload box starts ticked, as generate would upload.
+    upload_enabled: bool = False
     captions: CaptionDefaults = CaptionDefaults()
 
 

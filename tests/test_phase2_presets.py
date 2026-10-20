@@ -11,7 +11,7 @@ from immich_memories.memory_types.registry import MemoryType
 def test_a_holiday_preset_spans_years() -> None:
     preset = create_preset(MemoryType.HOLIDAY, holiday="christmas", year=2025, years_back=3)
 
-    assert len(preset.date_ranges) == 3
+    assert len(preset.date_ranges) == 4
     assert preset.memory_type is MemoryType.HOLIDAY
 
 
@@ -46,7 +46,7 @@ class TestDateResolution:
         )
 
         assert isinstance(result, list)
-        assert [r.start.year for r in result] == [2025, 2024, 2023]
+        assert [r.start.year for r in result] == [2025, 2024, 2023, 2022]
         assert all(r.start.month == 12 for r in result)
 
     def test_holiday_without_a_holiday_is_a_usage_error(self) -> None:
@@ -68,7 +68,7 @@ class TestDateResolution:
             None,
             memory_type="holiday",
             holiday="easter",
-            years_back=2,
+            years_back=1,
         )
 
         assert [(r.start.month, r.start.day) for r in result] == [(4, 18), (3, 29)]

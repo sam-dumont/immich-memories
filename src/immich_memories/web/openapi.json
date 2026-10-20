@@ -2585,9 +2585,15 @@
             "title": "Transition"
           },
           "upload_to_immich": {
-            "default": false,
-            "title": "Upload To Immich",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload To Immich"
           }
         },
         "title": "RenderOptions",
@@ -3504,6 +3510,11 @@
           },
           "signed_in": {
             "title": "Signed In",
+            "type": "boolean"
+          },
+          "upload_enabled": {
+            "default": false,
+            "title": "Upload Enabled",
             "type": "boolean"
           },
           "username": {

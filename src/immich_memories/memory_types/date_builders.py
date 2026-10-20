@@ -618,7 +618,9 @@ def build_holiday(
 
     A holiday is the date a library is most likely to have every single year, so
     it spans every year the library can hold (``HOLIDAY_REACH_YEARS``) unless
-    ``years_back`` names fewer, the way On This Day does.
+    ``years_back`` names fewer. ``years_back=N`` is the holiday of ``year`` and the N
+    before it, the span a birthdays film gets and the N earlier years On This Day reads;
+    ``0`` is that one holiday alone.
 
     ``today`` only affects the starting year, and only when it makes the first
     window impossible: asking for Christmas in August would otherwise include a
@@ -626,9 +628,9 @@ def build_holiday(
     window no photo can fall in. An explicit ``year`` from the caller is a
     choice and is left alone.
     """
-    reach = HOLIDAY_REACH_YEARS if years_back is None else years_back
-    if reach <= 0:
+    if years_back is not None and years_back < 0:
         return []
+    reach = HOLIDAY_REACH_YEARS if years_back is None else years_back + 1
 
     if today is not None and resolve_holiday(holiday, year, country=country) > today:
         year -= 1

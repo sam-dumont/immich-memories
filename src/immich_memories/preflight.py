@@ -259,6 +259,7 @@ def check_caption_endpoint(config: Config) -> CheckResult:
         CAPTION_KEY_HINT,
         REFUSED_CODES,
         bearer_headers,
+        is_worker_busy,
     )
 
     preparation = config.editorial.preparation
@@ -272,6 +273,13 @@ def check_caption_endpoint(config: Config) -> CheckResult:
         response.raise_for_status()
         rows = response.json().get("data", [])
     except httpx.HTTPStatusError as e:
+        if is_worker_busy(e.response.status_code, e.response.text):
+            return CheckResult(
+                name="Captions",
+                status=CheckStatus.OK,
+                message="Caption server busy with another phase, will serve captions when free",
+                details=f"{base_url} answered that its GPU belongs to a render or music phase",
+            )
         if e.response.status_code not in REFUSED_CODES:
             return _caption_endpoint_unreachable(base_url, e)
         return CheckResult(

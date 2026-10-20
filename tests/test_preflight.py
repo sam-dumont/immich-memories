@@ -424,11 +424,25 @@ def test_preflight_run_lists_supported_cpu_titles_without_warning() -> None:
 class _CaptionEndpoint:
     """A local stand-in for the caption server's `/models` inventory."""
 
-    def __init__(self, model_ids: list[str], token: str | None = None) -> None:
+    def __init__(
+        self,
+        model_ids: list[str],
+        token: str | None = None,
+        *,
+        fail_with: tuple[int, str] | None = None,
+    ) -> None:
         body = json.dumps({"data": [{"id": name} for name in model_ids]}).encode()
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_GET(self) -> None:  # noqa: N802 — BaseHTTPRequestHandler's name
+                if fail_with is not None:
+                    failure = json.dumps({"detail": fail_with[1]}).encode()
+                    self.send_response(fail_with[0])
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(failure)))
+                    self.end_headers()
+                    self.wfile.write(failure)
+                    return
                 if token is not None and self.headers.get("Authorization") != f"Bearer {token}":
                     self.send_error(401, "Unauthorized")
                     return
@@ -572,6 +586,36 @@ def test_caption_check_names_the_key_when_the_endpoint_refuses() -> None:
 
     assert result.status is CheckStatus.ERROR
     assert "caption_api_key" in (result.details or "")
+
+
+def test_caption_check_calls_a_worker_busy_with_another_gpu_phase_healthy() -> None:
+    """The bundled worker answers 503 while a render holds the GPU; it is up (#2678)."""
+    endpoint = _CaptionEndpoint([], fail_with=(503, "GPU is busy with another phase"))
+    try:
+        config = Config(
+            tier="gpu", editorial={"preparation": {"caption_base_url": endpoint.base_url}}
+        )
+        result = check_caption_endpoint(config)
+    finally:
+        endpoint.close()
+
+    assert result.status is CheckStatus.OK
+    assert "busy with another phase" in result.message
+    assert CAPTION_SETUP_PAGE not in (result.details or "")
+
+
+def test_caption_check_still_fails_on_any_other_server_error() -> None:
+    endpoint = _CaptionEndpoint([], fail_with=(503, "model is loading"))
+    try:
+        config = Config(
+            tier="gpu", editorial={"preparation": {"caption_base_url": endpoint.base_url}}
+        )
+        result = check_caption_endpoint(config)
+    finally:
+        endpoint.close()
+
+    assert result.status is CheckStatus.ERROR
+    assert CAPTION_SETUP_PAGE in (result.details or "")
 
 
 def test_caption_check_names_the_setup_page_when_no_server_answers() -> None:

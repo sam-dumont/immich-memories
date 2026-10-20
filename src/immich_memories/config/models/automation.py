@@ -170,3 +170,7 @@ class UploadConfig(BaseModel):
         default=False,
         description="Tag each uploaded film with its memory type, years and stories",
     )
+
+    def wanted(self, flag: bool | None) -> bool:
+        """Whether this run uploads: `--upload-to-immich`/`--no-upload-to-immich` win, else `enabled`."""
+        return self.enabled if flag is None else flag

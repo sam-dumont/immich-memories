@@ -207,7 +207,7 @@ def register_generate_commands(main: click.Group) -> None:
         include_asset: tuple[str, ...],
         exclude_asset: tuple[str, ...],
         sharing: str | None,
-        upload_to_immich: bool,
+        upload_to_immich: bool | None,
         album: str | None,
         from_album: str | None,
         subject: str | None,

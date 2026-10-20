@@ -804,3 +804,43 @@ def test_an_immich_outage_is_not_shown_as_an_empty_library(page, launch_app_url)
     page.goto(f"{launch_app_url}/app/create")
     expect(page.get_by_text("Immich unreachable")).to_be_visible()
     expect(page.get_by_text("No named people in Immich yet.")).to_have_count(0)
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_render_upload_box_starts_from_upload_enabled_and_the_choice_wins(
+    page, launch_app_url, launch_workspace, enabled
+):
+    """The box is ticked when `upload.enabled` is on and always sends its explicit state (#2736)."""
+    _seed(launch_workspace)
+
+    def session(route):
+        body = route.fetch().json()
+        body["upload_enabled"] = enabled
+        route.fulfill(json=body)
+
+    # WHY: the config value arrives with the session; pin it without rewriting the workspace config.
+    page.route("**/api/v1/session", session)
+    page.route(
+        "**/api/v1/render/capabilities",
+        lambda route: route.fulfill(
+            json={"upload_available": True, "missing_upload": [], "upload_reason": None}
+        ),
+    )
+    sent = []
+
+    def record_render(route):
+        sent.append(route.request.post_data_json)
+        # WHY: inspect the browser's request without writing a whole film.
+        route.fulfill(status=422, json={"detail": "Test captured the render request"})
+
+    page.route("**/api/v1/runs/*/renders", record_render)
+    page.goto(f"{launch_app_url}/app/runs/20240630_web_cut")
+    panel = page.get_by_role("region", name="Render")
+    option = panel.get_by_label("Upload the film to Immich")
+    expect(option).to_be_checked(checked=enabled)
+
+    option.set_checked(not enabled)
+    with page.expect_response("**/api/v1/runs/*/renders"):
+        panel.get_by_role("button", name="Render", exact=True).click()
+
+    assert sent[-1]["upload_to_immich"] is (not enabled)

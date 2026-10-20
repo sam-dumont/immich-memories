@@ -124,10 +124,10 @@ def register_render_command(runs: click.Group) -> None:
         help="Demo mode: blur every clip frame, scramble the audio, fake the person names",
     )
     @click.option(
-        "--upload-to-immich",
-        is_flag=True,
-        default=False,
-        help="Upload the film to Immich after rendering",
+        "--upload-to-immich/--no-upload-to-immich",
+        default=None,
+        help="Upload the film to Immich after rendering, or keep it local for this run "
+        "(default: upload.enabled)",
     )
     @click.option("--album", default=None, help="Immich album for the upload")
     @click.option(
@@ -188,7 +188,7 @@ def register_render_command(runs: click.Group) -> None:
             music_volume=options["music_volume"],
             no_music=music_turned_off(config, music=options["music"], no_music=options["no_music"]),
             original_audio=options["original_audio"],
-            upload=options["upload_to_immich"],
+            upload=config.upload.wanted(options["upload_to_immich"]),
             album=options["album"],
         )
         run = db.get_run(resolved)

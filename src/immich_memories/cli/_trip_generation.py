@@ -221,7 +221,7 @@ def handle_trip_generation(
     title_override: str | None,
     subtitle_override: str | None,
     llm_title: bool | None = None,
-    upload_to_immich: bool,
+    upload_to_immich: bool | None,
     album: str | None,
     duration: float | int | None = None,
     duration_source: str | None = None,

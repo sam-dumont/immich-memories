@@ -489,3 +489,11 @@ def test_render_can_remove_original_recordings(client):
     job = _finished(client, started.json()["id"])
     assert job["status"] == "succeeded"
     assert "--no-original-audio" in json.loads(client.recorded.read_text())
+
+
+def test_a_render_asks_for_no_upload_only_when_the_client_says_so() -> None:
+    from immich_memories.web.job_routes import RenderOptions
+
+    assert "--upload-to-immich" not in RenderOptions().flags()
+    assert "--upload-to-immich" in RenderOptions(upload_to_immich=True).flags()
+    assert "--no-upload-to-immich" in RenderOptions(upload_to_immich=False).flags()

@@ -289,7 +289,7 @@ def run_pipeline_and_generate(
     person_names: list[str],
     date_range: DateRange,
     date_ranges: tuple[DateRange, ...] | list[DateRange] | None = None,
-    upload_to_immich: bool,
+    upload_to_immich: bool | None,
     album: str | None,
     memory_preset_params: dict | None = None,
     source: str = "manual",
