@@ -26,8 +26,13 @@ from immich_memories.api.models import Asset, AssetType, ExifInfo, VideoClipInfo
 from immich_memories.config import loader as config_loader
 from immich_memories.config.loader import Config
 
+# `make hook-tests` hides the packages CI's unit job lacks, so importorskip skips as in CI (#2742).
+from tests import ci_parity
+
 # CI's unit shards collect only their own files (`--shard-files`, tests/shard_files.py).
 from tests.shard_files import pytest_addoption, pytest_ignore_collect  # noqa: F401
+
+ci_parity.activate_from_env()
 
 _TEST_ROOT: Path | None = None
 _TEST_ENV_KEYS = {
