@@ -92,7 +92,8 @@ class RenderOptions(BaseModel):
     add_date: bool | None = None
     add_place: bool | None = None
     privacy_mode: bool = False
-    upload_to_immich: bool = False
+    # None follows upload.enabled, as the CLI does with neither flag.
+    upload_to_immich: bool | None = None
     album: str | None = None
     # None leaves the naming to generate's own rule; True/False is --llm-title/--no-llm-title.
     llm_title: bool | None = None
@@ -114,8 +115,8 @@ class RenderOptions(BaseModel):
             "music_volume",
             "album",
         )
-        switches = ("privacy_mode", "upload_to_immich")
-        either_way = ("add_date", "add_place", "original_audio")
+        switches = ("privacy_mode",)
+        either_way = ("add_date", "add_place", "original_audio", "upload_to_immich")
         return [
             *(
                 f"--{n.replace('_', '-')}={getattr(self, n)}"

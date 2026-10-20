@@ -41,7 +41,7 @@
   let music = $state<string>(page.data.session?.music_off ? 'none' : 'auto');
   let volume = $state(0.5);
   let originalAudio = $state(true);
-  let upload = $state(false);
+  let upload = $state(page.data.session?.upload_enabled ?? false);
   let album = $state('');
 
   let job = $state<JobView | null>(null);

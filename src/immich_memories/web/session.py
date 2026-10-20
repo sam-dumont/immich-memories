@@ -32,6 +32,7 @@ def session_view(request: Request) -> SessionView:
         demo_mode_offered=config.server.enable_demo_mode,
         music_preview_offered=config.musicgen.enabled or config.ace_step.enabled,
         music_off=config.audio.no_music,
+        upload_enabled=config.upload.enabled,
         captions=CaptionDefaults(
             add_date=config.defaults.add_date, add_place=config.defaults.add_place
         ),

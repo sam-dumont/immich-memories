@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from immich_memories.analysis.captions.contract import DESCRIPTION_MODEL
 from immich_memories.analysis.captions.identity import llm_caption_identity
 from immich_memories.analysis.captions.outcomes import cached_preview
-from immich_memories.analysis.captions.requests import prepare_captions
+from immich_memories.analysis.captions.requests import CaptionServerBusy, prepare_captions
 from immich_memories.analysis.clips.video_motion import (
     STAGE as VIDEO_MOTION,
 )
@@ -566,8 +566,9 @@ class _Acquisition:
                     **options,
                 )
             self.failures.update({f"caption:{key}": value for key, value in errors.items()})
-        except PermissionError as exc:
-            # The endpoint answered and asked for a credential; repointing the URL is not the fix.
+        except (PermissionError, CaptionServerBusy) as exc:
+            # The endpoint answered (it wants a credential, or its GPU is busy with another
+            # phase); repointing the URL is not the fix.
             self.failures["captions"] = str(exc)
         except AccountReadFailed:
             raise

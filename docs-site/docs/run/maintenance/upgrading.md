@@ -35,6 +35,13 @@ line to the run log. It is off by default because it is a call to GitHub; the
 
 ## From 1.0.0-rc.10 to 1.0.0
 
+### Upload follows `upload.enabled` everywhere
+
+`generate` and `runs render` both take `--upload-to-immich` and the new `--no-upload-to-immich`.
+Without a flag they follow `upload.enabled`; a flag wins for that run. `runs render` used to
+upload only with the flag and ignore `upload.enabled`, so with `upload.enabled: true` a render now
+uploads unless you pass `--no-upload-to-immich`. Every existing command line keeps working.
+
 ### Sign-in is on
 
 Authentication is on by default now. An install that ran without it asks for a sign-in after the
@@ -375,7 +382,9 @@ people now joins their names with `&`, like a film for both.
 
 A holiday film used to read the five years before it. It now reads every year your library has
 around the day, so `generate --holiday` without `--years-back` covers your whole library. Pass
-`--years-back 5` to keep the old span. The day itself leads each year, each year gets an even
+`--years-back 4` to keep the old span of five holidays. `--years-back N` now means the same for
+every film type: the year the film is about and the N before it. A holiday film used to count
+the current year as one of the N, so the same number gives one more holiday than it did. The day itself leads each year, each year gets an even
 share of the film, and the title is the holiday's name with the years the cut shows. The timer
 only proposes a holiday when the day stands out in your pictures in at least three years.
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from click.testing import CliRunner
 
 from immich_memories.cli import main
@@ -196,3 +197,28 @@ def test_runs_render_follows_audio_no_music_unless_the_film_asks_for_music(tmp_p
     for args, off in (([], True), (["--music", "auto"], False)):
         assert _invoke(config, ["runs", "render", RUN, *args], rendered).exit_code == 0
         assert rendered.pop()["request"].no_music is off
+
+
+UPLOAD_CASES = [
+    (True, [], True),
+    (True, ["--upload-to-immich"], True),
+    (True, ["--no-upload-to-immich"], False),
+    (False, [], False),
+    (False, ["--upload-to-immich"], True),
+    (False, ["--no-upload-to-immich"], False),
+]
+
+
+@pytest.mark.parametrize(("enabled", "flags", "uploads"), UPLOAD_CASES)
+def test_runs_render_uploads_by_upload_enabled_unless_a_flag_decides(
+    tmp_path, enabled, flags, uploads
+):
+    config = _config(tmp_path)
+    config.upload.enabled = enabled
+    save_run(config, RUN)
+    rendered: list[dict] = []
+
+    result = _invoke(config, ["runs", "render", RUN, *flags], rendered)
+
+    assert result.exit_code == 0, result.output
+    assert rendered[0]["request"].upload is uploads

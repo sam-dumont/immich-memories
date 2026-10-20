@@ -72,7 +72,7 @@ def record_config(config, arguments: dict) -> None:
         progress_request={
             "film": arguments.get("no_render") is False,
             "no_music": bool(arguments.get("no_music")),
-            "upload": bool(arguments.get("upload_to_immich") or config.upload.enabled),
+            "upload": config.upload.wanted(arguments.get("upload_to_immich")),
             "worker": config.render.enabled,
         },
         config_shape={

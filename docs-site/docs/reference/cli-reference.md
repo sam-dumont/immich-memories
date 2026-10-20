@@ -350,7 +350,7 @@ immich-memories generate [OPTIONS]
 | `--include` | text | - | Keep this picture in the cut even if the editor would drop it (repeatable) (repeatable) |
 | `--exclude` | text | - | Leave this picture out of the cut (repeatable) (repeatable) |
 | `--sharing` | choice: `just-us` \| `family` \| `shareable` | - | Who the film is for: just-us (the household), family (default: defaults.sharing) or shareable (anyone) |
-| `--upload-to-immich` | boolean | false | Upload generated video back to Immich |
+| `--upload-to-immich`, `--no-upload-to-immich` | boolean | - | Upload the film to Immich, or keep it local for this run (default: upload.enabled) |
 | `--album` | text | - | Immich album name for uploaded video |
 | `--add-date`, `--no-add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
 | `--add-place`, `--no-add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
@@ -365,7 +365,7 @@ immich-memories generate [OPTIONS]
 | `--photo-duration` | float | - | Duration per photo clip in seconds (default: 4.0) |
 | `--trip-index` | integer | - | Select a specific trip by index (use with --memory-type trip) |
 | `--all-trips` | boolean | false | Generate a video for every detected trip (use with --memory-type trip) |
-| `--years-back` | integer | - | Years to look back for on_this_day or holiday; with --birthday, makes the birthdays film: each birthday ±1 day, not the year |
+| `--years-back` | integer | - | Years before the film's year to look back for on_this_day or holiday; with --birthday, makes the birthdays film: each birthday ±1 day, not the year |
 | `--near-date` | text | - | Select trip closest to this date (YYYY-MM-DD, use with --memory-type trip) |
 | `--event-id` | text | - | Exact catalogue event ID (use with --memory-type special_day and --day) |
 | `--day` | datetime | - | The day this memory is about (YYYY-MM-DD). With --memory-type special_day it names a catalogued day, whose title comes from the catalogue rather than from here (`immich-memories days-due` lists them). With --memory-type on_this_day it is the anniversary to look back from, so the cut is reproducible; without it, today |
@@ -869,7 +869,7 @@ immich-memories runs render [OPTIONS] [RUN_ID]
 | `--add-date`, `--no-add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
 | `--add-place`, `--no-add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
-| `--upload-to-immich` | boolean | false | Upload the film to Immich after rendering |
+| `--upload-to-immich`, `--no-upload-to-immich` | boolean | - | Upload the film to Immich after rendering, or keep it local for this run (default: upload.enabled) |
 | `--album` | text | - | Immich album for the upload |
 | `--progress-file` | file | - | Keep the render's progress in this JSON file, for a watcher such as the web client |
 

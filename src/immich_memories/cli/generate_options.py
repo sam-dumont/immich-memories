@@ -323,10 +323,10 @@ def run_options(command: FC) -> FC:
             "defaults.sharing) or shareable (anyone)",
         ),
         click.option(
-            "--upload-to-immich",
-            is_flag=True,
-            default=False,
-            help="Upload generated video back to Immich",
+            "--upload-to-immich/--no-upload-to-immich",
+            default=None,
+            help="Upload the film to Immich, or keep it local for this run "
+            "(default: upload.enabled)",
         ),
         click.option(
             "--album", type=str, default=None, help="Immich album name for uploaded video"
@@ -436,8 +436,8 @@ def per_memory_type_options(command: FC) -> FC:
             type=int,
             default=None,
             help=(
-                "Years to look back for on_this_day or holiday; with --birthday, makes "
-                "the birthdays film: each birthday ±1 day, not the year"
+                "Years before the film's year to look back for on_this_day or holiday; "
+                "with --birthday, makes the birthdays film: each birthday ±1 day, not the year"
             ),
         ),
         click.option(

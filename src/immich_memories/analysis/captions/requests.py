@@ -64,6 +64,22 @@ from immich_memories.store.caption_provenance import (
 from immich_memories.store.editorial_preparation import now
 
 REFUSED_CODES = frozenset({401, 403})
+# The bundled inference worker serves one GPU phase at a time. While a render or music phase
+# holds the GPU it answers 503 with this detail: the server is up and will answer when free.
+BUSY_DETAIL = "GPU is busy with another phase"
+BUSY_STATUS = 503
+
+
+class CaptionServerBusy(RuntimeError):
+    """The caption worker is up but its GPU belongs to another phase right now."""
+
+
+def is_worker_busy(status_code: int, body: bytes | str) -> bool:
+    """Whether an HTTP answer is the worker's "busy with another GPU phase" 503."""
+    text = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    return status_code == BUSY_STATUS and BUSY_DETAIL in text
+
+
 _REFUSED_ERRORS = tuple(f"http_{code}" for code in sorted(REFUSED_CODES))
 CAPTION_KEY_HINT = (
     "set advanced.editorial.preparation.caption_api_key "
@@ -127,6 +143,10 @@ def _model_inventory(base_url: str, *, timeout: float, api_key: str) -> list[dic
         with open_caption_url(request, timeout=timeout) as response:
             payload = json.loads(response.read())
     except urllib.error.HTTPError as exc:
+        if exc.code == BUSY_STATUS and is_worker_busy(exc.code, exc.read()):
+            raise CaptionServerBusy(
+                "caption server is busy with another GPU phase; it answers when the GPU is free"
+            ) from exc
         if exc.code not in REFUSED_CODES:
             raise
         # The endpoint is there and answering; it wants a credential. Another URL is not the fix.

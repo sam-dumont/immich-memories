@@ -48,7 +48,7 @@ class ResolvedRunInputs:
         photo_assets: list[Any] | None,
         dry_run: bool,
         automation_attempt_id: str | None,
-        upload_to_immich: bool,
+        upload_to_immich: bool | None,
         config: Config,
         person_names: list[str] | None,
         music: str | None,
@@ -60,7 +60,7 @@ class ResolvedRunInputs:
             photo_assets=photos,
             # A rehearsal must not mark an automation attempt as spent.
             attempt_id=None if dry_run else automation_attempt_id,
-            should_upload=upload_to_immich or config.upload.enabled,
+            should_upload=config.upload.wanted(upload_to_immich),
             person_name=person_names[0] if person_names else None,
             # "auto" is a request to choose, not a file to load.
             music_path=(Path(music) if music and music != _CHOOSE_MUSIC else None),

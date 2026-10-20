@@ -54,13 +54,14 @@ def test_a_dry_run_claims_no_automation_attempt() -> None:
     assert _resolve(dry_run=False, automation_attempt_id="attempt-1").attempt_id == "attempt-1"
 
 
-def test_upload_is_on_when_either_the_flag_or_the_config_says_so() -> None:
+def test_upload_follows_the_config_unless_the_flag_decides() -> None:
     config = Config()
     config.upload.enabled = True
 
+    assert _resolve(upload_to_immich=None, config=config).should_upload is True
     assert _resolve(upload_to_immich=True).should_upload is True
-    assert _resolve(upload_to_immich=False, config=config).should_upload is True
-    assert _resolve(upload_to_immich=False).should_upload is False
+    assert _resolve(upload_to_immich=False, config=config).should_upload is False
+    assert _resolve(upload_to_immich=None).should_upload is False
 
 
 def test_the_first_person_names_the_memory() -> None:

@@ -79,3 +79,54 @@ def test_canvas_uses_selected_portrait_in_a_landscape_pool(
         assert [clip.asset.id for clip in params.clips] == ["kept-portrait"]
         assert params.clip_segments == {"kept-portrait": (0, 4)}
     assert (canvas.width, canvas.height) == (width, height)
+
+
+@pytest.mark.parametrize(
+    ("enabled", "flags", "uploads"),
+    [
+        (True, [], True),
+        (True, ["--upload-to-immich"], True),
+        (True, ["--no-upload-to-immich"], False),
+        (False, [], False),
+        (False, ["--upload-to-immich"], True),
+        (False, ["--no-upload-to-immich"], False),
+    ],
+)
+def test_generate_uploads_by_upload_enabled_unless_a_flag_decides(
+    tmp_path, enabled, flags, uploads
+):
+    """The flag parsed by `generate` reaches the delivery decision the run returns (#2736)."""
+    with main.commands["generate"].make_context("generate", flags, resilient_parsing=True) as ctx:
+        flag = ctx.params["upload_to_immich"]
+    selected = [make_clip("kept", duration=5, width=1920, height=1080)]
+    result = PipelineResult(selected_clips=selected, clip_segments={"kept": (0, 4)}, errors=[])
+    config = Config(
+        cache={"database": str(tmp_path / "analysis.db"), "directory": str(tmp_path / "cache")},
+        upload={"enabled": enabled},
+    )
+    destination = tmp_path / "memory.mp4"
+    # WHY: the selector and renderer are the external-work boundaries; delivery is what's under test.
+    with (
+        patch("immich_memories.analysis.runtime.composition.build_smart_pipeline") as pipeline,
+        patch("immich_memories.generate.generate_memory", return_value=destination),
+    ):
+        pipeline.return_value.run_editorial_source.return_value = (selected, result)
+        _path, should_upload, _album = run_pipeline_and_generate(
+            assets=[clip.asset for clip in selected],
+            client=MagicMock(),
+            config=config,
+            progress=MagicMock(),
+            duration=60,
+            transition="cut",
+            music=None,
+            no_music=True,
+            output_path=destination,
+            memory_type="year_in_review",
+            person_names=[],
+            date_range=DateRange(start=datetime(2026, 1, 1), end=datetime(2026, 12, 31)),
+            upload_to_immich=flag,
+            album=None,
+            output_resolution="1080p",
+        )
+
+    assert should_upload is uploads

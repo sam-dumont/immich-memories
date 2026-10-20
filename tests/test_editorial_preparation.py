@@ -755,6 +755,22 @@ def test_a_caption_endpoint_that_wants_a_token_says_so_and_nothing_else(tmp_path
     )
 
 
+def test_a_busy_caption_worker_is_reported_as_busy_not_as_a_wrong_url(tmp_path):
+    from immich_memories.analysis.captions.requests import CaptionServerBusy
+
+    def busy(**_):
+        raise CaptionServerBusy("caption server is busy with another GPU phase; rerun when free")
+
+    result = run(
+        tmp_path,
+        ports=replace(successful_ports([]), captions=busy),
+        fetch_preview=lambda _: preview(),
+    )
+
+    assert "busy with another GPU phase" in result.failures["captions"]
+    assert "caption_base_url" not in result.failures["captions"]
+
+
 def _named_asset(asset_id, *, named=True):
     source = asset(asset_id)
     return source.model_copy(

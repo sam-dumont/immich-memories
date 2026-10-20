@@ -94,7 +94,7 @@ Each render writes a new folder under `output.directory`; reruns do not overwrit
 
 `--resolution` takes the config value; `auto` matches source clips. When `--resolution` is omitted, the command uses `output.resolution` (1080p by default). `--quality` takes `high`, `medium` or `low`: these map to config quality `high`, `balanced` and `fast`. The same names apply to `runs render`. Basic preparation can still limit source intermediates to 1080p.
 
-Use `--upload-to-immich --album "Memories"` to deliver the film to Immich. Setting `upload.enabled: true` also enables delivery without the flag; `upload.album_name` supplies the default album. Once delivery is confirmed, the app removes the local output and keeps the run record and Immich link. Leave upload off to keep the file locally.
+Use `--upload-to-immich --album "Memories"` to deliver the film to Immich. Without a flag, `generate` and `runs render` both follow `upload.enabled`; `--no-upload-to-immich` keeps one film local when it is on, and the flag always wins for that run; `upload.album_name` supplies the default album. Once delivery is confirmed, the app removes the local output and keeps the run record and Immich link. Leave upload off to keep the file locally.
 
 The key must have the [read permissions](../../run/docker.md#the-api-key) before a cut starts. Upload permissions are optional. If the key cannot upload, tag or file the film into its album, generation still completes and prints the retained local path with the reason. The run page offers **Download**. Missing `asset.delete` only keeps the previous version in Immich.
 

@@ -549,3 +549,26 @@ def test_a_caption_banked_without_an_origin_still_names_its_caption_contract():
     summary = caption_origin_summary(grouped)
     assert f"{DESCRIPTION_MODEL} / {DESCRIPTION_SOURCE}" in summary
     assert "banked before origins were recorded" in summary
+
+
+def test_a_worker_busy_with_another_gpu_phase_is_not_a_wrong_caption_url(monkeypatch):
+    """The run's own provider check reads the same 503 the preflight does (#2678)."""
+    import urllib.error
+
+    from immich_memories.analysis.captions.requests import CaptionServerBusy, _model_inventory
+
+    busy = urllib.error.HTTPError(
+        "http://worker.test/v1/models",
+        503,
+        "Service Unavailable",
+        {},  # type: ignore[arg-type]  # WHY: HTTPError only reads headers lazily
+        io.BytesIO(b'{"detail": "GPU is busy with another phase"}'),
+    )
+    # WHY: the network edge; a real worker answers this while a render holds the GPU.
+    monkeypatch.setattr(
+        "immich_memories.analysis.captions.requests.open_caption_url",
+        lambda *_a, **_k: (_ for _ in ()).throw(busy),
+    )
+
+    with pytest.raises(CaptionServerBusy, match="busy with another GPU phase"):
+        _model_inventory("http://worker.test/v1", timeout=1, api_key="")
