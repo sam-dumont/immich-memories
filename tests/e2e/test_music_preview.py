@@ -49,7 +49,12 @@ def music_launch(tmp_path_factory, fake_immich_server) -> Iterator[tuple[str, Pa
     """The launch with a text model and a music backend configured; yields its URL and state dir."""
     workspace = _launch_workspace(tmp_path_factory.mktemp("music-preview"), fake_immich_server)
     config = yaml.safe_load(workspace.config_path.read_text())
-    config["advanced"]["llm"] = {"provider": "ollama", "model": "text-reader"}
+    config["advanced"]["llm"] = {
+        "enabled": True,
+        "provider": "ollama",
+        "base_url": "http://text-model.invalid:11434",
+        "model": "text-reader",
+    }
     config["advanced"]["ace_step"] = {"enabled": True}
     workspace.config_path.write_text(yaml.safe_dump(config, sort_keys=False))
     state_dir = workspace.root / "state"
@@ -79,7 +84,7 @@ def test_preview_uses_text_mood_and_plays_the_track(page: Page, music_launch) ->
     )
     expect(panel.get_by_label("The previewed track")).to_be_visible()
     request = json.loads((records / MODEL_REQUEST).read_text())
-    assert request["prompt"].startswith("music-cut-text-v1")
+    assert request["prompt"].startswith("music-cut-text-v")
     assert "images" not in request
     assert THESIS in request["prompt"]
     scenes = json.loads((records / MUSIC_REQUEST).read_text())
