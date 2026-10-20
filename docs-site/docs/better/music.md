@@ -80,6 +80,30 @@ An app in Docker Desktop can reach a native Mac server through `host.docker.inte
 
 ### Sharing one GPU with the worker
 
+When the music server and the render worker are on different machines, the app starts the
+music as soon as the worker has the film, so the two run at the same time. The take is made for
+the longest film the worker may return and cut where the real one ends. The app keeps it only if
+the film that comes back asks for the same music (same scenes, moods and cadence) and is no
+longer than the take; otherwise it makes the music again. Stems are separated after the film is
+back, because the separator often runs on the worker's GPU. A take that fails while the worker
+renders is made once more after the film is back. On a three-minute film with an XL server on
+another machine, the whole render went from 372 to 428 seconds down to 284 to 340.
+
+The app only overlaps them when they can't fight over one card:
+
+| Setup | Music starts |
+| --- | --- |
+| ACE-Step (and MusicGen, if on) in `api` mode on another host than `render.worker_base_url` | While the worker renders |
+| ACE-Step in `api` mode on the worker's host (same name, or both on loopback) | After the film is back |
+| ACE-Step in `lib` mode, inside the app | After the film is back |
+| No render worker | After the film is back |
+| A film that plays a bundled track (no XL server) | Nothing to start |
+
+The app compares host names. Two services on one card under different names, like time-sliced
+Kubernetes pods or two containers on one GPU, look like two machines to it. Render and music running together on one small card
+haven't been measured: a take that runs out of memory is made again after the film, but the
+render itself could fall back to software encoding.
+
 Tested sharing ACE-Step with the render worker on one small GPU card: both films completed
 serially, with generated music and four-stem separation. See
 [Measure your setup](./measured.md#render-worker-and-music-sharing-one-gpu) for the numbers.

@@ -109,7 +109,7 @@ def test_shared_render_finalization_obeys_source_audio_choice(
     config = config_in(tmp_path)
     clip = make_clip("source-clip", duration=3, width=32, height=32)
 
-    def assembled(_params, output, *_args):
+    def assembled(_params, output, *_args, early=None):
         staged = output.with_name("staged.mp4")
         shutil.copyfile(original, staged)
         return PreparedGeneration(

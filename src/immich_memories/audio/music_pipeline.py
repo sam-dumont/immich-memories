@@ -540,8 +540,6 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
     ``separate_stems=False`` skips the separator for callers that only need a
     full track. CLI and UI generation retain stems for the final mix.
     """
-    from immich_memories.audio.generators.factory import create_generator
-
     generators: list[MusicGenerator] = []
     stem_separator: StemSeparator | None = None
 
@@ -555,11 +553,8 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
     # It used to be added as a generator only when ACE-Step was off, which left
     # `generators` one element long in every configuration and made the fallback
     # chain unreachable (#499).
-    if getattr(app_config, "musicgen", None) and app_config.musicgen.enabled:
-        musicgen = create_generator("musicgen", app_config.musicgen)
-        if separate_stems:
-            # MusicGenBackend satisfies StemSeparator (has separate_stems method)
-            stem_separator = musicgen  # type: ignore[assignment]
+    musicgen = _musicgen(app_config)
+    if musicgen is not None:
         generators.append(musicgen)
         role = "fallback generation" if ace_step_enabled else "generation"
         logger.info(
@@ -567,22 +562,8 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
             role,
             " + Demucs stems" if separate_stems else "",
         )
-
-    inference_url = getattr(getattr(app_config, "inference", None), "facts_base_url", "")
-    if (
-        separate_stems
-        and stem_separator is None
-        and isinstance(inference_url, str)
-        and inference_url
-    ):
-        from immich_memories.audio.generators.inference_demucs import InferenceDemucs
-
-        fallback = _try_local_demucs() if app_config.inference.fallback_to_local else None
-        stem_separator = InferenceDemucs(inference_url, fallback=fallback)
-
-    # Auto-detect local Demucs when no remote separator is configured.
-    if separate_stems and stem_separator is None:
-        stem_separator = _try_local_demucs()
+    if separate_stems:
+        stem_separator = _stem_separator(app_config, musicgen)
 
     _require_generators(generators, skipped_because)
 
@@ -592,6 +573,46 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
         block_seconds=_block_seconds(app_config),
         max_blocks=_max_blocks(app_config),
     )
+
+
+def _musicgen(app_config) -> MusicGenerator | None:
+    from immich_memories.audio.generators.factory import create_generator
+
+    if getattr(app_config, "musicgen", None) and app_config.musicgen.enabled:
+        return create_generator("musicgen", app_config.musicgen)
+    return None
+
+
+def _stem_separator(app_config, musicgen: MusicGenerator | None) -> StemSeparator | None:
+    if musicgen is not None:
+        # MusicGenBackend satisfies StemSeparator (has separate_stems method)
+        return musicgen  # type: ignore[return-value]
+    inference_url = getattr(getattr(app_config, "inference", None), "facts_base_url", "")
+    if isinstance(inference_url, str) and inference_url:
+        from immich_memories.audio.generators.inference_demucs import InferenceDemucs
+
+        fallback = _try_local_demucs() if app_config.inference.fallback_to_local else None
+        return InferenceDemucs(inference_url, fallback=fallback)
+    # Auto-detect local Demucs when no remote separator is configured.
+    return _try_local_demucs()
+
+
+async def separate_track(
+    app_config, track: Path, output_dir: Path, progress_callback: Any | None = None
+) -> MusicStems | None:
+    """Stems for a track generated without them, from the separator a pipeline would use.
+
+    A take made while a render worker draws the film skips its stems: the separator may
+    be that worker's GPU. They are separated here once the film is back.
+    """
+    pipeline = MusicPipeline([], _stem_separator(app_config, _musicgen(app_config)))
+    async with pipeline:
+        return await pipeline._try_separate_stems(
+            GenerationResult(audio_path=track),
+            GenerationRequest(output_dir=output_dir),
+            progress_callback,
+            0,
+        )
 
 
 def _block_seconds(app_config) -> int:

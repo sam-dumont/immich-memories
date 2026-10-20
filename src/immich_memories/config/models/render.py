@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 _LEGACY_SCALE_MODES = {"smart_crop": "blur", "fill": "fit"}
 
 
-def _is_loopback(hostname: str) -> bool:
+def is_loopback_host(hostname: str) -> bool:
     """Whether a worker hostname is this machine, where cleartext stays local."""
     import ipaddress
 
@@ -225,7 +225,7 @@ class RenderWorkerConfig(BaseModel):
     def require_explicit_cleartext_transport(self) -> RenderWorkerConfig:
         """A typo to http:// must not silently send the Immich key in cleartext."""
         url = urlsplit(self.worker_base_url)
-        if url.scheme != "http" or self.allow_insecure_http or _is_loopback(url.hostname or ""):
+        if url.scheme != "http" or self.allow_insecure_http or is_loopback_host(url.hostname or ""):
             return self
         raise ValueError(
             "render.worker_base_url uses cleartext HTTP for a worker that receives the "

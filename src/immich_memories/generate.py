@@ -21,6 +21,7 @@ from immich_memories.generate_delivery import (
     deliver_with_operational_progress,
     safe_delivery_message,
 )
+from immich_memories.generate_music_early import EarlyMusic
 from immich_memories.generate_settings import run_music_phase
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
@@ -383,6 +384,7 @@ def _complete_music_phase(
     operational: OperationalProgress,
     progress: PipelineProgress,
     mute_windows: list[tuple[float, float]] | None = None,
+    early: EarlyMusic | None = None,
 ):
     """Run or explicitly skip music while emitting the shared outer phase."""
     if not params.original_audio:
@@ -409,6 +411,7 @@ def _complete_music_phase(
         run_tracker,
         encoding_plan=encoding_plan,
         mute_windows=mute_windows,
+        early=early,
     )
     progress.report("music", 1.0, result.warning or "Music ready")
     operational.emit(OperationalPhase.MUSIC, 1, 1, result.warning or "Music ready")
@@ -464,9 +467,15 @@ def _artifact_warnings(
 
 
 def _clear_run_intermediates(
-    params: GenerationParams, assembly_clips: list, run_output_dir: Path
+    params: GenerationParams,
+    assembly_clips: list,
+    run_output_dir: Path,
+    early: EarlyMusic | None = None,
 ) -> None:
     """Cleanup never masks the outcome of the run it is closing."""
+    if early is not None:
+        # A render that failed or stopped takes its music with it, never leaving it running.
+        early.cancel()
     try:
         if params.debug_preserve_intermediates:
             keep_temp_clips(assembly_clips, run_output_dir / ".intermediates")
@@ -599,6 +608,8 @@ def _generate_memory_inner(
 
     assembly_clips: list = []  # WHY: populated in try, needed in finally for cleanup
     pending_error: GenerationError | None = None
+    # A deferred caller (the worker) owns its music; only a run that mixes here starts it early.
+    early = EarlyMusic.for_run(params, run_output_dir, deferred=defer_finalization)
 
     try:
         from immich_memories.tracking import timing
@@ -623,6 +634,7 @@ def _generate_memory_inner(
             operational,
             pp,
             _phase_times,
+            early=early,
         )
         assembly_clips = list(prepared.assembly_clips)
         result_path = prepared.path
@@ -650,6 +662,7 @@ def _generate_memory_inner(
                 operational,
                 pp,
                 mute_windows=prepared.music_mute_windows,
+                early=early,
             )
         _phase_times["music"] = music_span.duration
         prepared = _with_decode_kept(prepared, worker_video)
@@ -705,7 +718,7 @@ def _generate_memory_inner(
         _fail_run_if_running(run_tracker, safe_msg)
         pending_error = GenerationError(f"Generation failed: {safe_msg}")
     finally:
-        _clear_run_intermediates(params, assembly_clips, run_output_dir)
+        _clear_run_intermediates(params, assembly_clips, run_output_dir, early)
         set_current_run_id(None)
 
     assert pending_error is not None  # one of the non-delivery exception branches set it

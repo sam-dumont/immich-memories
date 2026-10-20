@@ -10,12 +10,12 @@ import asyncio
 import json
 import logging
 import subprocess
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Coroutine, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
 from immich_memories.processing.assembly_config import AssemblyClip
@@ -29,8 +29,13 @@ from immich_memories.security import configured_secret_values, sanitize_error_me
 
 if TYPE_CHECKING:
     from immich_memories.audio.mood_analyzer import VideoMood
-    from immich_memories.audio.music_generator_models import GeneratedMusic, MusicStems
+    from immich_memories.audio.music_generator_models import (
+        GeneratedMusic,
+        MusicStems,
+        VideoTimeline,
+    )
     from immich_memories.config.loader import Config
+    from immich_memories.generate_music_early import MusicMemo
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +63,68 @@ class MusicSelection:
     path: Path | None
     warning: str | None = None
     stems: MusicStems | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MusicPlan:
+    """Everything generated music is made from, as the generator is asked for it.
+
+    A take made from one plan fits another when both ask for the same scenes in the same
+    order (moods, months), cadence, mood and style, and the take is at least as long as the
+    film. Scene lengths follow the film's length, and generated music is cut where the
+    film ends; a take made for a slightly longer film is the same music cut a moment
+    later. Each take draws a fresh seed, so the same plan never means the same samples;
+    it means the music the film would have been given.
+    """
+
+    scenes: tuple[tuple[tuple[str, Any], ...], ...]
+    film_duration: float | None
+    fps: float
+    cadence: float | None
+    memory_type: str | None
+    hemisphere: str
+    mood_detail: VideoMood | None
+
+    @classmethod
+    def of(
+        cls,
+        timeline: VideoTimeline,
+        *,
+        hemisphere: str,
+        fps: float,
+        cadence: float | None,
+        memory_type: str | None,
+        mood_detail: VideoMood | None,
+    ) -> MusicPlan:
+        scenes = timeline.build_scenes(hemisphere=hemisphere)
+        return cls(
+            scenes=tuple(tuple(sorted(scene.items())) for scene in scenes),
+            film_duration=timeline.film_duration,
+            fps=fps,
+            cadence=cadence,
+            memory_type=memory_type,
+            hemisphere=hemisphere,
+            mood_detail=mood_detail,
+        )
+
+    def mismatch(self, film: MusicPlan) -> str | None:
+        """Why this take does not fit ``film``, in words, or None when it does."""
+        if self.film_duration is None or film.film_duration is None:
+            if self.film_duration != film.film_duration:
+                return "film length"
+        elif self.film_duration < film.film_duration:
+            return "film length"  # the take would end before the film
+        if _scene_order(self.scenes) != _scene_order(film.scenes):
+            return "scenes"
+        for name in ("fps", "cadence", "memory_type", "hemisphere"):
+            if getattr(self, name) != getattr(film, name):
+                return name
+        return "mood" if self.mood_detail != film.mood_detail else None
+
+
+def _scene_order(scenes: tuple[tuple[tuple[str, Any], ...], ...]) -> list[dict[str, Any]]:
+    """The scenes without their lengths, which follow the film's length."""
+    return [{key: value for key, value in scene if key != "duration"} for scene in scenes]
 
 
 def optional_music_warning(exc: Exception, config: Config | None = None) -> str:
@@ -119,6 +186,7 @@ def resolve_music(
     video_duration: float | None = None,
     fps: float = 30,
     work_dir: Path | None = None,
+    early: MusicMemo | None = None,
 ) -> MusicSelection:
     """Determine the music to use: provided path, generated, bundled, or none.
 
@@ -133,6 +201,8 @@ def resolve_music(
     Callers that cannot supply it leave the looping to the mixer and get a
     length estimated from the clips.
     ``work_dir`` holds disposable looped and mastered library files until mixing ends.
+    ``early`` is music started alongside a remote render; its mood and take are used when
+    they were made from what this film asks for (`generate_music_early`).
     """
     if no_music:
         return MusicSelection(None)
@@ -140,8 +210,8 @@ def resolve_music(
         # Missing explicit tracks are never silently replaced with bundled music.
         return MusicSelection(music_path if music_path.exists() else None)
 
-    assembly_clips, music_mood, mood_detail = _music_evidence(
-        config, assembly_clips, editorial_attempt_dir, memory_type
+    assembly_clips, music_mood, mood_detail = music_evidence(
+        config, assembly_clips, editorial_attempt_dir, memory_type, early=early
     )
 
     warning: str | None = None
@@ -163,6 +233,7 @@ def resolve_music(
                 fps=fps,
                 mood_detail=mood_detail,
                 video_duration=video_duration,
+                early=early,
             )
         except Exception as exc:  # WHY: optional music must not invalidate the base artifact
             # A configured generator that fails used to be worse than no generator
@@ -281,8 +352,13 @@ def _covering(track: Path, video_duration: float, run_output_dir: Path) -> Path:
         return track
 
 
-def _music_evidence(
-    config: Config, clips: list[AssemblyClip], attempt: Path | None, memory_type: str | None
+def music_evidence(
+    config: Config,
+    clips: list[AssemblyClip],
+    attempt: Path | None,
+    memory_type: str | None,
+    *,
+    early: MusicMemo | None = None,
 ) -> tuple[list[AssemblyClip], str, VideoMood | None]:
     """Apply the film's mood to music copies; preserve facts used by titles and replay.
 
@@ -297,9 +373,12 @@ def _music_evidence(
     facts = facts_for_render(
         clips, read_plan(attempt), memory_type=memory_type, hemisphere=music_hemisphere(config)
     )
-    choice = asyncio.run(
-        mood_for_cut(config, attempt, tuple(clip.asset_id for clip in clips), facts=facts)
-    )
+    asset_ids = tuple(clip.asset_id for clip in clips)
+
+    def read_mood():
+        return asyncio.run(mood_for_cut(config, attempt, asset_ids, facts=facts))
+
+    choice = early.mood((asset_ids, facts), read_mood) if early is not None else read_mood()
     mood = choice.mood.primary_mood
     detail = choice.mood if choice.source == "cut_text" else None
     return [replace(clip, llm_emotion=mood) for clip in clips], mood, detail
@@ -366,6 +445,9 @@ def auto_generate_music(
     fps: float = 30,
     mood_detail: VideoMood | None = None,
     video_duration: float | None = None,
+    early: MusicMemo | None = None,
+    run: Callable[[Coroutine[Any, Any, Any]], Any] = asyncio.run,
+    separate_stems: bool = True,
 ) -> GeneratedMusic | None:
     """Auto-generate music using configured AI backends.
 
@@ -375,80 +457,123 @@ def auto_generate_music(
 
     Returns the selected track and stems, or None when no backend
     is available. Backend failures propagate to the optional phase boundary.
+    ``early`` hands over a take already made from the same plan; ``run`` drives the
+    generation coroutine (the early take runs it where it can be cancelled). The early
+    take skips its stems (``separate_stems=False``): they are separated once it is handed
+    over, when the render no longer needs the worker's GPU.
     """
     if not music_config_available(config):
         return None
 
-    try:
-        from immich_memories.audio.music_generator import generate_music_for_video
-        from immich_memories.audio.music_generator_client import MusicGenClientConfig
-        from immich_memories.audio.music_generator_models import VideoTimeline
-        from immich_memories.audio.text_mood import music_hemisphere
-        from immich_memories.audio.track_quality import score_track
+    from immich_memories.audio.music_generator_models import VideoTimeline
+    from immich_memories.audio.text_mood import music_hemisphere
 
-        clip_data: list[tuple[float, str, int | None]] = [
-            (
-                clip.duration,
-                clip.llm_emotion or "calm",
-                _clip_month_from_date(clip.date),
-            )
-            for clip in assembly_clips
-        ]
-
-        timeline = VideoTimeline.from_clips(
-            clips=clip_data,
-            title_duration=(
-                config.title_screens.title_duration if config.title_screens.enabled else 0
-            ),
-            ending_duration=(
-                config.title_screens.ending_duration if config.title_screens.enabled else 0
-            ),
+    clip_data: list[tuple[float, str, int | None]] = [
+        (
+            clip.duration,
+            clip.llm_emotion or "calm",
+            _clip_month_from_date(clip.date),
         )
-        timeline.film_duration = video_duration
+        for clip in assembly_clips
+    ]
+    timeline = VideoTimeline.from_clips(
+        clips=clip_data,
+        title_duration=(config.title_screens.title_duration if config.title_screens.enabled else 0),
+        ending_duration=(
+            config.title_screens.ending_duration if config.title_screens.enabled else 0
+        ),
+    )
+    timeline.film_duration = video_duration
+    plan = MusicPlan.of(
+        timeline,
+        hemisphere=music_hemisphere(config),
+        fps=fps,
+        cadence=photo_cadence_seconds(
+            assembly_clips, transition_overlap=transition_overlap, fps=fps
+        ),
+        memory_type=memory_type,
+        mood_detail=mood_detail,
+    )
 
-        musicgen_config = MusicGenClientConfig.from_app_config(config.musicgen)
-        # One take per film; the periodicity score is logged, never a reason to redo it (#2702).
-        musicgen_config.num_versions = 1
-        if config.audio.max_regenerations:
-            logger.info("audio.max_regenerations is ignored: generated music is one take (#2702)")
-
-        music_dir = run_output_dir / "music"
-        music_dir.mkdir(parents=True, exist_ok=True)
-
-        def music_progress(version_idx: int, status: str, progress: float, detail: object) -> None:
-            if report_fn:
-                report_fn("music", progress / 100.0, f"Music candidate {version_idx + 1}: {status}")
-
-        result = asyncio.run(
-            generate_music_for_video(
-                timeline=timeline,
-                output_dir=music_dir,
-                config=musicgen_config,
-                progress_callback=music_progress,
-                app_config=config,
-                hemisphere=music_hemisphere(config),
-                memory_type=memory_type,
-                photo_cadence_seconds=photo_cadence_seconds(
-                    assembly_clips, transition_overlap=transition_overlap, fps=fps
-                ),
-                mood_detail=mood_detail,
-                quality_gate=score_track,
-            )
+    def make() -> GeneratedMusic | None:
+        return _generate_take(
+            config, timeline, plan, run_output_dir, report_fn, run, separate_stems
         )
 
-        if result and result.versions:
-            result.selected_version = 0
-            # The wizard used to do this in its own music path; without it a
-            # multi-version generation leaves every rejected take on disk.
-            result.cleanup_unselected()
-            selected = result.selected
-            if selected and selected.full_mix and selected.full_mix.exists():
-                logger.info(f"Auto-generated music: {selected.full_mix}")
-                return selected
+    def with_stems(made: GeneratedMusic) -> GeneratedMusic:
+        if made.stems is None and separate_stems:
+            from immich_memories.audio.music_pipeline import separate_track
 
-    except (RuntimeError, OSError):
-        raise
+            made.stems = run(
+                separate_track(
+                    config, made.full_mix, run_output_dir / "music", _stem_progress(report_fn)
+                )
+            )
+        return made
 
+    return early.take(plan, make, report_fn, with_stems) if early is not None else make()
+
+
+def _stem_progress(report_fn: Callable[[str, float, str], None] | None):
+    def progress(_version: int, status: str, progress: float, _detail: object) -> None:
+        if report_fn:
+            report_fn("music", progress / 100.0, status)
+
+    return progress
+
+
+def _generate_take(
+    config: Config,
+    timeline: VideoTimeline,
+    plan: MusicPlan,
+    run_output_dir: Path,
+    report_fn: Callable[[str, float, str], None] | None,
+    run: Callable[[Coroutine[Any, Any, Any]], Any],
+    separate_stems: bool = True,
+) -> GeneratedMusic | None:
+    """One generated take for ``plan``; backend failures propagate to the caller."""
+    from immich_memories.audio.music_generator import generate_music_for_video
+    from immich_memories.audio.music_generator_client import MusicGenClientConfig
+    from immich_memories.audio.track_quality import score_track
+
+    musicgen_config = MusicGenClientConfig.from_app_config(config.musicgen)
+    # One take per film; the periodicity score is logged, never a reason to redo it (#2702).
+    musicgen_config.num_versions = 1
+    if config.audio.max_regenerations:
+        logger.info("audio.max_regenerations is ignored: generated music is one take (#2702)")
+
+    music_dir = run_output_dir / "music"
+    music_dir.mkdir(parents=True, exist_ok=True)
+
+    def music_progress(version_idx: int, status: str, progress: float, detail: object) -> None:
+        if report_fn:
+            report_fn("music", progress / 100.0, f"Music candidate {version_idx + 1}: {status}")
+
+    result = run(
+        generate_music_for_video(
+            timeline=timeline,
+            output_dir=music_dir,
+            config=musicgen_config,
+            progress_callback=music_progress,
+            app_config=config,
+            hemisphere=plan.hemisphere,
+            memory_type=plan.memory_type,
+            photo_cadence_seconds=plan.cadence,
+            mood_detail=plan.mood_detail,
+            quality_gate=score_track,
+            separate_stems=separate_stems,
+        )
+    )
+
+    if result and result.versions:
+        result.selected_version = 0
+        # The wizard used to do this in its own music path; without it a
+        # multi-version generation leaves every rejected take on disk.
+        result.cleanup_unselected()
+        selected = result.selected
+        if selected and selected.full_mix and selected.full_mix.exists():
+            logger.info(f"Auto-generated music: {selected.full_mix}")
+            return selected
     return None
 
 

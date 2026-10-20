@@ -545,6 +545,11 @@ these helper modules:
   `processing/preparation_fallbacks.py` where it decides, and is never banked
 - `generate_photos.py`: photo rendering, budget allocation, clip merging
 - `generate_music.py`: music resolution, AI generation, audio mixing
+- `generate_music_early.py`: a remote film's generated music, started once the worker has the job;
+  kept only when the returned film asks for the same `MusicPlan`, else made again. Only when every
+  generator is a server on another host than the worker (`music_apart_from_render`) and the XL
+  gate lets it generate; anything else stays sequential, so the two never compete for one device.
+  The take's stems wait for the film (`music_pipeline.separate_track`)
 - `generate_privacy.py`: GPS anonymization, fake names/cities, trip titles
 - `generate_settings.py`: assembly/title settings, assembler creation; owns temporary bundled-music work through mixing
 - `generate_render.py`: local source preparation/assembly or configured worker handoff
@@ -566,7 +571,8 @@ these helper modules:
   NAS tier caps the shared photo/assembly canvas at 1080p even for an explicit 4K request;
   lower requested resolutions remain unchanged.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
-  and a staged film that reuses the worker's decode when the bytes match
+  and a staged film that reuses the worker's decode when the bytes match; `expected_film` reads
+  the clips, longest length and rate the worker may return, for the early music take
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material
 - `processing/remote_render_budget.py`: the deadline a film's work earns (clips and seconds), shared
   by the app's wait and the worker's job deadline, and the stall guard for a render that stops moving
@@ -1485,6 +1491,7 @@ src/immich_memories/
 ├── delivery_timestamp.py       # The day a memory is filed under: its last picture, in the zone most share
 ├── generate_downloads.py       # Parallel asset downloads
 ├── generate_music.py           # Music resolution, AI generation, audio mixing
+├── generate_music_early.py     # Music generated while a render worker draws the film
 ├── generate_photos.py          # Photo rendering, budget allocation, clip merging
 ├── generate_privacy.py         # GPS anonymization, fake names/cities, trip titles
 ├── generate_progress.py        # Adapters from pipeline progress to caller-supplied callbacks

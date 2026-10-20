@@ -52,6 +52,7 @@ if TYPE_CHECKING:
     from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_music import MusicPhaseResult
+    from immich_memories.generate_music_early import EarlyMusic
     from immich_memories.processing.encoding_plan import EncodingPlan
     from immich_memories.processing.probe_cache import ProbeCache
     from immich_memories.tracking import RunTracker
@@ -505,8 +506,13 @@ def run_music_phase(
     encoding_plan: EncodingPlan,
     mute_windows: list[tuple[float, float]] | None = None,
     source: MusicSource = MusicSource.AUTO,
+    early: EarlyMusic | None = None,
 ) -> MusicPhaseResult:
-    """Resolve and apply music to the assembled video."""
+    """Resolve and apply music to the assembled video.
+
+    ``early`` is the music started while a worker rendered the film; it is used only where
+    this film asks for the same music.
+    """
     from immich_memories.generate_music import (
         MusicPhaseResult,
         apply_music_file,
@@ -542,6 +548,7 @@ def run_music_phase(
                 editorial_attempt_dir=params.editorial_attempt_dir,
                 video_duration=video_duration,
                 fps=fps,
+                early=early,
             )
             if not selection.path:
                 return _complete_music_without_track(selection.warning, phase_started, run_tracker)
