@@ -26,6 +26,17 @@ A test the map can't see needs a name the selector reads: a test that reads a fi
 or file name, a test that walks the repository starts from `REPO`/`ROOT`/`__file__`, and a test
 that starts the app in a child process uses `sys.executable`.
 
+## Tests run without the heavy optional packages
+
+CI's unit shards install `uv sync --extra dev` only: no torch, demucs, mlx, ACE-Step or other
+runtime extra. `make hook-tests` hides every installed package outside that set
+(`tests/ci_parity.py`, derived from the installed metadata and the `dev-test` target), so a
+`pytest.importorskip("torch")` test skips in the hook exactly as it does in CI, and its diff coverage
+counts the same. Code that runs in CI's unit job is therefore tested without the optional package:
+fake the module (`sys.modules` patch, a stub class at the import boundary). A test gated on a heavy
+package covers that package's real behaviour only, and carries the `extras` marker (`make test-extras`);
+it never carries the coverage of new lines.
+
 ## Test what users get
 
 Unit tests against fakes have passed while advertised features were broken: a flag that never

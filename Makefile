@@ -921,7 +921,9 @@ diff-cover-report:  ## Diff coverage (>=80% on changed lines) from coverage.xml 
 		echo "   tests/test_ffmpeg_pipe.py for the pattern." && \
 		exit 1)
 
-# The pre-commit hook's tests. scripts/hook_scope.py picks the unit test files the
+# The pre-commit hook's tests, run with the packages CI's unit job lacks hidden
+# (HOOK_CI_PARITY, tests/ci_parity.py), so importorskip skips here as it does there.
+# scripts/hook_scope.py picks the unit test files the
 # change can affect from a map of what each test file ran on the last green full run
 # (kept in the git directory every worktree shares). A subset run first imports each
 # changed source module in a fresh interpreter, then collects the whole suite (about
@@ -933,7 +935,8 @@ diff-cover-report:  ## Diff coverage (>=80% on changed lines) from coverage.xml 
 HOOK_SCOPE_BASE ?= origin/main
 HOOK_SCOPE = uv run python scripts/hook_scope.py
 hook-tests:  ## Run the unit tests this change can affect, then diff-cover (HOOK_FULL=1 runs them all)
-	@selection="$$($(HOOK_SCOPE) tests --base $(HOOK_SCOPE_BASE))" || exit $$?; \
+	@export HOOK_CI_PARITY=1; \
+	selection="$$($(HOOK_SCOPE) tests --base $(HOOK_SCOPE_BASE))" || exit $$?; \
 	if [ "$$selection" = all ]; then \
 		data=$$(mktemp -d); \
 		COVERAGE_FILE="$$data/.coverage" uv run pytest $(PYTEST_WORKERS) $(COVERAGE_FLAGS) \
