@@ -226,3 +226,29 @@ def test_an_answer_does_not_undo_a_relationship_saved_while_it_was_being_made(tm
     person = {p["name"]: p for p in client.get("/api/v1/roster").json()["people"]}["Ana"]
     assert person["notes"] == "Loves hikes"
     assert any(link["target_id"] == luc and link["decision"] for link in person["links"])
+
+
+def test_the_roster_suggests_what_the_tree_implies_and_accepts_them_all(tmp_path):
+    # #2795: a grandparent comes from two parent links, with the chain as its reason.
+    client = api_client(config_in(tmp_path))
+    gran, bob, riley = (
+        client.post("/api/v1/roster", json={"name": name}).json()["person_id"]
+        for name in ("Gran", "Bob", "Riley")
+    )
+    for parent, child in ((gran, bob), (bob, riley)):
+        client.post(
+            f"/api/v1/roster/{parent}/relationships",
+            json={"kind": "parent-of", "target_id": child},
+        )
+
+    roster = {p["person_id"]: p for p in client.get("/api/v1/roster").json()["people"]}
+    suggested = [link for link in roster[gran]["links"] if link["status"] == "suggested"]
+    assert [(link["kind"], link["target_id"], link["via"]) for link in suggested] == [
+        ("grandparent-of", riley, "parent of Bob, who is a parent of Riley")
+    ]
+
+    accepted = client.post(f"/api/v1/roster/{gran}/suggestions/accept").json()
+    assert [link["status"] for link in accepted["links"] if link["kind"] == "grandparent-of"] == [
+        "named"
+    ]
+    assert client.post("/api/v1/roster/nobody/suggestions/accept").status_code == 404

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-20 06:19+0200\n"
+"POT-Creation-Date: 2026-10-21 18:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -62,6 +62,10 @@ msgstr "Ungefär {amount} tills filmen är klar"
 msgid "About {percent}% overall"
 msgstr "Ungefär {percent}% totalt"
 
+#: web/lib/people/RelationshipRows.svelte:81
+msgid "Accept all suggestions"
+msgstr "Godkänn alla förslag"
+
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "Acceptera vidarebefordrade och nedladdade medier"
@@ -74,11 +78,11 @@ msgstr "Kontoägare"
 msgid "Accounts"
 msgstr "Konton"
 
-#: web/lib/people/RelationshipRows.svelte:73
+#: web/lib/people/RelationshipRows.svelte:91
 msgid "Add"
 msgstr "Lägg till"
 
-#: web/lib/people/RelationshipRows.svelte:66
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Add a relationship"
 msgstr "Lägg till en relation"
 
@@ -835,7 +839,7 @@ msgstr "Länka"
 msgid "Link a person from {account}"
 msgstr "Länka en person från {account}"
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Linked to"
 msgstr "Länkad till"
 
@@ -855,7 +859,7 @@ msgstr "När konfigurationen lästes in varnade den för dessa nycklar:"
 msgid "Looking through your library for memories to suggest..."
 msgstr "Söker igenom ditt bibliotek efter minnen att föreslå..."
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Looks linked to"
 msgstr "Verkar vara länkad till"
 
@@ -1062,7 +1066,8 @@ msgstr "Inga förslag just nu."
 msgid "No trips detected for this year."
 msgstr "Inga resor hittades för det här året."
 
-#: web/lib/people/RelationshipRows.svelte:41 web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
+#: web/lib/people/RelationshipRows.svelte:74
 msgid "No, they are not"
 msgstr "Nej, det stämmer inte"
 
@@ -1096,7 +1101,7 @@ msgstr "Gäller inte en film du bad om"
 msgid "Not possible"
 msgstr "Inte möjligt"
 
-#: web/lib/people/RelationshipRows.svelte:40
+#: web/lib/people/RelationshipRows.svelte:57
 msgid "Not related to"
 msgstr "Inte släkt med"
 
@@ -1104,11 +1109,16 @@ msgstr "Inte släkt med"
 msgid "Not the same person"
 msgstr "Inte samma person"
 
+#: web/lib/people/RelationshipRows.svelte:57
+#, python-brace-format
+msgid "Not {relationship}"
+msgstr "Inte {relationship}"
+
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "Anteckningar"
 
-#: web/lib/people/RelationshipRows.svelte:62
+#: web/lib/people/RelationshipRows.svelte:79
 msgid "Nothing recorded yet."
 msgstr "Inget registrerat ännu."
 
@@ -1378,11 +1388,11 @@ msgstr "Uppdatera förslag"
 msgid "Refreshing..."
 msgstr "Uppdaterar..."
 
-#: web/lib/people/RelationshipRows.svelte:65
+#: web/lib/people/RelationshipRows.svelte:83
 msgid "Relationship"
 msgstr "Relation"
 
-#: web/lib/people/RelationshipRows.svelte:33
+#: web/lib/people/RelationshipRows.svelte:43
 msgid "Relationships"
 msgstr "Relationer"
 
@@ -1402,7 +1412,7 @@ msgstr "Ta bort"
 msgid "Remove from this cut"
 msgstr "Ta bort ur den här klippningen"
 
-#: web/lib/people/RelationshipRows.svelte:38
+#: web/lib/people/RelationshipRows.svelte:48
 msgid "Remove this relationship"
 msgstr "Ta bort den här relationen"
 
@@ -1718,6 +1728,10 @@ msgstr "Berättelser"
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "Undertitel"
+
+#: web/lib/people/RelationshipRows.svelte:50
+msgid "Suggested"
+msgstr "Föreslaget"
 
 #: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
@@ -2129,7 +2143,7 @@ msgstr ""
 "Vad automatiseringen skulle skapa härnäst, samma lista som `auto suggest` visar. Kör en som "
 "`auto run` skulle göra, eller kontrollera den först utan att rendera."
 
-#: web/lib/people/RelationshipRows.svelte:52 web/lib/people/RelationshipRows.svelte:54
+#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "Vad är {name} för {other}?"
@@ -2198,7 +2212,7 @@ msgstr "Varför den här bilden"
 msgid "Winter"
 msgstr "Vinter"
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:70
+#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
 msgid "With"
 msgstr "Med"
 
@@ -2217,6 +2231,10 @@ msgstr "År tillbaka (alla om tomt)"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "Antal år att spänna över"
+
+#: web/lib/people/RelationshipRows.svelte:53
+msgid "Yes, they are"
+msgstr "Ja, det stämmer"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2268,7 +2286,7 @@ msgstr "inte känt än"
 msgid "our cat along the years"
 msgstr "vår katt genom åren"
 
-#: web/lib/people/RelationshipRows.svelte:47
+#: web/lib/people/RelationshipRows.svelte:64
 msgid "relationship not named"
 msgstr "relation utan namn"
 

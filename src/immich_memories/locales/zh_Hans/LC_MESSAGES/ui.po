@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-20 06:19+0200\n"
+"POT-Creation-Date: 2026-10-21 18:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -58,6 +58,10 @@ msgstr "影片完成还需约 {amount}"
 msgid "About {percent}% overall"
 msgstr "总体约 {percent}%"
 
+#: web/lib/people/RelationshipRows.svelte:81
+msgid "Accept all suggestions"
+msgstr "全部接受建议"
+
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "接受转发和下载的媒体"
@@ -70,11 +74,11 @@ msgstr "账户所有者"
 msgid "Accounts"
 msgstr "账户"
 
-#: web/lib/people/RelationshipRows.svelte:73
+#: web/lib/people/RelationshipRows.svelte:91
 msgid "Add"
 msgstr "添加"
 
-#: web/lib/people/RelationshipRows.svelte:66
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Add a relationship"
 msgstr "添加关系"
 
@@ -813,7 +817,7 @@ msgstr "关联"
 msgid "Link a person from {account}"
 msgstr "关联 {account} 中的人物"
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Linked to"
 msgstr "已关联到"
 
@@ -833,7 +837,7 @@ msgstr "加载配置时，以下键出现警告："
 msgid "Looking through your library for memories to suggest..."
 msgstr "正在浏览媒体库以推荐回忆..."
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Looks linked to"
 msgstr "看起来已关联到"
 
@@ -1034,7 +1038,8 @@ msgstr "暂无建议。"
 msgid "No trips detected for this year."
 msgstr "这一年没有检测到旅行。"
 
-#: web/lib/people/RelationshipRows.svelte:41 web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
+#: web/lib/people/RelationshipRows.svelte:74
 msgid "No, they are not"
 msgstr "不，不是"
 
@@ -1065,7 +1070,7 @@ msgstr "不适用于你要求的影片"
 msgid "Not possible"
 msgstr "不可能"
 
-#: web/lib/people/RelationshipRows.svelte:40
+#: web/lib/people/RelationshipRows.svelte:57
 msgid "Not related to"
 msgstr "与其无关"
 
@@ -1073,11 +1078,16 @@ msgstr "与其无关"
 msgid "Not the same person"
 msgstr "不是同一个人"
 
+#: web/lib/people/RelationshipRows.svelte:57
+#, python-brace-format
+msgid "Not {relationship}"
+msgstr "不是{relationship}"
+
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "备注"
 
-#: web/lib/people/RelationshipRows.svelte:62
+#: web/lib/people/RelationshipRows.svelte:79
 msgid "Nothing recorded yet."
 msgstr "尚无记录。"
 
@@ -1345,11 +1355,11 @@ msgstr "刷新建议"
 msgid "Refreshing..."
 msgstr "正在刷新…"
 
-#: web/lib/people/RelationshipRows.svelte:65
+#: web/lib/people/RelationshipRows.svelte:83
 msgid "Relationship"
 msgstr "关系"
 
-#: web/lib/people/RelationshipRows.svelte:33
+#: web/lib/people/RelationshipRows.svelte:43
 msgid "Relationships"
 msgstr "关系"
 
@@ -1369,7 +1379,7 @@ msgstr "移除"
 msgid "Remove from this cut"
 msgstr "从此剪辑中移除"
 
-#: web/lib/people/RelationshipRows.svelte:38
+#: web/lib/people/RelationshipRows.svelte:48
 msgid "Remove this relationship"
 msgstr "移除此关系"
 
@@ -1679,6 +1689,10 @@ msgstr "故事"
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "副标题"
+
+#: web/lib/people/RelationshipRows.svelte:50
+msgid "Suggested"
+msgstr "建议"
 
 #: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
@@ -2072,7 +2086,7 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自动化接下来会创建的内容，与 `auto suggest` 打印的列表相同。可以像 `auto run` 那样运行，也可以先不渲染检查一遍。"
 
-#: web/lib/people/RelationshipRows.svelte:52 web/lib/people/RelationshipRows.svelte:54
+#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "{name} 是 {other} 的什么人？"
@@ -2139,7 +2153,7 @@ msgstr "为什么选择此素材"
 msgid "Winter"
 msgstr "冬季"
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:70
+#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
 msgid "With"
 msgstr "对象"
 
@@ -2158,6 +2172,10 @@ msgstr "回溯年数（留空则为全部）"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "跨越的年数"
+
+#: web/lib/people/RelationshipRows.svelte:53
+msgid "Yes, they are"
+msgstr "是的"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2209,7 +2227,7 @@ msgstr "暂未知"
 msgid "our cat along the years"
 msgstr "这些年，我们家的猫"
 
-#: web/lib/people/RelationshipRows.svelte:47
+#: web/lib/people/RelationshipRows.svelte:64
 msgid "relationship not named"
 msgstr "关系未命名"
 

@@ -16,6 +16,7 @@ from immich_memories.db import Store, open_store
 from immich_memories.people.editor import (
     ROLE_SUGGESTIONS,
     PersonView,
+    accept_suggestions,
     add_person,
     add_relationship,
     answer_person,
@@ -201,6 +202,19 @@ def relate(
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
     person = next(p for p in load_people(store) if p.person_id == person_id)
+    return _shown(person, config)
+
+
+@router.post("/{person_id}/suggestions/accept", response_model=RosterPerson)
+def accept_all(
+    person_id: str,
+    store: Annotated[Store, Depends(people_store)],
+    config: Annotated[Config, Depends(current_config)],
+) -> RosterPerson:
+    """Record every relationship the family tree suggests for this person, reciprocals too."""
+    person = accept_suggestions(store, person_id)
+    if person is None:
+        raise HTTPException(404, "Nobody with that id is in the people registry.")
     return _shown(person, config)
 
 

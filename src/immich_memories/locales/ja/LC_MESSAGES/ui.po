@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-20 06:19+0200\n"
+"POT-Creation-Date: 2026-10-21 18:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -60,6 +60,10 @@ msgstr "動画の完成まで約{amount}"
 msgid "About {percent}% overall"
 msgstr "全体の約{percent}%"
 
+#: web/lib/people/RelationshipRows.svelte:81
+msgid "Accept all suggestions"
+msgstr "提案をすべて承認"
+
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "転送・ダウンロードされたメディアを許可"
@@ -72,11 +76,11 @@ msgstr "アカウントの所有者"
 msgid "Accounts"
 msgstr "アカウント"
 
-#: web/lib/people/RelationshipRows.svelte:73
+#: web/lib/people/RelationshipRows.svelte:91
 msgid "Add"
 msgstr "追加"
 
-#: web/lib/people/RelationshipRows.svelte:66
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Add a relationship"
 msgstr "関係を追加"
 
@@ -815,7 +819,7 @@ msgstr "リンク"
 msgid "Link a person from {account}"
 msgstr "{account}の人物をリンク"
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Linked to"
 msgstr "リンク先"
 
@@ -835,7 +839,7 @@ msgstr "設定の読み込みで次のキーに警告が出ました:"
 msgid "Looking through your library for memories to suggest..."
 msgstr "提案できる思い出をライブラリから探しています..."
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Looks linked to"
 msgstr "リンクしていそう"
 
@@ -1036,7 +1040,8 @@ msgstr "現在、提案はありません。"
 msgid "No trips detected for this year."
 msgstr "この年に検出された旅行はありません。"
 
-#: web/lib/people/RelationshipRows.svelte:41 web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
+#: web/lib/people/RelationshipRows.svelte:74
 msgid "No, they are not"
 msgstr "いいえ、違います"
 
@@ -1069,7 +1074,7 @@ msgstr "リクエストして作るムービーには適用されません"
 msgid "Not possible"
 msgstr "不可能"
 
-#: web/lib/people/RelationshipRows.svelte:40
+#: web/lib/people/RelationshipRows.svelte:57
 msgid "Not related to"
 msgstr "関係なし"
 
@@ -1077,11 +1082,16 @@ msgstr "関係なし"
 msgid "Not the same person"
 msgstr "別人"
 
+#: web/lib/people/RelationshipRows.svelte:57
+#, python-brace-format
+msgid "Not {relationship}"
+msgstr "{relationship}ではない"
+
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "メモ"
 
-#: web/lib/people/RelationshipRows.svelte:62
+#: web/lib/people/RelationshipRows.svelte:79
 msgid "Nothing recorded yet."
 msgstr "まだ記録がありません。"
 
@@ -1349,11 +1359,11 @@ msgstr "提案を更新"
 msgid "Refreshing..."
 msgstr "更新中..."
 
-#: web/lib/people/RelationshipRows.svelte:65
+#: web/lib/people/RelationshipRows.svelte:83
 msgid "Relationship"
 msgstr "関係"
 
-#: web/lib/people/RelationshipRows.svelte:33
+#: web/lib/people/RelationshipRows.svelte:43
 msgid "Relationships"
 msgstr "関係"
 
@@ -1373,7 +1383,7 @@ msgstr "削除"
 msgid "Remove from this cut"
 msgstr "この編集から外す"
 
-#: web/lib/people/RelationshipRows.svelte:38
+#: web/lib/people/RelationshipRows.svelte:48
 msgid "Remove this relationship"
 msgstr "この関係を削除"
 
@@ -1683,6 +1693,10 @@ msgstr "ストーリー"
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "サブタイトル"
+
+#: web/lib/people/RelationshipRows.svelte:50
+msgid "Suggested"
+msgstr "提案"
 
 #: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
@@ -2080,7 +2094,7 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自動化が次に作成する内容で、`auto suggest` が表示するのと同じリストです。`auto run` と同じように実行するか、レンダリングせずに先に確認できます。"
 
-#: web/lib/people/RelationshipRows.svelte:52 web/lib/people/RelationshipRows.svelte:54
+#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "{name}さんは、{other}さんの何にあたりますか？"
@@ -2147,7 +2161,7 @@ msgstr "この素材が選ばれた理由"
 msgid "Winter"
 msgstr "冬"
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:70
+#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
 msgid "With"
 msgstr "相手"
 
@@ -2166,6 +2180,10 @@ msgstr "遡る年数（空欄の場合はすべて）"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "対象とする年数"
+
+#: web/lib/people/RelationshipRows.svelte:53
+msgid "Yes, they are"
+msgstr "はい、そうです"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2217,7 +2235,7 @@ msgstr "まだ不明"
 msgid "our cat along the years"
 msgstr "うちの猫と過ごした年月"
 
-#: web/lib/people/RelationshipRows.svelte:47
+#: web/lib/people/RelationshipRows.svelte:64
 msgid "relationship not named"
 msgstr "関係の名前なし"
 

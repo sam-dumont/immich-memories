@@ -24,10 +24,12 @@ from immich_memories.people.companion import (
     replace_confirmed,
     save_confirmed,
     save_confirmed_relationship,
+    write_relationship,
 )
 from immich_memories.people.companion import bind_alias as _bind_alias
 from immich_memories.people.companion import decline_alias as _decline_alias
 from immich_memories.people.companion import unbind_alias as _unbind_alias
+from immich_memories.people.kinship import Fact, Hop, Suggestion, suggest_relationships
 from immich_memories.people.relationships import DETECTED_KINDS, RELATIONSHIP_CHOICES
 from immich_memories.people.signatures import Tier, pair_key
 
@@ -54,6 +56,8 @@ REJECTED = "rejected"
 DETECTED = "detected"
 UNNAMED = "unnamed"
 NAMED = "named"
+# What the tree implies and nobody answered yet (#2795): offered, never stored until accepted.
+SUGGESTED = "suggested"
 
 _GONE = "someone no longer in the registry"
 
@@ -80,7 +84,8 @@ class LinkView:
     decision: str | None = None
     reverse_kind: str | None = None
     # detected: the scan noticed it and nobody answered; unnamed: confirmed in an older
-    # release without ever saying what the pair is; rejected; named: a real relationship.
+    # release without ever saying what the pair is; rejected; named: a real relationship;
+    # suggested: the family tree implies it, and `via` names the chain.
     status: str = NAMED
 
     @property
@@ -138,7 +143,69 @@ def _roster(document: dict[str, Any]) -> list[PersonView]:
     answers = _pair_answers(entries)
     declined = declined_aliases(document)
     people = [_view(entry, names, answers, declined) for entry in entries]
+    by_id = {person.person_id: person for person in people}
+    for suggestion in _tree_suggestions(entries):
+        person = by_id.get(suggestion.source)
+        if person is not None and suggestion.target in names:
+            person.links.append(_suggested_link(suggestion, names))
     return sorted(people, key=lambda person: (_tier_rank(person.tier), -person.count))
+
+
+def accept_suggestions(store: Store, person_id: str) -> PersonView | None:
+    """Record every relationship the tree suggests for one person; None when unknown.
+
+    One locked edit, so the suggestions accepted are the ones the registry implies at
+    that moment, not a page's older reading of it.
+    """
+
+    def change(document: dict[str, Any]) -> PersonView | None:
+        person = next((p for p in _roster(document) if p.person_id == person_id), None)
+        if person is None:
+            return None
+        for link in person.links:
+            if link.status == SUGGESTED:
+                write_relationship(document, person_id, link.kind, link.target_id)
+        return next(p for p in _roster(document) if p.person_id == person_id)
+
+    return edit_registry(store, change)
+
+
+def _tree_suggestions(entries: list[dict[str, Any]]) -> list[Suggestion]:
+    """What the confirmed relationships imply, with every answered "no" kept out."""
+    canonical = {pid: entry_ids(entry)[0] for entry in entries for pid in entry_ids(entry)}
+    facts: list[Fact] = []
+    declined: list[Fact] = []
+    for entry in entries:
+        own = entry_ids(entry)[0]
+        for link in _mappings(_mapping(entry.get(CONFIRMED)).get("links")):
+            other = canonical.get(str(link.get("with")))
+            if other is None or other == own:
+                continue
+            fact = Fact(own, str(link.get("kind") or "link"), other)
+            if str(link.get("decision") or CONFIRMED) == REJECTED:
+                declined.append(fact)
+            elif fact.kind not in DETECTED_KINDS:
+                facts.append(fact)
+    return suggest_relationships(facts, declined)
+
+
+def _suggested_link(suggestion: Suggestion, names: dict[str, str]) -> LinkView:
+    return LinkView(
+        kind=suggestion.kind,
+        target_id=suggestion.target,
+        target_name=names.get(suggestion.target, _GONE),
+        confidence=0.0,
+        via=_chain(suggestion.hops, names),
+        inferred=True,
+        reverse_kind=suggestion.reverse_kind,
+        status=SUGGESTED,
+    )
+
+
+def _chain(hops: tuple[Hop, ...], names: dict[str, str]) -> str:
+    """ "child of Bob, who is a sibling of Alex, who is a parent of Riley"."""
+    steps = [f"{hop.relation} of {names.get(hop.person, _GONE)}" for hop in hops]
+    return ", who is a ".join(steps)
 
 
 def save_person(store: Store, person: PersonView) -> None:
@@ -466,11 +533,20 @@ def _decisions(confirmed: dict[str, Any]) -> dict[tuple[str, str], str]:
 
 
 def _evidence_line(evidence: dict[str, Any]) -> str:
+    """Counts, the first picture, and when they became regular when that is later (#2798).
+
+    The onset leaves out pictures from before somebody was part of the owner's life; read
+    as "here since" it told the owner a friend of twenty years arrived last spring.
+    """
     count = evidence.get("count") or 0
     months = evidence.get("active_months") or 0
-    since = evidence.get("onset") or evidence.get("first_month")
+    first, onset = evidence.get("first_month"), evidence.get("onset")
     line = f"{count} pictures across {months} {'month' if months == 1 else 'months'}"
-    return f"{line}, here since {since}" if since else line
+    if first:
+        line += f", first picture {first}"
+    if onset and onset != first:
+        line += f", regular since {onset}"
+    return line
 
 
 def _names_by_id(entries: list[dict[str, Any]]) -> dict[str, str]:

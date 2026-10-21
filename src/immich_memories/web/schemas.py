@@ -517,7 +517,8 @@ class RosterLink(BaseModel):
     inferred: bool
     decision: str | None = None
     reverse_kind: str | None = None
-    # detected, unnamed, rejected or named: what the page offers for this row.
+    # detected, unnamed, rejected, named or suggested (the family tree implies it; `via`
+    # names the chain): what the page offers for this row.
     status: str = "named"
 
 

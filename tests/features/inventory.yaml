@@ -1317,12 +1317,13 @@ features:
       - tests/integration/features/test_setup_checks.py::test_settings_shows_the_config_warnings_and_the_preflight_rows_the_terminal_prints
       - tests/e2e/test_web_features.py::test_settings_runs_the_preflight_checks_when_asked
   - id: web.people
-    promise: "The People page says whose library it is, names relationships, answers duplicate flags and links a person across accounts."
+    promise: "The People page says whose library it is, names relationships, suggests the ones the family tree implies, answers duplicate flags and links a person across accounts."
     doc: make/web-ui.mdx#where-things-are
     covers: ["web:people"]
     tests:
       - tests/e2e/test_people_owner_and_links.py::test_the_owner_is_a_guess_until_somebody_picks_and_a_scan_keeps_the_pick
       - tests/e2e/test_people_owner_and_links.py::test_a_detected_link_is_one_row_and_naming_it_leaves_one_row_on_each_side
+      - tests/e2e/test_people_owner_and_links.py::test_the_family_tree_suggests_what_it_implies_live_and_a_tick_or_accept_all_records_it
       - tests/e2e/test_people_page.py::test_each_curation_flag_names_both_people_and_can_be_kept_apart
       - tests/e2e/test_people_accounts_and_groups.py::test_link_a_person_by_picking_save_a_group_pick_it_on_the_brief
   - id: web.suggestions
