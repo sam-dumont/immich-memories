@@ -161,6 +161,20 @@ class TestExtractColorsFromImage:
         colors = extract_colors_from_image(img, num_colors=3)
         assert len(colors) >= 1
 
+    def test_reads_pixels_without_a_pillow_deprecation(self):
+        """Pillow 14 removes Image.getdata; the extraction must not depend on it."""
+        import warnings
+
+        from PIL import Image
+
+        from immich_memories.titles.colors import extract_colors_from_image
+
+        img = Image.new("RGB", (40, 40), (0, 0, 255))
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            colors = extract_colors_from_image(img, num_colors=2)
+        assert colors[0][2] > 150
+
     def test_quality_subsampling(self):
         """Higher quality value means fewer pixels sampled."""
         from PIL import Image

@@ -6,6 +6,7 @@ import random
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 from staticmap import CircleMarker, StaticMap
@@ -278,7 +279,8 @@ def test_large_map_resize_uses_available_workers_without_changing_pixels(
     resize = Image.Image.resize
 
     def observe(image, size, *args, **kwargs):
-        if size[0] == width:
+        # A strip resizes twice (one pass each); count the call that yields its final rows.
+        if size == (width, height // expected_workers):
             strips.append(size)
         return resize(image, size, *args, **kwargs)
 
@@ -589,3 +591,25 @@ def test_card_frames_are_the_pixels_of_the_upstream_tile_client(
     )
 
     assert cfg_frames and cfg_frames == frames
+
+
+@pytest.mark.parametrize(
+    "source,target",
+    [((1089, 1936), (1081, 1922)), ((1936, 1090), (1922, 1082)), ((400, 2000), (300, 1000))],
+    ids=["portrait-horizontal-first", "landscape-horizontal-first", "tall-vertical-first"],
+)
+@pytest.mark.parametrize("mode", ["RGB", "RGBA"])
+def test_lanczos_strips_match_the_whole_frame_resize(source, target, mode):
+    """Pillow 13 picks a pass order per call; strips must still equal the whole-frame pixels."""
+    from immich_memories.titles.strip_resize import lanczos_strip
+
+    rng = np.random.default_rng(7)
+    noise = rng.integers(0, 256, (source[1], source[0], len(mode)), dtype=np.uint8)
+    image = Image.fromarray(noise)
+    width, height = target
+    whole = np.asarray(image.resize(target, Image.Resampling.LANCZOS))
+    halves = [
+        lanczos_strip(image, width, height, top, top + height // 2) for top in (0, height // 2)
+    ]
+
+    assert np.array_equal(np.concatenate([np.asarray(h) for h in halves]), whole)
