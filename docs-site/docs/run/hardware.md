@@ -35,7 +35,9 @@ the render's CPU time dropped from 241 s to 72 s.
 
 The picture stays within a few 10-bit code values of the CPU path. A clip the hardware fails to
 decode is decoded again in software, and an FFmpeg without the GPU filters (checked once per run)
-keeps the CPU path.
+keeps the CPU path. Once per run, a short test clip of each codec is also decoded both ways. If
+the hardware's frames don't match the software's, that codec decodes in software and the log says
+so. VideoToolbox on a virtual Mac fails this for H.264: its colour lands up to 188 code values off.
 
 Tone mapping an HDR clip into an SDR film, and converting an SDR clip into an HDR one, also run on
 the GPU when FFmpeg has libplacebo and a Vulkan device. The GPU runs the same maths as the CPU

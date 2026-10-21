@@ -105,9 +105,13 @@ def test_an_nvidia_machine_merges_losslessly_on_the_card(is_hdr, encoder, pixel_
     assert "-cq" not in cmd
 
 
-def test_each_part_of_a_burst_is_decoded_on_the_gpu() -> None:
+def test_each_part_of_a_burst_is_decoded_on_the_gpu(monkeypatch) -> None:
     """A hardware decoder gives back the software decoder's frames (#2709)."""
+    from immich_memories.processing import gpu_frame_graph
+
     clip = Path(__file__).parent / "fixtures" / "hdr_samples" / "dolby_vision_84.mov"
+    # WHY: replaces the FFmpeg runs that compare the hardware decode with the software one.
+    monkeypatch.setattr(gpu_frame_graph, "hardware_decode_matches", lambda *_args: True)
 
     cmd = _merge_command(is_hdr=True, capabilities=_nvidia(), clip=clip)
 

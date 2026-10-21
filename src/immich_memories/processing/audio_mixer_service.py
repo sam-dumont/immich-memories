@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 
 from immich_memories.audio.mixer import final_mix_safety_filter
-from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
+from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA, carry_capture_instant
 from immich_memories.processing.assembly_config import AssemblySettings
 
 logger = logging.getLogger(__name__)
@@ -197,6 +197,7 @@ class AudioMixerService:
         if result.returncode != 0:
             logger.warning(f"Failed to add music: {result.stderr}")
             return video_path
+        carry_capture_instant(video_path, temp_output)
 
         if temp_output != output_path:
             import shutil

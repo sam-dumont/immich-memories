@@ -5,7 +5,8 @@ from __future__ import annotations
 import subprocess
 import time
 import uuid
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -123,3 +124,63 @@ def test_a_film_keeps_its_description_and_tags_after_immich_reads_it(gate_client
     assert answer["warnings"] == []
     assert asset["exifInfo"]["description"] == label.description
     assert {tag["value"] for tag in asset["tags"]} == {"immich-memories/generated", *label.tags}
+
+
+@dataclass
+class _Clip:
+    """The streaming assembler's duck-typed clip."""
+
+    path: Path
+    duration: float
+    is_title_screen: bool = False
+    rotation_override: int | None = None
+    is_hdr: bool = False
+    color_transfer: str | None = None
+    input_seek: float = 0.0
+
+
+@pytest.mark.feature("upload.film-dated-by-last-picture")
+def test_immich_files_a_rendered_film_by_its_own_capture_tags(
+    gate_client, test_clip_720p, test_music_short, tmp_path
+):
+    """Rendered and mixed with this machine's FFmpeg, uploaded with no date of its own."""
+    from immich_memories.audio.mixer import DuckingConfig, MixConfig, mix_audio_with_ducking
+    from immich_memories.processing.streaming_assembler import streaming_assemble_full
+
+    captured_at = datetime(2023, 8, 14, 21, 30, tzinfo=timezone(timedelta(hours=2)))
+    rendered = tmp_path / "rendered.mp4"
+    streaming_assemble_full(
+        clips=[_Clip(test_clip_720p, 2.0)],
+        transitions=[],
+        output_path=rendered,
+        width=1280,
+        height=720,
+        fps=30,
+        captured_at=captured_at,
+    )
+    film = tmp_path / f"gate_dated_{uuid.uuid4().hex[:8]}.mp4"
+    fades = MixConfig(ducking=DuckingConfig(), fade_in_seconds=0.2, fade_out_seconds=0.2)
+    mix_audio_with_ducking(rendered, test_music_short, film, fades)
+
+    import httpx
+
+    # No upload date: only the file's own tags can file it on its day.
+    answer = gate_client.upload_memory(film, None, captured_at=None)
+    with httpx.Client(
+        base_url=f"{gate_client.base_url}/api",
+        headers={"x-api-key": gate_client.api_key},
+        timeout=30,
+    ) as admin:
+        try:
+            assert _read_by_immich(gate_client, answer["asset_id"])
+            asset = admin.get(f"/assets/{answer['asset_id']}").raise_for_status().json()
+        finally:
+            admin.request(
+                "DELETE", "/assets", json={"ids": [answer["asset_id"]], "force": True}
+            ).raise_for_status()
+
+    filed_at = datetime(2023, 8, 14, 19, 30, tzinfo=UTC)
+    assert datetime.fromisoformat(asset["exifInfo"]["dateTimeOriginal"]) == filed_at
+    assert datetime.fromisoformat(asset["fileCreatedAt"]) == filed_at
+    assert asset["localDateTime"].startswith("2023-08-14T21:30:00")
+    assert asset["exifInfo"]["timeZone"] == "UTC+2"

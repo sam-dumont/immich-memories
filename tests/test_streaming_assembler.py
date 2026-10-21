@@ -1746,14 +1746,14 @@ def _mux_command(captured_at) -> list[str]:
     return seen[0]
 
 
-def test_final_mux_stamps_the_capture_instant_in_both_container_tags() -> None:
+def test_final_mux_stamps_the_local_capture_tag_and_leaves_creation_time_to_the_header() -> None:
     from datetime import datetime, timedelta, timezone
 
     cmd = _mux_command(datetime(2024, 6, 20, 18, 45, tzinfo=timezone(timedelta(hours=2))))
 
-    assert "-metadata" in cmd
-    assert "creation_time=2024-06-20T16:45:00Z" in cmd
     assert "com.apple.quicktime.creationdate=2024-06-20T18:45:00+02:00" in cmd
+    # A creation_time key would be written twice: movie header and Keys list.
+    assert [arg for arg in cmd if arg.startswith("creation_time")] == ["creation_time="]
     # The QuickTime key is only written when the muxer is told to keep tags.
     assert "+faststart+use_metadata_tags" in cmd
 
@@ -1761,5 +1761,5 @@ def test_final_mux_stamps_the_capture_instant_in_both_container_tags() -> None:
 def test_final_mux_without_a_capture_instant_stamps_nothing() -> None:
     cmd = _mux_command(None)
 
-    assert "-metadata" not in cmd
-    assert not any(arg.startswith("creation_time=") for arg in cmd)
+    assert not any(arg.startswith("com.apple.quicktime.creationdate") for arg in cmd)
+    assert [arg for arg in cmd if arg.startswith("creation_time")] == ["creation_time="]

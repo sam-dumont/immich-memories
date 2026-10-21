@@ -1,7 +1,6 @@
 """Complete Live video may finish before its independently decoded audio track."""
 
 import json
-import math
 import struct
 import subprocess
 from pathlib import Path
@@ -53,6 +52,17 @@ def _decode_streams(path):
             ["ffprobe", "-v", "error", "-count_frames", "-show_streams", "-of", "json", str(path)]
         )
     )["streams"]
+
+
+def _assert_audio_ends_on_frame(seconds: float, *, frames: int, rate: int = 30) -> None:
+    """The audio's visible end is the picture's last frame boundary, on either MP4 clock.
+
+    FFmpeg 6 keeps the edit on a millisecond movie clock, so the end floors to
+    the millisecond inside the last frame; FFmpeg 9 uses the track's own sample
+    clock and keeps it exact. The seam is the same either way.
+    """
+    boundary = frames / rate
+    assert boundary - 1 / 1000 - 1 / 48000 <= seconds <= boundary + 1 / 48000
 
 
 def test_complete_video_holds_its_final_frame_through_verified_audio_tail(tmp_path):
@@ -185,11 +195,7 @@ def test_certified_held_segment_keeps_its_picture_and_audio_boundary(tmp_path, a
     assert all(blue > red + 100 for red, _green, blue in frames[61:])
     video, audio_stream = _decode_streams(merged)
     assert int(video["nb_read_frames"]) == 91
-    # MP4's existing movie edit clock is milliseconds; AAC's final visible edit
-    # therefore floors the fractional frame boundary, without moving its seam.
-    assert float(audio_stream["duration"]) == pytest.approx(
-        math.floor(91 / 30 * 1000) / 1000, abs=1 / 48000
-    )
+    _assert_audio_ends_on_frame(float(audio_stream["duration"]), frames=91)
     pcm = subprocess.check_output([
         "ffmpeg", "-v", "error", "-xerror", "-i", str(merged), "-map", "0:a:0",
         "-ac", "1", "-ar", "48000", "-f", "s16le", "-",
@@ -339,9 +345,7 @@ def test_certified_segments_share_picture_and_tone_seams_on_their_source_grid(tm
     assert np.all(frames[94:, 1] > frames[94:, 0] + 100)
     video, audio = _decode_streams(merged)
     assert float(video["duration"]) == pytest.approx(124 / 30)
-    assert float(audio["duration"]) == pytest.approx(
-        math.floor(124 / 30 * 1000) / 1000, abs=1 / 48000
-    )
+    _assert_audio_ends_on_frame(float(audio["duration"]), frames=124)
     pcm = subprocess.check_output([
         "ffmpeg", "-v", "error", "-xerror", "-i", str(merged), "-map", "0:a:0",
         "-ac", "1", "-ar", "48000", "-f", "s16le", "-",

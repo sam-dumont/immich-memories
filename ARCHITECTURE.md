@@ -589,7 +589,7 @@ these helper modules:
   for the saved cut's titles and the worker request
 - `generate_timeline.py`: final-duration validation and content budget guards
 - `generate_delivery.py`: Immich upload of a finished artifact + delivered/pending/failed run state
-- `delivery_timestamp.py`: the capture instant a film is filed under, and the container tags carrying it
+- `delivery_timestamp.py`: the capture instant a film is filed under, and the container tag and movie header carrying it
 
 ## Analysis stages
 
@@ -975,6 +975,7 @@ src/immich_memories/
 │   ├── streaming_assembler.py  # StreamingEncoder + assemble_streaming(): low-memory 4K assembly
 │   ├── streaming_frame_decoder.py # FrameDecoder / make_decoder(): clip -> normalized raw frames
 │   ├── gpu_frame_graph.py      # GpuFrameGraph: decode-to-canvas on CUDA/VideoToolbox + its probe; hardware_decode_for
+│   ├── hardware_decode_check.py # Hardware decode trusted per codec only when a known clip decodes to the software frames
 │   ├── gpu_transfer.py         # Tone mapping and HDR/SDR conversions as a libplacebo shader of zscale's maths + its probe
 │   ├── streaming_frame_blender.py # FrameBlender: frames -> sink, crossfades, progress/preview; holds the last frame on an underrun
 │   ├── streaming_audio.py      # Streaming audio processing helpers

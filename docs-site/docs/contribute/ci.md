@@ -23,7 +23,9 @@ the build run side by side.
   5-job macOS cap. A shard gets 20 minutes, a cell run whole 40. Neither extras job pulls torch, so
   what runs there is the subset that survives without it; the rest is a local target. A pull
   request also runs, beside them, one job per FFmpeg integration suite its changed source reaches
-  (`make test-integration-<suite>`).
+  (`make test-integration-<suite>`). The assembly suite also runs on macOS with Homebrew's current
+  FFmpeg, since Ubuntu's FFmpeg 6 hides what newer releases read differently: on a pull request
+  that reaches it, and always on `main` and in a release.
 - **Coverage**, once every unit shard passed. The 3.12 Ubuntu shards upload their coverage data;
   `make coverage-combine` merges it, checks the 65% floor on the whole suite and writes
   `coverage.xml`. On a pull request, diff-cover then checks 80% of the changed lines against it

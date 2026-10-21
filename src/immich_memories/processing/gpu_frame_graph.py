@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from math import ceil
 from typing import TYPE_CHECKING, Literal
 
+from immich_memories.processing.hardware_decode_check import hardware_decode_matches
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -277,7 +279,21 @@ def hardware_decode_for(
     )
     if not supported or not args:
         return None
+    if not hardware_decode_matches(tuple(args), codec, str(probe.pixel_format)):
+        return None
     return tuple(args), str(probe.pixel_format)
+
+
+def _hardware_decoder_trusted(probe: VideoProbe, capabilities: HWAccelCapabilities) -> bool:
+    """Whether the GPU graph's decoder gives the software picture for this clip's codec."""
+    from immich_memories.processing.hardware import get_ffmpeg_hwaccel_args
+
+    # Only called for the codecs in _GPU_DECODED, which all have a name here.
+    codec = _HARDWARE_DECODED_CODECS[probe.codec]
+    args = get_ffmpeg_hwaccel_args(
+        capabilities, operation="decode", codec=codec, for_software_filters=True
+    )
+    return bool(args) and hardware_decode_matches(tuple(args), codec, str(probe.pixel_format))
 
 
 def gpu_frame_graph_for(
@@ -297,7 +313,7 @@ def gpu_frame_graph_for(
         return None
     if probe.display_turn not in (0, 90, 180, 270) or probe.width <= 0 or probe.height <= 0:
         return None
-    if not gpu_filters_work(backend):
+    if not gpu_filters_work(backend) or not _hardware_decoder_trusted(probe, capabilities):
         return None
     tags = (probe.color_primaries, probe.color_transfer)
     return GpuFrameGraph(

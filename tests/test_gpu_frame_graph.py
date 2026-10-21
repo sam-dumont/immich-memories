@@ -86,6 +86,8 @@ def gpu_filters(monkeypatch):
     def answer(works: bool) -> None:
         # WHY: replaces the FFmpeg run that checks the device and its filters.
         monkeypatch.setattr(gpu_frame_graph, "gpu_filters_work", lambda _backend: works)
+        # WHY: replaces the FFmpeg runs that compare the hardware decode with the software one.
+        monkeypatch.setattr(gpu_frame_graph, "hardware_decode_matches", lambda *_args: True)
 
     return answer
 
@@ -120,6 +122,16 @@ def test_a_failed_probe_keeps_every_clip_on_the_cpu(gpu_filters):
     gpu_filters(False)
 
     assert gpu_frame_graph_for(_probe(), NVIDIA) is None
+
+
+def test_a_decoder_that_strays_from_the_software_picture_keeps_the_clip_on_the_cpu(
+    gpu_filters, monkeypatch
+):
+    gpu_filters(True)
+    # WHY: replaces the FFmpeg runs; this decoder's frames differ from the software ones.
+    monkeypatch.setattr(gpu_frame_graph, "hardware_decode_matches", lambda *_args: False)
+
+    assert gpu_frame_graph_for(_probe(), APPLE) is None
 
 
 def _context(capabilities, target: str = "hlg", source: str | None = "hlg"):

@@ -350,6 +350,32 @@ def test_the_integration_coverage_runs_the_suites_the_scope_names():
     assert "make dev-test-integration test-integration-${{ matrix.suite }}" in commands
 
 
+def test_the_assembly_suite_also_runs_on_macos_with_homebrews_ffmpeg():
+    job = yaml_load(WORKFLOWS / "ci.yml")["jobs"]["integration-macos"]
+    condition = " ".join(str(job["if"]).split())
+    steps = job["steps"]
+
+    assert job["runs-on"].startswith("macos")
+    assert "github.event_name != 'pull_request'" in condition
+    assert "contains(fromJSON(needs.changes.outputs.integration_suites), 'assembly')" in condition
+    assert any(step.get("uses") == "./.github/actions/install-ffmpeg" for step in steps)
+    assert "make dev-test-integration test-integration-assembly" in [s.get("run") for s in steps]
+
+
+def test_ci_ffmpeg_follows_the_documented_mac_setup_and_has_zscale():
+    steps = yaml_load(ROOT / ".github" / "actions" / "install-ffmpeg" / "action.yml")["runs"][
+        "steps"
+    ]
+    mac = next(step["run"] for step in steps if step["name"] == "Install FFmpeg (macOS, brew)")
+    verify = next(step["run"] for step in steps if step["name"] == "Verify FFmpeg")
+
+    assert "ffmpeg -hide_banner -filters | grep -q zscale" in mac
+    assert "brew install ffmpeg-full" in mac
+    assert '"$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"' in mac
+    assert "ffmpeg -version" in verify
+    assert "grep zscale" in verify and "exit 1" in verify
+
+
 def test_ci_success_waits_for_every_job():
     jobs = yaml_load(WORKFLOWS / "ci.yml")["jobs"]
 
@@ -466,6 +492,7 @@ def test_one_cell_records_the_coverage_in_all_its_shards(ci_scope, event):
         (["src/immich_memories/photos/animator.py"], ["photos"]),
         (["src/immich_memories/audio/mixer.py"], ["audio-mixing"]),
         (["src/immich_memories/generate.py"], ["assembly"]),
+        (["src/immich_memories/delivery_timestamp.py"], ["assembly", "audio-mixing"]),
         (["src/immich_memories/speech/fireredvad.py"], ["assembly"]),
         (["src/immich_memories/analysis/runtime/ports.py"], ["assembly"]),
         (["src/immich_memories/analysis/clips/speech.py"], ["assembly"]),
