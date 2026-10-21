@@ -77,7 +77,11 @@ commitment to pay the cost.
      audience alone never matched the performers in the first place.
 3. **When.** Years you write are pattern work. An age ("in our 20s") is read by the model as
    numbers, and the calendar is arithmetic from the birth date in your people registry. If a phrase
-   such as "foggy days" supplies no dates, its visible modifier still filters the captions.
+   such as "foggy days" supplies no dates, its visible modifier still filters the captions. A
+   date with no end ("the birth of my son", from your people registry) is asked two questions:
+   one occasion or many, and whether that occasion lasted one day. One occasion of one day
+   ends on its own day before anything is prepared, so only that day's pictures are captioned
+   and read. Many occasions, or one that lasted longer ("our honeymoon"), keep every day since.
 4. **Where.** The model votes one place per phrase among the options code builds: anywhere, a
    home, near home, away on a trip. A phrase that only repeats the subject ("at the park") stays
    the subject, not a place. One particular place at home has to be proven by GPS.

@@ -93,26 +93,15 @@ def test_the_model_picks_which_catalogued_occasion_of_that_day_was_asked_for() -
     assert "a wedding 3/3" in film.reason.line()
 
 
-def test_a_dated_occasion_the_model_says_lasted_one_day_is_that_special_day() -> None:
-    born = date(2021, 3, 4)
-    pool = _pool(_picture("b1", "2021-03-04"), one_occasion=True)
-    asked = _ask("the birth of our son", pool, when=WhenLink(start=born))
-    one_day = {"reason": "banked", "choice": "one day"}
-
-    # WHY: stands in for the model server asking how long the occasion lasted.
-    film = film_for(asked, BankedAsker(*[one_day] * 3), events_on=_no_events)
-
-    assert (film.route, film.day) == ("special_day", born)
-    assert "one day 3/3" in film.reason.line()
-
-
-def test_a_dated_occasion_that_lasted_longer_is_filmed_from_its_pool() -> None:
+def test_an_open_dated_start_reaches_the_handoff_as_its_pool_unasked() -> None:
+    """#2793: translation settles whether an open start is one occasion of one day, before
+    preparation reads the dates; a start still open here (many occasions, or one that lasted
+    longer, like a honeymoon) is the pool, and the handoff asks nothing more."""
     pool = _pool(_picture("h1", "2019-08-02"), _picture("h2", "2019-08-09"), one_occasion=True)
     asked = _ask("our honeymoon", pool, when=WhenLink(start=date(2019, 8, 1)))
-    longer = {"reason": "banked", "choice": "longer than one day"}
 
-    # WHY: stands in for the model server asking how long the occasion lasted.
-    film = film_for(asked, BankedAsker(*[longer] * 3), events_on=_no_events)
+    # WHY: stands in for the model server; an empty bank fails any question asked.
+    film = film_for(asked, BankedAsker(), events_on=_no_events)
 
     assert film.route == "pool"
     assert film.asset_ids == ("h1", "h2")

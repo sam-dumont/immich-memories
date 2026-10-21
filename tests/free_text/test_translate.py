@@ -12,7 +12,7 @@ import pytest
 from immich_memories.db import open_store
 from immich_memories.free_text.handoff import film_for
 from immich_memories.free_text.lexicon import Lexicon
-from immich_memories.free_text.library import LibraryPicture, LibraryView
+from immich_memories.free_text.library import LibraryPerson, LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household
 from immich_memories.free_text.trace import explain, save_with_run
 from immich_memories.free_text.translate import household_of, translate
@@ -430,3 +430,101 @@ def test_a_french_beach_without_the_children_films_the_beach_shots_with_no_child
     )
     assert _group(asked) == {"scenic", "toy"}
     assert film.route == "pool"
+
+
+BORN = date(2031, 4, 2)
+PARENT = LibraryPerson("p-parent", "Ada Example", None, date(2001, 6, 15))
+SON = LibraryPerson("p-son", "Cy Example", "son", BORN)
+FAMILY = {person.person_id: person for person in (PARENT, SON)}
+PARENT_AND_SON = Household(FAMILY, "p-parent")
+
+
+def _birth_library() -> LibraryView:
+    pictures = [
+        _picture("ward-1", BORN, "A baby sleeping in a hospital crib"),
+        _picture("ward-2", BORN, "A woman holding a baby"),
+        *(
+            _picture(f"later-{n}", BORN + timedelta(days=3 + 9 * n), "A toddler in a garden")
+            for n in range(6)
+        ),
+    ]
+    with_son = tuple(replace(picture, people=frozenset({"p-son"})) for picture in pictures)
+    return LibraryView(pictures=with_son, people=FAMILY, sharpness_line=None)
+
+
+def _dated_event(
+    what: str, when: str, occasion: str, *, lasted: str | None = None
+) -> dict[str, Any]:
+    """The model reading a request the people file dates: from a birth, with no end given."""
+    reading = {"who": ["my son"], "when": [when] if when else [], "where": [], "what": [what]}
+    answers: dict[str, Any] = {
+        **ANSWERS,
+        "Split the owner's request": reading,
+        "Give the date range": {"date_from": BORN.isoformat(), "date_to": None},
+        "one single occasion": {"reason": "banked", "choice": occasion},
+        "captions are written in English": {"reason": "banked", "english": what.split()[-1]},
+    }
+    if lasted is not None:
+        answers = {"How long did that": {"reason": "banked", "choice": lasted}, **answers}
+    return answers
+
+
+def test_an_event_the_people_file_dates_prepares_and_films_its_own_day(
+    lexicon: Lexicon,
+) -> None:
+    """#2793: "the birth of my son" dated by the people file is that day, start to finish.
+
+    Preparation reads the day, not every day since it; the caption subject that named the
+    event empties nothing the special day needs, so the day is the film."""
+    windows: list[Any] = []
+
+    def prepare_window(when, place):
+        windows.append((when.start, when.end))
+        return _birth_library(), {}, {}
+
+    # WHY: stands in for the model server answering the translation's questions.
+    asker = QuestionAsker(_dated_event("the birth", "", "one single occasion", lasted="one day"))
+    asked = translate(
+        "the birth of my son",
+        _birth_library(),
+        PARENT_AND_SON,
+        lexicon,
+        asker,
+        today=TODAY,
+        prepare_window=prepare_window,
+    )
+    film = film_for(asked, asker, events_on=lambda _day: [])
+
+    assert windows == [(BORN, BORN)]
+    assert (asked.translation.when.start, asked.translation.when.end) == (BORN, BORN)
+    assert (film.route, film.day) == ("special_day", BORN)
+    assert "one day 3/3" in explain(asked, film=film)
+
+
+@pytest.mark.parametrize(
+    ("occasion", "lasted"),
+    [("many occasions", None), ("one single occasion", "longer than one day")],
+)
+def test_a_dated_start_that_is_no_one_day_occasion_keeps_its_open_window(
+    lexicon: Lexicon, occasion: str, lasted: str | None
+) -> None:
+    """#2793: only a one-day occasion is narrowed to its day. "my son in the garden" is
+    dated from the same birth, and keeps every day since."""
+    windows: list[Any] = []
+
+    def prepare_window(when, place):
+        windows.append((when.start, when.end))
+        return _birth_library(), {}, {}
+
+    # WHY: stands in for the model server; a "How long" question with no bank fails the test.
+    translate(
+        "my son in the garden",
+        _birth_library(),
+        PARENT_AND_SON,
+        lexicon,
+        QuestionAsker(_dated_event("in the garden", "", occasion, lasted=lasted)),
+        today=TODAY,
+        prepare_window=prepare_window,
+    )
+
+    assert windows == [(BORN, None)]

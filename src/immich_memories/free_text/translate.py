@@ -18,6 +18,7 @@ from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryView
 from immich_memories.free_text.linking import (
     Household,
+    Reason,
     WhenLink,
     WhoLink,
     link_when,
@@ -31,6 +32,7 @@ from immich_memories.free_text.pool import (
     Translation,
     build_pool,
 )
+from immich_memories.free_text.pool_questions import lasts_one_day, one_occasion
 from immich_memories.free_text.preparation import NeedsPreparationPreview
 from immich_memories.free_text.preparation_scope import PlaceFilter, place_filter
 from immich_memories.free_text.reading import Asker, read_request
@@ -100,6 +102,7 @@ def translate(
         reading = recover_undated_subject(reading, lexicon)
     captions = [picture.caption for picture in view.pictures]
     subject = build_subject(reading, household, captions, lexicon, asker)
+    when = _one_day_occasion(request, when, subject, lexicon, asker)
     # Linking a place reads no caption (the subject's heads come from the request's words),
     # so it comes first and tells preparation which pictures are worth reading.
     where = link_where(request, reading.where, subject.heads, household, asker)
@@ -127,6 +130,31 @@ def translate(
         picture_accounts=picture_accounts,
     )
     return Ask(translation, pool)
+
+
+def _one_day_occasion(
+    request: str, when: WhenLink, subject: Subject, lexicon: Lexicon, asker: Asker
+) -> WhenLink:
+    """The request's dates, ended on their first day when they open one occasion of one day.
+
+    "The birth of my son" is dated from the people file with no end: the occasion is that day
+    (#2793). Settled before anything reads the dates, so preparation reads the day, the pool
+    keeps the day, and the handoff films it as that special day even when no caption names
+    the occasion. A start with no end that is many occasions, or one that lasted longer
+    ("our honeymoon"), keeps its open window.
+    """
+    if when.start is None or when.end is not None or not subject.words:
+        return when
+    one, why = one_occasion(request, subject, lexicon, asker)
+    if not one:
+        return when
+    lasted, how_long = lasts_one_day(request, when.start, asker)
+    if not lasted:
+        return when
+    said = " | ".join(reason.said for reason in when.reasons if reason.said)
+    rule = f"one occasion: {why.rule}; {how_long.rule}"
+    ended = Reason(said, rule, f"{when.start} to {when.start}")
+    return WhenLink(when.start, when.start, (*when.reasons, ended))
 
 
 def _depends_on_captions(subject: Subject, who: WhoLink) -> bool:
