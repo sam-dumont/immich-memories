@@ -552,6 +552,8 @@ def test_a_caption_banked_without_an_origin_still_names_its_caption_contract():
 
 
 def test_a_worker_busy_with_another_gpu_phase_is_not_a_wrong_caption_url(monkeypatch):
+    from immich_memories.analysis.captions import worker_wait
+
     """The run's own provider check reads the same 503 the preflight does (#2678)."""
     import urllib.error
 
@@ -569,6 +571,10 @@ def test_a_worker_busy_with_another_gpu_phase_is_not_a_wrong_caption_url(monkeyp
         "immich_memories.analysis.captions.requests.open_caption_url",
         lambda *_a, **_k: (_ for _ in ()).throw(busy),
     )
+    # WHY: the wait is minutes long; virtual time runs it out at once.
+    now = [0.0]
+    monkeypatch.setattr(worker_wait, "_clock", lambda: now[0])
+    monkeypatch.setattr(worker_wait, "_sleep", lambda seconds: now.__setitem__(0, now[0] + seconds))
 
-    with pytest.raises(CaptionServerBusy, match="busy with another GPU phase"):
+    with pytest.raises(CaptionServerBusy, match="stayed busy"):
         _model_inventory("http://worker.test/v1", timeout=1, api_key="")

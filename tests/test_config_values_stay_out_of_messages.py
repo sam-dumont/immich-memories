@@ -65,7 +65,7 @@ def test_a_refused_caption_credential_does_not_name_the_endpoint():
     # WHY: the caption server is the network boundary.
     with (
         patch(
-            "immich_memories.analysis.captions.requests.open_caption_url",
+            "immich_memories.analysis.captions.requests.open_caption_url_patiently",
             side_effect=refusal,
         ),
         pytest.raises(PermissionError) as raised,

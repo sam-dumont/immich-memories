@@ -36,7 +36,7 @@ from immich_memories.analysis.captions.requests import (
     REFUSED_CODES,
     ask_llm_image,
     bearer_headers,
-    open_caption_url,
+    open_caption_url_patiently,
 )
 from immich_memories.analysis.captions.usage import record_preparation_attempt
 from immich_memories.analysis.clips.bound_sample import source_metadata_digest
@@ -310,7 +310,7 @@ def seat_asker(
         body: object = None
         started = time.monotonic()
         try:
-            with open_caption_url(request, timeout=timeout) as response:
+            with open_caption_url_patiently(request, timeout=timeout) as response:
                 body = json.loads(response.read())
         except urllib.error.HTTPError as exc:
             if exc.code in REFUSED_CODES:

@@ -68,7 +68,7 @@ def test_opted_in_preparation_routes_motion_to_the_llm_and_reuses_it(monkeypatch
     )
     # WHY: the unused SmolVLM HTTP endpoint must never receive a request.
     monkeypatch.setattr(
-        "immich_memories.analysis.preparation.motion_lines.open_caption_url",
+        "immich_memories.analysis.preparation.motion_lines.open_caption_url_patiently",
         lambda *_a, **_kw: pytest.fail("unused SmolVLM motion endpoint"),
     )
     kwargs = {
