@@ -220,6 +220,15 @@ def test_a_landscape_clip_in_a_portrait_canvas_stacks_vertically():
     assert "format=yuv420p[_gsharp]" in fill
 
 
+def test_the_stacked_blur_fill_hands_the_next_filter_a_pinned_format():
+    """#2792: libplacebo after a blur fill whose output format was negotiated gave no frame."""
+    sdr = GpuFrameGraph("cuda", (1920, 1080), turn=0, ten_bit=False).fill((1080, 1920), "blur")
+    hdr = GpuFrameGraph("cuda", (3840, 2160), turn=90, ten_bit=True).fill((3840, 2160), "blur")
+
+    assert sdr.endswith("vstack=inputs=3,format=yuv420p")
+    assert "hstack=inputs=3,format=p010le" in hdr
+
+
 def test_a_small_sdr_clip_is_converted_before_it_is_enlarged(gpu_filters):
     gpu_filters(True)
     probe = _probe(codec="h264", pixel_format="yuv420p", size=(1920, 1080), transfer="bt709",

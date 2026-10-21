@@ -452,7 +452,7 @@ def _encode_clip_sequence(
     pipe_format: str = "yuv420p10le",
 ) -> int:
     """Encode all clips with transitions, tracking frame count for progress."""
-    active_iter: Generator[np.ndarray, None, None] | None = None
+    active_iter: Generator[np.ndarray, None, str | None] | None = None
     skip_frames = 0
     read_ahead = assembly_frame_read_ahead(width, height, encoder=encoder_name)
 
@@ -461,7 +461,7 @@ def _encode_clip_sequence(
     )
     caption_windows = caption_frame_windows(clips, transitions, fps, fade_frames)
 
-    def decoder_for(clip_idx: int) -> Generator[np.ndarray, None, None]:
+    def decoder_for(clip_idx: int) -> Generator[np.ndarray, None, str | None]:
         frames = make_decoder(
             clips[clip_idx],
             clip_idx,

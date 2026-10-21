@@ -4,8 +4,11 @@ Runs where this machine's FFmpeg runs libplacebo on a GPU and passes the
 transfer probe, and skips elsewhere. Each clip goes through the real decoder
 twice, once with zscale and once with the libplacebo shader, and the frames are
 compared in 10-bit code values: the Dolby Vision 8.4 phone clip (HLG, stored
-sideways) tone-mapped to SDR and converted to PQ, and a small SDR clip
-converted to HLG.
+sideways) tone-mapped to SDR and converted to PQ, a small SDR clip converted to
+HLG, and a 4:3 SDR clip given a blurred background in a portrait PQ film.
+
+That last one decoded to no frame at all on FFmpeg 6.1 with libplacebo v6.338
+while FFmpeg exited 0 (#2792), so it is also decoded whole and counted.
 """
 
 from __future__ import annotations
@@ -40,10 +43,10 @@ def gpu_conversions():
         pytest.skip("FFmpeg here does not run libplacebo on a GPU within a code value of zscale")
 
 
-def _sdr_clip(path: Path) -> Path:
+def _sdr_clip(path: Path, size: str = "640x360") -> Path:
     subprocess.run(
         ["ffmpeg", "-y", "-v", "error", "-f", "lavfi",
-         "-i", "testsrc2=size=640x360:rate=30:duration=1,noise=alls=6:allf=t",
+         "-i", f"testsrc2=size={size}:rate=30:duration=1,noise=alls=6:allf=t",
          "-c:v", "libx264", "-pix_fmt", "yuv420p", "-color_primaries", "bt709",
          "-color_trc", "bt709", "-colorspace", "bt709", str(path)],
         check=True, capture_output=True,
@@ -51,7 +54,9 @@ def _sdr_clip(path: Path) -> Path:
     return path
 
 
-def _frames(path: Path, target: str, canvas, monkeypatch, *, gpu: bool) -> list[np.ndarray]:
+def _frames(
+    path: Path, target: str, canvas, monkeypatch, *, gpu: bool, limit: int | None = FRAMES
+) -> list[np.ndarray]:
     cache = ProbeCache()
     ctx = SimpleNamespace(
         hdr_type=target,
@@ -75,7 +80,7 @@ def _frames(path: Path, target: str, canvas, monkeypatch, *, gpu: bool) -> list[
     for frame in decoder:
         values = frame.astype(np.float32)
         frames.append(values if target != "sdr" else values * 4)
-        if len(frames) == FRAMES:
+        if len(frames) == limit:
             break
     return frames
 
@@ -86,12 +91,20 @@ def _frames(path: Path, target: str, canvas, monkeypatch, *, gpu: bool) -> list[
         ("phone", "sdr", (1080, 1920)),
         ("phone", "pq", (1080, 1920)),
         ("small_sdr", "hlg", (640, 360)),
+        ("four_three_sdr", "pq", (1080, 1920)),
     ],
 )
+def _source(name: str, tmp_path: Path) -> Path:
+    if name == "phone":
+        return PHONE_CLIP
+    size = "640x480" if name == "four_three_sdr" else "640x360"
+    return _sdr_clip(tmp_path / f"{name}.mp4", size)
+
+
 def test_the_gpu_conversion_matches_zscale(
     tmp_path, gpu_conversions, monkeypatch, source, target, canvas
 ):
-    path = PHONE_CLIP if source == "phone" else _sdr_clip(tmp_path / "small.mp4")
+    path = _source(source, tmp_path)
 
     cpu = _frames(path, target, canvas, monkeypatch, gpu=False)
     gpu = _frames(path, target, canvas, monkeypatch, gpu=True)
@@ -102,3 +115,14 @@ def test_the_gpu_conversion_matches_zscale(
         assert abs(before[:luma].mean() - after[:luma].mean()) < 1
         assert np.abs(before[:luma] - after[:luma]).mean() < 2
         assert np.abs(before[luma:] - after[luma:]).mean() < 2
+
+
+def test_a_blur_filled_clip_converted_on_the_gpu_keeps_every_frame(
+    tmp_path, gpu_conversions, monkeypatch
+):
+    """#2792: the blur fill followed by libplacebo gave no frame, with FFmpeg exiting 0."""
+    path = _sdr_clip(tmp_path / "four_three.mp4", "640x480")
+
+    frames = _frames(path, "pq", (1080, 1920), monkeypatch, gpu=True, limit=None)
+
+    assert len(frames) == 30
