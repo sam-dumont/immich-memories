@@ -128,7 +128,10 @@ a box with a card usually means `NVIDIA_DRIVER_CAPABILITIES` lacks `video`
 The worker logs each job to its own stderr, so `kubectl logs` or `docker compose logs` shows it.
 `IMMICH_MEMORIES_LOG_LEVEL` sets the level, `INFO` by default. Two lines are worth looking for after
 a film comes back short or slow: `Frame underrun`, a clip that ran out before its slot ended and was
-held on its last frame, and `Photo move on the CPU`, a still the card could not take.
+held on its last frame (FFmpeg's own error follows it), and `Photo move on the CPU`, a still the
+card could not take. A film that comes back up to 3% off its planned length is kept and logged;
+further off, it fails. A worker busy with another film makes captioning wait, up to 25 minutes,
+instead of failing the pictures.
 
 ## What to expect
 
