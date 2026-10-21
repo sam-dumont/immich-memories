@@ -10,7 +10,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
+from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA, carry_capture_instant
 from immich_memories.processing.clip_probing import probe_format_duration
 from immich_memories.security import validate_audio_path, validate_video_path
 
@@ -307,6 +307,7 @@ def mix_audio_with_ducking(
     try:
         logger.info("Mixing audio with ducking...")
         subprocess.run(cmd, capture_output=True, check=True, timeout=600)
+        carry_capture_instant(video_path, output_path)
         logger.info(f"Audio mixed successfully: {output_path}")
     except subprocess.CalledProcessError as e:
         logger.error(f"Audio mixing failed: {e.stderr.decode() if e.stderr else e}")

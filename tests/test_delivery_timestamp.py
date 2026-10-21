@@ -2,10 +2,22 @@
 
 from __future__ import annotations
 
+import json
+import shutil
+import struct
+import subprocess
 from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
+
+import pytest
 
 from immich_memories.api.models import Asset, AssetType, ExifInfo
-from immich_memories.delivery_timestamp import capture_metadata_args, film_capture_instant
+from immich_memories.delivery_timestamp import (
+    capture_metadata_args,
+    carry_capture_instant,
+    film_capture_instant,
+    stamp_capture_instant,
+)
 
 PARIS_SUMMER = timezone(timedelta(hours=2))
 PARIS_WINTER = timezone(timedelta(hours=1))
@@ -85,12 +97,12 @@ class TestFilmCaptureInstant:
 
 
 class TestCaptureMetadataArgs:
-    def test_both_container_tags_carry_the_instant(self):
+    def test_only_the_local_capture_tag_is_a_metadata_key(self):
+        # creation_time as a key would land in the Keys list beside the movie
+        # header, and FFmpeg 7+ reads the pair back as "a;b".
         args = capture_metadata_args(datetime(2024, 6, 20, 18, 45, tzinfo=PARIS_SUMMER))
 
         assert args == [
-            "-metadata",
-            "creation_time=2024-06-20T16:45:00Z",
             "-metadata",
             "com.apple.quicktime.creationdate=2024-06-20T18:45:00+02:00",
         ]
@@ -129,3 +141,76 @@ class TestDeliveryFilesTheMemoryOnItsOwnDay:
         assert client.upload_memory.call_args.kwargs["captured_at"] == datetime(
             2024, 6, 20, 18, 45, tzinfo=PARIS_SUMMER
         )
+
+
+requires_ffmpeg = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
+
+
+def _film(path: Path, *extra: str) -> Path:
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=64x64:d=0.2",
+         "-c:v", "libx264", "-pix_fmt", "yuv420p", *extra, str(path)],
+        check=True, capture_output=True, timeout=60,
+    )  # fmt: skip
+    return path
+
+
+def _creation_times(path: Path) -> list[str]:
+    """creation_time as ffprobe reads it from the container and from every stream."""
+    probe = json.loads(
+        subprocess.check_output(
+            ["ffprobe", "-v", "error", "-show_format", "-show_streams", "-of", "json", str(path)]
+        )
+    )
+    tagged = [probe["format"], *probe["streams"]]
+    return [entry.get("tags", {}).get("creation_time", "") for entry in tagged]
+
+
+@requires_ffmpeg
+class TestMovieHeaderInstant:
+    def test_stamping_dates_the_movie_and_every_track_once(self, tmp_path):
+        film = _film(tmp_path / "film.mp4", "-movflags", "+faststart")
+
+        stamp_capture_instant(film, datetime(2024, 6, 20, 18, 45, tzinfo=PARIS_SUMMER))
+
+        assert _creation_times(film) == ["2024-06-20T16:45:00.000000Z"] * 2
+
+    def test_no_instant_leaves_the_film_undated(self, tmp_path):
+        film = _film(tmp_path / "film.mp4")
+
+        stamp_capture_instant(film, None)
+        stamp_capture_instant(tmp_path / "never-rendered.mp4", datetime(2024, 6, 20, tzinfo=UTC))
+
+        assert _creation_times(film) == ["", ""]
+        assert not (tmp_path / "never-rendered.mp4").exists()
+
+    def test_a_rebuilt_film_keeps_its_source_instant(self, tmp_path):
+        source = _film(tmp_path / "source.mp4")
+        stamp_capture_instant(source, datetime(2024, 6, 20, 16, 45, tzinfo=UTC))
+        rebuilt = _film(tmp_path / "rebuilt.mp4")
+
+        carry_capture_instant(source, rebuilt)
+
+        assert _creation_times(rebuilt) == ["2024-06-20T16:45:00.000000Z"] * 2
+
+    def test_an_undated_source_carries_nothing(self, tmp_path):
+        rebuilt = _film(tmp_path / "rebuilt.mp4")
+
+        carry_capture_instant(_film(tmp_path / "source.mp4"), rebuilt)
+        carry_capture_instant(tmp_path / "never-rendered.mp4", rebuilt)
+
+        assert _creation_times(rebuilt) == ["", ""]
+
+    def test_a_64_bit_movie_header_is_read_and_written(self, tmp_path):
+        # Version 1 headers carry 64-bit times; build one by hand, as FFmpeg
+        # only writes them past 2040.
+        mvhd_v1 = struct.pack(">I4sB3xQQIQ", 40, b"mvhd", 1, 0, 0, 1000, 0)
+        moov = struct.pack(">I4s", 8 + len(mvhd_v1), b"moov") + mvhd_v1
+        source = tmp_path / "v1.mp4"
+        source.write_bytes(struct.pack(">I4s", 1, b"free") + struct.pack(">Q", 16) + moov)
+        stamp_capture_instant(source, datetime(2024, 6, 20, 16, 45, tzinfo=UTC))
+        rebuilt = _film(tmp_path / "rebuilt.mp4")
+
+        carry_capture_instant(source, rebuilt)
+
+        assert _creation_times(rebuilt) == ["2024-06-20T16:45:00.000000Z"] * 2

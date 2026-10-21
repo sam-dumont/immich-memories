@@ -21,7 +21,7 @@ from immich_memories.audio.mixer import (
     get_video_duration,
     loop_audio_to_duration,
 )
-from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
+from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA, carry_capture_instant
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +166,7 @@ def mix_audio_with_stem_ducking(
     try:
         logger.info("Mixing audio with stem-based ducking...")
         subprocess.run(cmd, capture_output=True, check=True, timeout=600)
+        carry_capture_instant(video_path, output_path)
         logger.info(f"Audio mixed successfully: {output_path}")
     except subprocess.CalledProcessError as e:
         logger.error(f"Stem mixing failed: {e.stderr.decode() if e.stderr else e}")
@@ -340,6 +341,7 @@ def mix_audio_with_4stem_ducking(
             f"other={ducking_levels.other_db}dB"
         )
         subprocess.run(cmd, capture_output=True, check=True, timeout=600)
+        carry_capture_instant(video_path, output_path)
         logger.info(f"Audio mixed successfully: {output_path}")
     except subprocess.CalledProcessError as e:
         logger.error(f"4-stem mixing failed: {e.stderr.decode() if e.stderr else e}")

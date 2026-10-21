@@ -9,7 +9,11 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from immich_memories.delivery_timestamp import capture_metadata_args
+from immich_memories.delivery_timestamp import (
+    DROP_DEMUXED_TAGS,
+    capture_metadata_args,
+    stamp_capture_instant,
+)
 from immich_memories.processing.ffmpeg_runner import (
     ffmpeg_error_excerpt,
     ffmpeg_exit_reason,
@@ -524,6 +528,7 @@ def mux_video_audio(
         "copy",
         "-c:a",
         "copy",
+        *DROP_DEMUXED_TAGS,
         *capture_metadata_args(captured_at),
         "-movflags",
         "+faststart+use_metadata_tags",
@@ -535,3 +540,4 @@ def mux_video_audio(
             f"Muxing failed ({ffmpeg_exit_reason(result.returncode)}): "
             f"{ffmpeg_error_excerpt(result.stderr)}"
         )
+    stamp_capture_instant(output_path, captured_at)

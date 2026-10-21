@@ -17,7 +17,11 @@ import numpy as np
 import pytest
 
 from immich_memories.processing import gpu_frame_graph, streaming_frame_decoder
-from immich_memories.processing.hardware import detect_hardware_acceleration
+from immich_memories.processing.hardware import (
+    detect_hardware_acceleration,
+    get_ffmpeg_hwaccel_args,
+)
+from immich_memories.processing.hardware_decode_check import hardware_decode_matches
 from immich_memories.processing.hdr_utilities import (
     detect_color_primaries,
     detect_hdr_type,
@@ -81,6 +85,15 @@ def _frames(path: Path, capabilities, target: str, canvas, monkeypatch, *, gpu: 
     return frames
 
 
+def _decoder_trusted(path: Path, capabilities) -> bool:
+    probe = ProbeCache().get(path)
+    codec = {"h264": "h264", "hevc": "h265"}[probe.codec]
+    args = get_ffmpeg_hwaccel_args(
+        capabilities, operation="decode", codec=codec, for_software_filters=True
+    )
+    return hardware_decode_matches(tuple(args), codec, str(probe.pixel_format))
+
+
 @pytest.mark.parametrize(
     ("source", "target", "canvas"),
     [
@@ -93,6 +106,11 @@ def test_the_gpu_graph_matches_the_cpu_chain(
     tmp_path, capabilities, monkeypatch, source, target, canvas
 ):
     path = PHONE_CLIP if source == "phone" else _sdr_clip(tmp_path / "small.mp4")
+    if gpu_frame_graph.gpu_frame_graph_for_path(path, capabilities, ProbeCache()) is None:
+        # The graph is refused only where this machine's decoder strays from the
+        # software picture for the clip's codec (VideoToolbox's H.264 on a virtual Mac).
+        assert not _decoder_trusted(path, capabilities)
+        return
 
     cpu = _frames(path, capabilities, target, canvas, monkeypatch, gpu=False)
     gpu = _frames(path, capabilities, target, canvas, monkeypatch, gpu=True)

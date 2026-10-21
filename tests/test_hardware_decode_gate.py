@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from immich_memories.processing import gpu_frame_graph
 from immich_memories.processing.gpu_frame_graph import hardware_decode_for
 from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
 from immich_memories.processing.streaming_frame_decoder import FrameDecoder
@@ -30,6 +31,12 @@ class _Probes:
         return self._probe
 
 
+@pytest.fixture(autouse=True)
+def trusted_decoder(monkeypatch):
+    # WHY: replaces the FFmpeg runs that compare the hardware decode with the software one.
+    monkeypatch.setattr(gpu_frame_graph, "hardware_decode_matches", lambda *_args: True)
+
+
 @pytest.mark.parametrize(
     ("codec", "pixel_format", "decoded"),
     [
@@ -46,6 +53,17 @@ def test_only_formats_repacked_exactly_go_to_the_hardware(codec, pixel_format, d
     assert (gate is not None) is decoded
     if decoded:
         assert gate == (("-hwaccel", "videotoolbox"), pixel_format)
+
+
+def test_a_decoder_that_strays_from_the_software_picture_decodes_in_software(monkeypatch):
+    seen = []
+    # WHY: replaces the FFmpeg runs; this decoder's frames differ from the software ones.
+    monkeypatch.setattr(
+        gpu_frame_graph, "hardware_decode_matches", lambda *args: seen.append(args) and False
+    )
+
+    assert hardware_decode_for(Path("clip.mov"), APPLE, _Probes("h264", "yuv420p")) is None
+    assert seen == [(("-hwaccel", "videotoolbox"), "h264", "yuv420p")]
 
 
 def test_no_capabilities_decode_in_software():

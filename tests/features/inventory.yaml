@@ -712,6 +712,11 @@ features:
     tests:
       - tests/integration/features/test_store_and_runs.py::test_a_delivered_film_carries_its_title_and_summary_as_description_and_its_year_as_a_tag
       - tests/integration/immich_gate/test_upload.py::test_a_film_keeps_its_description_and_tags_after_immich_reads_it
+  - id: upload.film-dated-by-last-picture
+    promise: "An uploaded memory is filed on the day of its last picture, in the timezone most of its pictures share."
+    doc: reference/config-reference.md#upload-to-immich
+    tests:
+      - tests/integration/immich_gate/test_upload.py::test_immich_files_a_rendered_film_by_its_own_capture_tags
   - id: upload.reclaims-local-copy
     promise: "Once delivery is confirmed the local film is removed, and the run keeps the record and the Immich link."
     doc: make/cli/generate.md#output

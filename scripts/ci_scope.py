@@ -200,6 +200,8 @@ INTEGRATION_SUITES = (
     ("src/immich_memories/photos/", ("photos",)),
     ("src/immich_memories/audio/", ("audio-mixing",)),
     ("src/immich_memories/generate", ("assembly",)),
+    # The capture date every render and music pass writes into the film.
+    ("src/immich_memories/delivery_timestamp.py", ("assembly", "audio-mixing")),
     # The production cut hears each kept clip through the real speech detector (#2549).
     ("src/immich_memories/speech/", ("assembly",)),
     ("src/immich_memories/analysis/runtime/ports.py", ("assembly",)),

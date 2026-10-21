@@ -17,7 +17,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA
+from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA, carry_capture_instant
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.output_contract import (
@@ -712,6 +712,7 @@ def mute_original_audio(video_path: Path, encoding_plan: EncodingPlan) -> Output
                 check=True,
                 timeout=_AUDIO_DECODE_TIMEOUT_SECONDS,
             )
+            carry_capture_instant(video_path, staged_path)
         except (OSError, subprocess.SubprocessError):
             # Muting is required output behavior, never an optional-music fallback.
             raise InvalidOutputArtifact(

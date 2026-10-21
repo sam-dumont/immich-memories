@@ -48,8 +48,11 @@ def test_rendered_film_is_dated_by_its_last_picture(test_clip_720p, test_music_s
     )
 
     rendered = _container_tags(film)
-    assert rendered["creation_time"] == "2024-06-20T16:45:00Z"
+    # One creation time, the movie header's: a second copy in the Keys list
+    # reads back as "a;b" on FFmpeg 7+ and breaks the next pass's header.
+    assert rendered["creation_time"] == "2024-06-20T16:45:00.000000Z"
     assert rendered["com.apple.quicktime.creationdate"] == "2024-06-20T18:45:00+02:00"
+    assert not [key for key, value in rendered.items() if ";" in value]
 
     with_music = tmp_path / "memory_music.mp4"
     # Short fades: the default 2 s + 3 s would not fit inside a two-second film.
@@ -59,6 +62,7 @@ def test_rendered_film_is_dated_by_its_last_picture(test_clip_720p, test_music_s
     mixed = _container_tags(with_music)
     assert mixed["creation_time"] == rendered["creation_time"]
     assert mixed["com.apple.quicktime.creationdate"] == rendered["com.apple.quicktime.creationdate"]
+    assert not [key for key, value in mixed.items() if ";" in value]
 
 
 def test_a_film_with_no_known_capture_instant_is_left_alone(test_clip_720p, tmp_path):

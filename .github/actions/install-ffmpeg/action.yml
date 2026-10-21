@@ -1,7 +1,8 @@
 name: Install FFmpeg
 description: >-
   Install FFmpeg on Linux (apt, with retries and bounded timeouts) or macOS
-  (brew), falling back to a static Linux build if apt never recovers.
+  (brew, then ffmpeg-full when the plain bottle lacks zscale), falling back to a
+  static Linux build if apt never recovers. Fails when the FFmpeg it leaves has no zscale.
 
 runs:
   using: composite
@@ -43,11 +44,24 @@ runs:
         sudo install -m 0755 /tmp/ffmpeg-static/ffmpeg /usr/local/bin/ffmpeg
         sudo install -m 0755 /tmp/ffmpeg-static/ffprobe /usr/local/bin/ffprobe
 
+    # The documented Mac setup (docs-site/docs/run/reference/python-install.md): Homebrew's
+    # ffmpeg when it has zscale, else ffmpeg-full first on PATH. The plain bottle builds
+    # without zimg, and the HDR tests need zscale.
     - name: Install FFmpeg (macOS, brew)
       if: runner.os == 'macOS'
       shell: bash
-      run: brew install ffmpeg
+      run: |
+        brew install ffmpeg
+        if ffmpeg -hide_banner -filters | grep -q zscale; then
+          exit 0
+        fi
+        echo "Homebrew ffmpeg has no zscale; installing ffmpeg-full"
+        brew install ffmpeg-full
+        echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
 
     - name: Verify FFmpeg
       shell: bash
-      run: ffmpeg -version
+      run: |
+        command -v ffmpeg
+        ffmpeg -version
+        ffmpeg -hide_banner -filters | grep zscale || { echo "FFmpeg has no zscale filter"; exit 1; }

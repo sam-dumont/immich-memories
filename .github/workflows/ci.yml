@@ -372,6 +372,33 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  # The assembly suite on macOS with Homebrew's current FFmpeg, beside the Ubuntu jobs'
+  # FFmpeg 6: a newer FFmpeg reads files back differently (#2790, a creation time FFmpeg 6
+  # hid came back as "a;b"). A pull request runs it when it reaches the assembly suite;
+  # a push to main, the release and the nightly always do.
+  integration-macos:
+    name: Integration (assembly, macOS, current FFmpeg)
+    if: >-
+      github.repository_id == '1174219883'
+      && (github.event_name != 'pull_request'
+        || contains(fromJSON(needs.changes.outputs.integration_suites), 'assembly'))
+    needs: [changes, setup]
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Pull LFS files
+        uses: ./.github/actions/pull-lfs
+      - name: Set up uv and Python
+        uses: ./.github/actions/setup-uv-python
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache-suffix: macos-integration
+      - name: Install FFmpeg
+        uses: ./.github/actions/install-ffmpeg
+      - name: Integration suite (assembly)
+        run: make dev-test-integration test-integration-assembly
+
   # The unit shards' coverage as one (`make coverage-combine`): the 65% floor on the
   # whole suite, and coverage.xml for Codecov. On a pull request, the ≥80% gate on the
   # changed lines, with the integration suites' XMLs merged in. It runs once every
@@ -831,7 +858,7 @@ jobs:
   # ends cancelled, and a superseded run's verdict no longer counts anyway.
   ci-success:
     name: CI Success
-    needs: [changes, setup, quality, security, test, integration-coverage, coverage, test-extras, test-store, build, docker, container-e2e, docs, docs-tests, launch-check, features, render-worker]
+    needs: [changes, setup, quality, security, test, integration-coverage, integration-macos, coverage, test-extras, test-store, build, docker, container-e2e, docs, docs-tests, launch-check, features, render-worker]
     runs-on: ubuntu-24.04
     if: always() && github.repository_id == '1174219883'
     steps:
