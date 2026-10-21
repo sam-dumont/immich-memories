@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from collections.abc import Iterable
+from datetime import date
 
 from immich_memories.free_text.facts import PICTURE_WORDS
 from immich_memories.free_text.grammar import Captioned, is_thing, subject_head
@@ -258,6 +259,29 @@ def one_occasion(
         [_MANY_OCCASIONS, _ONE_OCCASION],
     )
     return answer == _ONE_OCCASION, Reason("", f"the model says ({tally(votes)})", answer)
+
+
+_HOW_LONG = """The request asks for a film of one occasion that starts on date_from. How long did that
+occasion itself last, by what the request says? Pick one. Reason first. Return JSON."""
+_ONE_DAY, _LONGER = "one day", "longer than one day"
+
+
+def lasts_one_day(request: str, start: date, asker: Asker) -> tuple[bool, Reason]:
+    """Whether one occasion the request dates only by its start lasted that one day.
+
+    "The birth of my son" starts on a date the people file holds and ends that day; "our
+    honeymoon" starts on its wedding day and lasts longer.
+    """
+    answer, votes = choose(
+        asker,
+        _HOW_LONG,
+        {"owner_request": request, "date_from": start.isoformat()},
+        # No majority falls back to the first option: longer keeps the open window.
+        [_LONGER, _ONE_DAY],
+    )
+    return answer == _ONE_DAY, Reason(
+        "", f"the model says it lasted {answer} ({tally(votes)})", str(start)
+    )
 
 
 def tally(votes: Counter[str]) -> str:

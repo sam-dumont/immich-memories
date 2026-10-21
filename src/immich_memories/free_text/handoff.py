@@ -23,10 +23,6 @@ from immich_memories.timeperiod import DateRange
 _WHICH_EVENT = """The owner asked for a film of one occasion (owner_request). The library found these
 occasions on that day. Which one is the occasion asked for? Pick one. Reason first. Return JSON."""
 
-_HOW_LONG = """The request asks for a film of one occasion that starts on date_from. How long did that
-occasion itself last, by what the request says? Pick one. Reason first. Return JSON."""
-_ONE_DAY, _LONGER = "one day", "longer than one day"
-
 Route = Literal["pool", "special_day", "none"]
 
 
@@ -96,7 +92,7 @@ def film_for(
         return Film("none", Reason("", "not possible: no film", pool.why))
     if pool.verdict == NEEDS_PREPARATION:
         return Film("none", Reason("", "needs preparation: no film yet", pool.why))
-    one_day = _one_day(ask, asker)
+    one_day = _one_day(ask)
     if one_day is not None:
         day, why = one_day
         return _special_day(ask.request, day, why, events_on(day), asker)
@@ -127,30 +123,18 @@ def _dated_day(ask: Ask) -> date | None:
     return when.start
 
 
-def _one_day(ask: Ask, asker: Asker) -> tuple[date, str] | None:
+def _one_day(ask: Ask) -> tuple[date, str] | None:
     pool, when = ask.pool, ask.translation.when
     if not pool.one_occasion:
         return None
     if pool.day is not None:
         return pool.day, "one occasion, on the day its pictures show its people together"
-    if when.start is None:
+    # Translation already ended an open start that is one occasion of one day (#2793); a
+    # window of several days (a season, a month, a range) or an open one is the pool, never
+    # the one day it starts on (#2139).
+    if when.start is None or when.end != when.start:
         return None
-    if when.end == when.start:
-        return when.start, "one occasion, dated to one day"
-    if when.end is not None:
-        # The request dates a window of several days (a season, a month, a year, a range):
-        # it asks for that window, never for the one day it starts on (#2139).
-        return None
-    answer, votes = choose(
-        asker,
-        _HOW_LONG,
-        {"owner_request": ask.request, "date_from": when.start.isoformat()},
-        # No majority falls back to the first option: longer keeps the pool.
-        [_LONGER, _ONE_DAY],
-    )
-    if answer != _ONE_DAY:
-        return None
-    return when.start, f"one occasion; the model says it lasted {_ONE_DAY} ({tally(votes)})"
+    return when.start, "one occasion, dated to one day"
 
 
 def _special_day(

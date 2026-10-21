@@ -19,6 +19,8 @@ from immich_memories.conformance.runtime import run_case
         ("request reading", {"who": [], "when": ["2030"], "where": [], "what": []}, False, 3),
         ("calendar dates", {"date_from": "2030-01-01", "date_to": "2030-12-31"}, True, 1),
         ("calendar dates", {"date_from": None, "date_to": None}, False, 1),
+        ("one-day occasion", {"choice": "one day"}, True, 3),
+        ("one-day occasion", {"choice": "longer than one day"}, False, 3),
     ],
 )
 def test_probe_rejects_wrong_meaning(monkeypatch, name, answer, valid, calls):
@@ -80,7 +82,8 @@ def test_place_probe_requires_the_trip_scope(monkeypatch, choice, valid):
 def test_handoff_probe_selects_the_requested_event(monkeypatch):
     def reply(request):
         prompt = json.loads(request.content)["messages"][0]["content"]
-        choice = "one day" if "How long" in prompt else "A wedding ceremony"
+        assert "How long" not in prompt, "a one-day date range needs no length question"
+        choice = "A wedding ceremony"
         return httpx.Response(
             200,
             json={
@@ -105,4 +108,4 @@ def test_handoff_probe_selects_the_requested_event(monkeypatch):
     )
     result = run_case(next(case for case in checks if case.name == "free-text film handoff"))
     assert result.valid, result.quality
-    assert result.calls == 6
+    assert result.calls == 3

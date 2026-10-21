@@ -17,7 +17,7 @@ from immich_memories.free_text.linking import (
     link_where,
 )
 from immich_memories.free_text.pool import Pool, Translation
-from immich_memories.free_text.pool_questions import left_out, printed_words
+from immich_memories.free_text.pool_questions import lasts_one_day, left_out, printed_words
 from immich_memories.free_text.reading import Reading, WireAsker, read_request
 from immich_memories.free_text.subject import Subject, english_noun, subject_kind
 from immich_memories.free_text.translate import Ask
@@ -94,7 +94,7 @@ def film_handoff(llm: LLMConfig) -> str:
     translation = Translation(
         Reading("our wedding on June 1, 2030"),
         WhoLink(),
-        WhenLink(start=day),
+        WhenLink(start=day, end=day),
         WhereLink(),
         LibraryFacts(),
         Subject(),
@@ -113,12 +113,23 @@ def film_handoff(llm: LLMConfig) -> str:
     return "routes the one-day wedding to its catalogue event"
 
 
+def one_day_occasion(llm: LLMConfig) -> str:
+    lasted, _why = lasts_one_day("the birth of our son", date(2030, 6, 1), WireAsker(llm))
+    assert lasted, "a birth dated by the people file was not read as one day"
+    return "reads a birth as an occasion of one day"
+
+
 def free_text_cases(llm: LLMConfig) -> tuple[Case, ...]:
     return (
         Case(
             "free-text film handoff",
             partial(film_handoff, llm),
-            _COMMON | {"free_text.handoff:_one_day", "free_text.handoff:_special_day"},
+            _COMMON | {"free_text.handoff:_special_day"},
+        ),
+        Case(
+            "free-text one-day occasion",
+            partial(one_day_occasion, llm),
+            _COMMON | {"free_text.pool_questions:lasts_one_day", "free_text.reading:choose"},
         ),
         Case(
             "free-text place scope",
