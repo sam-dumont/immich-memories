@@ -12,6 +12,7 @@ _STAGE_WORDS = {
     "audience-gate": "the family-viewing check",
     "shareability": "the shareability check",
     "final_duplicate_review": "the duplicate review",
+    "edited-exports": "the edited-export check",
     "duplicate_review": "the duplicate review",
     "picture_review": "the picture review",
     "picture-review": "the picture review",

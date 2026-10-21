@@ -220,8 +220,15 @@ def test_a_shot_the_vote_removes_is_refilled_inside_the_films_real_length(tmp_pa
     source = replace(
         source,
         assets={
-            key: asset.model_copy(update={"type": AssetType.VIDEO, "duration_seconds": 12.0})
-            for key, asset in source.assets.items()
+            key: asset.model_copy(
+                update={
+                    "type": AssetType.VIDEO,
+                    "duration_seconds": 12.0,
+                    # A phone's own clip, so no suspicion of an edited export (#2783).
+                    "original_file_name": f"VID_{index:04d}.MP4",
+                }
+            )
+            for index, (key, asset) in enumerate(source.assets.items())
         },
     )
     source = replace(

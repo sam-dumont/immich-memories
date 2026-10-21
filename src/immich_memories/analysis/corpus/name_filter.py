@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
+import re
 from collections.abc import Iterable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -125,6 +126,42 @@ def _a_still_with_no_camera(asset: Any) -> bool:
         return False
     exif = getattr(asset, "exif_info", None)
     return not (exif and getattr(exif, "make", None))
+
+
+# The names cameras give their own clips: phones (`IMG_`, `VID_`, `PXL_`, a dated Android
+# `YYYYMMDD_HHMMSS`, an iOS trim, the upper-case UUID `.MOV` an iPhone shares a clip under),
+# cameras (`MVI_`, `MOV`, `DSC`, `MAH`), action cameras and drones (`GOPR`, `GH`/`GX`/`GP`,
+# `DJI_`, a dated `YYYY_MMDD_HHMMSS`).
+_CAMERA_VIDEO_NAME = re.compile(
+    r"^(?:(?:img|vid|pxl|mvi|mov|dscf?|dscn|dji|gopr|g[hxp]|mah|video)[_-]?\d"
+    r"|trim\."
+    r"|\d{8}_\d{6}"
+    r"|\d{4}_\d{4}_\d{6})",
+    re.IGNORECASE,
+)
+_IOS_SHARED_CLIP = re.compile(
+    r"^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\.MOV$"
+)
+
+
+def edited_export_suspect(asset: Any) -> bool:
+    """A video that names no camera and carries a name no camera writes (#2783).
+
+    What an app's edited export looks like from its metadata: a lap-timing app's dash-cam
+    frame with a speedometer burnt in, a clip an editor rendered, a download. It is a
+    suspicion, never a verdict: on a real library 1665 of 3201 make-less videos had such a
+    name, and a few dozen of them were genuine camera clips somebody renamed. So a suspect is
+    demoted (`structure.finishing.demote_edited_exports`), never refused. A star clears it.
+    """
+    from immich_memories.api.models import AssetType
+
+    if getattr(asset, "type", None) != AssetType.VIDEO or getattr(asset, "is_favorite", False):
+        return False
+    exif = getattr(asset, "exif_info", None)
+    if exif and getattr(exif, "make", None):
+        return False
+    name = getattr(asset, "original_file_name", None) or ""
+    return not (_CAMERA_VIDEO_NAME.match(name) or _IOS_SHARED_CLIP.match(name))
 
 
 def not_on_the_timeline(asset: Any) -> bool:

@@ -413,6 +413,9 @@ def _added_by(run, share_log: Mapping[str, Any], owner_required: Sequence[str]) 
         if row.get("replacement")
     }
     added |= {c["asset_id"]: "family-seat" for c in run.carriers if c.get("family_seat")}
+    added |= {
+        c["asset_id"]: "edited-exports" for c in run.carriers if c.get("replaces_edited_export")
+    }
     return added | dict.fromkeys(owner_required, "owner-required")
 
 

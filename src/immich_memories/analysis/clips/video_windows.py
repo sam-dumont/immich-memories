@@ -168,7 +168,9 @@ def grow_holds(
     era_room = _era_room(grown, spare_seconds, era_of)
 
     def room(i: int) -> float:
-        own = min(float(grown[i]["raw_seconds"]), LONGEST_EXCHANGE_SECONDS) - grown[i]["seconds"]
+        # A shot with its own cap (a suspected edited export, #2783) never grows past it.
+        longest = min(LONGEST_EXCHANGE_SECONDS, grown[i].get("hold_cap", LONGEST_EXCHANGE_SECONDS))
+        own = min(float(grown[i]["raw_seconds"]), longest) - grown[i]["seconds"]
         if era_of is None:
             return own
         return min(own, era_room.get(era_of(str(grown[i]["taken"])), 0.0))

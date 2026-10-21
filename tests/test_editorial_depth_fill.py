@@ -29,10 +29,16 @@ def _apart(asset_id):
 
 
 def _as_videos(source, seconds=5.0):
-    for asset in source.assets.values():
-        asset.type = AssetType.VIDEO
-        asset.duration_seconds = seconds
+    for index, asset in enumerate(source.assets.values()):
+        _camera_clip(asset, index, seconds)
     return source
+
+
+def _camera_clip(asset, index: int, seconds: float) -> None:
+    """A phone's own clip: a camera's file name, so no suspicion of an edited export (#2783)."""
+    asset.type = AssetType.VIDEO
+    asset.duration_seconds = seconds
+    asset.original_file_name = f"VID_{index:04d}.MP4"
 
 
 def _run(source, thumbnail_hash=_apart):
@@ -101,8 +107,7 @@ def test_a_moment_fills_with_its_videos_before_its_stills(tmp_path):
     )
     for index, asset in enumerate(sorted(source.assets.values(), key=lambda a: a.id)):
         if index % 2 == 0:
-            asset.type = AssetType.VIDEO
-            asset.duration_seconds = 5.0
+            _camera_clip(asset, index, 5.0)
 
     plan = _run(source)
 
