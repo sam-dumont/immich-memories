@@ -42,16 +42,14 @@ Name the faces that matter in Immich first. In this app, open **Settings > Peopl
 2. Check **Account owner**. The scan only guesses whose library this is, and a lot hangs on it: what everyone is "to the library owner", the family seat, the titles. Pick the right person, or **Nobody in this library** for a shared family account. What you pick stays through every rescan.
 3. Set **Role** for the people in your library. Choose the role that fits each person; partner, child and parent are examples.
 4. Answer the links the scan found. It notices pairs that appear together all the time, but it cannot know what they are to each other. Under **Relationships**, pick the real one ("parent of", "partner of") and both sides get written, with the reverse kind. **No, they are not** closes the question for good.
-5. Check what your family tree suggests. Once you've said who is whose parent, sibling or partner, the page suggests what follows: grandparents, aunts and uncles, nieces and nephews, cousins, in-laws, and siblings who share a parent. Each suggestion says how it got there ("parent of Bob, who is a parent of Riley") and shows up as soon as you add the relationship it comes from, with no rescan. The tick records it, both sides. **Accept all suggestions** records every one on that card. **No, they are not** turns it down for good.
+5. Accept what your family tree implies. Once someone's parent, sibling or partner is set, the page suggests what follows: grandparents, aunts and uncles, nieces and nephews, cousins, in-laws, siblings who share a parent. Each one shows its chain ("parent of Bob, who is a parent of Riley") and appears as soon as you add the link it comes from. The tick records it on both cards, **Accept all suggestions** takes a whole card, and **No, they are not** turns it down for good. Nothing counts until you accept it: the tree can't tell a half-sibling from a sibling, or a partner from a spouse.
 
 An unanswered pair shows up once among the visible cards, including when you filter by name. Naming it updates both cards. Once you name it, the scan's guess is gone, and a rescan will not bring it back. If you confirmed a link in an older release without naming it, it reads "linked, relationship not named" until you pick a kind. We never guess one for you, and until you do it is left out of titles and prompts.
 
 If **Account owner** says **not known yet**, the account name has not been matched to a named
 person. Choose the owner yourself, or name people in Immich and rescan.
 
-A suggestion is only a suggestion: titles, prompts and the people rules use it once you accept it. They stay suggestions because the tree can't tell a half-sibling from a sibling, or a partner from a spouse.
-
-Each card also says how many pictures someone is in, when the first one was taken, and when they became regular, if that was later. "62 pictures across 9 months, first picture 2004-08, regular since 2025-05" is an old friend you've seen a lot of lately. How close someone counts is read from the "regular since" month, so pictures from before they were part of your life, like a partner's childhood photos, don't make them a fixture of those years.
+Each card also says how many pictures someone is in, when the first was taken, and when they became regular, if that came later. "62 pictures across 9 months, first picture 2004-08, regular since 2025-05" is an old friend you see a lot of lately. Closeness is read from the "regular since" month, so pictures from before someone was in your life (a partner's childhood photos) don't make them a fixture of those years.
 
 The scan reads metadata, not pictures. Your confirmations survive a rescan. Its guesses alone never make someone close family.
 
