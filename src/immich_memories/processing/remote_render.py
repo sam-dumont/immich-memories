@@ -41,6 +41,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 Progress = Callable[[str, float, str], None]
 
+# WHY (#2780): a finished film a few percent off its preview is the same film. A
+# ten-minute cut of 150 clips came back at 589 s against 604 s planned, every clip at
+# its planned length, and failing it threw away a fourteen-minute render. Past this
+# share of the plan the film is a different one (a lost card or a run of shots), and it
+# fails. Short films keep about a frame per clip (`_duration_slack`) as their floor.
+FILM_LENGTH_MARGIN = 0.03
+
 
 class RemoteRenderClient:
     """Own one worker connection; return a checked base film, staged for its one decode."""
@@ -129,17 +136,12 @@ class RemoteRenderClient:
             progress("worker_check", 0.0, "Checking the downloaded film")
             if expected_digest and expected_digest != digest:
                 raise GenerationError("Render worker output does not match its digest")
-            from immich_memories.generate_timeline import validate_final_duration
-
             try:
                 probe = check_output(staged, plan)
             except InvalidOutputArtifact:
                 keep_staged = True
                 raise
-            _validate_result(params, request, status, clips, probe, plan)
-            warning = validate_final_duration(
-                params, probe.duration_seconds, _map_extra(params, request, clips)
-            )
+            warning = _validate_result(params, request, status, clips, probe, plan)
             logger.info("Render worker completed: %s, %.2fs", plan.encoder, probe.duration_seconds)
             for message in status.get("degradations", ()):
                 logger.warning("Render worker: %s", self._safe_message(str(message), params))
@@ -342,18 +344,46 @@ def expected_film(
         if source.fps > 0:
             rates[clip.path] = source.fps
     fps = film_frame_rate(clips, rates.get)
-    # The worker's film may run up to the slack its check allows past the preview; music
-    # made for the longest film it can return covers whichever arrives.
-    longest = _expected_duration(params, request, clips) + _duration_slack(clips)
+    # Music made for the longest film the length check accepts covers whichever arrives.
+    _, longest = film_length_bounds(_expected_duration(params, request, clips), clips)
     return tuple(clips), longest, float(fps)
 
 
-def _validate_result(params, request, status, clips, probe, plan) -> None:
+def film_length_bounds(expected: float, clips) -> tuple[float, float]:
+    """The shortest and longest film the worker may return for a planned ``expected`` length."""
+    tolerance = max(_duration_slack(clips), expected * FILM_LENGTH_MARGIN)
+    return max(0.0, expected - tolerance), expected + tolerance
+
+
+def check_film_length(actual: float, expected: float, clips) -> str | None:
+    """Accept a film within its margin of the plan; fail one past it, naming both lengths.
+
+    Returns a warning for a film past frame rounding but inside the margin, else None.
+    """
+    shortest, longest = film_length_bounds(expected, clips)
+    if not shortest <= actual <= longest:
+        raise GenerationError(
+            f"Render worker changed the film duration: {actual:.1f}s against "
+            f"the {expected:.1f}s planned"
+        )
+    if math.isclose(actual, expected, abs_tol=_duration_slack(clips)):
+        return None
+    return (
+        f"The render worker's film runs {actual:.1f}s against the {expected:.1f}s planned "
+        f"({actual - expected:+.1f}s)"
+    )
+
+
+def _validate_result(params, request, status, clips, probe, plan) -> str | None:
+    """Refuse a film that is not the cut asked for; the warnings of one a little off it."""
+    from immich_memories.generate_timeline import validate_final_duration
+
     _validate_cut(request, clips)
     _validate_encoding(request["output"], probe, plan)
     expected = _expected_duration(params, request, clips)
-    if not math.isclose(probe.duration_seconds, expected, abs_tol=_duration_slack(clips)):
-        raise GenerationError("Render worker changed the film duration")
+    warning = check_film_length(probe.duration_seconds, expected, clips)
+    if warning:
+        logger.warning(warning)
     for start, end in status.get("music_mute_windows") or ():
         if not (
             math.isfinite(start)
@@ -361,6 +391,10 @@ def _validate_result(params, request, status, clips, probe, plan) -> None:
             and 0 <= start < end <= probe.duration_seconds + 0.1
         ):
             raise GenerationError("Render worker returned an invalid audio window")
+    budget = validate_final_duration(
+        params, probe.duration_seconds, _map_extra(params, request, clips)
+    )
+    return "; ".join(note for note in (warning, budget) if note) or None
 
 
 def _preview_inputs(params, request, clips):
