@@ -6269,6 +6269,49 @@
         ]
       }
     },
+    "/api/v1/roster/{person_id}/suggestions/accept": {
+      "post": {
+        "description": "Record every relationship the family tree suggests for this person, reciprocals too.",
+        "operationId": "accept_all_api_v1_roster__person_id__suggestions_accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterPerson"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept All",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/runs": {
       "get": {
         "description": "Runs newest first, each with the first pictures its saved cut plays.",

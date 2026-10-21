@@ -200,3 +200,65 @@ def test_a_successful_scan_refreshes_the_owner_and_keeps_a_saved_choice_without_
     assert load_document(store)["owners"]["primary"]["person_id"] == "person-robin"
     assert page.evaluate("window.__owner_scan_same_document") is True
     evidence(page, "owner-confirmed-after-rescan")
+
+
+def _related(entry: dict, kind: str, other: int, reverse: str) -> None:
+    entry["confirmed"]["links"].append(
+        {
+            "kind": kind,
+            "with": f"fake-person-{other:02d}",
+            "reverse": reverse,
+            "decision": "confirmed",
+        }
+    )
+
+
+@pytest.mark.feature("web.people")
+def test_the_family_tree_suggests_what_it_implies_live_and_a_tick_or_accept_all_records_it(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    # #2795: Gran is Bob's and Alex's parent. Adding "Bob parent of Riley" on the page
+    # brings Gran's grandchild and Riley's aunt-or-uncle at once, with no scan or reload.
+    store = launch_workspace.store()
+    gran, bob, alex, riley = (
+        _entry(index, name)
+        for index, name in enumerate(
+            ("Gran Example", "Bob Example", "Alex Example", "Riley Example")
+        )
+    )
+    for child, entry in ((1, bob), (2, alex)):
+        _related(gran, "parent-of", child, "child-of")
+        _related(entry, "child-of", 0, "parent-of")
+    import_document(store, {"version": 1, "people": [gran, bob, alex, riley]}, replace=True)
+
+    page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
+    page.evaluate("window.__suggestions_same_document = true")
+    gran_rows = _card(page, "Gran Example").get_by_test_id("relationship-row")
+    expect(gran_rows.filter(has_text="Bob Example")).to_have_count(1, timeout=30_000)
+    expect(gran_rows.filter(has_text="Riley")).to_have_count(0)
+    bob_card = _card(page, "Bob Example")
+    bob_card.get_by_label("Relationship").select_option(label="parent of")
+    bob_card.get_by_label("With").select_option(label="Riley Example")
+    bob_card.get_by_role("button", name="Add", exact=True).click()
+
+    suggested = gran_rows.filter(has_text="Riley Example")
+    expect(suggested).to_have_attribute("data-status", "suggested", timeout=15_000)
+    expect(suggested).to_contain_text("grandparent of")
+    expect(suggested.get_by_test_id("suggestion-reason")).to_have_text(
+        "(parent of Bob Example, who is a parent of Riley Example)"
+    )
+    evidence(page, "family-tree-suggestions")
+    suggested.get_by_role("button", name="Yes, they are").click()
+    expect(suggested).to_have_attribute("data-status", "named")
+
+    riley_card = _card(page, "Riley Example")
+    riley_suggested = riley_card.locator(
+        '[data-testid="relationship-row"][data-status="suggested"]'
+    )
+    expect(riley_suggested).not_to_have_count(0)
+    riley_card.get_by_role("button", name="Accept all suggestions").click()
+    expect(riley_suggested).to_have_count(0)
+    expect(
+        riley_card.get_by_test_id("relationship-row").filter(has_text="Alex Example")
+    ).to_contain_text("niece or nephew of")
+    assert page.evaluate("window.__suggestions_same_document") is True

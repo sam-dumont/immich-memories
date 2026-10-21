@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-20 06:19+0200\n"
+"POT-Creation-Date: 2026-10-21 18:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -62,6 +62,10 @@ msgstr "Nog ongeveer {amount} tot de film klaar is"
 msgid "About {percent}% overall"
 msgstr "Ongeveer {percent}% in totaal"
 
+#: web/lib/people/RelationshipRows.svelte:81
+msgid "Accept all suggestions"
+msgstr "Alle suggesties accepteren"
+
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "Doorgestuurde en gedownloade media accepteren"
@@ -74,11 +78,11 @@ msgstr "Accounteigenaar"
 msgid "Accounts"
 msgstr "Accounts"
 
-#: web/lib/people/RelationshipRows.svelte:73
+#: web/lib/people/RelationshipRows.svelte:91
 msgid "Add"
 msgstr "Toevoegen"
 
-#: web/lib/people/RelationshipRows.svelte:66
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Add a relationship"
 msgstr "Een relatie toevoegen"
 
@@ -839,7 +843,7 @@ msgstr "Koppelen"
 msgid "Link a person from {account}"
 msgstr "Koppel een persoon uit {account}"
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Linked to"
 msgstr "Gekoppeld aan"
 
@@ -859,7 +863,7 @@ msgstr "Bij het laden van je configuratie kwamen waarschuwingen over deze sleute
 msgid "Looking through your library for memories to suggest..."
 msgstr "Bibliotheek wordt doorzocht naar herinneringen om voor te stellen..."
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Looks linked to"
 msgstr "Lijkt gekoppeld aan"
 
@@ -1070,7 +1074,8 @@ msgstr "Op dit moment geen suggesties."
 msgid "No trips detected for this year."
 msgstr "Geen reizen gedetecteerd voor dit jaar."
 
-#: web/lib/people/RelationshipRows.svelte:41 web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
+#: web/lib/people/RelationshipRows.svelte:74
 msgid "No, they are not"
 msgstr "Nee, dat klopt niet"
 
@@ -1104,7 +1109,7 @@ msgstr "Niet toegepast op een film die je zelf vroeg"
 msgid "Not possible"
 msgstr "Niet mogelijk"
 
-#: web/lib/people/RelationshipRows.svelte:40
+#: web/lib/people/RelationshipRows.svelte:57
 msgid "Not related to"
 msgstr "Niet verwant aan"
 
@@ -1112,11 +1117,16 @@ msgstr "Niet verwant aan"
 msgid "Not the same person"
 msgstr "Niet dezelfde persoon"
 
+#: web/lib/people/RelationshipRows.svelte:57
+#, python-brace-format
+msgid "Not {relationship}"
+msgstr "Niet {relationship}"
+
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "Notities"
 
-#: web/lib/people/RelationshipRows.svelte:62
+#: web/lib/people/RelationshipRows.svelte:79
 msgid "Nothing recorded yet."
 msgstr "Nog niets vastgelegd."
 
@@ -1386,11 +1396,11 @@ msgstr "Suggesties vernieuwen"
 msgid "Refreshing..."
 msgstr "Vernieuwen..."
 
-#: web/lib/people/RelationshipRows.svelte:65
+#: web/lib/people/RelationshipRows.svelte:83
 msgid "Relationship"
 msgstr "Relatie"
 
-#: web/lib/people/RelationshipRows.svelte:33
+#: web/lib/people/RelationshipRows.svelte:43
 msgid "Relationships"
 msgstr "Relaties"
 
@@ -1410,7 +1420,7 @@ msgstr "Verwijderen"
 msgid "Remove from this cut"
 msgstr "Uit deze montage halen"
 
-#: web/lib/people/RelationshipRows.svelte:38
+#: web/lib/people/RelationshipRows.svelte:48
 msgid "Remove this relationship"
 msgstr "Deze relatie verwijderen"
 
@@ -1726,6 +1736,10 @@ msgstr "Verhalen"
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "Ondertitel"
+
+#: web/lib/people/RelationshipRows.svelte:50
+msgid "Suggested"
+msgstr "Voorgesteld"
 
 #: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
@@ -2140,7 +2154,7 @@ msgstr ""
 "Wat de automatisering hierna zou maken, dezelfde lijst die `auto suggest` toont. Voer er een "
 "uit zoals `auto run` zou doen, of controleer het eerst zonder te renderen."
 
-#: web/lib/people/RelationshipRows.svelte:52 web/lib/people/RelationshipRows.svelte:54
+#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "Wat is {name} voor {other}?"
@@ -2209,7 +2223,7 @@ msgstr "Waarom dit beeld"
 msgid "Winter"
 msgstr "Winter"
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:70
+#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
 msgid "With"
 msgstr "Met"
 
@@ -2228,6 +2242,10 @@ msgstr "Jaren terug (alle als dit leeg is)"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "Aantal jaren"
+
+#: web/lib/people/RelationshipRows.svelte:53
+msgid "Yes, they are"
+msgstr "Ja, klopt"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2281,7 +2299,7 @@ msgstr "nog niet bekend"
 msgid "our cat along the years"
 msgstr "onze kat door de jaren heen"
 
-#: web/lib/people/RelationshipRows.svelte:47
+#: web/lib/people/RelationshipRows.svelte:64
 msgid "relationship not named"
 msgstr "relatie niet benoemd"
 

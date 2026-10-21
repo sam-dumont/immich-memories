@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-20 06:19+0200\n"
+"POT-Creation-Date: 2026-10-21 18:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -63,6 +63,10 @@ msgstr "Около {amount} до готовности фильма"
 msgid "About {percent}% overall"
 msgstr "Всего около {percent}%"
 
+#: web/lib/people/RelationshipRows.svelte:81
+msgid "Accept all suggestions"
+msgstr "Принять все предложения"
+
 #: web/routes/create/+page.svelte:502
 msgid "Accept forwarded and downloaded media"
 msgstr "Принимать пересланные и скачанные медиафайлы"
@@ -75,11 +79,11 @@ msgstr "Владелец аккаунта"
 msgid "Accounts"
 msgstr "Аккаунты"
 
-#: web/lib/people/RelationshipRows.svelte:73
+#: web/lib/people/RelationshipRows.svelte:91
 msgid "Add"
 msgstr "Добавить"
 
-#: web/lib/people/RelationshipRows.svelte:66
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Add a relationship"
 msgstr "Добавить связь"
 
@@ -838,7 +842,7 @@ msgstr "Связать"
 msgid "Link a person from {account}"
 msgstr "Связать человека из {account}"
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Linked to"
 msgstr "Связан с"
 
@@ -858,7 +862,7 @@ msgstr "При загрузке конфигурации появились пр
 msgid "Looking through your library for memories to suggest..."
 msgstr "Ищем в вашей библиотеке воспоминания для новых фильмов…"
 
-#: web/lib/people/RelationshipRows.svelte:44
+#: web/lib/people/RelationshipRows.svelte:61
 msgid "Looks linked to"
 msgstr "Похоже, связан с"
 
@@ -1069,7 +1073,8 @@ msgstr "Сейчас нет предложений."
 msgid "No trips detected for this year."
 msgstr "За этот год поездок не обнаружено."
 
-#: web/lib/people/RelationshipRows.svelte:41 web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
+#: web/lib/people/RelationshipRows.svelte:74
 msgid "No, they are not"
 msgstr "Нет, это не так"
 
@@ -1103,7 +1108,7 @@ msgstr "Не применяется к фильму, который вы поп�
 msgid "Not possible"
 msgstr "Невозможно"
 
-#: web/lib/people/RelationshipRows.svelte:40
+#: web/lib/people/RelationshipRows.svelte:57
 msgid "Not related to"
 msgstr "Не родственник"
 
@@ -1111,11 +1116,16 @@ msgstr "Не родственник"
 msgid "Not the same person"
 msgstr "Это другой человек"
 
+#: web/lib/people/RelationshipRows.svelte:57
+#, python-brace-format
+msgid "Not {relationship}"
+msgstr "Не {relationship}"
+
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "Заметки"
 
-#: web/lib/people/RelationshipRows.svelte:62
+#: web/lib/people/RelationshipRows.svelte:79
 msgid "Nothing recorded yet."
 msgstr "Пока ничего не записано."
 
@@ -1385,11 +1395,11 @@ msgstr "Обновить предложения"
 msgid "Refreshing..."
 msgstr "Обновление..."
 
-#: web/lib/people/RelationshipRows.svelte:65
+#: web/lib/people/RelationshipRows.svelte:83
 msgid "Relationship"
 msgstr "Связь"
 
-#: web/lib/people/RelationshipRows.svelte:33
+#: web/lib/people/RelationshipRows.svelte:43
 msgid "Relationships"
 msgstr "Связи"
 
@@ -1409,7 +1419,7 @@ msgstr "Удалить"
 msgid "Remove from this cut"
 msgstr "Убрать из монтажа"
 
-#: web/lib/people/RelationshipRows.svelte:38
+#: web/lib/people/RelationshipRows.svelte:48
 msgid "Remove this relationship"
 msgstr "Удалить эту связь"
 
@@ -1725,6 +1735,10 @@ msgstr "Истории"
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "Подзаголовок"
+
+#: web/lib/people/RelationshipRows.svelte:50
+msgid "Suggested"
+msgstr "Предложено"
 
 #: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
@@ -2136,7 +2150,7 @@ msgstr ""
 "Что автоматизация создала бы следующим — тот же список, что выводит `auto suggest`. Запустите"
 " так, как это сделал бы `auto run`, или сначала проверьте без рендеринга."
 
-#: web/lib/people/RelationshipRows.svelte:52 web/lib/people/RelationshipRows.svelte:54
+#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "Кем {name} приходится {other}?"
@@ -2205,7 +2219,7 @@ msgstr "Почему это изображение"
 msgid "Winter"
 msgstr "Зима"
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:70
+#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
 msgid "With"
 msgstr "С"
 
@@ -2224,6 +2238,10 @@ msgstr "Лет назад (все, если не указано)"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "Сколько лет охватить"
+
+#: web/lib/people/RelationshipRows.svelte:53
+msgid "Yes, they are"
+msgstr "Да, верно"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2275,7 +2293,7 @@ msgstr "пока неизвестно"
 msgid "our cat along the years"
 msgstr "наш кот за все годы"
 
-#: web/lib/people/RelationshipRows.svelte:47
+#: web/lib/people/RelationshipRows.svelte:64
 msgid "relationship not named"
 msgstr "связь без названия"
 

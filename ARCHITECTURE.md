@@ -1313,8 +1313,12 @@ src/immich_memories/
 │   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
 │   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
+│   ├── kinship.py              # suggest_relationships(): what the confirmed tree implies (grandparents,
+│   │                           # aunts/uncles, cousins, in-laws, shared-parent siblings), with the chain;
+│   │                           # pure, never stored until somebody accepts one (#2795)
 │   └── editor.py               # The companion editor's model: the registry as rows, and back; one row per
-│                               # pair (a detected link hides once the pair has a real relationship)
+│                               # pair (a detected link hides once the pair has a real relationship), plus
+│                               # kinship's suggestions, computed at read time so the page refreshes them live
 │
 ├── free_text/                  # A film asked for in a sentence (#1436, experimental; design in
 │   │                           # docs/designs/free-text-memories.md, user page docs-site/docs/make/free-text.md). Only reading.py and the

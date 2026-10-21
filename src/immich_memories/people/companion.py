@@ -267,6 +267,11 @@ def save_confirmed_relationship(
     document: dict[str, Any], source_id: str, kind: str, target_id: str
 ) -> None:
     """Write one user relationship and its reciprocal as one transaction."""
+    write_relationship(document, source_id, kind, target_id)
+
+
+def write_relationship(document: dict[str, Any], source_id: str, kind: str, target_id: str) -> None:
+    """Write one relationship and its reciprocal into a document the caller holds locked."""
     if source_id == target_id:
         raise ValueError("A person cannot have a relationship with themselves")
     source = _entry_with_id(document, source_id)
