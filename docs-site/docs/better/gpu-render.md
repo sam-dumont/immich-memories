@@ -80,8 +80,8 @@ than a short one. On a 4-CPU worker with an entry-level NVIDIA card, a photo tak
 seconds to animate and the encode runs at about a third of real time: a one-minute month film
 takes about 11 minutes, a ten-minute film with 150 clips about an hour and a half.
 
-The card only encodes. Decoding, blur fills, photo moves, crossfades and captions run on the
-worker's CPU, so its CPU limit sets the pace more than the card does. A one-minute, 13-clip film
+The card encodes, renders the titles and cuts the photo moves. Crossfades and captions run on
+the worker's CPU, so its CPU limit sets the pace more than the card does. A one-minute, 13-clip film
 kept about four cores busy on average for its 75 seconds of assembly, with peaks above that.
 Give the worker 8 CPUs, or at least 6: under a 4-CPU limit, long films kept it throttled in 44% of
 its scheduler periods. The worker sizes its FFmpeg, OpenCV, OpenMP and BLAS thread pools from that
@@ -124,6 +124,11 @@ It reports the worker's reachability, version, CUDA titles and encoders. The wor
 `/health` says `accelerated: true` only when the CUDA title kernels and NVENC both opened; false on
 a box with a card usually means `NVIDIA_DRIVER_CAPABILITIES` lacks `video`
 ([NVIDIA prerequisites](../run/hardware.md#nvidia)).
+
+The worker logs each job to its own stderr, so `kubectl logs` or `docker compose logs` shows it.
+`IMMICH_MEMORIES_LOG_LEVEL` sets the level, `INFO` by default. Two lines are worth looking for after
+a film comes back short or slow: `Frame underrun`, a clip that ran out before its slot ended and was
+held on its last frame, and `Photo move on the CPU`, a still the card could not take.
 
 ## What to expect
 

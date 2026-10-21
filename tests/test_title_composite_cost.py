@@ -6,6 +6,9 @@ import pytest
 from immich_memories.titles import kernels
 from immich_memories.titles.renderer_kernels import KernelTitleConfig, KernelTitleRenderer
 
+# The kernel library is driven from its own thread only (#2785).
+pytestmark = pytest.mark.kernel_thread
+
 
 def test_title_and_particles_need_no_full_frame_copy_or_clear(monkeypatch):
     if not kernels.init_kernels():

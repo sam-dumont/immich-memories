@@ -10,6 +10,9 @@ import time
 import numpy as np
 import pytest
 
+# The kernel library is driven from its own thread only (#2785).
+pytestmark = pytest.mark.kernel_thread
+
 
 @pytest.fixture()
 def _init_kernels():

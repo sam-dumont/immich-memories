@@ -21,7 +21,9 @@ from tests.integration.conftest import requires_ffmpeg
 
 logger = logging.getLogger("test.perf.titles")
 
-pytestmark = [pytest.mark.integration, requires_ffmpeg, pytest.mark.perf]
+# kernel_thread: these tests render with the kernel library directly, which only its own
+# thread may drive (#2785).
+pytestmark = [pytest.mark.integration, requires_ffmpeg, pytest.mark.perf, pytest.mark.kernel_thread]
 
 _title_results: list[PerfResult] = []
 _substep_timings: dict[str, float] = {}

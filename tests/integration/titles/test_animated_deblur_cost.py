@@ -28,6 +28,7 @@ import pytest
 os.environ["IMMICH_FORCE_CPU"] = "1"
 
 from immich_memories.titles.kernel_blur import AnimatedBlur  # noqa: E402
+from immich_memories.titles.kernel_thread import on_kernel_thread  # noqa: E402
 from immich_memories.titles.kernels import KERNELS_AVAILABLE, init_kernels  # noqa: E402
 from immich_memories.titles.renderer_kernels import (  # noqa: E402
     KernelTitleConfig,
@@ -118,7 +119,15 @@ def _config(
 
 
 def _render(config: KernelTitleConfig, *, cheap: bool, keep: bool = True):
-    """Every frame of one title, and what it cost per frame."""
+    """Every frame of one title, and what it cost per frame.
+
+    On the kernel thread: the module's fixtures render too, and only that thread
+    may drive the kernel library (#2785).
+    """
+    return on_kernel_thread(_render_here, config, cheap=cheap, keep=keep)
+
+
+def _render_here(config: KernelTitleConfig, *, cheap: bool, keep: bool = True):
     blur = (
         None
         if cheap

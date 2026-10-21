@@ -277,21 +277,27 @@ def ken_burns_frames(layers: KenBurnsLayers, params: KenBurnsParams) -> Iterator
 def move_frames(layers: KenBurnsLayers, params: KenBurnsParams) -> Iterator[np.ndarray]:
     """The move's frames, cut on the GPU where the title kernels run on one (#2760).
 
-    Within a code value of the CPU's frames. A GPU that fails part-way hands the
-    rest of the move to the CPU, which cuts the same views.
+    Within a code value of the CPU's frames. A GPU that fails, at the start or
+    part-way, hands the rest of the move to the CPU, which cuts the same views:
+    the still keeps every one of its frames (#2785).
     """
     from immich_memories.photos.gpu_moves import gpu_cutter
 
     cutter = gpu_cutter(layers)
-    for view in frame_views(layers, params):
+    try:
+        for view in frame_views(layers, params):
+            frame = None
+            if cutter is not None:
+                try:
+                    frame = cutter.cut(view)
+                except Exception as exc:  # noqa: BLE001 — the CPU cuts the rest of the move
+                    logger.warning("Photo move fell back to the CPU part-way: %s", exc)
+                    cutter.close()
+                    cutter = None
+            yield cut_frame(layers, view) if frame is None else frame
+    finally:
         if cutter is not None:
-            try:
-                yield cutter.cut(view)
-                continue
-            except RuntimeError as exc:
-                logger.warning("Photo move fell back to the CPU part-way: %s", exc)
-                cutter = None
-        yield cut_frame(layers, view)
+            cutter.close()
 
 
 def render_ken_burns_streaming(

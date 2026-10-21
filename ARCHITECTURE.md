@@ -653,7 +653,7 @@ src/immich_memories/
 ├── photos/                     # Photo-to-video animation (converts stills to .mp4 clips)
 │   ├── __init__.py             # Public API re-exports
 │   ├── renderer.py             # Frame-by-frame renderer: Ken Burns (frame shows 1/zoom of the picture), render_split (parked)
-│   ├── gpu_moves.py            # Whether a move's frames are cut on the GPU (title kernel library on CUDA/Metal)
+│   ├── gpu_moves.py            # Whether a move's frames are cut on the GPU (title kernel library on CUDA/Metal), via the kernel thread
 │   ├── move_kernels.py         # renderer.cut_frame as kernels; imported only once the kernel probe passed
 │   ├── ken_burns_moves.py      # Which move a still gets: whole picture <-> closest frame (person, group, pan, other)
 │   ├── animator.py             # Photo source prep: HEIC decode, downscale cap, HDR detection
@@ -976,7 +976,7 @@ src/immich_memories/
 │   ├── streaming_frame_decoder.py # FrameDecoder / make_decoder(): clip -> normalized raw frames
 │   ├── gpu_frame_graph.py      # GpuFrameGraph: decode-to-canvas on CUDA/VideoToolbox + its probe; hardware_decode_for
 │   ├── gpu_transfer.py         # Tone mapping and HDR/SDR conversions as a libplacebo shader of zscale's maths + its probe
-│   ├── streaming_frame_blender.py # FrameBlender: frames -> sink, crossfades, progress/preview
+│   ├── streaming_frame_blender.py # FrameBlender: frames -> sink, crossfades, progress/preview; holds the last frame on an underrun
 │   ├── streaming_audio.py      # Streaming audio processing helpers
 │   ├── ffmpeg_prober.py        # FFmpegProber: ffprobe-based duration/resolution
 │   ├── clip_encoder.py         # ClipEncoder: per-clip trimming/re-encoding
@@ -1075,6 +1075,7 @@ src/immich_memories/
 │   ├── kernel_blur.py          # AnimatedBlur: quarter-res deblur Gaussian, held while it stands
 │   ├── gpu_kernel_backend.py   # The only `import quadrants as ti` in the tree (behind the probe)
 │   ├── kernels.py              # GPU kernels + lazy compilation (init_kernels)
+│   ├── kernel_thread.py        # The one thread every kernel call runs on (CUDA binds the runtime to its starting thread)
 │   ├── kernel_backend_probe.py # The gate: which arch can dispatch here, asked without loading
 │   ├── kernel_video.py         # GPU title video creation
 │   ├── hlg_frames.py           # HLG title frames: the zscale SDR->HLG chain reproduced, qualified on this FFmpeg
@@ -1712,7 +1713,8 @@ cuts to the existing generator: a missing NVENC is a recorded degradation, a
 changed selection is a refusal. The app hands a cut to it when `render.worker_base_url` is set
 (`generate_render.py`, `processing/remote_render.py`; `preflight_render.py` checks the worker's
 version and capabilities first); deployment files are `services/render-worker/compose.yaml` and
-`kubernetes.yaml`.
+`kubernetes.yaml`. Both worker entrypoints configure logging at start, so a job's Python log
+reaches the container log next to the native runtime's stderr.
 
 The Kubernetes base separates the optional one-off CLI writer (`base/job.yaml`) from
 scheduled HTTP triggers (`base/cronjobs.yaml`). The app Service selects only `web-ui` pods;

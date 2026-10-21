@@ -725,3 +725,51 @@ def test_worker_releases_loaded_title_runtime_after_render_health(tmp_path, monk
     with TestClient(app) as client:
         assert client.get("/render/health", headers=AUTH).status_code == 200
         assert released
+
+
+def _job_log_line_reaches_stderr(entrypoint, monkeypatch, capfd, tmp_path) -> str:
+    import logging
+
+    from immich_memories.tracking.timing import collecting
+
+    monkeypatch.setenv("IMMICH_MEMORIES_RENDER_WORKER_TOKEN", WORKER_TOKEN)
+    monkeypatch.setenv("IMMICH_MEMORIES_RENDER_WORKER_IMMICH_URL", "http://immich.invalid")
+    monkeypatch.setenv("IMMICH_MEMORIES_RENDER_WORKER_DIRECTORY", str(tmp_path))
+    root, alembic = logging.getLogger(), logging.getLogger("alembic")
+    handlers, level, alembic_level = root.handlers[:], root.level, alembic.level
+    try:
+        entrypoint.main()
+        # A job runs inside its run collector, which used to be the log's only reader.
+        with collecting():
+            logging.getLogger("immich_memories.processing.streaming_frame_blender").warning(
+                "Frame underrun in clip 3: expected 120 frames, got 115"
+            )
+    finally:
+        root.handlers[:] = handlers
+        root.setLevel(level)
+        alembic.setLevel(alembic_level)
+    return capfd.readouterr().err
+
+
+def test_the_cuda_workers_job_log_reaches_the_pod_log(monkeypatch, capfd, tmp_path):
+    from immich_memories_inference import gpu_worker
+
+    # WHY: the server and the app it would serve are the boundary; main's own setup is under test.
+    monkeypatch.setattr(gpu_worker.uvicorn, "run", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(gpu_worker, "create_app", lambda *_args, **_kwargs: None)
+
+    err = _job_log_line_reaches_stderr(gpu_worker, monkeypatch, capfd, tmp_path)
+
+    assert "Frame underrun in clip 3: expected 120 frames, got 115" in err
+
+
+def test_the_render_workers_job_log_reaches_its_container_log(monkeypatch, capfd, tmp_path):
+    from immich_memories_render_worker import __main__ as render_worker
+
+    # WHY: the server and the app it would serve are the boundary; main's own setup is under test.
+    monkeypatch.setattr(render_worker.uvicorn, "run", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(render_worker, "create_app", lambda *_args, **_kwargs: None)
+
+    err = _job_log_line_reaches_stderr(render_worker, monkeypatch, capfd, tmp_path)
+
+    assert "Frame underrun in clip 3: expected 120 frames, got 115" in err

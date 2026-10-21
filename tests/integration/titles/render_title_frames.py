@@ -122,11 +122,18 @@ def _config_for(style):
 
 
 def render_case(style_name: str, mood: str, title: str, subtitle: str | None):
-    """One frame of the matrix, on the kernel library this process loaded."""
+    """One frame of the matrix, on the kernel library this process loaded.
+
+    On the kernel thread, the one thread that may drive the library (#2785).
+    """
+    from immich_memories.titles.kernel_thread import on_kernel_thread
     from immich_memories.titles.renderer_kernels import KernelTitleRenderer
 
-    renderer = KernelTitleRenderer(_config_for(_style_for(style_name, mood)))
-    return renderer.render_frame(FRAME_NUMBER, title, subtitle)
+    def render():
+        renderer = KernelTitleRenderer(_config_for(_style_for(style_name, mood)))
+        return renderer.render_frame(FRAME_NUMBER, title, subtitle)
+
+    return on_kernel_thread(render)
 
 
 def render_sheet():

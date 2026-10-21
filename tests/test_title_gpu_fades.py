@@ -6,6 +6,9 @@ import pytest
 from immich_memories.titles.kernels import init_kernels
 from immich_memories.titles.renderer_kernels import KernelTitleConfig, KernelTitleRenderer
 
+# The kernel library is driven from its own thread only (#2785).
+pytestmark = pytest.mark.kernel_thread
+
 
 @pytest.mark.parametrize("color", ["white", "black"])
 @pytest.mark.parametrize("hdr", [False, True])

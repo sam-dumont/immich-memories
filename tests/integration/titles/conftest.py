@@ -7,8 +7,25 @@ import subprocess
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from tests.integration.conftest import requires_ffmpeg  # noqa: F401
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool:
+    """Run each test on the kernel thread, where production drives the kernel library.
+
+    The library's runtime belongs to the thread that started it (#2785), and
+    `init_kernels` starts it on the kernel thread; these tests call renderers
+    and kernels directly.
+    """
+    from immich_memories.titles.kernel_thread import on_kernel_thread
+
+    arguments = {name: pyfuncitem.funcargs[name] for name in pyfuncitem._fixtureinfo.argnames}
+    on_kernel_thread(pyfuncitem.obj, **arguments)
+    return True
+
 
 # Small dimensions for fast pixel assertions.
 # Videos render at their native resolution (e.g. 720p);

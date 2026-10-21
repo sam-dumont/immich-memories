@@ -9,6 +9,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+# The kernel library is driven from its own thread only (#2785).
+pytestmark = pytest.mark.kernel_thread
+
 
 def _init():
     from immich_memories.titles.kernels import init_kernels

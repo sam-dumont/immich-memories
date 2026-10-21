@@ -116,6 +116,8 @@ class FrameBlender:
         self._frame_preview_callback = frame_preview_callback
         self._blend_buf = _alloc_blend_buf(width, height, is_hdr, planar_sdr)
         self._frames_written = 0
+        # The frame an underrun holds: still intact, since frames are written synchronously.
+        self._last_written: np.ndarray | None = None
         self._last_preview_time = 0.0
 
     @property
@@ -123,23 +125,19 @@ class FrameBlender:
         """Frames handed to the sink so far, crossfade frames included."""
         return self._frames_written
 
-    def emit_body(self, active_iter: Iterator[np.ndarray], count: int) -> None:
-        """Write `count` frames from one clip straight through to the sink."""
+    def emit_body(self, active_iter: Iterator[np.ndarray], count: int, clip: str = "") -> None:
+        """Write `count` frames from one clip straight through to the sink.
+
+        A clip that runs out early is held on the last frame written until its
+        planned length is met: a frame short here is a frame short for the whole
+        film, and the music, captions and every later clip would drift (#2785).
+        """
         for emitted in range(max(count, 0)):
             frame = next(active_iter, None)
             if frame is None:
-                if emitted < count:
-                    logger.warning(
-                        f"Frame underrun: expected {count} frames, got {emitted} "
-                        f"(missing {count - emitted} frames = "
-                        f"{(count - emitted) / max(self._total_frames, 1) * 100:.1f}%)"
-                    )
-                break
-            self._sink.write_frame(frame)
-            self._frames_written += 1
-            if self._progress_callback and self._frames_written % self._report_interval == 0:
-                self._progress_callback(self._frames_written, self._total_frames)
-            self._emit_preview(frame)
+                self._hold_last(count - emitted, f"expected {count} frames, got {emitted}", clip)
+                return
+            self._write(frame)
 
     def emit_crossfade(
         self,
@@ -156,8 +154,9 @@ class FrameBlender:
             frame_a = next(active_iter, None)
             frame_b = next(next_iter, None)
 
-            if frame_a is None is frame_b:
-                break
+            if frame_a is None is frame_b and last_a is None is last_b:
+                self._hold_last(fade_frames - fade_idx, "both sides of a fade were empty", "")
+                return
 
             if black is None:
                 ref = frame_a if frame_a is not None else frame_b
@@ -169,14 +168,31 @@ class FrameBlender:
 
             alpha = (fade_idx + 1) / fade_frames
             blend_crossfade(frame_a, frame_b, alpha, out=blend_buf)
-            self._sink.write_frame(blend_buf)
-            self._emit_preview(blend_buf)
+            self._write(blend_buf)
 
-        # WHY: the fade is billed at its nominal length even if a clip ran
-        # short, so the progress bar stays aligned with the estimated total.
-        self._frames_written += fade_frames
-        if self._progress_callback:
+    def _write(self, frame: np.ndarray) -> None:
+        self._sink.write_frame(frame)
+        self._last_written = frame
+        self._frames_written += 1
+        if self._progress_callback and self._frames_written % self._report_interval == 0:
             self._progress_callback(self._frames_written, self._total_frames)
+        self._emit_preview(frame)
+
+    def _hold_last(self, missing: int, why: str, clip: str) -> None:
+        """Write the last frame again for each missing one, so the film keeps its length."""
+        logger.warning(
+            "Frame underrun%s: %s; holding the last frame for the missing %d (%.1f%% of the film)",
+            f" in {clip}" if clip else "",
+            why,
+            missing,
+            missing / max(self._total_frames, 1) * 100,
+        )
+        held = self._last_written
+        if held is None:
+            logger.error("Frame underrun before any frame was written; %d frames lost", missing)
+            return
+        for _ in range(missing):
+            self._write(held)
 
     def _emit_preview(self, frame: np.ndarray) -> None:
         from immich_memories.processing.frame_preview import maybe_emit_preview
