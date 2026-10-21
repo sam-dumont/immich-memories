@@ -32,6 +32,7 @@ from .map_renderer import (
     overlay_composite,
 )
 from .map_tiles import CachedStaticMap, TilePrefetcher, tile_cache
+from .strip_resize import lanczos_strip
 
 logger = logging.getLogger(__name__)
 
@@ -232,10 +233,7 @@ def _resize_satellite_frame(image: Image.Image, width: int, height: int) -> Imag
     def resize_strip(index: int) -> tuple[int, Image.Image]:
         top = index * height // workers
         bottom = (index + 1) * height // workers
-        # Keep global source coordinates so each strip has the same filter
-        # support and sampling positions as the full-frame Lanczos operation.
-        box = (0, top * image.height / height, image.width, bottom * image.height / height)
-        return top, image.resize((width, bottom - top), Image.Resampling.LANCZOS, box=box)
+        return top, lanczos_strip(image, width, height, top, bottom)
 
     result = Image.new("RGB", (width, height))
     with ThreadPoolExecutor(workers) as pool:

@@ -13,7 +13,7 @@ import colorsys
 import subprocess
 from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     pass
@@ -241,7 +241,8 @@ def extract_colors_from_image(
         img = img.convert("RGB")
 
     # Sample pixels
-    pixels = list(img.getdata())
+    # An RGB image yields one (r, g, b) tuple per pixel; Pillow types the items as object.
+    pixels = cast("list[tuple[int, int, int]]", list(img.get_flattened_data()))
 
     if quality > 1:
         pixels = pixels[::quality]
