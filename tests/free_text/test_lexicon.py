@@ -54,6 +54,11 @@ def _people_words(tmp_path: Path) -> WordNetLexicon:
                 Sense("noun.person", kind_of="person.n.01"),
             ),
             "baby": (Sense("noun.person", kind_of="child.n.02"),),
+            "male_offspring": (Sense("noun.person", kind_of="child.n.02"),),
+            "female_offspring": (Sense("noun.person", kind_of="child.n.02"),),
+            "son": (Sense("noun.person", kind_of="male_offspring.n.01"),),
+            "daughter": (Sense("noun.person", kind_of="female_offspring.n.01"),),
+            "mother": (Sense("noun.person", kind_of="person.n.01"),),
             "friend": (Sense("noun.person", kind_of="person.n.01"),),
             "spouse": (Sense("noun.person", kind_of="person.n.01", also=("partner",)),),
             "wife": (Sense("noun.person", kind_of="spouse.n.01"),),
@@ -103,3 +108,29 @@ def test_a_word_names_a_role_by_itself_or_through_its_kind(tmp_path: Path) -> No
     assert lexicon.names_role("wife", "partner")
     assert lexicon.names_role("wife", "wife")
     assert not lexicon.names_role("friend", "partner")
+
+
+def test_a_son_or_daughter_names_the_child_role_two_kinds_up(tmp_path: Path) -> None:
+    # WordNet: son -> male_offspring -> child, so one level up never reaches "child".
+    lexicon = _people_words(tmp_path)
+
+    assert lexicon.names_role("son", "child")
+    assert lexicon.names_role("daughter", "child")
+    assert lexicon.names_role("son", "son")
+
+
+@pytest.mark.parametrize(
+    ("word", "role"),
+    [
+        ("son", "friend"),
+        ("son", "partner"),
+        ("son", "mother"),
+        ("son", "daughter"),
+        ("friend", "child"),
+        ("friend", "son"),
+        ("mother", "child"),
+        ("wife", "child"),
+    ],
+)
+def test_a_word_does_not_name_an_unrelated_role(tmp_path: Path, word: str, role: str) -> None:
+    assert not _people_words(tmp_path).names_role(word, role)

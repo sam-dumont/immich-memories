@@ -49,7 +49,11 @@ VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
         Sense("noun.person", kind_of="juvenile.n.01", also=("kid",)),
         Sense("noun.person", kind_of="person.n.01"),
     ),
-    "son": (Sense("noun.person", kind_of="child.n.02"),),
+    # As WordNet files them: a son is a male offspring, and that is a child.
+    "male_offspring": (Sense("noun.person", kind_of="child.n.02"),),
+    "female_offspring": (Sense("noun.person", kind_of="child.n.02"),),
+    "son": (Sense("noun.person", kind_of="male_offspring.n.01"),),
+    "daughter": (Sense("noun.person", kind_of="female_offspring.n.01"),),
     "friend": (Sense("noun.person", kind_of="person.n.01"),),
     "spouse": (Sense("noun.person", kind_of="person.n.01", also=("partner",)),),
     "wife": (Sense("noun.person", kind_of="spouse.n.01"),),
