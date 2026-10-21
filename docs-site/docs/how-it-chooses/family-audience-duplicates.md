@@ -43,4 +43,10 @@ Later checks remove repeated scenes, favouring your stars and useful motion. A s
 
 A photo with no camera behind it (forwarded through a chat app, saved from a website) stays out by default. When a film has a gap with no camera picture at all, a week, a month, a year or an earlier birthday, you can let those copies fill it: set `advanced.analysis.forwarded_copies_when_short: true`. They pass the same checks as camera pictures, collages stay out, and a copy of a picture your library already holds is dropped. A copy is dated when you received it, so an old photo shared again can land in the wrong year.
 
+A video with no camera behind it and a file name no camera writes (an app's edited export, say a
+lap-timing video with a speedometer drawn over it) is only a suspect, because a phone clip
+somebody renamed looks the same. It plays last in its moment, holds for a beat instead of the
+12 seconds real footage can grow to, never opens the film, and gives its place to any other
+footage of the moment. Star it and it plays like any other clip.
+
 For detector coverage, hold precedence, family-seat thresholds and duplicate comparisons, read the [sharing and duplicate reference](../reference/selection-internals/family-audience-duplicates.md).

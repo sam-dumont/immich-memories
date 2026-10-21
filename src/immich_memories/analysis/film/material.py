@@ -15,6 +15,7 @@ from typing import Any
 from immich_memories.analysis.audience import shareability as _share
 from immich_memories.analysis.audience.exposure_chains import ExposureChains, chain_holds_for
 from immich_memories.analysis.clips.budget import (
+    EDITED_EXPORT_HOLD_SECONDS,
     MIN_CARRIER_SECONDS,
     MIN_MOTION_SECONDS,
     MOTION_CAP_SECONDS,
@@ -30,6 +31,7 @@ from immich_memories.analysis.clips.motion_rendering import (
 from immich_memories.analysis.clips.speech import banked_unit_regions, speech_buffer
 from immich_memories.analysis.corpus.collages import collage_exclusions
 from immich_memories.analysis.corpus.forwarded_fallback import is_forwarded_copy, refused_in_words
+from immich_memories.analysis.corpus.name_filter import edited_export_suspect
 from immich_memories.analysis.facts.carrier_eligibility import excluded_carrier_sources
 from immich_memories.analysis.facts.clip_frames import clips_miss_subject
 from immich_memories.analysis.facts.standing_facts import face_evidence
@@ -242,6 +244,9 @@ class UnitBuilder:
         self.document_excluded: dict[str, list] = {}
 
     def quality(self, asset_id: str) -> float:
+        # A suspected edited export ranks below every other picture of its moment (#2783).
+        if (asset := self._assets.get(asset_id)) is not None and edited_export_suspect(asset):
+            return -1.0
         sharp, bright = self._pixel_facts.get(asset_id, (0.0, 118.0))
         return sharp * max(0.0, 1.0 - abs(bright - 118.0) / 92.0)
 
@@ -330,7 +335,7 @@ class UnitBuilder:
         if dur < MIN_MOTION_SECONDS:
             return None
         measured = self._residuals.get(asset_id, {}).get("residual")
-        return base | {
+        unit = base | {
             "kind": "video",
             "asset_id": asset_id,
             "members": [asset_id],
@@ -341,6 +346,12 @@ class UnitBuilder:
             "residual": measured,
             "motion_assessed": measured is not None,
         }
+        if edited_export_suspect(self._assets[asset_id]):
+            # A suspected edited export holds a beat at most, whatever room the film has (#2783).
+            cap = min(dur, MOTION_CAP_SECONDS, EDITED_EXPORT_HOLD_SECONDS)
+            unit |= {"hold_cap": EDITED_EXPORT_HOLD_SECONDS, "edited_export": True}
+            unit["seconds"] = raw_centiseconds(cap)
+        return unit
 
     def _still_unit(self, asset_id: str, base: dict) -> dict:
         return base | {

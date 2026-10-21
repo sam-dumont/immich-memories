@@ -921,7 +921,7 @@ src/immich_memories/
 │   │   ├── generated_provenance.py # The films this app made and put back in the library, so it never films them again.
 │   │   ├── groups.py           # Canonical chronological grouping of the admitted corpus, and its projections.
 │   │   ├── moment_grouping.py  # Group assets into moments by time AND place, foreign media already gone.
-│   │   ├── name_filter.py      # Drop doorbell / dashcam / screen-recorder uploads by filename
+│   │   ├── name_filter.py      # Drop doorbell / dashcam / screen-recorder uploads by filename; flag a make-less video with an app's name as a suspected edited export
 │   │   ├── picture_copies.py   # One picture stored as several files: fold, keep the most pixels
 │   │   ├── quality.py          # Drop messaging re-encodes: sub-1080p with no camera EXIF
 │   │   ├── records.py          # Immutable records exchanged between editorial selection passes.

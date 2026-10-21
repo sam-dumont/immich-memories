@@ -138,7 +138,8 @@ def resolve_speech_cuts(
         # followed one utterance to the end of a 17-second source.
         end = min(
             duration,
-            start + LONGEST_EXCHANGE_SECONDS,
+            start
+            + min(LONGEST_EXCHANGE_SECONDS, carrier.get("hold_cap", LONGEST_EXCHANGE_SECONDS)),
             safe_end(carrier, carrier["seconds"], expand=True),
         )
         set_duration(carrier, end - start)

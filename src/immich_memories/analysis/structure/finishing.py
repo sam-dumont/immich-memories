@@ -13,6 +13,7 @@ import time
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
+from operator import itemgetter
 from typing import Any
 
 from immich_memories.analysis.audience import shareability as _share
@@ -350,6 +351,63 @@ def final_duplicate_review(
     _settle_replacements(
         run, ports, [row["replacement"] for row in removed.values() if "replacement" in row]
     )
+
+
+EXPORT_REPLACED = (
+    "a suspected edited export (no camera make, a name no camera writes): "
+    "footage of its moment took its place"
+)
+EXPORT_WOULD_OPEN = "a suspected edited export, and the film would open on it"
+EDITED_EXPORTS_STAGE = "edited-exports"
+
+
+def demote_edited_exports(
+    run: PlanRun,
+    ports: StructurePlannerPorts,
+    *,
+    replacements_for: Callable[[Mapping[str, Any]], Sequence[tuple[str, Mapping[str, Any]]]],
+    admits: Admits,
+) -> None:
+    """A suspected edited export keeps its slot only when nothing else can fill it (#2783).
+
+    Its metadata says an app made it (`corpus.name_filter.edited_export_suspect`), which is a
+    suspicion, never a verdict: a genuine clip somebody renamed looks the same. So it is never
+    refused; the first offer of the duplicate review's own pool that the film admits and that is
+    no suspect itself takes its place, and when nothing does, it stays at its short hold. A film
+    never opens on one. A starred shot is the owner's answer and stays.
+    """
+    added: list[str] = []
+    for carrier in [c for c in run.carriers if c.get("edited_export") and not c.get("favourite")]:
+        shown = {c["asset_id"] for c in run.carriers}
+        rest = [c for c in run.carriers if c is not carrier]
+        for _rung, unit in replacements_for(carrier):
+            if unit.get("asset_id") in shown or unit.get("edited_export"):
+                continue
+            row = (
+                {key: carrier[key] for key in _share.STORY_CONTEXT_KEYS if key in carrier}
+                | dict(unit)
+                | {"replaces_edited_export": carrier["asset_id"]}
+            )
+            if not admits(row, rest):
+                continue
+            run.carriers[run.carriers.index(carrier)] = row
+            run.cut_carriers.append(
+                carrier | {"reason": EXPORT_REPLACED, "review_stage": EDITED_EXPORTS_STAGE}
+            )
+            added.append(row["asset_id"])
+            break
+    run.carriers.sort(key=itemgetter("taken"))
+    while (
+        run.carriers
+        and run.carriers[0].get("edited_export")
+        and not run.carriers[0].get("favourite")
+        and any(not c.get("edited_export") for c in run.carriers)
+    ):
+        run.cut_carriers.append(
+            run.carriers.pop(0)
+            | {"reason": EXPORT_WOULD_OPEN, "review_stage": EDITED_EXPORTS_STAGE}
+        )
+    _settle_replacements(run, ports, added)
 
 
 def frame_quality_of(source) -> Callable[[str], tuple[int, float] | None]:

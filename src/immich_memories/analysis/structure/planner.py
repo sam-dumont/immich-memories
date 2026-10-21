@@ -69,6 +69,7 @@ from immich_memories.analysis.structure.finishing import (
     admit_retained_originals,
     announce_count,
     apply_audience_gate,
+    demote_edited_exports,
     drop_filler_nothing_vouches_for,
     final_duplicate_review,
     frame_quality_of,
@@ -495,6 +496,21 @@ def _select(
     )
     run.selection_stages["after_final_duplicate_review"] = len(run.carriers)
     announce_count(len(run.carriers), "after the duplicate review")
+    demote_edited_exports(
+        run,
+        ports,
+        replacements_for=replacement_offers(
+            alternatives_pool(
+                selection,
+                material.units,
+                wall.anchor_label,
+                include_elsewhere=True,
+                partition_of=partition_of_taken,
+                cut_carriers=run.carriers,
+            )
+        ),
+        admits=lambda row, cut: gates.admits(row, cut=cut, tier_of={}) is None,
+    )
     if ports.rules is not None:
         # The last removal pass, so no replacement pass can bring a removed filler's like back in.
         # A polished film runs it too: the polish refines the no-model film, and must not keep
