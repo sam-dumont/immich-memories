@@ -8,6 +8,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, source_payload
@@ -18,6 +19,7 @@ from immich_memories.operations.editorial_attempt import (
     read_editorial_attempt,
 )
 from immich_memories.operations.editorial_runs_budget import prune_editorial_runs
+from immich_memories.web import job_stream
 from immich_memories.web.job_stream import Seen, next_event
 from immich_memories.web.jobs import JOB_RETENTION_SECONDS, JobRunner
 from immich_memories.web.schemas import Job
@@ -59,7 +61,10 @@ def _render_job(runner, progress: Path) -> Job:
     )
 
 
-def test_a_tick_with_no_changed_file_does_not_build_the_view_again(tmp_path):
+def test_a_tick_with_no_changed_file_does_not_build_the_view_again(tmp_path, monkeypatch):
+    # WHY: the stamp holds a LEASE_TTL time bucket so a dead child is still noticed; two ticks
+    # either side of a bucket edge rebuild on purpose. A frozen clock keeps both in one bucket.
+    monkeypatch.setattr(job_stream, "time", SimpleNamespace(monotonic=lambda: 1000.0))
     runner = JobRunner(tmp_path)
     progress = tmp_path / "progress.json"
     progress.write_text(json.dumps({"message": "Rendering", "fraction": 0.1}))
