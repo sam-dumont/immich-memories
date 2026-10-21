@@ -46,6 +46,7 @@ from immich_memories.analysis.captions.wire import (
 from immich_memories.analysis.captions.wire import (
     tile_preview,
 )
+from immich_memories.analysis.captions.worker_wait import CaptionServerBusy, wait_while_busy
 from immich_memories.analysis.judgments.strict_json import final_json_object
 from immich_memories.analysis.llm.async_bridge import run_sync
 from immich_memories.analysis.llm.metrics import record_reply, recording_stage
@@ -68,10 +69,6 @@ REFUSED_CODES = frozenset({401, 403})
 # holds the GPU it answers 503 with this detail: the server is up and will answer when free.
 BUSY_DETAIL = "GPU is busy with another phase"
 BUSY_STATUS = 503
-
-
-class CaptionServerBusy(RuntimeError):
-    """The caption worker is up but its GPU belongs to another phase right now."""
 
 
 def is_worker_busy(status_code: int, body: bytes | str) -> bool:
@@ -137,16 +134,17 @@ def open_caption_url(request: urllib.request.Request, *, timeout: float) -> HTTP
     return _OPENER.open(request, timeout=timeout)
 
 
+def open_caption_url_patiently(request: urllib.request.Request, *, timeout: float) -> HTTPResponse:
+    """open_caption_url that waits out a busy worker (503/429, reset) up to a bound (#2781)."""
+    return wait_while_busy(lambda: open_caption_url(request, timeout=timeout))
+
+
 def _model_inventory(base_url: str, *, timeout: float, api_key: str) -> list[dict]:
     request = urllib.request.Request(f"{base_url}/models", headers=bearer_headers(api_key))  # noqa: S310
     try:
-        with open_caption_url(request, timeout=timeout) as response:
+        with open_caption_url_patiently(request, timeout=timeout) as response:
             payload = json.loads(response.read())
     except urllib.error.HTTPError as exc:
-        if exc.code == BUSY_STATUS and is_worker_busy(exc.code, exc.read()):
-            raise CaptionServerBusy(
-                "caption server is busy with another GPU phase; it answers when the GPU is free"
-            ) from exc
         if exc.code not in REFUSED_CODES:
             raise
         # The endpoint is there and answering; it wants a credential. Another URL is not the fix.
@@ -178,7 +176,7 @@ def _ask_one(
     prompt_tokens: int | None = None
     body: object = None
     try:
-        with open_caption_url(request, timeout=timeout) as response:
+        with open_caption_url_patiently(request, timeout=timeout) as response:
             body = json.loads(response.read())
         if not isinstance(body, dict):
             raise ValueError("caption response is not an object")
@@ -538,6 +536,9 @@ class _Settled:
             _asset_id, preview, outcomes = future.result()
             return self.settle(asset_id, preview, outcomes, llm=llm)
         except AccountReadFailed:
+            raise
+        except CaptionServerBusy:
+            # A worker that stayed busy past the bound ends the round once, not per picture.
             raise
         except Exception as exc:
             return f"{type(exc).__name__}: {exc}"
