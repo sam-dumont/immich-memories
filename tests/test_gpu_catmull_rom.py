@@ -15,6 +15,10 @@ import pytest
 ti_kernels = pytest.importorskip("immich_memories.titles.kernels")
 
 
+# The kernel library is driven from its own thread only (#2785).
+pytestmark = pytest.mark.kernel_thread
+
+
 @pytest.fixture(scope="module")
 def kernels_ready() -> bool:
     if not ti_kernels.init_kernels():

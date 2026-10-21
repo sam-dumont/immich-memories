@@ -913,6 +913,23 @@ def _no_leaked_drain_threads():
     )
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
+    """Run a `kernel_thread` test on the thread that drives the kernel library.
+
+    The library's runtime belongs to the thread that started it (#2785), and
+    `init_kernels` starts it on the kernel thread; these tests call kernels and
+    renderers directly.
+    """
+    if pyfuncitem.get_closest_marker("kernel_thread") is None:
+        return None
+    from immich_memories.titles.kernel_thread import on_kernel_thread
+
+    arguments = {name: pyfuncitem.funcargs[name] for name in pyfuncitem._fixtureinfo.argnames}
+    on_kernel_thread(pyfuncitem.obj, **arguments)
+    return True
+
+
 def pytest_collection_modifyitems(items) -> None:
     """Mark everything under tests/integration/ as integration, by path.
 

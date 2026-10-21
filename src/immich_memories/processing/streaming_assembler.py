@@ -494,7 +494,7 @@ def _encode_clip_sequence(
             has_fade_out = clip_idx < len(transitions) and transitions[clip_idx] == "fade"
             body_frames = clip_frames - skip_frames - (fade_frames if has_fade_out else 0)
 
-            blender.emit_body(active_iter, body_frames)
+            blender.emit_body(active_iter, body_frames, clip=f"clip {clip_idx} ({clip.path.name})")
 
             if has_fade_out and clip_idx + 1 < len(clips):
                 next_iter = decoder_for(clip_idx + 1)

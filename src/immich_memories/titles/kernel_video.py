@@ -21,6 +21,7 @@ from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 from .encoding import standalone_title_encoding_plan, title_color_filter, title_encoder_args
 from .hlg_frames import hlg_frame_filter, title_frames_in_hlg
+from .kernel_thread import runs_on_kernel_thread
 from .renderer_kernels import KernelTitleConfig, KernelTitleRenderer
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,7 @@ def _raise_ffmpeg_errors(
         raise RuntimeError("FFmpeg frame writer failed") from writer_errors[0]
 
 
+@runs_on_kernel_thread
 def create_title_video_gpu(
     title: str,
     subtitle: str | None,

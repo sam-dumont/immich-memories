@@ -15,7 +15,6 @@ kernel signatures need actual type objects, not string annotations.
 """
 
 import functools
-import threading
 from typing import Any
 
 import numpy as np
@@ -122,28 +121,31 @@ def _compose_kernel(depth: Any) -> Any:
 
 
 class GpuFrameCutter:
-    """One still's layers on the device, and its frames cut from them."""
+    """One still's layers on the device, and its frames cut from them.
 
-    def __init__(self, layers: KenBurnsLayers, lock: threading.Lock) -> None:
+    Built, used and released on the kernel thread only (`titles.kernel_thread`):
+    on CUDA a buffer touched anywhere else fails, and one freed anywhere else
+    aborts the process (#2785).
+    """
+
+    def __init__(self, layers: KenBurnsLayers) -> None:
         self._layers = layers
-        self._lock = lock
         big = layers.big
         self._depth = ti.u8 if big.dtype == np.uint8 else ti.u16
         self._top = float(np.iinfo(big.dtype).max)
         vp_w, vp_h = layers.viewport
         bg_w, bg_h = layers.background
-        with lock:
-            self._big = ti.ndarray(dtype=self._depth, shape=big.shape)
-            self._big.from_numpy(np.ascontiguousarray(big))
-            self._frame = ti.ndarray(dtype=self._depth, shape=(vp_h, vp_w, 3))
-            self._reduced = ti.ndarray(dtype=ti.f32, shape=(bg_h, bg_w, 3))
-            self._window = ti.ndarray(dtype=ti.i32, shape=(4,))
-            self._window.from_numpy(np.asarray(layers.window, dtype=np.int32))
-            self._blur = None
-            if layers.blur is not None:
-                self._blur = ti.ndarray(dtype=ti.f32, shape=layers.blur.shape)
-                self._blur.from_numpy(np.ascontiguousarray(layers.blur, dtype=np.float32))
-            self._compose = _compose_kernel(self._depth)
+        self._big = ti.ndarray(dtype=self._depth, shape=big.shape)
+        self._big.from_numpy(np.ascontiguousarray(big))
+        self._frame = ti.ndarray(dtype=self._depth, shape=(vp_h, vp_w, 3))
+        self._reduced = ti.ndarray(dtype=ti.f32, shape=(bg_h, bg_w, 3))
+        self._window = ti.ndarray(dtype=ti.i32, shape=(4,))
+        self._window.from_numpy(np.asarray(layers.window, dtype=np.int32))
+        self._blur = None
+        if layers.blur is not None:
+            self._blur = ti.ndarray(dtype=ti.f32, shape=layers.blur.shape)
+            self._blur.from_numpy(np.ascontiguousarray(layers.blur, dtype=np.float32))
+        self._compose = _compose_kernel(self._depth)
 
     def cut(self, view: FrameView) -> np.ndarray:
         if view.fills_viewport(self._layers):
@@ -151,15 +153,18 @@ class GpuFrameCutter:
         else:
             mode = _FILLED if self._blur is not None and view.blur is not None else _BANDED
         sharp = view.sharp
-        with self._lock:
-            if mode == _FILLED and view.blur is not None:
-                fill = view.blur
-                _warp_fill(
-                    self._blur, self._reduced, float(fill[0, 0]), float(fill[0, 2]),
-                    float(fill[1, 1]), float(fill[1, 2]), self._top,
-                )  # fmt: skip
-            self._compose(
-                self._big, self._reduced, self._frame, float(sharp[0, 0]), float(sharp[0, 2]),
-                float(sharp[1, 1]), float(sharp[1, 2]), self._window, mode, self._top,
+        if mode == _FILLED and view.blur is not None:
+            fill = view.blur
+            _warp_fill(
+                self._blur, self._reduced, float(fill[0, 0]), float(fill[0, 2]),
+                float(fill[1, 1]), float(fill[1, 2]), self._top,
             )  # fmt: skip
-            return self._frame.to_numpy()
+        self._compose(
+            self._big, self._reduced, self._frame, float(sharp[0, 0]), float(sharp[0, 2]),
+            float(sharp[1, 1]), float(sharp[1, 2]), self._window, mode, self._top,
+        )  # fmt: skip
+        return self._frame.to_numpy()
+
+    def release(self) -> None:
+        """Free the still's device buffers; the cutter cuts nothing after this."""
+        self._big = self._frame = self._reduced = self._window = self._blur = None

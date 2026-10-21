@@ -7,6 +7,8 @@ Note: This module does NOT use 'from __future__ import annotations'
 because kernel signatures need actual type objects, not string annotations.
 """
 
+import atexit
+import functools
 import logging
 from pathlib import Path
 
@@ -27,6 +29,7 @@ from .kernel_backend_probe import (
     probe_failure_wording,
     silent_init,
 )
+from .kernel_thread import runs_on_kernel_thread
 
 try:
     from .sdf_atlas_gen import get_cached_atlas
@@ -50,8 +53,13 @@ _kernels_compiled = False
 _gpu_failures: list[str] = []
 
 
+@runs_on_kernel_thread
 def init_kernels() -> str | None:
-    """Initialize the kernel library on the best available GPU backend."""
+    """Initialize the kernel library on the best available GPU backend.
+
+    On the kernel thread, the only thread that may drive the runtime once it has
+    started (#2785).
+    """
     global _kernels_initialized, _kernel_arch
     if not KERNELS_AVAILABLE:
         logger.warning("No GPU kernel library on this platform; title screens use the PIL renderer")
@@ -93,6 +101,7 @@ def init_kernels() -> str | None:
                 init_sdf_kernels()
             _kernels_initialized = True
             _kernel_arch = name
+            _release_at_exit()
             return name
         except (RuntimeError, OSError) as e:
             last_error = e
@@ -106,6 +115,7 @@ def init_kernels() -> str | None:
     return None
 
 
+@runs_on_kernel_thread
 def release_kernels() -> None:
     """Release idle native buffers; the owner must exclude concurrent title work."""
     global _kernels_initialized, _kernel_arch
@@ -115,6 +125,13 @@ def release_kernels() -> None:
     ti.reset()
     _kernels_initialized = False
     _kernel_arch = None
+
+
+@functools.cache
+def _release_at_exit() -> None:
+    # WHY (#2785): left to interpreter teardown, the runtime is finalized on the main
+    # thread, and on CUDA its first device call there aborts the process.
+    atexit.register(release_kernels)
 
 
 def _note_gpu_failure(name: str, probe_name: str, reason: str) -> None:

@@ -14,6 +14,7 @@ from immich_memories_render_worker.renderer import Renderer
 from immich_memories_render_worker.settings import WorkerSettings
 
 from immich_memories.audio.generators.base import StemSeparator
+from immich_memories.logging_config import configure_logging
 from immich_memories_inference.app import create_app as inference_app
 from immich_memories_inference.app import default_loaders
 from immich_memories_inference.caption_proxy import register_captions
@@ -98,6 +99,9 @@ class PhaseRenderer:
 
 def main() -> None:
     """The optional CUDA-image entrypoint; standalone inference keeps its default."""
+    # WHY (#2785): a render job's log (underruns, CPU fallbacks) went only to the run's
+    # in-memory collector; the pod log carried native stderr and nothing else.
+    configure_logging()
     settings = InferenceSettings()
     uvicorn.run(
         create_app(settings, WorkerSettings()),
