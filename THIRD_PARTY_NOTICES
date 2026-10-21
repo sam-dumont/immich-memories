@@ -685,9 +685,9 @@ pi-heif 1.4.0
   License: GNU Lesser General Public License v3 (LGPLv3)
   URL: https://github.com/bigcat88/pillow_heif
 
-pillow 12.3.0
+pillow 13.0.0
   License: MIT-CMU
-  URL: https://python-pillow.github.io
+  URL: https://python-pillow.org
 
 protobuf 7.35.1
   License: 3-Clause BSD License

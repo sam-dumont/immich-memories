@@ -45,7 +45,7 @@ dependencies = [
     "packaging>=24.0",  # compares the running version with the releases the update check lists
     "click>=8.5.0",
     "rich>=13.0",
-    "pillow>=12.3.0",
+    "pillow>=13.0.0",
     # Decode-only build of pillow-heif: no bundled x265 encoder, so no GPL (#1894).
     "pi-heif>=1.4",
     "numpy>=1.24",
