@@ -203,25 +203,25 @@ def test_a_thin_special_day_still_gets_thirty_seconds_of_pictures() -> None:
     assert decision.seconds == 30.0 + 3.5 + 4.0
 
 
-def test_a_dense_special_day_runs_well_past_its_old_thirty_second_cap() -> None:
-    """A day with real, distinct material is no longer held to 30 s of content (#2083):
-    the capacity reads the day's own distinct shots, so the length its active hours bought
-    is the one that holds, not a flat per-day ceiling below it."""
-    from immich_memories.planning.auto_duration import special_day_editorial_duration_seconds
+def _special_day(clips, photos) -> object:
+    """Sized as `generate` sizes a catalogued day: the preset's ask, then its material."""
+    from datetime import date
 
-    when = datetime(2026, 7, 1, 9, 0, tzinfo=UTC)
-    clips = [_clip(f"v-{i}", when + timedelta(minutes=10 * i), duration=8.0) for i in range(10)]
-    photos = [
-        _asset(f"p-{i}", when + timedelta(minutes=200 + 10 * i), AssetType.IMAGE) for i in range(30)
-    ]
-    preset_seconds = special_day_editorial_duration_seconds(hours=3.0)
+    from immich_memories.memory_types.factory import create_preset
+    from immich_memories.memory_types.registry import MemoryType
 
-    decision = decide_memory_duration(
+    preset = create_preset(
+        MemoryType.SPECIAL_DAY,
+        day=date(2026, 7, 1),
+        window=(datetime(2026, 7, 1, 9, 0, tzinfo=UTC), datetime(2026, 7, 1, 15, 0, tzinfo=UTC)),
+        active_hours=6.0,
+    )
+    return decide_memory_duration(
         clips,
         photos,
         requested_seconds=None,
         requested_source=DURATION_FROM_MATERIAL,
-        preset_seconds=preset_seconds,
+        preset_seconds=preset.default_duration_seconds,
         memory_type="special_day",
         avg_clip_duration=5.0,
         photo_duration=4.0,
@@ -229,8 +229,34 @@ def test_a_dense_special_day_runs_well_past_its_old_thirty_second_cap() -> None:
         ending_duration=4.0,
     )
 
-    assert decision.seconds > 37.5
-    assert 60.0 <= decision.seconds <= 180.0
+
+def test_a_rich_special_day_runs_as_long_as_its_shots_allow() -> None:
+    """A six-hour event of distinct shots was held to the 66 s an hour-based curve gave it, and
+    a rich day shipped a handful of shots (#2772). Its material sizes it now."""
+    when = datetime(2026, 7, 1, 9, 0, tzinfo=UTC)
+    clips = [_clip(f"v-{i}", when + timedelta(minutes=10 * i), duration=8.0) for i in range(10)]
+    photos = [
+        _asset(f"p-{i}", when + timedelta(minutes=120 + 6 * i), AssetType.IMAGE) for i in range(20)
+    ]
+
+    decision = _special_day(clips, photos)
+
+    assert decision.seconds == decision.capacity_seconds // 5 * 5
+    assert 66.0 < decision.seconds < 180.0
+
+
+def test_a_special_day_stops_at_three_minutes() -> None:
+    when = datetime(2026, 7, 1, 7, 0, tzinfo=UTC)
+    photos = [_asset(f"p-{i}", when + timedelta(minutes=6 * i), AssetType.IMAGE) for i in range(80)]
+
+    assert _special_day([], photos).seconds == 180.0
+
+
+def test_a_thin_special_day_is_never_padded_past_its_floor() -> None:
+    when = datetime(2026, 7, 1, 12, 0, tzinfo=UTC)
+    photos = [_asset(f"p-{i}", when + timedelta(minutes=6 * i), AssetType.IMAGE) for i in range(5)]
+
+    assert _special_day([], photos).seconds == 30.0 + 3.5 + 4.0
 
 
 def test_a_special_day_the_owner_timed_is_left_as_asked() -> None:

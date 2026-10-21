@@ -7,7 +7,7 @@ and a window a minute wide is not an event at all.
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -129,7 +129,7 @@ class TestTheModelMaySayWhenTheEventRan:
 
         assert verdict.window == (
             datetime(2021, 6, 12, 12, 22, tzinfo=UTC),
-            datetime(2021, 6, 12, 20, 0, tzinfo=UTC),
+            datetime(2021, 6, 12, 20, 0, 59, 999999, tzinfo=UTC),
         )
 
     def test_a_time_the_day_never_reached_is_not_a_window(self) -> None:
@@ -158,6 +158,57 @@ class TestTheModelMaySayWhenTheEventRan:
         verdict = self._answer('{"special": true, "title": "A day out"}')
 
         assert verdict.window is None
+
+
+class TestAWindowReadOffLinesOnTwoClocks:
+    """A phone files its photos on the local clock and many of its videos on UTC.
+
+    The lines the model reads carry each picture's own clock, so on one track day the event's
+    first video read 08:14 (UTC) while the cat at home that morning read 09:12 (local, two hours
+    ahead). Placing the model's "08:14" on the first picture's zone started the window two hours
+    early: the cat came in, and the film opened on it (#2772).
+    """
+
+    _LOCAL = timezone(timedelta(hours=2))
+
+    def _photo(self, utc: datetime, where: tuple[float, float]) -> SimpleNamespace:
+        shot = _shot(utc, where)
+        shot.local_taken_at = utc.astimezone(self._LOCAL)
+        return shot
+
+    def _video(self, utc: datetime, where: tuple[float, float]) -> SimpleNamespace:
+        # No zone on the file: its own clock is the UTC one.
+        shot = _shot(utc, where)
+        shot.local_taken_at = utc
+        return shot
+
+    def _day(self) -> list[SimpleNamespace]:
+        return [
+            self._photo(datetime(2021, 6, 12, 7, 12, tzinfo=UTC), _HOME),
+            self._video(datetime(2021, 6, 12, 8, 14, 3, tzinfo=UTC), _CIRCUIT),
+            *[
+                self._photo(
+                    datetime(2021, 6, 12, 9, 54, tzinfo=UTC) + timedelta(minutes=4 * n), _CIRCUIT
+                )
+                for n in range(10)
+            ],
+            self._video(datetime(2021, 6, 12, 12, 11, 40, tzinfo=UTC), _CIRCUIT),
+            self._photo(datetime(2021, 6, 12, 17, 23, tzinfo=UTC), _HOME),
+        ]
+
+    def test_each_written_time_is_placed_on_the_clock_of_the_line_it_was_read_off(self) -> None:
+        day = self._day()
+        # WHY: the model is the boundary; it read the event's first and last lines.
+        with patch(
+            "immich_memories.analysis.special_days.detection._ask",
+            return_value='{"special": true, "title": "Track day", "window": ["08:14", "12:11"]}',
+        ):
+            verdict = ask_if_special(day, llm_config=SimpleNamespace())
+
+        assert verdict.window is not None
+        start, end = verdict.window
+        inside = [shot for shot in day if start <= shot.file_created_at <= end]
+        assert inside == day[1:-1]
 
 
 def test_the_catalogue_takes_the_models_window_over_the_geometric_one(monkeypatch) -> None:

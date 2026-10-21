@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.clips.motion_facts import production_motion_resolver
+from immich_memories.analysis.corpus.collages import preview_collage_check
 from immich_memories.analysis.corpus.trace import Trace
 from immich_memories.analysis.film.contract import (
     StructurePlannerPorts,
@@ -312,6 +313,10 @@ class ProductionPostCardBackend:
             open_encoder=pinned_encoder(config.triage.encoder_path, config.triage.provider),
         )
         resources.callback(scene_prints.close)
+        # Previews the run already prepared, never a fetch: the collage check asks no one.
+        composed = preview_collage_check(
+            lambda asset_id: cached_preview_bytes(self._thumbnail_cache, asset_id)
+        )
 
         def thumbnail_metrics():
             metrics = thumbnail_hasher.metrics()
@@ -335,6 +340,7 @@ class ProductionPostCardBackend:
                 thumbnail_hash=thumbnail_hasher,
                 scene_print=scene_prints,
                 thumbnail_metrics=thumbnail_metrics,
+                composed=composed,
                 # Narrowed so a violator never names a story or episode title (#1954);
                 # `_plan_structure` narrows the same way, idempotently, before planning.
                 rules=RuleStructureReader(
@@ -358,6 +364,7 @@ class ProductionPostCardBackend:
             thumbnail_hash=thumbnail_hasher,
             scene_print=scene_prints,
             thumbnail_metrics=thumbnail_metrics,
+            composed=composed,
             resolve_motion=production_motion_resolver(source),
             resolve_windows=resolve_windows,
             resolve_speech=resolve_speech,

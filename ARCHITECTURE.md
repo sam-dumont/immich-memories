@@ -912,10 +912,11 @@ src/immich_memories/
 │   ├── corpus/                 # The admitted corpus every editorial pass reads, and what keeps a source out of it.
 │   │   ├── admission.py        # Acquire and admit the source-eligible corpus every editorial pass reads.
 │   │   ├── asset_merit.py      # How much an asset is worth showing, on one scale for photographs and video.
+│   │   ├── collages.py         # A collage page (gutters or an even grid of tiles) is out when its day holds its frames, and never opens a film
 │   │   ├── duplicate_hashing.py # Perceptual hashing for duplicates
 │   │   ├── exact_copies.py     # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
 │   │   ├── favourite_law.py    # Within a moment, the favourite wins. Always.
-│   │   ├── forwarded_checks.py # A copy that is a collage (flat gutters, or its caption says so) never stands in
+│   │   ├── forwarded_checks.py # A copy that is a collage (flat gutters, an even grid of tiles, or its caption says so) never stands in
 │   │   ├── forwarded_fallback.py # Opt-in: the forwarded copies that fill gaps in a film's camera timeline, a gap's share at most
 │   │   ├── generated_provenance.py # The films this app made and put back in the library, so it never films them again.
 │   │   ├── groups.py           # Canonical chronological grouping of the admitted corpus, and its projections.
