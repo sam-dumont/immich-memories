@@ -198,7 +198,11 @@ class GpuFrameGraph:
             restored = (
                 f",setparams=color_primaries={self.color_tags[0]}:color_trc={self.color_tags[1]}"
             )
-        chains += [sharp, f"{''.join(order)}{stack}=inputs={len(order)}{restored}"]
+        # WHY (#2792): the CPU blur fill's negotiated output format left libplacebo,
+        # next in the chain, with a graph that never output a frame; this one is
+        # pinned the same way.
+        pinned = f",format={frame_format}"
+        chains += [sharp, f"{''.join(order)}{stack}=inputs={len(order)}{pinned}{restored}"]
         return ";".join(chains)
 
     def _sized(self, size: tuple[int, int], ten_bit: bool, quality: str) -> str:

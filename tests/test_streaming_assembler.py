@@ -489,6 +489,20 @@ def test_blur_scale_mode_renders_a_blurred_background() -> None:
     assert "overlay=(W-w)/2:(H-h)/2" in vf
 
 
+def test_the_blur_fill_hands_the_next_filter_a_pinned_format() -> None:
+    """#2792: libplacebo after an unpinned overlay output no frames on FFmpeg 6.1."""
+    from immich_memories.processing.streaming_frame_decoder import FrameDecoder
+
+    sdr = _vf_for_scale_mode("blur")
+    ten_bit = FrameDecoder(
+        Path("clip.mp4"), width=1920, height=1080, fps=30, scale_mode="blur",
+        pix_fmt="yuv420p10le",
+    )._build_vf()  # fmt: skip
+
+    assert "overlay=(W-w)/2:(H-h)/2,format=yuv420p," in sdr
+    assert "overlay=(W-w)/2:(H-h)/2:format=yuv420p10,format=yuv420p10le," in ten_bit
+
+
 def test_fit_scale_mode_renders_black_bars() -> None:
     vf = _vf_for_scale_mode("fit")
 

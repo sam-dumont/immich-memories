@@ -88,6 +88,29 @@ def _hold_or_fallback(
     return (last if last is not None else black), last
 
 
+def _next_frame(frames: Iterator[np.ndarray]) -> tuple[np.ndarray | None, str | None]:
+    """The next frame, or None and what the clip's decoder said about ending (#2792)."""
+    try:
+        return next(frames), None
+    except StopIteration as end:
+        return None, end.value
+
+
+def _with_why(text: str, why: str | None) -> str:
+    return f"{text}; {why}" if why else text
+
+
+def _log_short_fade(missing: dict[str, int], said: dict[str, str | None], fade_frames: int) -> None:
+    """One warning for a fade where either clip ran out of frames."""
+    sides = [
+        _with_why(f"the {side} clip gave no frame for {count} of {fade_frames}", said[side])
+        for side, count in missing.items()
+        if count
+    ]
+    if sides:
+        logger.warning("Fade ran short: %s; its last frame, or black, stood in", "; ".join(sides))
+
+
 class FrameBlender:
     """Feed decoded frames to a sink, crossfading across clip boundaries."""
 
@@ -133,9 +156,11 @@ class FrameBlender:
         film, and the music, captions and every later clip would drift (#2785).
         """
         for emitted in range(max(count, 0)):
-            frame = next(active_iter, None)
+            frame, why = _next_frame(active_iter)
             if frame is None:
-                self._hold_last(count - emitted, f"expected {count} frames, got {emitted}", clip)
+                self._hold_last(
+                    count - emitted, _with_why(f"expected {count} frames, got {emitted}", why), clip
+                )
                 return
             self._write(frame)
 
@@ -145,14 +170,24 @@ class FrameBlender:
         next_iter: Iterator[np.ndarray],
         fade_frames: int,
     ) -> None:
-        """Blend `fade_frames` from two clips and write the result to the sink."""
+        """Blend `fade_frames` from two clips and write the result to the sink.
+
+        A side that runs out is held on its last frame, or black if it gave none,
+        and the fade says so once (#2792).
+        """
         blend_buf = self._blend_buf
         black: np.ndarray | None = None
         last_a: np.ndarray | None = None
         last_b: np.ndarray | None = None
+        missing = {"outgoing": 0, "incoming": 0}
+        said: dict[str, str | None] = {"outgoing": None, "incoming": None}
         for fade_idx in range(fade_frames):
-            frame_a = next(active_iter, None)
-            frame_b = next(next_iter, None)
+            frame_a, why_a = _next_frame(active_iter)
+            frame_b, why_b = _next_frame(next_iter)
+            for side, frame, why in (("outgoing", frame_a, why_a), ("incoming", frame_b, why_b)):
+                if frame is None:
+                    missing[side] += 1
+                    said[side] = said[side] or why
 
             if frame_a is None is frame_b and last_a is None is last_b:
                 self._hold_last(fade_frames - fade_idx, "both sides of a fade were empty", "")
@@ -169,6 +204,7 @@ class FrameBlender:
             alpha = (fade_idx + 1) / fade_frames
             blend_crossfade(frame_a, frame_b, alpha, out=blend_buf)
             self._write(blend_buf)
+        _log_short_fade(missing, said, fade_frames)
 
     def _write(self, frame: np.ndarray) -> None:
         self._sink.write_frame(frame)

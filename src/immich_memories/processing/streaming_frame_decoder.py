@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import tempfile
 from collections.abc import Generator, Iterator
 from fractions import Fraction
 from io import BufferedReader
@@ -17,7 +18,7 @@ from pathlib import Path
 from queue import Empty, Full, Queue
 from threading import Event, Thread
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import IO, TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -41,7 +42,7 @@ from immich_memories.processing.render_control import owned_child
 logger = logging.getLogger(__name__)
 
 # After its last picture FFmpeg has nothing left to write to the pipe (-frames:v caps it,
-# stdin and stderr are null, the audio goes to a file), so nothing the reader does can
+# stdin is null, stderr and the audio go to files), so nothing the reader does can
 # block it: this wait only absorbs a machine that stalls. A CI runner once paused every
 # process for 14 s, past the 10 s this used to allow (#2515).
 AUDIO_FINISH_SECONDS = 120.0
@@ -52,6 +53,14 @@ if TYPE_CHECKING:
 
 # 10-bit pipes: planar for libx265 and the CPU filters, P010 for hardware encoders.
 _TEN_BIT_PIPES = frozenset({"yuv420p10le", "p010le"})
+
+# FFmpeg's lines about a clip that ends short, at most this many, for the film's log.
+_STDERR_LINES = 4
+# FFmpeg exits right after its last write; one that lingers is read as far as it got
+# and left to the cleanup, which kills it (#883).
+_STDERR_WAIT_SECONDS = 5.0
+# Warnings FFmpeg repeats for every clip, which say nothing about why one came out short.
+_STDERR_NOISE = ("deprecated pixel format used", "Last message repeated")
 
 
 class HardwareDecodeFailed(RuntimeError):
@@ -173,12 +182,20 @@ class FrameDecoder:
             # WHY (#1527): overlay composites in 8-bit yuv420 unless told otherwise,
             # which rounded every HDR frame with a blur fill to multiples of 4.
             overlay_format = ":format=yuv420p10" if self._ten_bit else ""
+            # WHY (#2792): the overlay's output format was left to negotiation, and
+            # libplacebo after it negotiated a graph that never output a frame: on
+            # FFmpeg 6.1 with libplacebo v6.338 every blur-fill clip decoded to
+            # nothing and FFmpeg still exited 0. Measured on one clip, 109 frames
+            # asked: blur fill alone 109, pad fill + libplacebo 109, blur fill +
+            # libplacebo 0, blur fill + format + libplacebo 109.
+            pinned = "yuv420p10le" if self._ten_bit else "yuv420p"
             self._use_filter_complex = True
             return [
                 "split[_bg][_fg]",
                 self._blur_background(),
                 f"[_fg]scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos[_sharp]",
                 f"[_blurred][_sharp]overlay=(W-w)/2:(H-h)/2{overlay_format}",
+                f"format={pinned}",
             ]
         # "fit": scale down inside the frame and pad the rest black. There is
         # no face-aware crop on the video path, so anything that is not
@@ -348,7 +365,7 @@ class FrameDecoder:
 
     def iter_borrowed_frames(
         self, *, read_ahead: bool = False
-    ) -> Generator[np.ndarray, None, None]:
+    ) -> Generator[np.ndarray, None, str | None]:
         """Yield read-only views valid until the next complete frame arrives.
 
         Exhaustion preserves the last frame for crossfade holds. Copy frames
@@ -388,6 +405,11 @@ class FrameDecoder:
             # wait on an overwrite prompt nobody sees.
             "-y",
             "-nostdin",
+            # stderr goes to a file read only when a clip ends short: warnings and
+            # errors, without a progress line per frame.
+            "-nostats",
+            "-loglevel",
+            "warning",
             "-filter_threads",
             filter_threads,
             "-filter_complex_threads",
@@ -416,14 +438,22 @@ class FrameDecoder:
 
     def _iter_frames(
         self, reuse_buffer: bool, read_ahead: bool = False
-    ) -> Generator[np.ndarray, None, None]:
+    ) -> Generator[np.ndarray, None, str | None]:
+        """Yield the clip's frames; a clip that ends short returns what FFmpeg said.
+
+        The return value reaches the caller as ``StopIteration.value``.
+        """
         cmd = self._command()
         logger.debug(f"FrameDecoder cmd: {' '.join(cmd)}")
+        # WHY (#2792): a clip that decoded to nothing used to leave no trace, since
+        # FFmpeg exited 0 and stderr went to DEVNULL. A file, never a pipe, so FFmpeg
+        # cannot block on it the way it blocks on a pipe nobody reads (#2709).
+        stderr = tempfile.TemporaryFile()  # noqa: SIM115
         proc = subprocess.Popen(  # noqa: S603, S607
             cmd,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=stderr,
             bufsize=self._frame_size,
         )
         assert proc.stdout is not None  # noqa: S101
@@ -432,6 +462,7 @@ class FrameDecoder:
 
         reader = _FrameReadAhead(pipe, self._frame_size) if read_ahead else None
         raw_frames = reader.frames() if reader is not None else self._raw_frames(pipe, reuse_buffer)
+        decoded = 0
         try:
             with owned_child(proc):
                 for decoded, raw in enumerate(raw_frames, start=1):
@@ -440,7 +471,11 @@ class FrameDecoder:
                     self._finish_bounded_output(proc, decoded)
                     yield frame
                 self._check_hardware_decode(proc)
+                if decoded == 0 or (self._frame_limit is not None and decoded < self._frame_limit):
+                    return self._why_short(proc, stderr)
+                return None
         finally:
+            stderr.close()
             # WHY (#2709): a decoder closed before its last frame leaves FFmpeg blocked
             # writing to a full pipe, where SIGTERM cannot reach it, so every early stop
             # waited out the whole terminate grace. A pipe nobody reads is closed first
@@ -497,6 +532,23 @@ class FrameDecoder:
         # A decode error ends the run, so the clip is decoded again in software rather
         # than played with the frames a hardware decoder skipped.
         return ["-xerror", *self._hardware_decode[0]]
+
+    @staticmethod
+    def _why_short(proc: subprocess.Popen[bytes], stderr: IO[bytes]) -> str:
+        """FFmpeg's last lines about this clip, once it has finished writing them."""
+        try:
+            status: int | None = proc.wait(timeout=_STDERR_WAIT_SECONDS)
+        except subprocess.TimeoutExpired:
+            status = None
+        stderr.seek(0)
+        lines = [
+            line.strip()
+            for line in stderr.read().decode(errors="replace").splitlines()
+            if line.strip() and not any(noise in line for noise in _STDERR_NOISE)
+        ]
+        said = " | ".join(lines[-_STDERR_LINES:]) or "nothing"
+        exit_note = "still running" if status is None else f"exit {status}"
+        return f"FFmpeg ({exit_note}) said: {said}"
 
     def _check_hardware_decode(self, proc: subprocess.Popen[bytes]) -> None:
         if self._hardware_decode is None:
