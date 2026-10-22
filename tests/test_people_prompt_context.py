@@ -182,3 +182,39 @@ def test_a_confirmed_role_beats_an_owner_relative_relationship():
 
     assert (person.relationship, person.relationship_source) == ("godchild", "confirmed")
     assert person.relationships[0].source == "confirmed"
+
+
+def _person(person_id: str, name: str, *links: tuple[str, str]) -> dict:
+    return {
+        "ids": [person_id],
+        "name": name,
+        "inferred": {"tier": "inner", "evidence": {}},
+        "confirmed": {
+            "role": None,
+            "links": [
+                {"kind": kind, "with": other, "decision": "confirmed"} for kind, other in links
+            ],
+        },
+    }
+
+
+def test_a_chain_of_siblings_reaches_the_owners_niece_in_the_derived_context():
+    store = seed_people(
+        yaml.safe_dump(
+            {
+                "owner": {"person_id": "owner"},
+                "people": [
+                    _person("owner", "Alex Example", ("sibling-of", "robin")),
+                    _person("robin", "Robin Example", ("sibling-of", "sam")),
+                    _person("sam", "Sam Example", ("parent-of", "casey")),
+                    _person("casey", "Casey Example"),
+                ],
+            },
+            sort_keys=False,
+        )
+    )
+
+    casey = load_people_prompt_context(store, include_derived=True)["casey"]
+
+    assert casey.relationship_source == "derived"
+    assert casey.owner_relationship_kinds == ("nibling-of",)

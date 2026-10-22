@@ -7,11 +7,16 @@ import copy
 from immich_memories.people.assumptions import family_assumptions
 
 
-def _document(*facts: tuple[str, str, str]) -> dict:
-    ids = sorted({person_id for fact in facts for person_id in (fact[0], fact[2])})
+def _document(
+    *facts: tuple[str, str, str], declined: tuple[tuple[str, str, str], ...] = ()
+) -> dict:
+    answers = [(fact, "confirmed") for fact in facts] + [(fact, "rejected") for fact in declined]
+    ids = sorted(
+        {person_id for (source, _, target), _ in answers for person_id in (source, target)}
+    )
     links = {person_id: [] for person_id in ids}
-    for source_id, kind, target_id in facts:
-        links[source_id].append({"kind": kind, "with": target_id, "decision": "confirmed"})
+    for (source_id, kind, target_id), decision in answers:
+        links[source_id].append({"kind": kind, "with": target_id, "decision": decision})
     return {
         "people": [
             {
@@ -43,7 +48,7 @@ def test_a_confirmed_sibling_of_a_parent_is_derived_as_aunt_or_uncle_not_parent(
     assert ("alex", "parent-of", "casey") not in found
 
 
-def test_children_with_two_shared_parents_get_one_sibling_proposal_with_both_paths():
+def test_children_with_two_shared_parents_get_one_sibling_proposal_through_one_parent():
     document = _document(
         ("alex", "parent-of", "casey"),
         ("alex", "parent-of", "devon"),
@@ -56,7 +61,7 @@ def test_children_with_two_shared_parents_get_one_sibling_proposal_with_both_pat
     ]
 
     assert len(siblings) == 1
-    assert len(siblings[0].evidence) == 4
+    assert len(siblings[0].evidence) == 2
 
 
 def test_children_of_confirmed_siblings_are_derived_as_cousins():
@@ -114,3 +119,30 @@ def test_closure_never_changes_input_or_reproposes_an_already_confirmed_pair():
         frozenset((assumption.source_id, assumption.target_id)) != frozenset(("alex", "casey"))
         for assumption in found
     )
+
+
+def test_a_siblings_sibling_reaches_their_children_as_nieces_and_nephews():
+    document = _document(
+        ("alex", "sibling-of", "robin"),
+        ("robin", "sibling-of", "sam"),
+        ("sam", "parent-of", "casey"),
+    )
+
+    found = _kinds(document)
+
+    assert ("alex", "sibling-of", "sam") in found
+    assert ("alex", "aunt-or-uncle-of", "casey") in found
+
+
+def test_a_declined_relationship_is_never_proposed_or_built_on():
+    document = _document(
+        ("alex", "sibling-of", "robin"),
+        ("robin", "sibling-of", "sam"),
+        ("sam", "parent-of", "casey"),
+        declined=(("alex", "sibling-of", "sam"),),
+    )
+
+    found = _kinds(document)
+
+    assert ("alex", "sibling-of", "sam") not in found
+    assert ("sam", "sibling-of", "alex") not in found
