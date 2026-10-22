@@ -12,11 +12,11 @@ import httpx
 
 from immich_memories.api.models import Asset, AssetFace, Stack
 from immich_memories.tracking.timed import timed
+from immich_memories.transient_http import TRANSIENT_STATUS
 
 RequestFn = Callable[..., Any]
 DEFAULT_DOWNLOAD_LIMIT = 25 * 1024**3
 
-TRANSIENT_STATUS = frozenset({429, 500, 502, 503, 504})
 READ_RETRY_DELAYS = (1.0, 2.0, 4.0, 8.0, 15.0, 15.0)
 _T = TypeVar("_T")
 
