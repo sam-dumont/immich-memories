@@ -27,6 +27,7 @@ from immich_memories.processing.hdr_utilities import (
 )
 from immich_memories.processing.probe_cache import ProbeCache
 from immich_memories.processing.streaming_assembler import streaming_assemble_full
+from immich_memories.processing.streaming_frame_decoder import ClipGaveNoFrames
 
 logger = logging.getLogger(__name__)
 
@@ -247,7 +248,55 @@ class AssemblyEngine:
         target_h: int,
         frame_preview_callback: Callable[[bytes], None] | None = None,
     ) -> Path:
-        transitions = self.get_transition_types(clips)
+        transitions = self.get_transition_types(clips).copy()
+        while True:
+            try:
+                return self._assemble_sequence(
+                    clips,
+                    transitions,
+                    output_path,
+                    progress_callback,
+                    (target_w, target_h),
+                    frame_preview_callback,
+                )
+            except ClipGaveNoFrames as dead:
+                clips, transitions = self._without_dead_clip(clips, transitions, dead)
+
+    def _without_dead_clip(
+        self, clips: list[AssemblyClip], transitions: list[str], dead: ClipGaveNoFrames
+    ) -> tuple[list[AssemblyClip], list[str]]:
+        """The sequence without a clip that decoded to no frame, which leaves the film.
+
+        Holding the frame before it for its whole length froze the film (#2824); a
+        clip that can't render leaves and the film gets shorter (#2679). A title card
+        has no stand-in, and a film with no content left has nothing to show: both stop.
+        """
+        clip = clips[dead.index]
+        content = sum(1 for each in clips if not each.is_title_screen)
+        if clip.is_title_screen or content <= 1:
+            raise dead
+        logger.warning(
+            "%s decoded to no frame (%s); it leaves the film, which runs about %.1f s shorter",
+            clip.path.name,
+            dead.why,
+            clip.duration,
+        )
+        self.settings.undecodable_clips.append(clip)
+        # The transition into the dropped clip now leads into the one after it.
+        transitions = transitions.copy()
+        del transitions[min(dead.index, len(transitions) - 1)]
+        return clips[: dead.index] + clips[dead.index + 1 :], transitions
+
+    def _assemble_sequence(
+        self,
+        clips: list[AssemblyClip],
+        transitions: list[str],
+        output_path: Path,
+        progress_callback: Callable[[float, str], None] | None,
+        target: tuple[int, int],
+        frame_preview_callback: Callable[[bytes], None] | None,
+    ) -> Path:
+        target_w, target_h = target
         transitions = self._validate_fade_transitions(
             transitions, [c.duration for c in clips], self.settings.effective_transition_duration
         )

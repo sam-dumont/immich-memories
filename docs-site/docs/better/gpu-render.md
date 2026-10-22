@@ -129,9 +129,11 @@ The worker logs each job to its own stderr, so `kubectl logs` or `docker compose
 `IMMICH_MEMORIES_LOG_LEVEL` sets the level, `INFO` by default. Two lines are worth looking for after
 a film comes back short or slow: `Frame underrun`, a clip that ran out before its slot ended and was
 held on its last frame (FFmpeg's own error follows it), and `Photo move on the CPU`, a still the
-card could not take. A film that comes back up to 3% off its planned length is kept and logged;
-further off, it fails. A worker busy with another film makes captioning wait, up to 25 minutes,
-instead of failing the pictures.
+card could not take. A clip that gives no frame at all isn't held: it leaves the film, and the line
+saying `it leaves the film` names it with FFmpeg's error. On a render worker that changes the
+cut, so the same cut renders locally instead. A film that comes back up to 3% off its planned
+length is kept and logged; further off, it fails. A worker busy with another film makes captioning
+wait, up to 25 minutes, instead of failing the pictures.
 
 ## What to expect
 

@@ -45,7 +45,11 @@ from immich_memories.processing.streaming_audio import (
     probe_duration,
 )
 from immich_memories.processing.streaming_frame_blender import FrameBlender
-from immich_memories.processing.streaming_frame_decoder import HardwareDecodeFailed, make_decoder
+from immich_memories.processing.streaming_frame_decoder import (
+    ClipGaveNoFrames,
+    HardwareDecodeFailed,
+    make_decoder,
+)
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -432,6 +436,14 @@ def _clear_clip_audio(audio_work_dir: Path | None) -> None:
             stale.unlink(missing_ok=True)
 
 
+def _starting_with(
+    first: np.ndarray, rest: Generator[np.ndarray, None, str | None]
+) -> Generator[np.ndarray, None, str | None]:
+    """``first``, then the rest of the clip, ending with what its decoder said."""
+    yield first
+    return (yield from rest)
+
+
 def _encode_clip_sequence(
     clips: list,
     transitions: list[str],
@@ -481,7 +493,14 @@ def _encode_clip_sequence(
             hdr_pipe_format=pipe_format,
         ).iter_borrowed_frames(read_ahead=read_ahead)
         cleanup.callback(frames.close)
-        return frames
+        # WHY (#2824): a clip that gives no frame at all leaves the film. Its first
+        # frame is pulled here, before the blender would hold the frame before it
+        # for the clip's whole length.
+        try:
+            first = next(frames)
+        except StopIteration as end:
+            raise ClipGaveNoFrames(clip_idx, end.value) from None
+        return _starting_with(first, frames)
 
     # A retained failure traceback must not keep a decoder or its pipes alive.
     with contextlib.ExitStack() as cleanup:

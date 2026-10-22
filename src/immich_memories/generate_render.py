@@ -51,6 +51,7 @@ if TYPE_CHECKING:
     from immich_memories.cache.prepared_source_bank import PreparedSourceBank
     from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams, PreparedGeneration
+    from immich_memories.processing.assembly_config import AssemblySettings
     from immich_memories.tracking import RunTracker
 
 import logging
@@ -461,6 +462,7 @@ def render_local(
                     assembly_cb,
                     frame_preview_callback=params.frame_preview_callback,
                 )
+            assembly_clips = without_undecodable_clips(params, assembly_clips, settings)
             # Titles included: every second of it was this machine producing the
             # film, and decoding the result can only be faster.
             encode_seconds = encode.duration
@@ -496,6 +498,27 @@ def render_local(
         )
     finally:
         _release_cut_segments(params, assembly_clips, run_output_dir, run_scratch)
+
+
+def without_undecodable_clips(
+    params: GenerationParams, assembly_clips: list, settings: AssemblySettings
+) -> list:
+    """The cut without the clips that decoded to no frame and left the film (#2824).
+
+    They join the sources preparation let go, and the film's content time loses them.
+    A render worker's film then lists a different cut than it was asked for, and
+    the same cut is rendered locally, as for a source its preparation dropped.
+    """
+    gone = {clip.asset_id: clip.duration for clip in settings.undecodable_clips}
+    if not gone:
+        return assembly_clips
+    params.departed_sources = (*params.departed_sources, *gone)
+    if settings.film_timeline is not None:
+        settings.film_timeline = replace(
+            settings.film_timeline,
+            content_seconds=settings.film_timeline.content_seconds - sum(gone.values()),
+        )
+    return [clip for clip in assembly_clips if clip.asset_id not in gone]
 
 
 def _refuse_vanished_clips(skipped: list) -> None:
