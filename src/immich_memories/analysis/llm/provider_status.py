@@ -30,11 +30,12 @@ def watch_provider(role: str, config: LLMConfig) -> Callable[[LLMTransportAttemp
         if attempt.outcome != "connection_error":
             return
         if attempt.attempt >= TRANSPORT_RETRIES:
-            # The run dies after this one; say what to do, on the row the person is watching.
+            # Most callers now go on without it (the film falls back to the rules), so this
+            # names the server to check and promises nothing about the run.
             announce_stage(
                 StageUpdate(
                     f"Gave up on the {role} at {endpoint} after {TRANSPORT_RETRIES} dropped "
-                    "connections: fix the server and cut again"
+                    "connections: check that server"
                 )
             )
             return
