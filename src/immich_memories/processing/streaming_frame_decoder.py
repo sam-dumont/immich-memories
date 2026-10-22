@@ -68,6 +68,19 @@ class HardwareDecodeFailed(RuntimeError):
     """A clip's hardware decode failed; decoding it in software may still succeed."""
 
 
+class ClipGaveNoFrames(RuntimeError):
+    """The clip at ``index`` of the sequence decoded to no frame; ``why`` is FFmpeg's word.
+
+    Holding the frame before it for the clip's whole length would freeze the
+    film, so the sequence is assembled again without it (#2824).
+    """
+
+    def __init__(self, index: int, why: str | None) -> None:
+        self.index = index
+        self.why = why or "FFmpeg said nothing"
+        super().__init__(f"Clip {index} decoded to no frame: {self.why}")
+
+
 class FrameDecoder:
     """Decode a video clip to raw frames via FFmpeg stdout pipe."""
 

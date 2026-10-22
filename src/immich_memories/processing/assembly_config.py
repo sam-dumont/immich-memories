@@ -152,6 +152,9 @@ class AssemblySettings:
     # included): timeline windows where a clip's own audio is music, so the
     # music phase can step the soundtrack aside (#466).
     music_mute_windows: list[tuple[float, float]] | None = None
+    # Recorded by the assembly engine: clips that decoded to no frame and left the
+    # film, so the run's cut and its timeline can drop them too (#2824).
+    undecodable_clips: list[AssemblyClip] = field(default_factory=list)
     # If provided, these override the automatic transition decisions
     # Format: list of "fade" or "cut" for each transition between clips
     predecided_transitions: list[str] | None = None
