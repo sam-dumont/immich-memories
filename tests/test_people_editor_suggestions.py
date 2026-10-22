@@ -65,8 +65,10 @@ class TestTheRosterOffersWhatTheTreeImplies:
     def test_a_cousin_is_offered_with_the_chain_it_follows(self):
         store = _family()
 
+        # Bob and Alex are siblings only through Gran, so the chain says so.
         assert _suggested(store, "id-riley")[("cousin-of", "id-sky")] == (
-            "child of Bob Example, who is a sibling of Alex Example, who is a parent of Sky Example"
+            "child of Bob Example, who is a child of Gran Example, "
+            "who is a parent of Alex Example, who is a parent of Sky Example"
         )
 
     def test_a_new_parent_link_brings_its_suggestions_at_once_without_a_scan(self):
