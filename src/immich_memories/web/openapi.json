@@ -5654,7 +5654,7 @@
     },
     "/api/v1/roster": {
       "get": {
-        "description": "Everyone in the people registry, inner circle first, with what needs curating.",
+        "description": "Everyone in the people registry, inner circle first, with what needs curating.\n\nA person whose face Immich merged away is followed to their new one first, and saved.",
         "operationId": "roster_api_v1_roster_get",
         "responses": {
           "200": {

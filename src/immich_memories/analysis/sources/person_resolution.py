@@ -24,7 +24,7 @@ from typing import Any
 from immich_memories.api.native_sharing import NativePeople
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config.models.resources import PRIMARY_ACCOUNT
-from immich_memories.people.account_ids import entry_ids, ids_by_account
+from immich_memories.people.account_ids import entry_ids, live_ids_by_account
 from immich_memories.people.companion import people_entries
 
 # Manual people exist only in the store; no Immich picture carries their id.
@@ -83,7 +83,7 @@ def store_people(document: Mapping[str, Any]) -> tuple[StorePerson, ...]:
             continue
         aliases = tuple(
             PersonAlias(face, account)
-            for account, faces in ids_by_account(entry).items()
+            for account, faces in live_ids_by_account(entry).items()
             for face in faces
             if not face.startswith(_MANUAL_PREFIX)
         )

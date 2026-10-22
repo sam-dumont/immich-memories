@@ -72,7 +72,7 @@ ROSTER = {"alex-live": "Alex Example", "kit": "Kit Example"}
 
 
 def _heal(store, roster=ROSTER):
-    return edit_registry(store, lambda document: heal_vanished_faces(document, roster))
+    return edit_registry(store, lambda document: heal_vanished_faces(document, roster, scan=True))
 
 
 def _scan_of(*person_ids: str) -> PeopleGraph:

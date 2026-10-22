@@ -188,14 +188,14 @@ def test_a_face_merged_away_in_immich_is_followed_by_its_unique_name(store, immi
 
     assert people.person_ids == ["alex-p"]
     assert found == {"p-park", "p-party", "p-solo"}
-    assert "gone from Immich" in capsys.readouterr().out
+    assert "changed in Immich" in capsys.readouterr().out
 
 
 def test_a_vanished_face_with_no_name_to_follow_stops_the_run(store, immich):
     import_document(store, {"version": 1, "people": [_person(["sky-gone"], "Sky")]})
 
     # Never an empty fetch that reads as "nothing worth a film".
-    with pytest.raises(click.UsageError, match="Rescan the library"):
+    with pytest.raises(click.UsageError, match="exactly one person"):
         _discover(store, names=["Sky"])
     assert not any(path.endswith("/search/metadata") for path in immich.requests)
 

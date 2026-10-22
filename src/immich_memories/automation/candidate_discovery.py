@@ -47,6 +47,7 @@ from immich_memories.home_country import known_home_country
 from immich_memories.people.companion import load_document
 from immich_memories.people.context import load_people_prompt_context
 from immich_memories.people.groups import SavedGroup, list_groups
+from immich_memories.people.vanished_faces import heal_store, picture_counter
 from immich_memories.timeperiod import DateRange, same_day_in_year
 from immich_memories.tracking.models import RunMetadata
 
@@ -452,9 +453,17 @@ class CandidateDiscovery:
                         name: connection.url.rstrip("/") for name, connection in connections.items()
                     },
                 )
+                document = _healed(
+                    store,
+                    document,
+                    _native_faces(document, native),
+                    picture_counter(native.opened[PRIMARY_ACCOUNT].client)
+                    if native is not None and PRIMARY_ACCOUNT in native.opened
+                    else None,
+                )
                 canon.update(canonical_person_map(store_people(document), native=native))
             elif PRIMARY_ACCOUNT in opened:
-                canon.update(_followed_canon(document, opened[PRIMARY_ACCOUNT]))
+                canon.update(_followed_canon(store, document, opened[PRIMARY_ACCOUNT]))
             reads = self._read_every_account(
                 opened, auto_cfg, today, canon, store_dates, groups, plan, extras
             )
@@ -572,22 +581,53 @@ class _AccountReads:
     gps_assets: list | None
 
 
-def _followed_canon(document: dict, primary: OpenAccount) -> dict[tuple[str, str], str]:
+def _followed_canon(store: Any, document: dict, primary: OpenAccount) -> dict[tuple[str, str], str]:
     """The store's people with any face Immich merged away followed by name (`run_people`).
 
-    A face Immich no longer has would otherwise leave its person's live face unmerged, read
-    without the closeness and birth date the store holds for them.
+    The repair is saved, as a film's start saves it. A face Immich no longer has would
+    otherwise leave its person's live face unmerged, read without the closeness and birth
+    date the store holds for them.
     """
-    held = store_people(document)
-    if not any(alias.account == PRIMARY_ACCOUNT for person in held for alias in person.aliases):
+    if not _primary_store_faces(document):
         return {}
     roster = {person.id: person.name for person in primary.client.get_all_people(with_hidden=True)}
-    faces = follow_vanished_faces(held, roster)
+    healed = _healed(store, document, roster, picture_counter(primary.client))
+    faces = follow_vanished_faces(store_people(healed), roster)
     for person, _face in faces.followed:
         logger.warning(
             "%s's face in the people store is gone from Immich; following the name", person.name
         )
     return canonical_person_map(faces.people)
+
+
+def _primary_store_faces(document: dict) -> list[str]:
+    """The faces the store binds on the primary account, retired ones left out."""
+    return [
+        alias.face_id
+        for person in store_people(document)
+        for alias in person.aliases
+        if alias.account == PRIMARY_ACCOUNT
+    ]
+
+
+def _native_faces(document: dict, native: Any) -> dict[str, str]:
+    """Native sharing's primary roster, each store face it left out checked by id."""
+    faces = _primary_store_faces(document)
+    if native is None or not faces:
+        return {}
+    return native.primary_faces(faces) or {}
+
+
+def _healed(
+    store: Any, document: dict, roster: dict[str, str], count: Callable[[str], int] | None
+) -> dict:
+    """The document after saving the repair for any face Immich merged away (no write if none)."""
+    healed = heal_store(store, roster, count)
+    for name in (*healed.folded, *healed.relinked):
+        logger.warning("%s's face changed in Immich; the people store now follows it", name)
+    return (
+        load_document(store) if healed.folded or healed.relinked or healed.unresolved else document
+    )
 
 
 def _pictures_in(

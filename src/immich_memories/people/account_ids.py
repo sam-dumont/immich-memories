@@ -9,6 +9,10 @@ The person's own id (the store's person id, what links and saved references name
 first id listed, unless `person_id` says otherwise. It only has to say so when the id the
 person entered the registry with is not the first one the ordering puts out, such as a
 partner-account person who later gets a primary id: identity never follows list order.
+
+A face Immich no longer has (merged, re-clustered or deleted there) stays in `ids`, so the
+person keeps their id, and is listed in `retired` too: `live_ids_by_account` leaves it out,
+and nothing asks Immich for it again.
 """
 
 from __future__ import annotations
@@ -20,6 +24,7 @@ from typing import Any
 from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 
 PERSON_ID = "person_id"
+RETIRED = "retired"
 
 
 def ids_by_account(entry: Mapping[str, Any]) -> dict[str, list[str]]:
@@ -28,6 +33,15 @@ def ids_by_account(entry: Mapping[str, Any]) -> dict[str, list[str]]:
     if isinstance(ids, Mapping):
         return {str(account): [str(i) for i in held] for account, held in ids.items()}
     return {PRIMARY_ACCOUNT: [str(i) for i in ids or []]}
+
+
+def live_ids_by_account(entry: Mapping[str, Any]) -> dict[str, list[str]]:
+    """`ids_by_account` without the faces Immich retired: the ids worth asking Immich about."""
+    retired = set(entry.get(RETIRED) or ())
+    return {
+        account: [face for face in faces if face not in retired]
+        for account, faces in ids_by_account(entry).items()
+    }
 
 
 def entry_ids(entry: Mapping[str, Any]) -> list[str]:

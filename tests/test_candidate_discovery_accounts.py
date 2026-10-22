@@ -242,6 +242,12 @@ def test_a_face_merged_away_in_immich_keeps_its_store_person(monkeypatch):
     snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
 
     assert [(p.id, p.birth_date) for p in snapshot.people] == [("kid-old", date(2018, 4, 2))]
+    # The nightly discovery saves the repair: no rescan needed for the People page either.
+    from immich_memories.people.companion import load_document as saved
+
+    (entry,) = saved(store)["people"]
+    assert entry["ids"] == ["kid-old", "kid-new"]
+    assert entry["retired"] == ["kid-old"]
 
 
 def _trip_assets(start: date, days: int) -> list:

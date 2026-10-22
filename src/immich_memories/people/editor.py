@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from immich_memories.db import Store
-from immich_memories.people.account_ids import entry_ids, ids_by_account
+from immich_memories.people.account_ids import entry_ids, ids_by_account, live_ids_by_account
 from immich_memories.people.companion import (
     add_confirmed_person,
     declined_aliases,
@@ -405,7 +405,7 @@ def _view(
         links=_links(entry_ids(entry)[0], inferred, confirmed, names, answers),
         role=_text(confirmed.get("role")),
         notes=_text(confirmed.get("notes")),
-        aliases=ids_by_account(entry),
+        aliases=live_ids_by_account(entry),
         declined=declined.get(entry_ids(entry)[0], {}),
         needs_relink=entry.get("needs_relink") is True,
     )

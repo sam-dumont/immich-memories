@@ -13,6 +13,7 @@ from immich_memories.api.accounts import AccountUnavailable, OpenAccount
 from immich_memories.api.compatibility import UnsupportedImmichVersion
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import Person, ServerInfo
+from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +45,9 @@ class NativePeople:
         if face not in self.rosters[account]:
             raise AccountUnavailable(
                 f"Immich account {account!r} no longer exposes person {face!r}. "
-                "Check people access, or rescan the library to follow a person Immich merged; "
-                "saved identities and confirmations have been kept."
+                "Check people access in Immich, or give exactly one person there this name "
+                "so the app can follow a face Immich merged; saved identities and "
+                "confirmations have been kept."
             )
         return self.scopes[face]
 
@@ -79,17 +81,30 @@ class NativePeople:
                 "No partial source will be used."
             )
 
-    def _verify(self, face: str, name: str) -> None:
+    def primary_faces(self, faces: Collection[str]) -> dict[str, str] | None:
+        """The primary roster (face id -> name), each of `faces` it left out checked by id.
+
+        None when this run does not read the primary. A face Immich answers 400 or 404 for is
+        gone (Immich 3.3 answers 400 for an id it no longer has), so the people store can
+        follow its person by name (`people.vanished_faces`) instead of refusing the run.
+        """
+        if PRIMARY_ACCOUNT not in self.rosters:
+            return None
+        for face in faces:
+            if face not in self.rosters[PRIMARY_ACCOUNT]:
+                self._verify(face, PRIMARY_ACCOUNT, gone=(400, 404))
+        return {face: self.people[face].name for face in self.rosters[PRIMARY_ACCOUNT]}
+
+    def _verify(self, face: str, name: str, *, gone: Collection[int] = (404,)) -> None:
         account = self.opened[name]
         try:
             person = account.client.get_person(face)
         except ImmichAPIError as error:
-            if error.status_code == 404:
+            if error.status_code in gone:
                 return
             raise AccountUnavailable(
                 f"Cannot verify person {face!r} or people access for account {name!r}. "
-                "Check access, or rescan the library to follow a person Immich merged; "
-                "no partial source will be used"
+                "Check people access in Immich; no partial source will be used"
             ) from error
         if person.id != face:
             raise AccountUnavailable(

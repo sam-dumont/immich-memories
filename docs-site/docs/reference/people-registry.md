@@ -92,9 +92,12 @@ The person is a store id or a name exactly one person carries; if two people sha
 their ids and asks for one. `bind` only adds the id: the name, birth date and your answers stay put. An id somebody
 else holds is refused, never merged, and binding the same id twice changes nothing. Two live ids are never matched
 by name. A retired one is followed: when Immich no longer has any of a person's ids (two records merged, re-clustered
-or deleted), `people scan` links them to the one Immich person that carries their name and no one else here holds,
-or folds in the second record a scan already wrote for them. They keep their id and every answer. With no single
-match, the People page flags them, and a film naming them stops with the same advice instead of coming back empty.
+or deleted), or keeps an id with no pictures next to a same-name person that has some, the app links them to the one
+Immich person that carries their name and no one else here holds, or folds in the second record a scan already wrote
+for them. It does this whenever it reads Immich's people: opening the People page, starting a film, the nightly run
+or `people scan`. They keep their id and every answer; the old id is listed under `retired` and never asked for
+again. With no single match, the People page flags them, and a film naming them stops with the same advice instead of
+coming back empty.
 `declined_links:` holds the "not the same person" answers from the People page, so a suggestion you refused stays
 refused. Taking an id back off a person is **Unlink** on that page.
 A film reads the second account with `generate --accounts primary,partner`

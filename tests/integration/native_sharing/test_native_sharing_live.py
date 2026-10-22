@@ -3,12 +3,14 @@
 import json
 import os
 from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+import click
 import pytest
 from tests.e2e.fake_library import ALL_PICTURES, MONTH, YEAR
 
@@ -276,44 +278,78 @@ def test_native_discovery_and_owner_download_need_only_documented_read_permissio
             session.close()
 
 
-def test_upstream_merge_never_rewrites_a_saved_local_identity(household):
-    from tests.integration.immich_gate.seed import Seeder
+@contextmanager
+def _merged_away(household, local_name):
+    """A store person bound to a face, which Immich then merges into the household's person.
 
-    from immich_memories.api.accounts import AccountUnavailable
-    from immich_memories.people.companion import load_document
+    With no `local_name`, the household's person carries a name of its own for the test (the
+    seed's name can sit on a partner person too), and the store person carries it.
+    """
+    from tests.integration.immich_gate.seed import Seeder
 
     state, store, client = household
     a = Seeder(state.get("url", "http://127.0.0.1:2303"), state["keys"]["primary"])
+    live = state["person"]
+    seeded = a.call("GET", f"/people/{live}")["name"]
     try:
         old = a.call("POST", "/people", json={"name": "Merge source"})["id"]
+        name = local_name or f"Merge target {uuid4().hex[:8]}"
+        if local_name is None:
+            a.call("PUT", f"/people/{live}", json={"name": name})
         import_document(
             store,
             {
                 "version": 1,
                 "people": [
-                    {
-                        "ids": [old],
-                        "name": "Local identity",
-                        "confirmed": {"notes": "Keep this decision"},
-                    }
+                    {"ids": [old], "name": name, "confirmed": {"notes": "Keep this decision"}}
                 ],
             },
             replace=True,
         )
-        before = load_document(store)
-        a.call("POST", "/people/merge", json={"ids": [state["person"], old]})
-        with pytest.raises(AccountUnavailable, match="person|identity"):
-            resolve_run_people(
-                client,
-                expression=PersonExpression("person", value=old),
-                person_names=[],
-                person_match="and",
-                accounts=("primary", "partner"),
-                store=store,
-            )
-        assert load_document(store) == before
+        a.call("POST", "/people/merge", json={"ids": [live, old]})
+        yield old, live, store, client
     finally:
+        a.call("PUT", f"/people/{live}", json={"name": seeded})
         a.http.close()
+
+
+def _resolve_by_id(client, store, face):
+    return resolve_run_people(
+        client,
+        expression=PersonExpression("person", value=face),
+        person_names=[],
+        person_match="and",
+        accounts=("primary", "partner"),
+        store=store,
+    )
+
+
+def test_an_upstream_merge_with_no_name_to_follow_stops_and_keeps_the_identity(household):
+    from immich_memories.people.companion import load_document
+
+    with _merged_away(household, "Local identity") as (old, _live, store, client):
+        before = load_document(store)
+
+        # Nobody in Immich carries the saved name: never a guess, never an empty film.
+        with pytest.raises(click.UsageError, match="exactly one person"):
+            _resolve_by_id(client, store, old)
+        assert load_document(store) == before
+
+
+def test_an_upstream_merge_is_followed_to_the_face_that_carries_the_name(household):
+    from immich_memories.people.companion import load_document, people_entries
+
+    with _merged_away(household, None) as (old, live, store, client):
+        people = _resolve_by_id(client, store, old)
+
+    (entry,) = people_entries(load_document(store))
+    # The saved identity and its answers stay; the merged-away face is retired.
+    assert entry["ids"][0] == old
+    assert live in entry["ids"]
+    assert entry["retired"] == [old]
+    assert entry["confirmed"]["notes"] == "Keep this decision"
+    assert people.condition is not None
+    assert live in people.condition.leaf_values
 
 
 def test_shared_person_stays_one_registry_identity_and_cross_account_link(household):
