@@ -164,10 +164,12 @@ with a partial batch. Stage changes, counter resets and completion appear immedi
 ## Waiting for a model server
 
 When a model reader is in use, normally on the `full` tier. The run names the endpoint and tries three times, two then
-four seconds apart, then stops with a message starting `Gave up on the reader at host:port`, followed by `after 3 dropped connections: fix the server and cut again`. With an explicit
+four seconds apart, then shows a message starting `Gave up on the reader at host:port`, followed by `after 3 dropped connections: check that server`.
+The rest of the run doesn't ask that server again: the film is cut by the rules reader with default wording, using
+only answers already banked. With an explicit
 `advanced.llm.base_url`, start that server or fix its URL. On a native install with an empty URL, check the configured
 `local_server`, model/projector files and available memory; the app starts its own server. Docker and Kubernetes require an external endpoint: [Reader setup](../better/reader.md). Then
-**Cut again** or rerun: everything already read is banked. To cut without it, set
+**Cut again** or rerun for the reader's cut: everything already read is banked. To stop asking it, set
 `tier: gpu` (or `basic`): selection then uses the rules reader.
 
 ## `QuickTime cannot hold: re-encoding this clip instead of copying it`

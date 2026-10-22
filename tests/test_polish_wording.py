@@ -48,7 +48,7 @@ def test_the_last_dropped_connection_tells_the_person_what_to_do() -> None:
         )
     assert seen[-1].label == (
         f"Gave up on the reader at reader.local:9999 after {TRANSPORT_RETRIES} dropped "
-        "connections: fix the server and cut again"
+        "connections: check that server"
     )
 
 

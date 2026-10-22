@@ -8,7 +8,7 @@ import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextvars import copy_context
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 import httpx
@@ -20,7 +20,10 @@ from immich_memories.analysis.judgments.json_completion import (
     json_format_repair_prompt,
 )
 from immich_memories.analysis.judgments.text_artifacts import TextPromptArtifacts
-from immich_memories.analysis.judgments.text_failures import TextCompletionFailure
+from immich_memories.analysis.judgments.text_failures import (
+    TextCompletionFailure,
+    reader_unreachable,
+)
 from immich_memories.analysis.judgments.text_request import TextCall, TextRequest
 from immich_memories.analysis.llm import metrics as llm_metrics
 from immich_memories.analysis.llm.batch import BatchCoordinator, BatchPrompt, batch_prompt_key
@@ -309,6 +312,22 @@ class QueryTextRequester:
         return raw
 
 
+class DeadReader:
+    """What ended the reader for this run, once it stopped answering.
+
+    The episode reads ask once per event; without this, a host that drops every
+    connection cost three tries for each of 87 events, twenty minutes before the
+    film fell back to the rules it ended on anyway.
+    """
+
+    def __init__(self) -> None:
+        self.cause: BaseException | None = None
+
+    def check(self) -> None:
+        if self.cause is not None:
+            raise self.cause.with_traceback(None)
+
+
 @dataclass(frozen=True)
 class SyncTextPromptRequester:
     """Synchronous validated-store input adapter for episode and period reads."""
@@ -320,6 +339,8 @@ class SyncTextPromptRequester:
     artifacts: TextPromptArtifacts | None = None
     batch: BatchCoordinator | None = None
     retry_larger: bool = True
+    # Shared with every copy `replace` makes, so the run's transcript wrapper knows too.
+    dead_reader: DeadReader = field(default_factory=DeadReader, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.max_tokens <= 0 or self.timeout_seconds <= 0:
@@ -437,6 +458,7 @@ class SyncTextPromptRequester:
             answer = self._read_queued(prompt, queued, max_tokens=max_tokens)
             if answer is not None:
                 return answer
+        self.dead_reader.check()
         call = (
             self.artifacts.start(
                 prompt,
@@ -466,6 +488,8 @@ class SyncTextPromptRequester:
         except BaseException as exc:
             if self.artifacts:
                 self.artifacts.finish(call, error=exc, billed=billed.as_record())
+            if isinstance(exc, Exception) and reader_unreachable(exc):
+                self.dead_reader.cause = exc
             raise
         if self.artifacts:
             self.artifacts.finish(call, raw=raw, billed=billed.as_record())
