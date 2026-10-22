@@ -34,7 +34,8 @@ Less memory means fewer photos rendered at once. The app reserves 1 GiB for the 
 
 `output.quality` (or an explicit `output.crf`) is on libx265's CRF scale, the reference because
 libx265 runs everywhere. Every other encoder is calibrated to the same picture, by SSIM on real
-1080p60 footage, in constant-quality modes, never bitrate targets.
+1080p60 footage, in constant-quality modes, never bitrate targets. Where an encoder blocks or
+bands at a setting SSIM accepts, the eye wins: `hevc_nvenc` balanced is QP 20 for that reason.
 
 `high` uses more bits; `balanced` is the default. `fast` keeps the balanced quality target
 and changes the speed preset. Output size depends on the pictures, motion and encoder.
@@ -45,6 +46,7 @@ and changes the speed preset. Output size depends on the pictures, motion and en
 | `libx264` | CRF 18 | CRF 22 |
 | `h264_vaapi` and `h264_qsv` | QP 20 | QP 22 |
 | `h264_nvenc` | QP 20 | QP 24 |
+| `hevc_nvenc` | QP 18 | QP 20 |
 | `hevc_videotoolbox` | `-q:v` 65 | `-q:v` 55 |
 
 Hardware encoding reduces CPU work, but does not promise the same file size as software.

@@ -8,8 +8,8 @@ calibrated to reproduce *that picture*, not to copy that number.
 
 Each family is pinned by two measured anchors — its setting at the `high` target
 and at the `balanced` target — and interpolated between them. There is
-deliberately no shared offset: the five families need five different slopes
-(+1.00, +0.67, +0.33, +0.67 and -1.67 per reference CRF step), so any single
+deliberately no shared offset: the six measured families need their own slopes
+(+1.00, +0.67, +0.33, +0.67, +0.33 and -1.67 per reference CRF step), so any single
 constant would silently give each encoder a different picture. That is what the
 previous mapping did, and before it three of the five families got no
 rate-control flag at all and the driver decided.
@@ -62,6 +62,16 @@ _BALANCED_REFERENCE_CRF = 24
 #                  costs only 1.2x the bits; Turing is simply a better encoder.
 #                  That its balanced anchor shares a number with libx264's is a
 #                  coincidence of two scales, not a constant they share.
+#   hevc_nvenc     T1000 / Turing, 10-bit HDR, no B-frames on this generation.
+#                  It used to borrow h264_nvenc's row, and QP 24 blocked up on a
+#                  real film where QP 20 stayed clean: the owner compared the same
+#                  30 s at both. SSIM missed it (QP 24 scored at libx265 CRF 18's
+#                  level on a noisy HLG clip), so balanced is set by eye at 20.
+#                  On a clean indoor HLG clip at 1080x1920 (frames paired by
+#                  index, the source being variable-rate): QP 18 -> 0.99030 at
+#                  11.7 Mbps, QP 20 -> 0.98933 at 9.2, QP 24 -> 0.98623 at 5.6,
+#                  against libx265 CRF 18 -> 0.98986 at 6.0. QP 18 is the first
+#                  setting past the high target; QP 16 buys +0.0008 for 27% more.
 #   videotoolbox   Apple Silicon: q 65 -> 0.99060 at 13.2 Mbps, q 55 -> 0.98366
 #                  at 6.5. About 2.9x the bits of libx265 for the same picture,
 #                  the steepest tax of the three, and still worth taking —
@@ -73,6 +83,7 @@ _CALIBRATION: dict[str, tuple[int, int]] = {
     "vaapi": (20, 22),
     "qsv": (20, 22),
     "nvenc": (20, 24),
+    "hevc_nvenc": (18, 20),
     "videotoolbox": (65, 55),
 }
 
@@ -112,7 +123,8 @@ def quality_args(encoder: str, crf: int) -> list[str]:
     if encoder.endswith("_qsv"):
         return ["-global_quality", str(_calibrated(_DERIVED_FROM_VAAPI, crf))]
     if encoder.endswith("_nvenc"):
-        return ["-rc", "constqp", "-qp", str(_calibrated("nvenc", crf))]
+        family = "hevc_nvenc" if encoder == "hevc_nvenc" else "nvenc"
+        return ["-rc", "constqp", "-qp", str(_calibrated(family, crf))]
     if encoder.startswith("prores"):
         return []
     logger.warning(
