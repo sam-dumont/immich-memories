@@ -217,11 +217,18 @@ def test_the_opening_costs_less_than_half_what_it_did(_kernels_on_cpu, tmp_path:
     """At 720p, where the blur radius is 72 px and the blur is 85% of a frame.
 
     A generous bound on purpose: the win measured on this machine is 4.6x, and
-    a shared runner under load must not turn that into a red build.
+    a shared runner under load must not turn that into a red build. Each side
+    keeps its best of three, timed in turn, so a moment when the other test
+    workers hold the CPU can't land on one side only: on a 4-CPU runner one
+    pair of single timings came out at 1.95x.
     """
     clip = _clip(tmp_path, 1280, 720)
     shape = {"width": 1280, "height": 720, "duration": 1.0}
-    _, cheap = _render(_config(clip, reverse=False, **shape), cheap=True, keep=False)
-    _, dear = _render(_config(clip, reverse=False, **shape), cheap=False, keep=False)
+    cheap = dear = float("inf")
+    for _ in range(3):
+        _, seconds = _render(_config(clip, reverse=False, **shape), cheap=True, keep=False)
+        cheap = min(cheap, seconds)
+        _, seconds = _render(_config(clip, reverse=False, **shape), cheap=False, keep=False)
+        dear = min(dear, seconds)
 
     assert cheap < dear / 2, f"{cheap * 1000:.1f} ms/frame against {dear * 1000:.1f} ms/frame"
