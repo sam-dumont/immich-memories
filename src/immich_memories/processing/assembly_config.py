@@ -17,6 +17,8 @@ from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, 
 from immich_memories.processing.map_move_timing import MapMoveTiming
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from immich_memories.processing.film_timeline import FilmTimeline
     from immich_memories.processing.hardware import HWAccelCapabilities
 
@@ -155,6 +157,12 @@ class AssemblySettings:
     # Recorded by the assembly engine: clips that decoded to no frame and left the
     # film, so the run's cut and its timeline can drop them too (#2824).
     undecodable_clips: list[AssemblyClip] = field(default_factory=list)
+    # What plays in place of a clip that decodes to no frame: a Live Photo's own still
+    # (#2679, #2827), or None to let it leave. Given by the run, which can render one.
+    stand_in: Callable[[AssemblyClip], AssemblyClip | None] | None = None
+    # Recorded by the assembly engine: the stills that played in a dead clip's slot,
+    # by the clip's asset, so the run's cut lists them instead of the motion.
+    stood_in: dict[str, AssemblyClip] = field(default_factory=dict)
     # If provided, these override the automatic transition decisions
     # Format: list of "fade" or "cut" for each transition between clips
     predecided_transitions: list[str] | None = None

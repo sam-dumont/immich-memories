@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 from immich_memories.i18n import resolve_film_locale
@@ -260,7 +261,45 @@ class AssemblyEngine:
                     frame_preview_callback,
                 )
             except ClipGaveNoFrames as dead:
+                still = self._still_for_dead_clip(clips[dead.index], dead)
+                if still is not None:
+                    clips = [*clips[: dead.index], still, *clips[dead.index + 1 :]]
+                    continue
                 clips, transitions = self._without_dead_clip(clips, transitions, dead)
+
+    def _still_for_dead_clip(
+        self, clip: AssemblyClip, dead: ClipGaveNoFrames
+    ) -> AssemblyClip | None:
+        """A Live Photo's own still for the slot its dead motion held, or None (#2827).
+
+        The still keeps the clip's length, date, place and transition, so the timeline,
+        music and captions don't move (#2679). One try per picture: a still that gives
+        no frame either lets the picture leave.
+        """
+        stand_in = self.settings.stand_in
+        if stand_in is None or clip.is_photo or clip.is_title_screen:
+            self.settings.stood_in.pop(clip.asset_id, None)
+            return None
+        rendered = stand_in(clip)
+        if rendered is None:
+            return None
+        still = replace(
+            clip,
+            path=rendered.path,
+            is_photo=True,
+            gain_map_hdr=rendered.gain_map_hdr,
+            rotation_override=rendered.rotation_override,
+            input_seek=0.0,
+            has_music=False,
+        )
+        logger.warning(
+            "%s decoded to no frame (%s); its picture plays as its still for the same %.1f s",
+            clip.path.name,
+            dead.why,
+            clip.duration,
+        )
+        self.settings.stood_in[clip.asset_id] = still
+        return still
 
     def _without_dead_clip(
         self, clips: list[AssemblyClip], transitions: list[str], dead: ClipGaveNoFrames

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import inspect
 import shutil
+import subprocess
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
@@ -43,6 +45,7 @@ from immich_memories.generate_timeline import (
 )
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.processing.clip_validation import validate_clips
+from immich_memories.processing.encoding_plan import HdrTransfer
 from immich_memories.processing.probe_cache import ProbeCache
 from immich_memories.tracking.timed import timed
 from immich_memories.tracking.timing import span
@@ -51,7 +54,7 @@ if TYPE_CHECKING:
     from immich_memories.cache.prepared_source_bank import PreparedSourceBank
     from immich_memories.config.loader import Config
     from immich_memories.generate import GenerationParams, PreparedGeneration
-    from immich_memories.processing.assembly_config import AssemblySettings
+    from immich_memories.processing.assembly_config import AssemblyClip, AssemblySettings
     from immich_memories.tracking import RunTracker
 
 import logging
@@ -447,6 +450,9 @@ def render_local(
                 requested_output_path,
                 cast(Literal["mp4", "mov"], settings.encoding_plan.container),
             )
+            settings.stand_in = live_still_stand_in(
+                params, assembly_clips, run_output_dir, settings, probe_cache=probe_cache
+            )
             assembler = _create_assembler_with_optional_probe_cache(
                 settings,
                 params.config,
@@ -462,6 +468,7 @@ def render_local(
                     assembly_cb,
                     frame_preview_callback=params.frame_preview_callback,
                 )
+            assembly_clips = with_stand_ins(assembly_clips, settings)
             assembly_clips = without_undecodable_clips(params, assembly_clips, settings)
             # Titles included: every second of it was this machine producing the
             # film, and decoding the result can only be faster.
@@ -498,6 +505,62 @@ def render_local(
         )
     finally:
         _release_cut_segments(params, assembly_clips, run_output_dir, run_scratch)
+
+
+_STILL_ERRORS = (OSError, subprocess.SubprocessError, RuntimeError, ValueError)
+
+
+def live_still_stand_in(
+    params: GenerationParams,
+    assembly_clips: list,
+    output_dir: Path,
+    settings: AssemblySettings,
+    *,
+    probe_cache: ProbeCache | None = None,
+) -> Callable[[AssemblyClip], AssemblyClip | None]:
+    """What renders a Live Photo's own still when its motion decodes to no frame (#2827).
+
+    Preparation swaps a Live Photo whose motion fails for its still (#2679); a motion
+    that passed preparation and dies at assembly gets the same, held for its slot. Any
+    other clip, or a still that can't be rendered, gets None and leaves the film.
+    """
+    from immich_memories.api.models import AssetType
+    from immich_memories.processing.ffmpeg_prober import film_frame_rate, probe_rate
+
+    live = {
+        clip.asset.id: clip
+        for clip in params.clips
+        if clip.editorial_live_manifest is not None and clip.asset.type == AssetType.IMAGE
+    }
+
+    def stand_in(dead: AssemblyClip) -> AssemblyClip | None:
+        from immich_memories.generate_photos import render_photo_as_clip
+
+        source = live.get(dead.asset_id)
+        if source is None:
+            return None
+        # The rate and transfer the film's other stills were rendered at (#2475, #2709).
+        transfer = settings.encoding_plan.target_transfer
+        at_film_rate = replace(
+            params,
+            photo_fps=params.photo_fps
+            or film_frame_rate(assembly_clips, partial(probe_rate, probe_cache or ProbeCache())),
+            photo_transfer=None if transfer is HdrTransfer.NONE else transfer,
+        )
+        try:
+            return render_photo_as_clip(
+                source, at_film_rate, output_dir, duration_seconds=dead.duration
+            )
+        except _STILL_ERRORS as exc:
+            logger.warning("%s's still could not be rendered either: %s", dead.asset_id, exc)
+            return None
+
+    return stand_in
+
+
+def with_stand_ins(assembly_clips: list, settings: AssemblySettings) -> list:
+    """The cut with each still that played in a dead clip's slot in place of it (#2827)."""
+    return [settings.stood_in.get(clip.asset_id, clip) for clip in assembly_clips]
 
 
 def without_undecodable_clips(
