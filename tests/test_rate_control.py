@@ -77,6 +77,15 @@ def test_nvenc_sets_constqp_rather_than_a_bitrate_mode() -> None:
     assert "-qp" in args
 
 
+def test_hevc_nvenc_is_calibrated_on_its_own_not_borrowed_from_h264() -> None:
+    """QP 24 blocked up on a 10-bit HEVC film where QP 20 stayed clean (Turing, no B-frames)."""
+    from immich_memories.processing.hdr_utilities import quality_to_crf
+
+    balanced = quality_to_crf("balanced")
+
+    assert quality_args("hevc_nvenc", balanced)[-1] != quality_args("h264_nvenc", balanced)[-1]
+
+
 def test_qsv_uses_global_quality_which_is_where_its_dial_lives() -> None:
     args = quality_args("h264_qsv", 18)
 
@@ -135,6 +144,7 @@ _APPROVED = {
         "libx264": "18",
         "h264_vaapi": "20",
         "h264_nvenc": "20",
+        "hevc_nvenc": "18",
         "hevc_videotoolbox": "65",
     },
     "balanced": {
@@ -142,6 +152,7 @@ _APPROVED = {
         "libx264": "22",
         "h264_vaapi": "22",
         "h264_nvenc": "24",
+        "hevc_nvenc": "20",
         "hevc_videotoolbox": "55",
     },
 }
