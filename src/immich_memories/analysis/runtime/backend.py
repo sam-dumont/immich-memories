@@ -24,6 +24,7 @@ from immich_memories.analysis.film.contract import (
     StructurePlanningResult,
 )
 from immich_memories.analysis.film.product_brief import build_editorial_brief
+from immich_memories.analysis.judgments.text_failures import ReaderUnreachable
 from immich_memories.analysis.judgments.text_judge import StructureTextJudge
 from immich_memories.analysis.polish.layer import (
     PeriodUnread,
@@ -160,21 +161,17 @@ class ProductionPostCardBackend:
         self.last_companion_assets = dict(source.companion_assets)
         resources = ExitStack()
         try:
-            initial = (
-                replace(
-                    source,
-                    config=nas_draft_config(source.config),
-                    artifact_dir=source.artifact_dir / "nas-draft",
-                )
-                if self._prepare_refinement is not None
-                else source
-            )
-            effects = self._effects(initial, resources)
-            if self._prepare_refinement is not None:
-                effects = replace(
-                    effects, refine=lambda captured, draft: self._refine(captured, draft, resources)
-                )
-            result = self._ports.structure_planner(source, effects)
+            try:
+                result = self._planned(source, resources)
+            except ReaderUnreachable as exc:
+                if rules:
+                    raise
+                # The docs promise a rules film when the reader stops answering: plan it.
+                warning = f"{exc}; the film is planned by the rules instead"
+                trace.warnings.append(warning)
+                logger.warning(warning)
+                source, rules = _on_rules(source), True
+                result = self._planned(source, resources)
         finally:
             try:
                 resources.close()
@@ -195,6 +192,24 @@ class ProductionPostCardBackend:
                 logger.warning(warning)
         _warn_of_people_condition_exclusion(result, trace)
         return self._adopt(result, source.artifact_dir, allowed_ids)
+
+    def _planned(self, source: StructurePlanningInput, resources: ExitStack):
+        """One structure plan of `source`, through the NAS draft when refinement is on."""
+        initial = (
+            replace(
+                source,
+                config=nas_draft_config(source.config),
+                artifact_dir=source.artifact_dir / "nas-draft",
+            )
+            if self._prepare_refinement is not None
+            else source
+        )
+        effects = self._effects(initial, resources)
+        if self._prepare_refinement is not None:
+            effects = replace(
+                effects, refine=lambda captured, draft: self._refine(captured, draft, resources)
+            )
+        return self._ports.structure_planner(source, effects)
 
     def _effects(self, source, resources):
         effects = (
@@ -643,6 +658,13 @@ def _validate_structure_carriers(result: StructurePlanningResult, *, allowed_ids
         raise ValueError("structure planner selected outside the conserved input")
     if carriers != sorted(carriers, key=itemgetter("taken")):
         raise ValueError("structure planner carriers must be chronological")
+
+
+def _on_rules(source: StructurePlanningInput) -> StructurePlanningInput:
+    """The same film, read by the rules reader alone."""
+    config = source.config.model_copy(deep=True)
+    config.editorial.reader = "rules"
+    return replace(source, config=config, lineage={**source.lineage, "reader": "rules-v1"})
 
 
 def _plan_from_structure_result(

@@ -101,6 +101,21 @@ class QueryTextRequester:
         self._json_failure_observer = json_failure_observer
         self._json_decoding_observer = json_decoding_observer
 
+    def banked(
+        self, request: TextRequest, *, accepts: Callable[[str], bool] | None = None
+    ) -> TextCall | None:
+        """The answer this exact question already has, asking nobody; None when it has none."""
+        raw = self._usable_banked_answer(JudgmentCache(request.judgments), request, accepts)
+        if raw is None:
+            return None
+        return TextCall(
+            prompt=request.prompt,
+            raw=raw,
+            wall_seconds=0.0,
+            cache_hit=True,
+            thinking=request.thinking,
+        )
+
     async def request(
         self, request: TextRequest, *, accepts: Callable[[str], bool] | None = None
     ) -> TextCall:
