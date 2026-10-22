@@ -7,15 +7,18 @@ the caption font draws whole keeps drawtext. Any other caption (a Greek or
 Japanese place, anything right to left) is drawn once with the title text
 stack (`font_chain`: Noto fallback letter by letter, Raqm shaping) into a
 small transparent PNG, and FFmpeg's `overlay` puts it where drawtext would
-have drawn the text.
+have drawn the text. So is every caption when this FFmpeg has no drawtext at
+all, as some static builds ship.
 """
 
 from __future__ import annotations
 
 import hashlib
+import subprocess
 import tempfile
 import unicodedata
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -24,6 +27,27 @@ from immich_memories.security import private_temp_dir
 from immich_memories.titles.font_chain import face_covers, title_font
 
 _RTL = frozenset({"R", "AL"})
+
+
+@cache
+def drawtext_available() -> bool:
+    """Whether this machine's FFmpeg has the drawtext filter.
+
+    The johnvansickle 7.0.2 static build has none: every captioned clip's decoder
+    failed to start ("No such filter: 'drawtext'") and the film held a frozen or
+    black frame where the picture belonged.
+    """
+    try:
+        listing = subprocess.run(  # noqa: S603, S607 -- fixed ffmpeg argv
+            ["ffmpeg", "-hide_banner", "-filters"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return any(line.split()[1:2] == ["drawtext"] for line in listing.splitlines())
 
 
 def needs_image(text: str, font_path: str | None) -> bool:

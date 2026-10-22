@@ -6,7 +6,9 @@ text and geometry, and it is worth testing without spinning up FFmpeg.
 
 from __future__ import annotations
 
+import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -24,6 +26,8 @@ from immich_memories.processing.caption_image import (
 )
 from immich_memories.titles.letter_case import display_upper
 from immich_memories.titles.text_layout import shrink_to_width
+
+logger = logging.getLogger(__name__)
 
 # Caption metrics as a share of the frame's short side, so the date reads the
 # same on a 4K memory and a 720p one. Captions provide quiet context;
@@ -215,11 +219,15 @@ def caption_filters(
     is_hdr: bool = False,
     font_path: str | None = None,
     frame_window: tuple[int, int] | None = None,
+    drawtext: bool = True,
 ) -> list[str]:
     """FFmpeg drawtext filters: the place top-left, the date bottom-right.
 
     Small translucent uppercase, anchored at constant y in both orientations.
     A light outline preserves readability without making every clip a title.
+    With `drawtext` False (this FFmpeg has none) every caption is an image; one
+    with no font file to draw it is left out, since a filter FFmpeg does not have
+    stops the clip's decoder and leaves a frozen frame where the picture was.
     """
     short_side = min(width, height)
     font_size = max(12, round(short_side * _FONT_RATIO))
@@ -229,26 +237,61 @@ def caption_filters(
     if frame_window is not None:
         start, end = frame_window
         window = f":enable='gte(n,{start})*lt(n,{end})'"
-    filters = []
+    pen = _Pen(font_path, is_hdr, drawtext, window)
     place = display_upper(caption.place)
     place_size = font_size
     if font_path and place and Path(font_path).is_file():
         place, place_size = _fitted_place(place, font_path, font_size, width - 2 * inset)
-    if font_path and needs_image(place, font_path):
-        style = _style(font_path, place_size, is_hdr)
-        filters.append(_overlay("place", place, style, inset, inset, window))
-    elif place:
-        drawn = _drawtext_options(place_size, is_hdr, font_path) + window
-        filters.append(f"drawtext=text='{_escape(place)}'{drawn}:x={inset}:y={inset}")
     day = display_upper(caption.date)
-    if font_path and needs_image(day, font_path):
-        style = _style(font_path, font_size, is_hdr)
-        x = width - text_width(day, style) - inset
-        filters.append(_overlay("date", day, style, x, height - inset - line, window))
-    elif day:
-        drawn = _drawtext_options(font_size, is_hdr, font_path) + window
-        filters.append(f"drawtext=text='{_escape(day)}'{drawn}:x=w-tw-{inset}:y=h-{inset}-{line}")
+    drawn = [
+        pen.draw("place", place, place_size, (str(inset), str(inset)), lambda _: (inset, inset)),
+        pen.draw(
+            "date",
+            day,
+            font_size,
+            (f"w-tw-{inset}", f"h-{inset}-{line}"),
+            lambda style: (width - text_width(day, style) - inset, height - inset - line),
+        ),
+    ]
+    filters = [one for one in drawn if one]
+    if not drawtext and (place or day) and not filters:
+        logger.warning("This FFmpeg has no drawtext and no caption font was found: no caption")
     return filters
+
+
+@dataclass(frozen=True)
+class _Pen:
+    """How this clip's captions are drawn: drawtext where it can, an image where it cannot."""
+
+    font_path: str | None
+    is_hdr: bool
+    drawtext: bool
+    window: str
+
+    def draw(
+        self,
+        label: str,
+        text: str,
+        size: int,
+        drawn_at: tuple[str, str],
+        image_at: Callable[[CaptionStyle], tuple[int, int]],
+    ) -> str | None:
+        """One caption's filter, or None when there is nothing to draw or nothing to draw it."""
+        if self.font_path and self._as_image(text):
+            style = _style(self.font_path, size, self.is_hdr)
+            x, y = image_at(style)
+            return _overlay(label, text, style, x, y, self.window)
+        if not text or not self.drawtext:
+            return None
+        options = _drawtext_options(size, self.is_hdr, self.font_path) + self.window
+        return f"drawtext=text='{_escape(text)}'{options}:x={drawn_at[0]}:y={drawn_at[1]}"
+
+    def _as_image(self, text: str) -> bool:
+        """An image when drawtext cannot draw the text, or there is no drawtext at all."""
+        assert self.font_path is not None  # noqa: S101
+        if not text or not Path(self.font_path).is_file():
+            return False
+        return not self.drawtext or needs_image(text, self.font_path)
 
 
 def _style(font_path: str, font_size: int, is_hdr: bool) -> CaptionStyle:

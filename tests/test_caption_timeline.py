@@ -414,6 +414,92 @@ class TestCaptionsOutsideTheCaptionFont:
         assert hebrew.startswith("null[date_frame]")
 
 
+class TestAnFFmpegWithoutDrawtext:
+    """Some static FFmpeg builds leave drawtext out; a caption is then an image, never a hole."""
+
+    def test_every_caption_becomes_an_overlay(self):
+        from immich_memories.processing.clip_caption import (
+            ClipCaption,
+            caption_filters,
+            caption_font_path,
+        )
+
+        place, date = caption_filters(
+            ClipCaption(place="Brussels", date="Saturday 5"),
+            1920,
+            1080,
+            font_path=caption_font_path(),
+            drawtext=False,
+        )
+
+        assert place.startswith("null[place_frame];movie=/")
+        assert date.startswith("null[date_frame];movie=/")
+        assert "drawtext" not in place + date
+
+    def test_a_caption_with_no_font_to_draw_it_is_left_out(self, caplog):
+        from immich_memories.processing.clip_caption import ClipCaption, caption_filters
+
+        filters = caption_filters(
+            ClipCaption(place="Brussels", date="Saturday 5"), 1920, 1080, drawtext=False
+        )
+
+        assert filters == []
+        assert "drawtext" in caplog.text
+
+
+class TestTheDrawtextProbe:
+    def _probe(self, monkeypatch, listing: str) -> bool:
+        from types import SimpleNamespace
+
+        from immich_memories.processing import caption_image
+
+        caption_image.drawtext_available.cache_clear()
+        # WHY: this machine's FFmpeg has drawtext; the listing is what a build without it prints.
+        monkeypatch.setattr(
+            caption_image.subprocess, "run", lambda *_a, **_k: SimpleNamespace(stdout=listing)
+        )
+        try:
+            return caption_image.drawtext_available()
+        finally:
+            caption_image.drawtext_available.cache_clear()
+
+    def test_a_build_that_lists_drawtext_has_it(self, monkeypatch):
+        listing = " T.C drawtext          V->V       Draw text on top of video frames.\n"
+
+        assert self._probe(monkeypatch, listing) is True
+
+    def test_a_build_that_lists_only_subtitles_does_not(self, monkeypatch):
+        listing = (
+            " ... subtitles         V->V       Render text subtitles onto input video.\n"
+            " ..C movie             |->N       Read from a movie source.\n"
+        )
+
+        assert self._probe(monkeypatch, listing) is False
+
+
+def test_the_decoder_draws_its_caption_as_an_image_when_ffmpeg_has_no_drawtext(monkeypatch):
+    from immich_memories.processing import streaming_frame_decoder
+    from immich_memories.processing.clip_caption import ClipCaption, caption_font_path
+    from immich_memories.processing.streaming_frame_decoder import make_decoder
+
+    # WHY: stand in for the FFmpeg build that broke captioned clips (no drawtext filter).
+    monkeypatch.setattr(streaming_frame_decoder, "drawtext_available", lambda: False)
+    decoder = make_decoder(
+        _clip("2025-07-05"),
+        0,
+        1280,
+        720,
+        30,
+        caption=ClipCaption(date="Saturday 5"),
+        caption_font=caption_font_path(),
+    )
+
+    graph = decoder._build_vf()
+
+    assert "drawtext" not in graph
+    assert "movie=" in graph
+
+
 @pytest.mark.parametrize(
     ("locale", "expected"),
     [
