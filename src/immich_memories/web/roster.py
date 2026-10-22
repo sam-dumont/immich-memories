@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import Annotated, Literal
@@ -31,15 +32,48 @@ from immich_memories.people.editor import (
 )
 from immich_memories.people.groups import add_group, list_groups, remove_group
 from immich_memories.people.relationships import RELATIONSHIP_CHOICES
+from immich_memories.people.vanished_faces import heal_store, picture_counter
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.schemas import RosterPerson
 
 router = APIRouter(prefix="/api/v1/roster", tags=["people"])
+logger = logging.getLogger(__name__)
 
 
 def people_store(config: Annotated[Config, Depends(current_config)]) -> Store:
     """The store holding the people registry this server reads, the one the CLI writes."""
     return open_store(config)
+
+
+def face_follower(config: Annotated[Config, Depends(current_config)]) -> Callable[[Store], None]:
+    """Follow any person whose Immich face changed (`people.vanished_faces`), in one read.
+
+    The People page runs it before it lists anyone, so a face Immich merged away needs no
+    rescan. One quick first contact decides: a server that is down costs the page a refused
+    connection, not the client's whole read backoff, and the page still opens as saved.
+    """
+
+    def follow(store: Store) -> None:
+        immich = config.immich
+        if not (immich.url and immich.api_key):
+            return
+        from immich_memories.api.sync_client import SyncImmichClient
+
+        try:
+            with SyncImmichClient(
+                base_url=immich.url, api_key=immich.api_key, api_version=immich.api_version
+            ) as client:
+                client.get_api_version(retry=False)
+                roster = {p.id: p.name for p in client.get_all_people(with_hidden=True)}
+                heal_store(store, roster, picture_counter(client))
+        except Exception as error:  # noqa: BLE001 - the page opens as saved whatever Immich says
+            logger.warning(
+                "Could not read Immich's people to follow changed faces (%s); "
+                "showing the people as saved",
+                type(error).__name__,
+            )
+
+    return follow
 
 
 class RosterFlag(BaseModel):
@@ -129,8 +163,13 @@ def _alias_url(config: Config, account: str, alias_id: str) -> str | None:
 def roster(
     store: Annotated[Store, Depends(people_store)],
     config: Annotated[Config, Depends(current_config)],
+    follow_faces: Annotated[Callable[[Store], None], Depends(face_follower)],
 ) -> Roster:
-    """Everyone in the people registry, inner circle first, with what needs curating."""
+    """Everyone in the people registry, inner circle first, with what needs curating.
+
+    A person whose face Immich merged away is followed to their new one first, and saved.
+    """
+    follow_faces(store)
     people = load_people(store)
     return Roster(
         people=[_shown(person, config) for person in people],

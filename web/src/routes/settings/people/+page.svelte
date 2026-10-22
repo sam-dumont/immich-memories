@@ -77,7 +77,7 @@
     if (kind === 'duplicate')
       return t('One name on two person records: a split face cluster. Merge these records in Immich, the only place it can be fixed.');
     if (kind === 'relink')
-      return t('Immich no longer has the face this person was linked to, and more than one person, or nobody, carries the name there now. Give exactly one person this name in Immich, then rescan the library.');
+      return t('Immich no longer has the face this person was linked to, and more than one person, or nobody, carries the name there now. Give exactly one person this name in Immich: this page follows it the next time it opens.');
     return kind.replaceAll('-', ' ');
   }
 

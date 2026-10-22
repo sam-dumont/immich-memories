@@ -660,6 +660,8 @@ export interface paths {
         /**
          * Roster
          * @description Everyone in the people registry, inner circle first, with what needs curating.
+         *
+         *     A person whose face Immich merged away is followed to their new one first, and saved.
          */
         get: operations["roster_api_v1_roster_get"];
         put?: never;
