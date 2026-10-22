@@ -22,6 +22,7 @@ from typing import IO, TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from immich_memories.processing.caption_image import drawtext_available
 from immich_memories.processing.clip_caption import ClipCaption, caption_filters
 from immich_memories.processing.ffmpeg_runner import stop_owned_process
 from immich_memories.processing.gpu_frame_graph import (
@@ -345,6 +346,7 @@ class FrameDecoder:
                     is_hdr=self._ten_bit,
                     font_path=self._caption_font,
                     frame_window=self._caption_window,
+                    drawtext=drawtext_available(),
                 )
             )
 

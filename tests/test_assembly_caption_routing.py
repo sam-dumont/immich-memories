@@ -19,6 +19,15 @@ from immich_memories.processing.streaming_frame_decoder import make_decoder
 from immich_memories.processing.video_assembler import VideoAssembler
 
 
+@pytest.fixture(autouse=True)
+def _drawtext(monkeypatch):
+    # WHY: these tests read the caption text out of drawtext's filter; the runner's own
+    # FFmpeg may be a build without drawtext, which draws the same text as an image.
+    monkeypatch.setattr(
+        "immich_memories.processing.streaming_frame_decoder.drawtext_available", lambda: True
+    )
+
+
 def _assemble_offline(settings, clips, output):
     for clip in clips:
         clip.path.touch()
