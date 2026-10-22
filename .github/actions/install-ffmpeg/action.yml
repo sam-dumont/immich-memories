@@ -1,8 +1,9 @@
 name: Install FFmpeg
 description: >-
-  Install FFmpeg on Linux (apt, with retries and bounded timeouts) or macOS
-  (brew, then ffmpeg-full when the plain bottle lacks zscale), falling back to a
-  static Linux build if apt never recovers. Fails when the FFmpeg it leaves has no zscale.
+  Install FFmpeg on Linux (apt on the runner's mirror, then on archive.ubuntu.com) or
+  macOS (brew, then ffmpeg-full when the plain bottle lacks zscale), falling back to a
+  static Linux build checked against its SHA-256 if apt never recovers. Fails when the
+  FFmpeg it leaves has no zscale.
 
 runs:
   using: composite
@@ -17,8 +18,19 @@ runs:
             && sudo apt-get install -y --no-install-recommends "${apt_opts[@]}" ffmpeg
         }
         for attempt in 1 2; do
+          if [ "$attempt" = 2 ]; then
+            # The runner's own mirror is what stalls: retrying it rarely helps, Ubuntu's
+            # archive usually answers at once. GitHub's images read their mirrors from
+            # apt-mirrors.txt; plain images name them in the sources.
+            echo "the runner's apt mirror did not answer; retrying on archive.ubuntu.com"
+            if [ -f /etc/apt/apt-mirrors.txt ]; then
+              echo "http://archive.ubuntu.com/ubuntu/" | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+            fi
+            sudo sed -i -E 's#https?://[a-z0-9.-]*archive\.ubuntu\.com#http://archive.ubuntu.com#g' \
+              /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null || true
+          fi
           echo "::group::apt-get install ffmpeg (attempt $attempt)"
-          if timeout 300 bash -c "$(declare -f install_ffmpeg); install_ffmpeg"; then
+          if timeout 240 bash -c "$(declare -f install_ffmpeg); install_ffmpeg"; then
             echo "::endgroup::"
             exit 0
           fi
@@ -36,13 +48,31 @@ runs:
           exit 0
         fi
         echo "apt did not produce ffmpeg; downloading a static build"
-        curl --fail --silent --show-error --max-time 120 \
-          -o /tmp/ffmpeg-release.tar.xz \
-          https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+        # A GitHub-hosted build (zscale included) reaches a runner far more reliably than a
+        # third-party host, and its release publishes a SHA-256 for every file: unpack only
+        # a download that matches. 8.1 is the oldest line it keeps; the macOS job already
+        # tests Homebrew's current FFmpeg.
+        name=ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz
+        base=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest
+        fetch() { curl --fail --silent --show-error --location --max-time 150 "$@"; }
+        for attempt in 1 2; do
+          if fetch -o "/tmp/$name" "$base/$name" \
+            && expected=$(fetch "$base/checksums.sha256" | awk -v n="$name" '$2 == n {print $1}') \
+            && [ -n "$expected" ] \
+            && [ "$(sha256sum "/tmp/$name" | cut -d' ' -f1)" = "$expected" ]; then
+            break
+          fi
+          if [ "$attempt" = 2 ]; then
+            echo "::error::the static FFmpeg build never arrived whole (no match with its published SHA-256)"
+            exit 1
+          fi
+          echo "static FFmpeg download did not match its SHA-256; retrying"
+          sleep 10
+        done
         mkdir -p /tmp/ffmpeg-static
-        tar -xf /tmp/ffmpeg-release.tar.xz -C /tmp/ffmpeg-static --strip-components=1
-        sudo install -m 0755 /tmp/ffmpeg-static/ffmpeg /usr/local/bin/ffmpeg
-        sudo install -m 0755 /tmp/ffmpeg-static/ffprobe /usr/local/bin/ffprobe
+        tar -xf "/tmp/$name" -C /tmp/ffmpeg-static --strip-components=1
+        sudo install -m 0755 /tmp/ffmpeg-static/bin/ffmpeg /usr/local/bin/ffmpeg
+        sudo install -m 0755 /tmp/ffmpeg-static/bin/ffprobe /usr/local/bin/ffprobe
 
     # The documented Mac setup (docs-site/docs/run/reference/python-install.md): Homebrew's
     # ffmpeg when it has zscale, else ffmpeg-full first on PATH. The plain bottle builds
