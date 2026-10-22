@@ -113,7 +113,10 @@ def run_reader_jobs(judge, work, items):
         for number in range(len(items)):
             out = Path(scratch) / str(number)
             out.mkdir(mode=0o700)
-            children.append(StructureTextJudge(judge.config, out, judgments=judge.judgments))
+            child = StructureTextJudge(judge.config, out, judgments=judge.judgments)
+            # A reader the run already found gone is gone for every job too.
+            child.unreachable = judge.unreachable
+            children.append(child)
         pool = ThreadPoolExecutor(max_workers=limit, thread_name_prefix="reader")
         futures: list[Future] = []
         try:
@@ -125,3 +128,4 @@ def run_reader_jobs(judge, work, items):
             _name_every_failure(futures)
             for child in children:
                 _merge_audit(judge, child)
+                judge.unreachable = judge.unreachable or child.unreachable

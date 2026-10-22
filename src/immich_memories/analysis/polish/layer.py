@@ -21,6 +21,7 @@ from itertools import chain
 from operator import itemgetter
 from typing import Any
 
+from immich_memories.analysis.judgments.text_failures import ReaderUnreachable
 from immich_memories.analysis.polish.block_votes import (
     BLOCK_SIZE,
     balanced_groups,
@@ -198,6 +199,47 @@ class ThinPolish:
         """
         if catalogue is None or not carriers:
             return _unpolished(carriers, _why_unpolished(catalogue, unread), record)
+        try:
+            return self._polished(
+                carriers,
+                judge=judge,
+                gates=gates,
+                catalogue=catalogue,
+                contract=contract,
+                line_of=line_of,
+                record=record,
+                candidates_of=candidates_of,
+                content_cap=content_cap,
+                protected=protected,
+                subject=subject,
+                close_family=close_family,
+                era_of=era_of,
+                kind_of=kind_of,
+                vouched=vouched,
+            )
+        except ReaderUnreachable as exc:
+            # Votes it already answered stay banked for the next run; this film is the draft.
+            return _unpolished(carriers, str(exc), record)
+
+    def _polished(
+        self,
+        carriers: Sequence[dict[str, Any]],
+        *,
+        judge,
+        gates: PictureAdmission,
+        catalogue: ThinCatalogue,
+        contract: str,
+        line_of: Callable[[str], str],
+        record: Callable[[str, Mapping[str, Any]], None],
+        candidates_of: Callable[[str], Sequence[Mapping[str, Any]]],
+        content_cap: float,
+        protected: Sequence[str],
+        subject: str,
+        close_family: CloseFamily,
+        era_of: Callable[[str], str | None] | None,
+        kind_of: KindOf | None,
+        vouched: Callable[[Mapping[str, Any]], bool],
+    ) -> list[dict[str, Any]]:
         carriers = _with_records(carriers, catalogue)
         first_call = len(judge.calls)
         tier_of = {story.key: story.tier for story in catalogue.stories}

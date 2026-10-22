@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.llm.provider_failure import provider_failure
+import httpx
+
+from immich_memories.analysis.llm.provider_failure import UNAVAILABLE, provider_failure
 
 FAILURE_SCHEMA = "bounded-text-completion-v1"
 STAGE_CALL_SCHEMA = "stage-call-failure-v1"
@@ -49,6 +51,28 @@ class StageCallFailure(RuntimeError):
             "error": str(self),
             **(self.refusal.as_record() if self.refusal else {}),
         }
+
+
+def reader_unreachable(cause: BaseException) -> bool:
+    """The reader stopped answering: nothing came back, or its gateway said the host is down.
+
+    The same failures `llm.query` warns about once ("Reader unreachable at ..."), plus a
+    5xx its own retries could not wait out. A rejected key, a missing model or a refused
+    payload is an answer about the request, so it stays a `StageCallFailure`.
+    """
+    if isinstance(cause, (httpx.TransportError, TimeoutError)):
+        return True
+    failure = provider_failure(cause, images_attached=False)
+    return failure is not None and failure.kind == UNAVAILABLE
+
+
+class ReaderUnreachable(StageCallFailure):
+    """A stage's call found the reader gone. The film falls back to rules and default
+    wording, as the docs promise, instead of ending the run (run/local-models.md)."""
+
+    def __init__(self, stage: str, *, call: int, cause: BaseException, seconds: float) -> None:
+        super().__init__(stage, call=call, cause=cause, seconds=seconds)
+        self.args = (f"{self.args[0]}; the reader is unreachable",)
 
 
 class TextCompletionFailure(ValueError):

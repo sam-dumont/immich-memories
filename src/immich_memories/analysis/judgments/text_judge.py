@@ -9,12 +9,15 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.analysis.judgments.text_failures import (
+    ReaderUnreachable,
     StageCallFailure,
     TextCompletionFailure,
+    reader_unreachable,
 )
 from immich_memories.analysis.judgments.text_gateway import QueryTextRequester
-from immich_memories.analysis.judgments.text_request import TextRequest
+from immich_memories.analysis.judgments.text_request import TextCall, TextRequest
 from immich_memories.analysis.llm.async_bridge import run_sync
+from immich_memories.analysis.llm.query import warn_once_unreachable
 from immich_memories.db import Store, open_store
 from immich_memories.security import write_secret_file
 
@@ -26,6 +29,9 @@ class StructureTextJudge:
         # Without a named store the answers go to the one the configuration names.
         self.judgments = judgments if judgments is not None else open_store(config)
         self.calls: list[dict] = []
+        # What ended the reader for this run, once it stopped answering: later questions
+        # read only what is banked instead of waiting on a dead host again.
+        self.unreachable: BaseException | None = None
         self.requester = QueryTextRequester(
             json_failure_observer=self._record_json_failure,
             json_decoding_observer=self._record_json_decoding,
@@ -91,6 +97,15 @@ class StructureTextJudge:
             }
         )
 
+    def _asked(self, request: TextRequest, accepts: Callable[[str], bool] | None) -> TextCall:
+        """The provider's answer, or once it has stopped answering, the banked one alone."""
+        if self.unreachable is None:
+            return run_sync(self.requester.request(request, accepts=accepts))
+        banked = self.requester.banked(request, accepts=accepts)
+        if banked is None:
+            raise self.unreachable
+        return banked
+
     def ask(
         self,
         stage: str,
@@ -119,7 +134,7 @@ class StructureTextJudge:
         )
         started = time.monotonic()
         try:
-            call = run_sync(self.requester.request(request, accepts=accepts))
+            call = self._asked(request, accepts)
         except TextCompletionFailure as exc:
             self._failed_call(
                 n, stage, exc, request, seconds=time.monotonic() - started, cache_hit=exc.cache_hit
@@ -128,7 +143,15 @@ class StructureTextJudge:
         except Exception as exc:
             # A connection the provider dropped reaches here with nothing recorded and,
             # for httpx read errors, nothing to print either. Name it before it travels.
-            failure = StageCallFailure(stage, call=n, cause=exc, seconds=time.monotonic() - started)
+            seconds = time.monotonic() - started
+            if reader_unreachable(exc):
+                self.unreachable = exc
+                warn_once_unreachable(self.config.llm, exc)
+                failure: StageCallFailure = ReaderUnreachable(
+                    stage, call=n, cause=exc, seconds=seconds
+                )
+            else:
+                failure = StageCallFailure(stage, call=n, cause=exc, seconds=seconds)
             self._failed_call(n, stage, failure, request, seconds=failure.seconds)
             raise failure from exc
         write_secret_file(d / f"{n:02d}-{stage}.response.private.txt", call.raw)

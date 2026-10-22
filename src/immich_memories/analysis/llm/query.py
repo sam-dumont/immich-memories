@@ -269,7 +269,7 @@ async def query_llm(
                     response_format,
                 )
     except (httpx.TransportError, TimeoutError) as exc:
-        _warn_once_unreachable(llm_config, exc)
+        warn_once_unreachable(llm_config, exc)
         raise
     finally:
         # In `finally` so a failed call still shows the time it burned; a run
@@ -283,7 +283,7 @@ async def query_llm(
 _WARNED_UNREACHABLE: set[str] = set()
 
 
-def _warn_once_unreachable(config: LLMConfig, exc: BaseException) -> None:
+def warn_once_unreachable(config: LLMConfig, exc: BaseException) -> None:
     """Callers fail open on a dead reader; this is the one line that says it happened."""
     endpoint = config.base_url.rstrip("/") or config.provider
     if endpoint in _WARNED_UNREACHABLE:
