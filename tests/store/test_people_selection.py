@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import click
 import pytest
 
 from immich_memories.analysis.sources.household import HouseholdWindows
@@ -176,3 +177,38 @@ def test_a_person_bound_only_in_an_account_the_run_does_not_read_is_refused(stor
     with pytest.raises(ValueError, match="no face in the accounts this run reads"):
         _discover(store, expression='"Kit"')
     assert not any(path.endswith("/search/metadata") for path in immich.requests)
+
+
+def test_a_face_merged_away_in_immich_is_followed_by_its_unique_name(store, immich, capsys):
+    # Immich merged the face the store bound Alex to into another cluster: the old id is
+    # gone, and the one face Immich now calls Alex is the person the store means.
+    import_document(store, {"version": 1, "people": [_person(["alex-gone"], "Alex")]})
+
+    people, found = _discover(store, names=["Alex"])
+
+    assert people.person_ids == ["alex-p"]
+    assert found == {"p-park", "p-party", "p-solo"}
+    assert "gone from Immich" in capsys.readouterr().out
+
+
+def test_a_vanished_face_with_no_name_to_follow_stops_the_run(store, immich):
+    import_document(store, {"version": 1, "people": [_person(["sky-gone"], "Sky")]})
+
+    # Never an empty fetch that reads as "nothing worth a film".
+    with pytest.raises(click.UsageError, match="Rescan the library"):
+        _discover(store, names=["Sky"])
+    assert not any(path.endswith("/search/metadata") for path in immich.requests)
+
+
+def test_a_split_person_is_found_through_the_record_that_kept_a_live_face(store, immich):
+    # The answers sit on a record whose face no account holds any more; a rescan wrote the
+    # same person again under their live face. Asking by the name reads that face.
+    import_document(
+        store,
+        {"version": 1, "people": [_person(["alex-gone"], "Alex"), _person(["alex-p"], "Alex")]},
+    )
+
+    people, found = _discover(store, names=["Alex"])
+
+    assert people.person_ids == ["alex-p"]
+    assert found == {"p-park", "p-party", "p-solo"}

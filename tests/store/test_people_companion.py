@@ -201,12 +201,11 @@ def _confirm(store: Store, person_id: str, **fields: object) -> None:
 
 class TestOneEntryPerPerson:
     def test_two_people_sharing_a_confirmed_block_do_not_become_yaml_anchors(self, store):
-        # An entry that lists several ids — a person merged by hand, or the
-        # cross-account identities to come — hands the same confirmed block to
-        # two people once the scan no longer sees the entry's own first id. Written
-        # as one object, yaml emits `&id001`/`*id001`, and an export meant to be
-        # hand-edited must not contain aliases: editing one person silently edits
-        # the other, and deleting the anchor breaks both.
+        # An entry that lists several ids, a person merged by hand, is still one person
+        # once the scan no longer sees the entry's own first id: it is found under the
+        # first id the scan does see and carried whole, never split into two people
+        # sharing one confirmed block. Shared, yaml would emit `&id001`/`*id001`, and an
+        # export meant to be hand-edited must not contain aliases (#2806).
         import_document(
             store,
             {
@@ -226,10 +225,9 @@ class TestOneEntryPerPerson:
         )
 
         assert "&id" not in export_yaml(store)
-        assert [entry["confirmed"]["role"] for entry in people_entries(load_document(store))] == [
-            "partner",
-            "partner",
-        ]
+        entries = people_entries(load_document(store))
+        assert [entry["confirmed"]["role"] for entry in entries] == ["partner"]
+        assert entries[0]["ids"] == ["id-gone", "id-alex-example", "id-sam-sample"]
 
 
 class TestEraDayShares:

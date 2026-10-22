@@ -142,11 +142,29 @@ def _register_scan(people: click.Group) -> None:
                 include_person_ids=retained,
             )
 
+            roster = {p.id: p.name for p in client.get_all_people(with_hidden=True)}
+
         save_graph(store, graph)
+        _heal_vanished_faces(store, roster)
         save_evidence_graph(graph_path, graph, load_document(store))
         _report(graph)
         print_success(f"{len(graph.people)} people in the store ({store.location})")
         print_success(f"{len(graph.cooccurrences)} measured connections in {graph_path}")
+
+
+def _heal_vanished_faces(store: Any, roster: dict[str, str]) -> None:
+    """Re-link people whose Immich face changed (`people.vanished_faces`), and say so."""
+    from immich_memories.people.companion import edit_registry
+    from immich_memories.people.vanished_faces import heal_vanished_faces
+
+    healed = edit_registry(store, lambda document: heal_vanished_faces(document, roster))
+    for name in (*healed.folded, *healed.relinked):
+        print_success(f"{name}: re-linked to the face Immich has for them now")
+    for name in healed.unresolved:
+        print_error(
+            f"{name}: their face is gone from Immich and no single Immich person carries the "
+            "name. Give exactly one person that name in Immich, then scan again."
+        )
 
 
 def _register_show(people: click.Group) -> None:

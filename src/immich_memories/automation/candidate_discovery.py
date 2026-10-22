@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import itertools
+import logging
 from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, Protocol
 
-from immich_memories.analysis.sources.person_resolution import store_people
+from immich_memories.analysis.sources.person_resolution import (
+    follow_vanished_faces,
+    store_people,
+)
 from immich_memories.api.accounts import AccountUnavailable, OpenAccount, open_accounts
 from immich_memories.automation.calendar_detectors import birthday_film_windows
 from immich_memories.automation.candidate_scorer import score_and_rank
@@ -45,6 +49,8 @@ from immich_memories.people.context import load_people_prompt_context
 from immich_memories.people.groups import SavedGroup, list_groups
 from immich_memories.timeperiod import DateRange, same_day_in_year
 from immich_memories.tracking.models import RunMetadata
+
+logger = logging.getLogger(__name__)
 
 
 class ImmichDiscoveryError(RuntimeError):
@@ -447,6 +453,8 @@ class CandidateDiscovery:
                     },
                 )
                 canon.update(canonical_person_map(store_people(document), native=native))
+            elif PRIMARY_ACCOUNT in opened:
+                canon.update(_followed_canon(document, opened[PRIMARY_ACCOUNT]))
             reads = self._read_every_account(
                 opened, auto_cfg, today, canon, store_dates, groups, plan, extras
             )
@@ -562,6 +570,24 @@ class _AccountRead:
 class _AccountReads:
     per_account: dict[str, _AccountRead]
     gps_assets: list | None
+
+
+def _followed_canon(document: dict, primary: OpenAccount) -> dict[tuple[str, str], str]:
+    """The store's people with any face Immich merged away followed by name (`run_people`).
+
+    A face Immich no longer has would otherwise leave its person's live face unmerged, read
+    without the closeness and birth date the store holds for them.
+    """
+    held = store_people(document)
+    if not any(alias.account == PRIMARY_ACCOUNT for person in held for alias in person.aliases):
+        return {}
+    roster = {person.id: person.name for person in primary.client.get_all_people(with_hidden=True)}
+    faces = follow_vanished_faces(held, roster)
+    for person, _face in faces.followed:
+        logger.warning(
+            "%s's face in the people store is gone from Immich; following the name", person.name
+        )
+    return canonical_person_map(faces.people)
 
 
 def _pictures_in(

@@ -90,7 +90,11 @@ immich-memories people bind "Alex Example" --account partner --id a91e…
 
 The person is a store id or a name exactly one person carries; if two people share the name, the command lists
 their ids and asks for one. `bind` only adds the id: the name, birth date and your answers stay put. An id somebody
-else holds is refused, never merged, and binding the same id twice changes nothing. Ids are never matched by name.
+else holds is refused, never merged, and binding the same id twice changes nothing. Two live ids are never matched
+by name. A retired one is followed: when Immich no longer has any of a person's ids (two records merged, re-clustered
+or deleted), `people scan` links them to the one Immich person that carries their name and no one else here holds,
+or folds in the second record a scan already wrote for them. They keep their id and every answer. With no single
+match, the People page flags them, and a film naming them stops with the same advice instead of coming back empty.
 `declined_links:` holds the "not the same person" answers from the People page, so a suggestion you refused stays
 refused. Taking an id back off a person is **Unlink** on that page.
 A film reads the second account with `generate --accounts primary,partner`

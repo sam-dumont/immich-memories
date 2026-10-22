@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-21 18:24+0200\n"
+"POT-Creation-Date: 2026-10-22 07:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -86,7 +86,7 @@ msgstr "添加关系"
 msgid "Add date overlay"
 msgstr "显示日期"
 
-#: web/routes/settings/people/+page.svelte:165
+#: web/routes/settings/people/+page.svelte:167
 msgid "Add someone not in Immich"
 msgstr "添加 Immich 中没有的人物"
 
@@ -412,7 +412,7 @@ msgstr "无法检查更新。"
 msgid "Could not check for updates: {reason}"
 msgstr "无法检查更新：{reason}"
 
-#: web/routes/settings/people/+page.svelte:129
+#: web/routes/settings/people/+page.svelte:131
 msgid "Could not load people."
 msgstr "无法加载人物。"
 
@@ -420,7 +420,7 @@ msgstr "无法加载人物。"
 msgid "Crossfade"
 msgstr "交叉淡化"
 
-#: web/routes/settings/people/+page.svelte:138 web/routes/settings/people/+page.svelte:139
+#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
 msgid "Curation"
 msgstr "待核对的人物"
 
@@ -517,7 +517,7 @@ msgstr "下载模型"
 msgid "Download report"
 msgstr "下载报告"
 
-#: web/routes/settings/people/+page.svelte:156
+#: web/routes/settings/people/+page.svelte:158
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -627,7 +627,7 @@ msgstr "符合条件的素材不足 12 个，影片会比较短。"
 msgid "Films that may use it"
 msgstr "可以使用它的影片"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:162
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
 msgid "Find a name"
 msgstr "搜索姓名"
 
@@ -647,7 +647,7 @@ msgstr "格式"
 msgid "From"
 msgstr "起始"
 
-#: web/routes/settings/people/+page.svelte:164
+#: web/routes/settings/people/+page.svelte:166
 msgid "Full name"
 msgstr "全名"
 
@@ -717,6 +717,13 @@ msgstr "要读取的 Immich 账户(未选择时仅主账户)"
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
 
+#: web/routes/settings/people/+page.svelte:80
+msgid ""
+"Immich no longer has the face this person was linked to, and more than one person, or nobody,"
+" carries the name there now. Give exactly one person this name in Immich, then rescan the "
+"library."
+msgstr "Immich 中已没有此人原先关联的面孔，现在有多人或没有人使用这个名字。请在 Immich 中只把这个名字给一个人，然后重新扫描资料库。"
+
 #: web/routes/create/+page.svelte:303
 msgid "Immich unreachable"
 msgstr "无法连接 Immich"
@@ -766,7 +773,7 @@ msgstr "未能完成。"
 msgid "Just us"
 msgstr "仅自己家"
 
-#: web/routes/settings/people/+page.svelte:147
+#: web/routes/settings/people/+page.svelte:149
 msgid "Keep apart"
 msgstr "保持分开"
 
@@ -1047,7 +1054,7 @@ msgstr "不，不是"
 msgid "Nobody in this library"
 msgstr "此媒体库中没有人"
 
-#: web/routes/settings/people/+page.svelte:171
+#: web/routes/settings/people/+page.svelte:173
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1121,7 +1128,7 @@ msgstr "仅包含（可选）"
 msgid "Open"
 msgstr "打开"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:144
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
 msgid "Open in Immich"
 msgstr "在 Immich 中打开"
 
@@ -1133,7 +1140,7 @@ msgstr "打开任务"
 msgid "Open the film run"
 msgstr "打开影片任务"
 
-#: web/routes/settings/people/+page.svelte:144
+#: web/routes/settings/people/+page.svelte:146
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "在 Immich 中打开 {name}"
@@ -1181,8 +1188,8 @@ msgid "Pending"
 msgstr "等待中"
 
 #: web/routes/+layout.svelte:25 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:113
-#: web/routes/settings/people/+page.svelte:119
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
+#: web/routes/settings/people/+page.svelte:121
 msgid "People"
 msgstr "人物"
 
@@ -1403,11 +1410,11 @@ msgstr "替换了模型认为不太合适的素材。"
 msgid "Report preview"
 msgstr "报告预览"
 
-#: web/routes/settings/people/+page.svelte:172
+#: web/routes/settings/people/+page.svelte:174
 msgid "Rescan now"
 msgstr "立即重新扫描"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:124
 msgid "Rescan the library"
 msgstr "重新扫描媒体库"
 
@@ -1577,7 +1584,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "在 config.yaml 中设为 {key}"
 
 #: web/routes/+layout.svelte:26 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
 msgid "Settings"
 msgstr "设置"
 
@@ -1589,7 +1596,7 @@ msgstr "可分享"
 msgid "Show"
 msgstr "显示"
 
-#: web/routes/settings/people/+page.svelte:181
+#: web/routes/settings/people/+page.svelte:183
 msgid "Show more"
 msgstr "显示更多"
 
@@ -1818,7 +1825,7 @@ msgstr "模型会根据媒体库中已准备好的素材理解你的描述。先
 msgid "The model, when one is configured"
 msgstr "已配置模型时使用模型"
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "人物登记：谁比较亲近、他们的角色，以及彼此的关系。"
 
@@ -1960,7 +1967,7 @@ msgstr "旅行检测失败。"
 msgid "Trips"
 msgstr "旅行"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
 msgid "Try again"
 msgstr "重试"
 
@@ -2235,11 +2242,11 @@ msgstr "关系未命名"
 msgid "starting"
 msgstr "正在启动"
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "writes it out as YAML."
 msgstr "会把它导出为 YAML。"
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "writes the guesses; your answers stay across scans."
 msgstr "会写入推测；你的回答在多次扫描之间保留。"
 

@@ -477,15 +477,16 @@ def _fill_owner_role(
 def _bound_aliases(document: dict[str, Any], scanned: set[str]) -> dict[str, dict[str, Any]]:
     """Entries answering to more than one id, keyed by the id the scan finds them under.
 
-    That is the person's own id. The scan reads the primary account only, so a person whose
-    own id came from another account is found under their first bound primary id instead;
-    the entry, and its own id, carry over whole.
+    That is the person's own id when the scan sees it. The scan reads the primary account
+    only, so a person whose own id came from another account, or is a face the primary no
+    longer holds, is found under the first bound primary id it does see; the entry, and its
+    own id, carry over whole instead of splitting into a second record.
     """
     bound: dict[str, dict[str, Any]] = {}
     for entry in people_entries(document):
         ids, primary = entry_ids(entry), primary_ids(entry)
-        seen = ids[0] if ids[0] in primary else next(iter(primary), None)
-        if len(ids) > 1 and seen in scanned:
+        seen = ids[0] if ids[0] in scanned else next((i for i in primary if i in scanned), None)
+        if len(ids) > 1 and seen is not None:
             bound[seen] = entry
     return bound
 

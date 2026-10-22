@@ -219,6 +219,31 @@ def test_store_birth_date_overlays_the_immich_roster(monkeypatch):
     assert snapshot.people[0].birth_date == date(2018, 4, 2)
 
 
+def test_a_face_merged_away_in_immich_keeps_its_store_person(monkeypatch):
+    # Immich merged the face the store knew Kid A by into another cluster: the live face
+    # still reads as the store's Kid A, birth date and all.
+    primary = _FakeClient(
+        buckets=[],
+        people=[Person(id="kid-new", name="Kid A", thumbnailPath="/t.jpg")],
+        counts={"kid-new": 1},
+    )
+    _patch_open_accounts(monkeypatch, {"primary": _open_account("primary", primary)})
+    config = _config([])
+    store = open_store(config)
+    add_confirmed_person(store, "Kid A", person_id="kid-old")
+    from immich_memories.people.registry_store import read_document, write_document
+
+    with store.begin() as connection:
+        document = read_document(connection)
+        document["people"][0]["birth_date"] = "2018-04-02"
+        write_document(connection, document)
+
+    discovery = CandidateDiscovery(config, _FakeRuns(), _FakeAttempts())
+    snapshot = discovery._library_snapshot(discovery._config.automation, date(2026, 8, 1), store)
+
+    assert [(p.id, p.birth_date) for p in snapshot.people] == [("kid-old", date(2018, 4, 2))]
+
+
 def _trip_assets(start: date, days: int) -> list:
     from datetime import UTC, datetime, timedelta
 

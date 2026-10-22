@@ -329,3 +329,33 @@ def test_an_unedited_asset_preview_request_is_unchanged(monkeypatch):
     fetch("asset-1", "primary")
 
     assert _FakePreviewImmich.thumbnail_calls == [("asset-1", {"edited": False})]
+
+
+def test_a_person_whose_own_face_is_gone_shows_another_of_their_faces(
+    accounts_client, accounts_config
+):
+    # Merged in Immich, the face the person's id names is gone; their face in the
+    # partner's account still exists and is read with the partner's key.
+    from immich_memories.db import open_store
+    from immich_memories.people.transfer import import_document
+
+    import_document(
+        open_store(accounts_config),
+        {
+            "version": 1,
+            "people": [
+                {
+                    "ids": {"primary": ["alex-gone"], "partner": ["person-partner"]},
+                    "name": "Alex Example",
+                    "inferred": {"tier": "inner", "counts_reliable": True, "evidence": {}},
+                    "confirmed": {"role": None, "links": [], "notes": None},
+                }
+            ],
+        },
+    )
+    _FakeAccountsImmich.owners["person-partner"] = "partner-key"
+
+    response = accounts_client.get("/api/v1/people/alex-gone/face")
+
+    assert response.status_code == 200
+    assert ("partner-key", "person-partner") in _FakeAccountsImmich.calls

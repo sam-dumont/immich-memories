@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Collection, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Any
 
@@ -89,6 +89,73 @@ def store_people(document: Mapping[str, Any]) -> tuple[StorePerson, ...]:
         )
         found.append(StorePerson(own[0], str(entry.get("name") or ""), aliases))
     return tuple(found)
+
+
+@dataclass(frozen=True)
+class FollowedFaces:
+    """The store's people with every face the roster no longer holds taken off them.
+
+    ``followed`` pairs each re-linked person with the face their name led to; ``lost``
+    holds the people left with no face on the account and nobody to stand in for them.
+    """
+
+    people: tuple[StorePerson, ...]
+    followed: tuple[tuple[StorePerson, str], ...] = ()
+    lost: tuple[StorePerson, ...] = ()
+
+
+def follow_vanished_faces(
+    store: Sequence[StorePerson],
+    roster: Mapping[str, str],
+    account: str = PRIMARY_ACCOUNT,
+) -> FollowedFaces:
+    """Take `account`'s faces that its roster (face id -> name) no longer holds off the store.
+
+    Immich people belong to one user, so one human is a face in each account that has
+    pictures of them, and merging those records in Immich keeps one id and deletes the rest.
+    A store person bound to a deleted face would find nothing. Left with no live face on
+    `account`, they follow their name to the one roster person carrying it,
+    case-insensitively. When another store person of that name already holds that face,
+    that record answers for them both, as a shared name always has, until the next scan
+    folds the two together (`people.split_people`). Anything less certain is ``lost``, for
+    the caller to refuse rather than guess.
+    """
+    live = {face.casefold() for face in roster}
+    holders = {
+        alias.face_id.casefold(): person
+        for person in store
+        for alias in person.aliases
+        if alias.face_id.casefold() in live
+    }
+    by_name: dict[str, list[str]] = {}
+    for face, name in roster.items():
+        if name.strip():
+            by_name.setdefault(name.strip().casefold(), []).append(face)
+    people: list[StorePerson] = []
+    followed: list[tuple[StorePerson, str]] = []
+    lost: list[StorePerson] = []
+    for person in store:
+        kept = tuple(
+            alias
+            for alias in person.aliases
+            if alias.account != account or alias.face_id.casefold() in live
+        )
+        if kept == person.aliases or any(alias.account == account for alias in kept):
+            people.append(person if kept == person.aliases else replace(person, aliases=kept))
+            continue
+        name = person.name.strip().casefold()
+        named = by_name.get(name, [])
+        holder = holders.get(named[0].casefold()) if len(named) == 1 else None
+        if len(named) == 1 and holder is None:
+            healed = replace(person, aliases=(PersonAlias(named[0], account), *kept))
+            holders[named[0].casefold()] = healed
+            people.append(healed)
+            followed.append((healed, named[0]))
+            continue
+        people.append(replace(person, aliases=kept))
+        if holder is None or holder.name.strip().casefold() != name:
+            lost.append(person)
+    return FollowedFaces(tuple(people), tuple(followed), tuple(lost))
 
 
 def resolve_people(

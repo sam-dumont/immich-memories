@@ -23,6 +23,7 @@ from immich_memories.analysis.sources.person_resolution import (
     ResolvedPeople,
     StorePerson,
     UnknownPersonId,
+    follow_vanished_faces,
     is_person_id,
     resolve_people,
     store_people,
@@ -131,11 +132,16 @@ def resolve_run_people(
     native = client.native_people(accounts) if isinstance(client, AccessBoundClient) else None
     if expression is None and not person_names:
         return RunPeople()
-    held = store_people(load_document(store))
-    # Read only when somebody falls back to it: a store that knows everybody asks nothing.
+    # Read once, and only when somebody needs it: a store face to check, or a name to match.
     roster = functools.cache(
         lambda: native.roster if native is not None else client.get_all_people(with_hidden=True)
     )
+    held: Sequence[StorePerson] = store_people(load_document(store))
+    lost: Sequence[StorePerson] = ()
+    if native is None and (not accounts or PRIMARY_ACCOUNT in accounts):
+        # Native sharing proves each face by id instead, and refuses one gone upstream.
+        held, lost = _live_faces(held, roster)
+    _refuse_lost(expression.leaf_values if expression else person_names, lost)
     try:
         if expression is not None:
             resolved = resolve_people(
@@ -159,6 +165,38 @@ def resolve_run_people(
         raise click.UsageError(
             f"No person with id {error} in the people store or the Immich library"
         ) from None
+
+
+def _live_faces(
+    held: Sequence[StorePerson], roster: Callable[[], Sequence[Person]]
+) -> tuple[tuple[StorePerson, ...], tuple[StorePerson, ...]]:
+    """The store's people with any face Immich merged or removed followed by name, if it can be.
+
+    Returns the people to resolve and those whose faces are gone with no single name to follow.
+    """
+    if not any(alias.account == PRIMARY_ACCOUNT for person in held for alias in person.aliases):
+        return tuple(held), ()
+    faces = follow_vanished_faces(held, {person.id: person.name for person in roster()})
+    for person, _face in faces.followed:
+        print_warning(
+            f"{person.name}'s face in the people store is gone from Immich (merged, "
+            f"re-clustered or deleted there); this run uses the face Immich now calls "
+            f"{person.name}. The next people scan re-links it for good."
+        )
+    return faces.people, faces.lost
+
+
+def _refuse_lost(leaves: Sequence[str], lost: Sequence[StorePerson]) -> None:
+    """Stop before any fetch when the run asks for someone whose every face is gone."""
+    asked = {leaf.strip().casefold() for leaf in leaves}
+    for person in lost:
+        if asked & {person.name.strip().casefold(), person.person_id.casefold()}:
+            raise click.UsageError(
+                f"{person.name}'s face in the people store is gone from Immich (merged, "
+                f"re-clustered or deleted there), and no single Immich person carries that "
+                f"name. Give exactly one person that name in Immich, then press Rescan the "
+                f"library on the People page (or run `immich-memories people scan`)."
+            )
 
 
 def _display_names(

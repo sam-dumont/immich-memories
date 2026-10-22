@@ -69,6 +69,8 @@ _LINK_PROMPTS = {
 
 # The link kinds only Immich can fix. The page words each one itself, through the UI catalogue.
 FLAGGED_KINDS = frozenset({"twin", "duplicate"})
+# A person whose Immich face is gone with no single face to follow; fixed in Immich.
+RELINK = "relink"
 
 
 @dataclass
@@ -112,6 +114,8 @@ class PersonView:
     aliases: dict[str, list[str]] = field(default_factory=dict)
     # Other accounts' people somebody said are not this one, by account: never suggested again.
     declined: dict[str, list[str]] = field(default_factory=dict)
+    # Immich retired every face of theirs and no single face carries the name (#2806).
+    needs_relink: bool = False
 
 
 @dataclass(frozen=True)
@@ -327,7 +331,11 @@ def curation_flags(people: list[PersonView]) -> list[CurationFlag]:
     """
     names = {person.person_id: person.name for person in people}
     seen = _rejected_pairs(people)
-    flags: list[CurationFlag] = []
+    flags = [
+        CurationFlag(kind=RELINK, names=(person.name,), person_ids=(person.person_id,))
+        for person in people
+        if person.needs_relink
+    ]
     for person in people:
         for link in person.links:
             if link.kind not in FLAGGED_KINDS or link.target_id not in names:
@@ -399,6 +407,7 @@ def _view(
         notes=_text(confirmed.get("notes")),
         aliases=ids_by_account(entry),
         declined=declined.get(entry_ids(entry)[0], {}),
+        needs_relink=entry.get("needs_relink") is True,
     )
 
 

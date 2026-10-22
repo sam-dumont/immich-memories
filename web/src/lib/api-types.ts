@@ -574,6 +574,9 @@ export interface paths {
         /**
          * Face
          * @description A person's face crop at avatar size, fetched from Immich once and cached after.
+         *
+         *     A person whose own id is another account's face, or one Immich no longer has, shows the
+         *     first of their other faces that an account can still read, each from that account.
          */
         get: operations["face_api_v1_people__person_id__face_get"];
         put?: never;

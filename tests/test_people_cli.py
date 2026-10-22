@@ -158,6 +158,19 @@ class TestScan:
         assert taylor["inferred"]["evidence"]["count"] == 8
         assert taylor["confirmed"]["role"] == "uncle"
 
+    def test_a_person_whose_face_immich_retired_follows_their_name_on_a_scan(self):
+        # Immich merged Alex's record into another: the saved id is gone, the person and
+        # their role are not, and the scan writes no second Alex.
+        add_confirmed_person(open_store(), "Alex Example", person_id="p-gone", role="partner")
+
+        output = _run(["people", "scan"])
+
+        alexes = [e for e in people_entries(load_document()) if e["name"] == "Alex Example"]
+        assert len(alexes) == 1
+        assert alexes[0]["ids"] == ["p-gone", "p1"]
+        assert alexes[0]["confirmed"]["role"] == "partner"
+        assert "re-linked" in output
+
     def test_a_small_library_s_cast_survives_a_scan_with_no_floor_given(self):
         # The web's "Rescan now" runs exactly this: `people scan`, no flags.
         class SmallLibrary(_Library):
