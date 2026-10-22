@@ -267,6 +267,18 @@ class TestCurationFlags:
 
         assert [flag.kind for flag in flags] == ["duplicate"]
 
+    def test_a_person_whose_face_immich_retired_asks_for_a_relink(self):
+        store = _registry(
+            _entry("Alex Example", "id-alex") + "    needs_relink: true\n",
+            _entry("Kit Example", "id-kit"),
+        )
+
+        flags = curation_flags(load_people(store))
+
+        assert [(flag.kind, flag.names, flag.person_ids) for flag in flags] == [
+            ("relink", ("Alex Example",), ("id-alex",))
+        ]
+
     def test_each_flagged_name_is_paired_with_that_persons_own_record(self):
         # The page turns these into one "open in Immich" link each. Sorting the
         # ids for the dedup key and reading them back as if they matched the

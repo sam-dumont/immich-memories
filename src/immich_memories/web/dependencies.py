@@ -20,6 +20,8 @@ from immich_memories.web.answer_cache import AnswerCache, answer_cache
 PreviewFetcher = Callable[[str, str], bytes | None]
 AssetScope = Callable[[str], str | None]
 PersonScope = Callable[[str], str | None]
+# A person id -> every face id the people store binds to that person, the given id first.
+PersonFaces = Callable[[str], list[str]]
 
 
 @dataclass(frozen=True)
@@ -136,6 +138,23 @@ def person_scope(config: Annotated[Config, Depends(current_config)]) -> PersonSc
     from immich_memories.web.media_scope import account_for_person
 
     return lambda person_id: account_for_person(config.immich, person_id)
+
+
+def person_faces(config: Annotated[Config, Depends(current_config)]) -> PersonFaces:
+    """The faces one person has across accounts, so an avatar can use any that still exists."""
+
+    def faces(person_id: str) -> list[str]:
+        from immich_memories.analysis.sources.person_resolution import store_people
+        from immich_memories.db import open_store
+        from immich_memories.people.companion import load_document
+
+        for person in store_people(load_document(open_store(config))):
+            ids = [person.person_id, *(alias.face_id for alias in person.aliases)]
+            if person_id in ids:
+                return list(dict.fromkeys([person_id, *ids]))
+        return [person_id]
+
+    return faces
 
 
 def immich_face(config: Annotated[Config, Depends(current_config)]) -> PreviewFetcher:

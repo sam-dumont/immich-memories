@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-21 18:24+0200\n"
+"POT-Creation-Date: 2026-10-22 07:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -90,7 +90,7 @@ msgstr "Aggiungi una relazione"
 msgid "Add date overlay"
 msgstr "Mostra la data"
 
-#: web/routes/settings/people/+page.svelte:165
+#: web/routes/settings/people/+page.svelte:167
 msgid "Add someone not in Immich"
 msgstr "Aggiungi qualcuno che non è in Immich"
 
@@ -422,7 +422,7 @@ msgstr "Impossibile cercare gli aggiornamenti."
 msgid "Could not check for updates: {reason}"
 msgstr "Impossibile cercare gli aggiornamenti: {reason}"
 
-#: web/routes/settings/people/+page.svelte:129
+#: web/routes/settings/people/+page.svelte:131
 msgid "Could not load people."
 msgstr "Impossibile caricare le persone."
 
@@ -430,7 +430,7 @@ msgstr "Impossibile caricare le persone."
 msgid "Crossfade"
 msgstr "Dissolvenza incrociata"
 
-#: web/routes/settings/people/+page.svelte:138 web/routes/settings/people/+page.svelte:139
+#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
 msgid "Curation"
 msgstr "Persone da verificare"
 
@@ -527,7 +527,7 @@ msgstr "Scarica i modelli"
 msgid "Download report"
 msgstr "Scarica report"
 
-#: web/routes/settings/people/+page.svelte:156
+#: web/routes/settings/people/+page.svelte:158
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -652,7 +652,7 @@ msgstr "Corrispondono meno di 12 immagini: il film sarà corto."
 msgid "Films that may use it"
 msgstr "Film che possono usarla"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:162
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
 msgid "Find a name"
 msgstr "Cerca un nome"
 
@@ -672,7 +672,7 @@ msgstr "Formato"
 msgid "From"
 msgstr "Da"
 
-#: web/routes/settings/people/+page.svelte:164
+#: web/routes/settings/people/+page.svelte:166
 msgid "Full name"
 msgstr "Nome completo"
 
@@ -742,6 +742,16 @@ msgstr "Account Immich da leggere (solo il principale se nessuno è scelto)"
 msgid "Immich delivery: {value}"
 msgstr "Invio a Immich: {value}"
 
+#: web/routes/settings/people/+page.svelte:80
+msgid ""
+"Immich no longer has the face this person was linked to, and more than one person, or nobody,"
+" carries the name there now. Give exactly one person this name in Immich, then rescan the "
+"library."
+msgstr ""
+"Immich non ha più il volto a cui era collegata questa persona, e ora più persone, o nessuna, "
+"portano quel nome. Assegna questo nome a una sola persona in Immich, poi analizza di nuovo la"
+" libreria."
+
 #: web/routes/create/+page.svelte:303
 msgid "Immich unreachable"
 msgstr "Immich non raggiungibile"
@@ -791,7 +801,7 @@ msgstr "L’elaborazione non è stata completata."
 msgid "Just us"
 msgstr "Solo noi"
 
-#: web/routes/settings/people/+page.svelte:147
+#: web/routes/settings/people/+page.svelte:149
 msgid "Keep apart"
 msgstr "Tieni separati"
 
@@ -1080,7 +1090,7 @@ msgstr "No, non lo sono"
 msgid "Nobody in this library"
 msgstr "Nessuno in questa libreria"
 
-#: web/routes/settings/people/+page.svelte:171
+#: web/routes/settings/people/+page.svelte:173
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1159,7 +1169,7 @@ msgstr "Solo con (opzionale)"
 msgid "Open"
 msgstr "Apri"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:144
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
 msgid "Open in Immich"
 msgstr "Apri in Immich"
 
@@ -1171,7 +1181,7 @@ msgstr "Apri esecuzione"
 msgid "Open the film run"
 msgstr "Apri l’esecuzione del film"
 
-#: web/routes/settings/people/+page.svelte:144
+#: web/routes/settings/people/+page.svelte:146
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "Apri {name} in Immich"
@@ -1219,8 +1229,8 @@ msgid "Pending"
 msgstr "In attesa"
 
 #: web/routes/+layout.svelte:25 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:113
-#: web/routes/settings/people/+page.svelte:119
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
+#: web/routes/settings/people/+page.svelte:121
 msgid "People"
 msgstr "Persone"
 
@@ -1441,11 +1451,11 @@ msgstr "Ha sostituito un'immagine su cui il modello aveva dubbi."
 msgid "Report preview"
 msgstr "Anteprima del report"
 
-#: web/routes/settings/people/+page.svelte:172
+#: web/routes/settings/people/+page.svelte:174
 msgid "Rescan now"
 msgstr "Analizza di nuovo ora"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:124
 msgid "Rescan the library"
 msgstr "Analizza di nuovo la libreria"
 
@@ -1617,7 +1627,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "Impostato in config.yaml come {key}"
 
 #: web/routes/+layout.svelte:26 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
 msgid "Settings"
 msgstr "Impostazioni"
 
@@ -1629,7 +1639,7 @@ msgstr "Condivisibile"
 msgid "Show"
 msgstr "Mostra"
 
-#: web/routes/settings/people/+page.svelte:181
+#: web/routes/settings/people/+page.svelte:183
 msgid "Show more"
 msgstr "Mostra altro"
 
@@ -1872,7 +1882,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "Il modello, quando ne è configurato uno"
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "Il registro delle persone: chi è vicino, i loro ruoli e come sono legati."
 
@@ -2021,7 +2031,7 @@ msgstr "Rilevamento dei viaggi non riuscito."
 msgid "Trips"
 msgstr "Viaggi"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
 msgid "Try again"
 msgstr "Riprova"
 
@@ -2304,11 +2314,11 @@ msgstr "relazione senza nome"
 msgid "starting"
 msgstr "avvio"
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "writes it out as YAML."
 msgstr "lo esporta come YAML."
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "writes the guesses; your answers stay across scans."
 msgstr "scrive le ipotesi; le tue risposte restano tra una scansione e l’altra."
 

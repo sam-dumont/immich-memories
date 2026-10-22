@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import re
 from typing import Annotated, Literal
 
@@ -12,6 +13,7 @@ from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from immich_memories.cache.thumbnail_sizes import load_person_thumbnail, load_thumbnail
 from immich_memories.web.dependencies import (
     AssetScope,
+    PersonFaces,
     PersonScope,
     PlaybackOpener,
     PreviewFetcher,
@@ -19,6 +21,7 @@ from immich_memories.web.dependencies import (
     immich_face,
     immich_playback,
     immich_preview,
+    person_faces,
     person_scope,
     thumbnail_cache,
 )
@@ -94,14 +97,26 @@ def face(
     scope: Annotated[PersonScope, Depends(person_scope)],
     cache: Annotated[ThumbnailCache, Depends(thumbnail_cache)],
     fetch: Annotated[PreviewFetcher, Depends(immich_face)],
+    faces: Annotated[PersonFaces, Depends(person_faces)],
 ) -> Response:
-    """A person's face crop at avatar size, fetched from Immich once and cached after."""
+    """A person's face crop at avatar size, fetched from Immich once and cached after.
+
+    A person whose own id is another account's face, or one Immich no longer has, shows the
+    first of their other faces that an account can still read, each from that account.
+    """
     if not _ASSET_ID.match(person_id):
         return Response(status_code=404)
-    account = scope(person_id)
-    if account is None:
-        return Response(status_code=404)
-    data = load_person_thumbnail(cache, person_id, lambda pid: fetch(pid, account))
-    if data is None:
-        return Response(status_code=404)
-    return Response(data, media_type="image/jpeg", headers={"Cache-Control": _CACHE_CONTROL})
+    for face_id in faces(person_id):
+        account = scope(face_id)
+        if account is None:
+            continue
+        data = load_person_thumbnail(cache, face_id, functools.partial(_face_of, fetch, account))
+        if data is not None:
+            return Response(
+                data, media_type="image/jpeg", headers={"Cache-Control": _CACHE_CONTROL}
+            )
+    return Response(status_code=404)
+
+
+def _face_of(fetch: PreviewFetcher, account: str, person_id: str) -> bytes | None:
+    return fetch(person_id, account)

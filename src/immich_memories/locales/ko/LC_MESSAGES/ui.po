@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-21 18:24+0200\n"
+"POT-Creation-Date: 2026-10-22 07:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -86,7 +86,7 @@ msgstr "관계 추가"
 msgid "Add date overlay"
 msgstr "날짜 표시"
 
-#: web/routes/settings/people/+page.svelte:165
+#: web/routes/settings/people/+page.svelte:167
 msgid "Add someone not in Immich"
 msgstr "Immich에 없는 인물 추가"
 
@@ -412,7 +412,7 @@ msgstr "업데이트를 확인하지 못했습니다."
 msgid "Could not check for updates: {reason}"
 msgstr "업데이트를 확인하지 못했습니다: {reason}"
 
-#: web/routes/settings/people/+page.svelte:129
+#: web/routes/settings/people/+page.svelte:131
 msgid "Could not load people."
 msgstr "인물을 불러오지 못했습니다."
 
@@ -420,7 +420,7 @@ msgstr "인물을 불러오지 못했습니다."
 msgid "Crossfade"
 msgstr "크로스페이드"
 
-#: web/routes/settings/people/+page.svelte:138 web/routes/settings/people/+page.svelte:139
+#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
 msgid "Curation"
 msgstr "인물 정보 확인"
 
@@ -517,7 +517,7 @@ msgstr "모델 다운로드"
 msgid "Download report"
 msgstr "보고서 다운로드"
 
-#: web/routes/settings/people/+page.svelte:156
+#: web/routes/settings/people/+page.svelte:158
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -633,7 +633,7 @@ msgstr "조건에 맞는 소재가 12개 미만이라 짧은 영상이 만들어
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:162
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
 msgid "Find a name"
 msgstr "이름 검색"
 
@@ -653,7 +653,7 @@ msgstr "형식"
 msgid "From"
 msgstr "시작"
 
-#: web/routes/settings/people/+page.svelte:164
+#: web/routes/settings/people/+page.svelte:166
 msgid "Full name"
 msgstr "전체 이름"
 
@@ -723,6 +723,15 @@ msgstr "읽을 Immich 계정(선택하지 않으면 기본 계정만)"
 msgid "Immich delivery: {value}"
 msgstr "Immich 전송: {value}"
 
+#: web/routes/settings/people/+page.svelte:80
+msgid ""
+"Immich no longer has the face this person was linked to, and more than one person, or nobody,"
+" carries the name there now. Give exactly one person this name in Immich, then rescan the "
+"library."
+msgstr ""
+"이 사람과 연결되어 있던 얼굴이 Immich에 더 이상 없고, 지금은 그 이름을 가진 사람이 여러 명이거나 아무도 없습니다. Immich에서 정확히 한 사람에게만 이 "
+"이름을 지정한 다음 라이브러리를 다시 스캔하세요."
+
 #: web/routes/create/+page.svelte:303
 msgid "Immich unreachable"
 msgstr "Immich에 연결할 수 없습니다"
@@ -772,7 +781,7 @@ msgstr "완료되지 않았습니다."
 msgid "Just us"
 msgstr "우리끼리"
 
-#: web/routes/settings/people/+page.svelte:147
+#: web/routes/settings/people/+page.svelte:149
 msgid "Keep apart"
 msgstr "따로 두기"
 
@@ -1053,7 +1062,7 @@ msgstr "아니요, 아닙니다"
 msgid "Nobody in this library"
 msgstr "이 라이브러리에는 아무도 없습니다"
 
-#: web/routes/settings/people/+page.svelte:171
+#: web/routes/settings/people/+page.svelte:173
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1129,7 +1138,7 @@ msgstr "다음만 포함 (선택)"
 msgid "Open"
 msgstr "열기"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:144
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
 msgid "Open in Immich"
 msgstr "Immich에서 열기"
 
@@ -1141,7 +1150,7 @@ msgstr "작업 열기"
 msgid "Open the film run"
 msgstr "영상 작업 열기"
 
-#: web/routes/settings/people/+page.svelte:144
+#: web/routes/settings/people/+page.svelte:146
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "{name} Immich에서 열기"
@@ -1189,8 +1198,8 @@ msgid "Pending"
 msgstr "대기 중"
 
 #: web/routes/+layout.svelte:25 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:113
-#: web/routes/settings/people/+page.svelte:119
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
+#: web/routes/settings/people/+page.svelte:121
 msgid "People"
 msgstr "인물"
 
@@ -1411,11 +1420,11 @@ msgstr "모델이 의심한 소재를 대체했습니다."
 msgid "Report preview"
 msgstr "보고서 미리보기"
 
-#: web/routes/settings/people/+page.svelte:172
+#: web/routes/settings/people/+page.svelte:174
 msgid "Rescan now"
 msgstr "지금 다시 스캔"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:124
 msgid "Rescan the library"
 msgstr "라이브러리 다시 스캔"
 
@@ -1585,7 +1594,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "config.yaml의 {key}로 설정됨"
 
 #: web/routes/+layout.svelte:26 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:118
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
 msgid "Settings"
 msgstr "설정"
 
@@ -1597,7 +1606,7 @@ msgstr "공유 가능"
 msgid "Show"
 msgstr "표시"
 
-#: web/routes/settings/people/+page.svelte:181
+#: web/routes/settings/people/+page.svelte:183
 msgid "Show more"
 msgstr "더 보기"
 
@@ -1830,7 +1839,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "설정된 경우 모델"
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "인물 레지스트리: 누가 가까운지, 역할, 서로의 관계."
 
@@ -1974,7 +1983,7 @@ msgstr "여행 감지에 실패했습니다."
 msgid "Trips"
 msgstr "여행"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:130
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
 msgid "Try again"
 msgstr "다시 시도"
 
@@ -2249,11 +2258,11 @@ msgstr "관계 이름 없음"
 msgid "starting"
 msgstr "시작 중"
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "writes it out as YAML."
 msgstr "이(가) YAML로 내보냅니다."
 
-#: web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/people/+page.svelte:122
 msgid "writes the guesses; your answers stay across scans."
 msgstr "이(가) 추정 결과를 저장합니다. 직접 입력한 답은 다시 스캔해도 유지됩니다."
 

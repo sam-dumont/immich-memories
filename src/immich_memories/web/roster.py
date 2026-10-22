@@ -14,6 +14,7 @@ from immich_memories.config.loader import Config
 from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.db import Store, open_store
 from immich_memories.people.editor import (
+    RELINK,
     ROLE_SUGGESTIONS,
     PersonView,
     accept_suggestions,
@@ -136,7 +137,11 @@ def roster(
         flags=[
             RosterFlag(
                 **asdict(flag),
-                person_urls=[config.immich.person_url(pid) for pid in flag.person_ids],
+                # A retired face has no page in Immich to open.
+                person_urls=[
+                    "" if flag.kind == RELINK else config.immich.person_url(pid)
+                    for pid in flag.person_ids
+                ],
             )
             for flag in curation_flags(people)
         ],

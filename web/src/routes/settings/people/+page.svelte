@@ -76,6 +76,8 @@
       return t('Face recognition merges identical faces, so one of these records holds nearly all the pictures and the other almost none. Neither count means anything on its own. Merge them in Immich or keep them apart.');
     if (kind === 'duplicate')
       return t('One name on two person records: a split face cluster. Merge these records in Immich, the only place it can be fixed.');
+    if (kind === 'relink')
+      return t('Immich no longer has the face this person was linked to, and more than one person, or nobody, carries the name there now. Give exactly one person this name in Immich, then rescan the library.');
     return kind.replaceAll('-', ' ');
   }
 
@@ -144,7 +146,7 @@
                 {' '}<a href={flag.person_urls[index]} target="_blank" rel="noreferrer" class="font-normal text-primary underline" aria-label={t('Open {name} in Immich', { name })}>{t('Open in Immich')}</a>{/if}{/each}
             </p>
             <p>{flagText(flag.kind)}</p>
-            <Button size="tiny" variant="outline" class="w-fit" onclick={() => keepApart(flag)}>{t('Keep apart')}</Button>
+            {#if flag.kind !== 'relink'}<Button size="tiny" variant="outline" class="w-fit" onclick={() => keepApart(flag)}>{t('Keep apart')}</Button>{/if}
           </div>
         {/each}
       </section>

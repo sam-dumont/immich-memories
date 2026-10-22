@@ -44,7 +44,7 @@ class NativePeople:
         if face not in self.rosters[account]:
             raise AccountUnavailable(
                 f"Immich account {account!r} no longer exposes person {face!r}. "
-                "Check people access or rebind after an upstream merge; "
+                "Check people access, or rescan the library to follow a person Immich merged; "
                 "saved identities and confirmations have been kept."
             )
         return self.scopes[face]
@@ -88,7 +88,8 @@ class NativePeople:
                 return
             raise AccountUnavailable(
                 f"Cannot verify person {face!r} or people access for account {name!r}. "
-                "Check access or rebind after an upstream merge; no partial source will be used"
+                "Check access, or rescan the library to follow a person Immich merged; "
+                "no partial source will be used"
             ) from error
         if person.id != face:
             raise AccountUnavailable(
