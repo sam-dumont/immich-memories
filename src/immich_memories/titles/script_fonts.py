@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from immich_memories.transient_http import TRANSIENT_STATUS
+
 if TYPE_CHECKING:
     import httpx
 
@@ -327,7 +329,7 @@ def _sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-# Waits before each retry of a dropped connection; one entry per retry.
+# Waits before each retry of a dropped connection or a "not now" answer; one entry per retry.
 _RETRY_DELAYS: tuple[float, ...] = (1.0, 3.0, 9.0)
 
 
@@ -349,15 +351,18 @@ def _http_fetch(url: str, *, hops: int = 3) -> bytes:
 
 
 def _get_with_retries(url: str) -> httpx.Response:
-    """GET once, retrying a dropped or timed-out connection; HTTP errors are not retried."""
+    """GET, retrying a dropped connection, a timeout, a 429 or a 5xx; a 404 answers at once."""
     import httpx
 
     for delay in _RETRY_DELAYS:
         try:
-            return httpx.get(url, follow_redirects=False, timeout=120.0)
+            response = httpx.get(url, follow_redirects=False, timeout=120.0)
         except httpx.TransportError as exc:
-            logger.warning(
-                "Font download failed (%s), retrying in %.0fs", type(exc).__name__, delay
-            )
-            time.sleep(delay)
+            reason = type(exc).__name__
+        else:
+            if response.status_code not in TRANSIENT_STATUS:
+                return response
+            reason = f"HTTP {response.status_code}"
+        logger.warning("Font download failed (%s), retrying in %.0fs", reason, delay)
+        time.sleep(delay)
     return httpx.get(url, follow_redirects=False, timeout=120.0)

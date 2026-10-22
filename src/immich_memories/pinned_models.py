@@ -9,6 +9,9 @@ app cannot reproduce, so there is one.
 from __future__ import annotations
 
 import hashlib
+import logging
+import time
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,13 +23,18 @@ from immich_memories.config.models.free_text import WORDNET_URL
 from immich_memories.config.models.triage import DINOV2_SMALL_ONNX_URL
 from immich_memories.free_text.lexicon import WORDNET_SHA256
 from immich_memories.laya_checkpoints import LAYA_MLX_URL, LAYA_ONNX_URL
+from immich_memories.transient_http import TRANSIENT_STATUS
 from immich_memories.triage.encoder import DINOV2_SMALL_ONNX_SHA256
+
+logger = logging.getLogger(__name__)
 
 # The largest pinned artifact is the 88 MB encoder; the cap only exists so a
 # wrong URL cannot fill a disk.
 MAX_MODEL_BYTES = 256 * 1024 * 1024
 DOWNLOAD_TIMEOUT_SECONDS = 300.0
 _CHUNK_BYTES = 1024 * 1024
+# Waits before each retry of a dropped connection or a "not now" answer; one entry per retry.
+_RETRY_DELAYS: tuple[float, ...] = (1.0, 3.0, 9.0)
 
 
 @dataclass(frozen=True)
@@ -117,7 +125,7 @@ def fetch_pinned_model(
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f"{destination.name}.partial")
     try:
-        digest = _stream_to(url, temporary, max_bytes=max_bytes)
+        digest = _stream_with_retries(url, temporary, max_bytes=max_bytes)
         if digest != sha256:
             raise ValueError(f"digest {digest[:12]} is not the pinned {sha256[:12]}")
         temporary.replace(destination)
@@ -140,6 +148,28 @@ class _HttpsOnlyRedirect(urllib.request.HTTPRedirectHandler):
         if urlparse(newurl).scheme not in {"http", "https"}:
             raise ValueError("model downloads must stay HTTP(S)")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _stream_with_retries(url: str, destination: Path, *, max_bytes: int) -> str:
+    """Stream the artifact, starting over after a dropped connection, a 429 or a 5xx.
+
+    Each attempt rewrites `destination` from the first byte, so a half-written try is
+    never hashed. A 404, a size cap or an off-HTTP(S) redirect raises at once.
+    """
+    for delay in _RETRY_DELAYS:
+        try:
+            return _stream_to(url, destination, max_bytes=max_bytes)
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            if isinstance(exc, urllib.error.HTTPError) and exc.code not in TRANSIENT_STATUS:
+                raise
+            reason = (
+                f"HTTP {exc.code}"
+                if isinstance(exc, urllib.error.HTTPError)
+                else type(exc).__name__
+            )
+            logger.warning("Model download failed (%s), retrying in %.0fs", reason, delay)
+            time.sleep(delay)
+    return _stream_to(url, destination, max_bytes=max_bytes)
 
 
 def _stream_to(url: str, destination: Path, *, max_bytes: int) -> str:
