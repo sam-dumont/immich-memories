@@ -24,7 +24,7 @@ from immich_memories.analysis.film.contract import (
     StructurePlanningResult,
 )
 from immich_memories.analysis.film.product_brief import build_editorial_brief
-from immich_memories.analysis.judgments.text_failures import ReaderUnreachable
+from immich_memories.analysis.judgments.text_failures import ReaderUnreachable, reader_unreachable
 from immich_memories.analysis.judgments.text_judge import StructureTextJudge
 from immich_memories.analysis.polish.layer import (
     PeriodUnread,
@@ -456,7 +456,11 @@ class ProductionPostCardBackend:
             return banked_notable_records(
                 [reading.identity for reading in readings.values()], store=source.store
             )
-        except (OSError, ValueError, RuntimeError) as exc:
+        except Exception as exc:
+            if not (
+                isinstance(exc, (OSError, ValueError, RuntimeError)) or reader_unreachable(exc)
+            ):
+                raise
             logger.warning("Could not read more of this period for a short film (%s)", exc)
             return {}
 
@@ -475,11 +479,22 @@ class ProductionPostCardBackend:
         named = periods[0] if len(periods) == 1 else f"{periods[0]} to {periods[-1]}"
         try:
             return self._demanded_periods(source, periods, asset_ids_of)
-        except (OSError, ValueError, RuntimeError) as exc:
+        except Exception as exc:
+            # A reader that stopped answering is not asked again: the film goes on without it.
+            if reader_unreachable(exc):
+                raise PeriodUnread(
+                    f"could not read an account of {named}: the reader is unreachable"
+                ) from exc
+            if not isinstance(exc, (OSError, ValueError, RuntimeError)):
+                raise
             logger.warning("Could not read an account of %s (%s); asking once more", named, exc)
         try:
             return self._demanded_periods(source, periods, asset_ids_of)
-        except (OSError, ValueError, RuntimeError) as exc:
+        except Exception as exc:
+            if not (
+                isinstance(exc, (OSError, ValueError, RuntimeError)) or reader_unreachable(exc)
+            ):
+                raise
             raise PeriodUnread(f"could not read an account of {named}: {exc}") from exc
 
     def _demanded_periods(
