@@ -12,6 +12,7 @@ from __future__ import annotations
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     DateTime,
     Float,
@@ -110,6 +111,9 @@ automation_attempts = Table(
     Column("error", Text, nullable=True),
     Column("last_phase", String(), nullable=True),
     Column("phase_events", JSON, nullable=False),
+    # A run somebody forced (`auto run --force`, Run this suggestion): its film doesn't pace
+    # the scheduled ones. NULL on rows from before the column, which count as they always did.
+    Column("forced", Boolean, nullable=True),
 )
 
 # Phase events are appended one row each, never rewritten as an array: a long run emits one per

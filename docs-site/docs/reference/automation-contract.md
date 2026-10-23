@@ -38,7 +38,8 @@ Settings also exposes **Automation > enabled** and **daily_at** while those Comp
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
 run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A run counts when it made a film, tried and failed, or found nothing worth one (a period the child read and judged empty ends as one `skipped` attempt, reason `nothing worth a film: …`, with no completed run behind it, so the 24 h cooldown is untouched and that candidate sits out for 7 days). A dry run doesn't
+for tomorrow. A forced one (`auto run --force`, `POST /api/trigger?force=true`, or **Run this suggestion** in the web UI) doesn't: it's an extra
+film you asked for, and neither the timer nor the cooldown counts it. A run counts when it made a film, tried and failed, or found nothing worth one (a period the child read and judged empty ends as one `skipped` attempt, reason `nothing worth a film: …`, with no completed run behind it, so the 24 h cooldown is untouched and that candidate sits out for 7 days). A dry run doesn't
 (a **Check eligibility** or an `auto run --dry-run`, finished or still running, leaves the scheduled film in place), and neither does a
 `cooldown active` skip, which is what most HTTP triggers get back, a **Run this suggestion** whose candidate was gone by then, or an attempt whose process died. When the timer waits, the log says which run it
 counted. A manual `auto run` in progress holds the same automation lock: the timer's attempt comes back `skipped`
@@ -202,7 +203,10 @@ One action per run, one memory per invocation: retry the oldest pending upload i
 the top candidate. `--cooldown` (`automation.cooldown_hours`, 24) is measured from the last run's start with
 30 minutes of slack, so a daily timer fires every day. `--candidate KEY` runs one exact `memory_key` from
 `auto suggest --json`; the rules still apply, `--force` skips only the cooldown, and a stale key fails rather
-than making something else.
+than making something else. The cooldown runs from the last film nobody forced: a `--force` film still counts
+for the rotation rules, but it never pushes back the next scheduled one. The HTTP trigger has the same switch,
+[`?force=true`](#trigger-it-over-http). Without it, the CLI, the built-in timer, the installed job and the HTTP
+trigger can't be told apart, so all of them count.
 
 <Diagram name="state-scheduled-attempt" headline="Every attempt ends one of four ways, and the lock always comes back." />
 The outcomes are `skipped`, `dry_run`, `completed` and `failed`; the first three exit 0.
@@ -307,8 +311,21 @@ A caller that sends no `Origin` header (curl, a CronJob, Home Assistant) needs n
 `server.allowed_hosts`; the shipped Kubernetes CronJobs send `Host: localhost` for that reason. See
 [Allowed hosts](../run/network-security.md#allowed-hosts).
 
-The answer is `202 Accepted` with an `attempt_id` and a `status_url`, sent once the run has started; `Authorization: Bearer <token>` works too.
+The answer is `202 Accepted` with an `attempt_id`, a `status_url` and `forced`, sent once the run has started; `Authorization: Bearer <token>` works too.
 **401** means authentication failed (`{"detail":"invalid trigger token"}`). **409** means a run is already going, and the body names it. GET the `status_url` for attempt fields: `attempt_id`, `state`, `reason`, `started_at`, `finished_at`, `phase`, `memory_type` and `error`. The final `state` is `completed`, `failed`, `skipped` or `dry_run`. Its `run` is null until a run exists, then holds `run_id`, `status`, timestamps, `last_phase`, `output_duration_seconds`, `delivery_status` and `immich_asset_id`.
+
+Add `?force=true` for a film you're asking for by hand:
+
+```bash
+curl -X POST "https://memories.example.com/api/trigger?force=true" \
+  -H "x-api-key: $IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN"
+```
+
+That call is `auto run --force` over HTTP: it skips the cooldown, and the film it makes doesn't start one, so
+the next scheduled film still comes on time. The rotation rules still apply, and a run already going still gets
+**409**. Only `true`, `1` or `yes` count; anything else, a typo included, is a normal call. The `202` body says
+which one it got in `forced`. Anyone holding the token can force a film this way, which is one more reason to keep
+it secret. Leave the parameter off a schedule: a scheduled call that forced would make a film every time it fired.
 
 `skipped` is a normal answer: a workflow that fires on every upload mostly gets it back, and one that fires on a
 trip album asks for the best candidate right now, not for that album. For a specific film, use the CLI or the

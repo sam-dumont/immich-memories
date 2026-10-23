@@ -33,6 +33,8 @@ class CompletedRunReader(Protocol):
         order_by_completion: bool = False,
     ) -> list[RunMetadata]: ...
 
+    def last_pacing_auto_run(self) -> RunMetadata | None: ...
+
 
 class SuggestOutcome(StrEnum):
     """Status of the most recent candidate discovery call."""
@@ -171,14 +173,8 @@ def resolve_cooldown_hours(requested: int | None, configured: int) -> int:
 
 
 def is_within_cooldown(db: CompletedRunReader, cooldown_hours: int) -> bool:
-    """Check if the most recent completed auto run is within the cooldown window."""
-    runs = db.list_runs(
-        limit=1,
-        status="completed",
-        source="auto",
-        order_by_completion=True,
-    )
-    status = cooldown_status(runs[0] if runs else None, cooldown_hours)
+    """Check if the most recent scheduled auto run is within the cooldown window."""
+    status = cooldown_status(db.last_pacing_auto_run(), cooldown_hours)
     if status.active:
         assert status.until is not None
         hours_since = cooldown_hours - (

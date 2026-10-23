@@ -147,12 +147,13 @@ def run_suggestion(
 ) -> AttemptView | JSONResponse:
     """Start the candidate as `auto run` would: a lease, an attempt, the real CLI child."""
     try:
-        started = runner.start_one(reason=SUGGESTION_REASON, dry_run=choice.dry_run)
+        started = runner.start_one(reason=SUGGESTION_REASON, dry_run=choice.dry_run, forced=True)
     except AutomationAlreadyRunningError:
         return JSONResponse({"detail": "Automation is already running."}, status_code=409)
     # WHY a thread: a generation runs for up to two hours; the page follows the attempt.
     # A film somebody picked is made now, as `auto run --candidate KEY --force` would make
-    # it: the cooldown paces the timer, the rotation rules still hold.
+    # it: the cooldown paces the timer and this film doesn't start it, the rotation rules
+    # still hold.
     threading.Thread(
         target=started.execute,
         kwargs={"candidate_key": choice.memory_key, "dry_run": choice.dry_run, "force": True},

@@ -69,7 +69,7 @@ It ranks suitable memories and avoids repeating the same category or person too 
 
 Besides those, it can propose the season that just ended, a holiday your pictures show you keep (the day stands out from the days around it in at least three years), across every year you photographed it, a new or grown album, and months that never got a film. It films the last month of each person close to you, and weighs birthdays and spotlights by how close each person is, so a trip outranks the birthday of someone who isn't close to you. Each is a switch under `automation:` in the [config reference](../reference/config-reference.md#automation); the [automation reference](../reference/automation-contract.md#how-it-picks-one-memory) lists the thresholds. A season needs your home base, since the hemisphere comes from it.
 
-**Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** makes that candidate now. A manual request still respects the rotation rules, but not the daily cooldown: you asked for this film. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
+**Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** makes that candidate now. A manual request still respects the rotation rules, but not the daily cooldown: you asked for this film. It doesn't start the cooldown either, so the next scheduled film still comes on time. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
 
 The page and `immich-memories auto suggest` show up to ten candidates by default, in the same
 order for the same library and history. The page keeps its last result and shows when it was
@@ -140,6 +140,6 @@ Immich Memories app itself.
 
 ## Trigger it over HTTP
 
-[The trigger API](../reference/automation-contract.md#trigger-it-over-http) is for Home Assistant, shortcuts or another scheduler. It asks automation to choose a memory; it does not film whichever album caused the trigger.
+[The trigger API](../reference/automation-contract.md#trigger-it-over-http) is for Home Assistant, shortcuts or another scheduler. It asks automation to choose a memory; it does not film whichever album caused the trigger. Add `?force=true` when you're asking for a film by hand: it skips the cooldown and doesn't push back the next scheduled film.
 
 The [automation reference](../reference/automation-contract.md) covers scores, rotation, delivery retries, tokens, HTTP responses, multi-account scope and Kubernetes. [Configuration keys](../reference/config-reference.md#automation) have the defaults.
