@@ -29,6 +29,10 @@ a contract carries `!` or a `BREAKING CHANGE:` footer so the release workflow bu
 
 A security fix may break a contract within a major line; `upgrading.md` documents it.
 
+A final release's notes are written by hand in the Immich app's format (an upgrade warning,
+highlights, then every change by group) and replace the generated body after the release run:
+`docs-site/docs/contribute/releasing.md`, "Release notes", and `scripts/release_notes.py`.
+
 ## Milestones and issues
 
 Every open issue belongs to one milestone, and the maintainer decides what goes into each release.

@@ -100,6 +100,38 @@ what it moves:
 
 Testers pin the exact candidate tag. Candidates do not move `latest`; a final release does.
 
+### Release notes
+
+The workflow writes a plain commit list as the release body. A final release gets notes written
+by hand instead, in the format the Immich app uses, and they replace that body once the release
+exists. The notes cover what changed since the previous published release (for 1.0.0, since
+rc.10), because that is what someone upgrading reads.
+
+1. **Write the highlights** in a Markdown file, in the docs' voice
+   ([Writing the docs](writing-docs.md)):
+   - a `> [!WARNING]` box first, when upgrading needs an action: one line per change, linking the
+     matching section of `run/maintenance/upgrading.md`;
+   - a welcome line: what the app makes, and what these notes cover;
+   - `## Highlights`: a bulleted list, then one `###` section per highlight, a few sentences and
+     a screenshot from `docs-site/static/img/screenshots/` when the change shows in the UI.
+
+   Take the highlights from `git log <previous>..main` (`feat`, `perf` and user-visible `fix`
+   commits) and check every claim against the code, the same way a docs page is checked.
+2. **Add the changes** with the script. It groups every commit under Immich's headings
+   (security, features, performance, bug fixes, docs, cleanup, dependencies, build/CI/tests),
+   links each to its pull request and ends with the full-changelog link:
+
+   ```bash
+   uv run python scripts/release_notes.py v1.0.0-rc.10 v1.0.0 --highlights highlights.md > notes.md
+   ```
+
+3. **Check it**: `uv run python scripts/private_terms_gate.py --require-terms --text-file notes.md`.
+4. **After the release run publishes**, replace the body:
+
+   ```bash
+   gh release edit v1.0.0 --notes-file notes.md
+   ```
+
 ### Docs tracks
 
 Pages serves one site, so every deploy (a release, a nightly or a manual **Deploy Docs** run)
