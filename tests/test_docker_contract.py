@@ -330,14 +330,25 @@ def test_release_images_receive_one_explicit_build_identity() -> None:
 
 
 def test_release_publisher_supports_core_metadata_2_5() -> None:
-    """The PyPI publisher must understand metadata emitted by current build tooling."""
-    workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "release.yml").read_text())
-    steps = workflow["jobs"]["pypi-publish"]["steps"]
-    publish_step = next(step for step in steps if step.get("name") == "Publish to PyPI")
+    """The PyPI publisher must understand metadata emitted by current build tooling.
 
-    assert publish_step["uses"] == (
-        "pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
+    Core metadata 2.5 arrived in the publisher's v1.12.4. Every publish step is
+    pinned to a commit and names a release line from there on; the exact commit
+    is Dependabot's to move, so it isn't pinned here.
+    """
+    pins = re.findall(
+        r"uses: pypa/gh-action-pypi-publish@(\S+) # (\S+)",
+        (REPO_ROOT / ".github" / "workflows" / "release.yml").read_text(),
     )
+
+    assert pins, "release.yml no longer publishes with pypa/gh-action-pypi-publish"
+    for ref, version in pins:
+        assert re.fullmatch(r"[0-9a-f]{40}", ref), f"{ref} is not a commit pin"
+        numbers = re.fullmatch(r"(?:release/)?v(\d+)\.(\d+)(?:\.(\d+))?", version)
+        assert numbers, f"{version} names no release"
+        major, minor, patch = (int(part or 0) for part in numbers.groups())
+        line_covers_2_5 = numbers.group(3) is None and (major, minor) >= (1, 13)
+        assert line_covers_2_5 or (major, minor, patch) >= (1, 12, 4), version
 
 
 def test_gpu_integration_uses_ci_dependency_set() -> None:
