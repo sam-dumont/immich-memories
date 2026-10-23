@@ -469,7 +469,7 @@ fastapi 0.150.0
   License: MIT
   URL: https://github.com/fastapi/fastapi
 
-filelock 3.25.0
+filelock 4.2.4
   License: MIT
   URL: https://github.com/tox-dev/py-filelock
 
