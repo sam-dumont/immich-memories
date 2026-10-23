@@ -36,7 +36,7 @@ dependencies = [
     "httpx>=0.27,<1",  # 1.0 is still a dev line (no stable release); it drops TimeoutException (#2081)
     "pydantic>=2.0",
     "pydantic-settings>=2.16.0",
-    "fastapi>=0.143.0",  # the server the web client talks to (#1395)
+    "fastapi>=0.150.0",  # the server the web client talks to (#1395)
     "uvicorn>=0.54.0",  # runs it: `immich-memories ui`
     "itsdangerous>=2.2",  # signs the session cookie (Starlette's SessionMiddleware)
     "python-multipart>=0.0.31",  # music uploads: FastAPI reads multipart forms with it
@@ -66,9 +66,9 @@ dependencies = [
     "babel>=2.18.0",
     # Each country's public holidays, for the holiday memory and for which days discovery asks
     # whether they were the holiday itself. The country is the home base's.
-    "holidays>=0.106",
+    "holidays>=0.107",
     # The store (#871): one Alembic history on SQLite (default) or PostgreSQL.
-    "sqlalchemy>=2.1.4",
+    "sqlalchemy>=2.1.5",
     "alembic>=1.13",
     "psycopg[binary]>=3.2",  # PostgreSQL driver, loaded by SQLAlchemy's postgresql+psycopg dialect
     "cryptography>=50.0.2",  # Fernet for secrets the settings layer keeps in the store
@@ -160,7 +160,7 @@ dev = [
     "pytest-xdist>=3.5",
     "pillow-heif>=1.8.1",  # Encodes HEIC test inputs; pi-heif decodes only. Never shipped.
     "mypy>=2.4.0",
-    "ruff>=0.1",
+    "ruff>=0.17.1",
     "pre-commit>=3.0",
     "commitizen>=4.19.2",
     "python-semantic-release>=10.7.0",
@@ -176,7 +176,7 @@ dev = [
     "pytest-playwright>=0.5",
     # Privacy audio tests (lightweight, no torch needed)
     "soundfile>=0.12",
-    "hypothesis>=6.168.3",
+    "hypothesis>=6.170.5",
 ]
 
 [project.scripts]
