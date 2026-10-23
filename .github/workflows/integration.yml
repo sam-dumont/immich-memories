@@ -163,20 +163,14 @@ jobs:
           SHA: ${{ steps.params.outputs.sha }}
           PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
         run: |
-          python3 -c "
-          import json, glob, sys
-          merged = []
-          for f in sorted(glob.glob('tests/benchmark-*.json')):
-              try:
-                  merged.extend(json.loads(open(f).read()))
-              except Exception as e:
-                  print(f'WARN: skipping {f}: {e}', file=sys.stderr)
-          if not merged:
-              print('No benchmark results found', file=sys.stderr)
-              sys.exit(0)
-          open('benchmark-results.json', 'w').write(json.dumps(merged, indent=2))
-          print(f'Merged {len(merged)} entries into benchmark-results.json')
-          " || true
+          # WHY: the ingest job validates the full reproduction metadata that
+          # the assembly benchmark writes to perf-results.json, as the Linux job
+          # does. The merged metric lists in tests/benchmark-*.json lack it.
+          if [ -f tests/perf-results.json ]; then
+            cp tests/perf-results.json benchmark-results.json
+          else
+            echo "No assembly benchmark results found" >&2
+          fi
           if [ -f benchmark-results.json ]; then
             # WHY: pipe JSON via stdin (--input) to avoid exceeding shell ARG_MAX
             # when benchmark results are large.
