@@ -53,8 +53,8 @@ PostgreSQL needs `pg_dump` on `PATH`, at least as new as the server; the image i
 
 Stop the UI, timers and workers first. `--force` replaces an existing store: use the backup you intend
 and keep a copy of the current state. Restore with the release that made the backup when rolling back.
-A corrupt or truncated backup is caught before anything is replaced, so the existing store is left
-exactly as it was and the command exits with a clear error instead of a traceback.
+A corrupt or truncated backup is caught before anything is replaced: the existing store stays as
+it was and the command exits with an error.
 
 Python, after stopping the app:
 
@@ -150,15 +150,18 @@ The preview cache defaults to 30 GB, about 0.35 MB per picture a film's scope re
 library of 90,000 fits. Video clips default to 10 GB, and so do prepared sources: the cut segments
 and photo clips a later render of the same selection reuses
 (`advanced.analysis.prepared_source_cache_max_size_gb`). Local-only films and failed deliveries remain on
-disk. After a confirmed upload to Immich, the local film and run directory are removed, whether the run uploaded it or you did later with `runs upload` or **Upload to Immich**.
-Use `runs storage` to inspect retained runs; use `runs delete` only for runs you want to remove.
+disk. After a confirmed upload to Immich, the local film and its run folder are removed, whether
+the run uploaded it or you did later with `runs upload` or **Upload to Immich**. `runs storage`
+lists what is kept; `runs delete` removes a run you no longer want.
 
 ```yaml
 cache:
   video_cache_max_size_gb: 10
   video_cache_max_age_days: 7
-  thumbnail_cache_max_size_mb: 10000
+  thumbnail_cache_max_size_mb: 30000
 ```
+
+These are the defaults.
 
 A preview averages about 315 KB: allow roughly **0.35 MB per candidate picture**. Preparing
 60,000 pictures needs about 21 GB for previews alone. Use the number of pictures in the requested
@@ -169,9 +172,8 @@ analysis stage has read them, so that working set can exceed the budget. Lowerin
 does not make a large preparation fit on a small disk. Increasing it does not grow the volume.
 
 Leave room for the store, job records, model runtime caches and downloaded video clips on the
-same volume. For example, a 100 GiB data volume with a 50,000 MB thumbnail budget leaves space
-around a large preview set. This is a sizing example, not a reservation or a hard preparation
-limit. Finished films are separate, at `~/Videos/Memories` on Python or `/app/output` in the image.
+same volume: a 100 GiB data volume with a 50,000 MB thumbnail budget, for example, leaves space
+around a large preview set. Finished films are separate, at `~/Videos/Memories` on Python or `/app/output` in the image.
 
 ### Temporary working files
 

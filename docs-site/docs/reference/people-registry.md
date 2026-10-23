@@ -23,17 +23,23 @@ without waiting three years. These are suggestions; confirmed relationships rema
 
 The scan also flags tight pairs (two people who are each a quarter or more of each other's pictures), possible twins
 (same family name and birth date, marked `counts_reliable: false` because face recognition merges them) and one
-name on two person records. These are metadata-based suggestions, not confirmed relationships; different surnames or missing dates can leave relationships undiscovered. You are behind the camera, so pairs with you are read from month curves, not shared
-frames. The owner comes from `--owner` or `IMMICH_MEMORIES_OWNER` (`identified: told`), else your Immich account
+name on two person records. These come from metadata, so different surnames or missing dates can hide a
+pair. You are behind the camera, so pairs with you are read from month curves, not shared frames. The owner comes from `--owner` or `IMMICH_MEMORIES_OWNER` (`identified: told`), else your Immich account
 name (`account`), else the longest-running person (`inferred`: check it). Those are guesses, and every scan
 rewrites them. What you say with `people owner` (or **Account owner** on the People page) is stored per account
 under `owners:` as `identified: confirmed`, or `person_id: null` for "nobody in this library", and no scan touches
 it. The order is confirmed, then told, then the account name, then inferred.
 
 A pair the scan notices (`tight-dyad`, `twin`, `duplicate`) is a question, not a relationship. You answer it by
-naming what the two are, which writes the normal relationship on both sides with the reverse kind, and the
-detected link is not shown again for that pair. A link confirmed without a name, which is what older releases
-wrote, stays as "linked, relationship not named" and never counts as a relationship in titles or prompts.
+naming what the two are, which writes the relationship on both sides with the reverse kind, and the detected link
+isn't shown again for that pair. A link confirmed without a name stays "linked, relationship not named" and never
+counts as a relationship in titles or prompts.
+
+The People page also suggests the relationships your confirmed ones imply: siblings who share a parent,
+grandparents, aunts and uncles, cousins and in-laws, each with the chain it follows ("parent of Bob, who is a
+parent of Riley"). Suggestions build on each other and refresh as soon as you add or remove a relationship, with
+no scan. Nothing is written until you accept one; "No, they are not" declines it for good. A model's film prompt
+reads the same chains, labelled as derived, and never a declined one.
 
 <Diagram name="people-rescan" headline="A rescan redraws the guesses. Your answers stay." />
 
@@ -56,7 +62,8 @@ people:
 ```
 
 `people import --from FILE` replaces the registry with an edited export. It checks the whole file first: a
-person without valid `ids` (a primary list or per-account lists), or an id listed twice, is refused with its position, and nothing changes. Ids
+person without valid `ids` (a primary list or per-account lists), or an id listed twice, is refused with its
+position, and nothing changes. Ids
 come back exactly as written, `manual:` ids included. A registry that already holds people is only overwritten
 with `--replace`, so an import cannot silently replace confirmed answers. A scan never reads the file; only an
 import does.
@@ -72,11 +79,10 @@ people:
     name: Alex Example
 ```
 
-A flat `ids: [...]` list still works and means your main account only, so a one-account export looks exactly as
-it always did. Account names follow the rule for `immich.accounts` (lowercase letters and digits joined by single
+A flat `ids: [...]` list means your main account only, which is what a one-account export writes. Account names follow the rule for `immich.accounts` (lowercase letters and digits joined by single
 underscores), and the account doesn't have to be configured yet. An empty list, a name that breaks the rule, or an
 id listed under two accounts or two people is refused, and nothing changes. A top-level `accounts:` map is refused
-too, with the new shape in the message.
+too, and the message shows the per-account shape.
 
 The first id listed is the person's own id: the one links and saved references point at. Adding ids never
 changes it. When the person's own id isn't first (someone who came in through the partner account and later got

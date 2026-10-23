@@ -8,17 +8,17 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 The browser gives you a contact sheet to review and edit before rendering. Every cut and render uses the same engine as the CLI; **Copy as CLI command** gives you the command behind the job.
 
-<ThemedScreenshot name="memory-brief" alt="The memory brief with type, dates and Cut button" />
+<ThemedScreenshot name="memory-brief" alt="New memory: the memory types, the year and month, the people to keep it to, the command it runs, and Cut" />
 
 ## Where things are
 
 | Page | Use it to |
 |---|---|
 | **Memory** | Choose a film and start its cut. |
-| **Runs** | Review cuts, save revisions and render films, including automatic runs and failures. |
-| **People** | Say whose library it is, name how people relate, answer the twin and duplicate flags, link a person across accounts, and open a person in Immich. |
 | **Suggestions** | See the memories automation would make next, and why. |
-| **Settings** | Change configuration and confirm your people. |
+| **Runs** | Review cuts, save revisions and render films, including automatic runs and failures. |
+| **People** | Say whose library it is, name how people relate, accept the relationships the tree implies, answer the twin and duplicate flags, link a person across accounts, and save people groups. |
+| **Settings** | Change configuration, run the checks and look for a new release. |
 
 On a phone, the navigation is at the bottom. Theme and interface language are remembered in that browser. The interface language does not change the film's language: [titles and languages](../reference/output-rendering.md#languages).
 
@@ -106,9 +106,11 @@ Every run has **Copy report** and **Download report**, including failed runs. Re
 
 Each setting shows where its value came from. A value set by the environment or `config.yaml` is locked here; change it at that source. Other values can be saved from the page.
 
-A setting with a fixed list of values (the tier, the output codec and resolution, the hardware backend, the title style) is a dropdown, so you can't type a value the app refuses. Each choice has a plain label next to its value, such as "H.264, software (libx264)" or "1080p (1920x1080)"; the labels are English in every language for now. A number has its limits (`output.crf` takes 0 to 51), and a value that the environment or the file set to something outside the list still shows, marked "not in the list". `analysis.source_prepare_workers` takes either a number from 1 to 4 or `auto`, so it stays a text box with that hint.
+A setting with a fixed list of values (the tier, the output codec and resolution, the hardware backend, the title style) is a dropdown, so you can't type a value the app refuses. Each choice has a plain label next to its value, such as "H.264, software (libx264)" or "1080p (1920x1080)"; the labels are in English. A number has its limits (`output.crf` takes 0 to 51), and a value that the environment or the file set to something outside the list still shows, marked "not in the list". `analysis.source_prepare_workers` takes either a number from 1 to 4 or `auto`, so it stays a text box with that hint.
 
 **Checks** lists what loading your config warned about, so you don't need the server log to spot an old or misspelled key. **Run the preflight checks** there runs what `immich-memories preflight` runs.
+
+**Check for updates** asks GitHub once whether a newer release is out and, if so, links its notes and gives the upgrade command for your kind of install. Nothing goes out until you press it. With `updates.check_daily: true` the app checks once a day and shows a banner you can dismiss.
 
 API keys stay masked. To save secrets from the UI, configure `IMMICH_MEMORIES_SECRET_KEY`; keys already supplied through `.env` or `config.yaml` do not need this for normal use. [Configuration and the secret key](../run/environment-variables.md#the-secret-key).
 

@@ -5,7 +5,8 @@ sidebar_position: 3
 
 # Picking each shot
 
-`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
+`generate --include` steers a new cut and goes through the checks on this page. A tick in the web UI's
+pool saves an owner revision without scoring or choosing pictures again.
 
 Once a story has its shots, each one has to be a moment and a frame. You shot 30 frames of the
 agility run in four minutes: that is one moment, and it gets one frame. The one you starred wins.
@@ -56,13 +57,11 @@ no people at all (a view, a place) is not demoted, and a library that names nobo
 
 ## What a frame must pass
 
-Draft picks and replacements use the same admission rules. A replacement gets its own story
-weight and purpose, then passes standing, audience, spacing and repetition checks against the
-shots it would join. Newly acquired caption or motion facts are read before that decision.
-This also applies when replacing a duplicate or giving a missing family member a seat.
-The existing depth pass can add a distinct view inside an already shown moment; that exception
-does not transfer to a replacement. Candidate decisions are kept with the run; `runs why` reads
-them back for one picture.
+Draft picks and replacements pass the same checks. A replacement, including one for a duplicate or
+a family seat, gets its own story weight and purpose, then passes standing, audience, spacing and
+repetition against the shots it would join, with any new caption or motion facts read first. Only the
+depth pass may add a second view inside a moment already shown; a replacement can't. Every candidate
+decision is kept with the run, and `runs why` reads it back for one picture.
 
 **Free.** Not already a shot, and not a picture the carrier rules keep as evidence only
 (`excluded_carrier_sources`): a document the detector names, a screen the `screen` head flags, a
@@ -84,9 +83,8 @@ facts, and `StandingGate` refuses a score under 1.
 - A favourite or a picture passed with `generate --include` scores 2. Sharing checks still apply; a score does not clear a hold. Other pictures with an uncleared exposure flag score 0 in a Shareable film.
 - 0 for a body part with no face: legs, feet, shoes or hands alone. The frame head calls it a
   body-part close-up, or the caption names a body part or footwear and no animal, and Immich found
-  no face on it. A face makes it a person, and a paw is never a body part. This is a fixed rule on
-  top of the points table, not fitted to it: the public set's teacher keeps many of these shots, so
-  it costs agreement there, and it remains part of the app’s default selection policy.
+  no face on it. A face makes it a person, and a paw is never a body part. This rule sits on top of
+  the points table and wasn't fitted with it: the public set's teacher keeps many of these shots.
 - 0 when its video frames mostly miss the subject (`frames=subject_often_missing`: fewer than 6 of
   8 sampled frames show a moment), or when the points table below says it carries nothing.
 - An album picture scores 2 after the zero rules, with or without a written subject. Otherwise the heads decide: people, an activity, or an outdoor or public place scores 2; nobody,
@@ -144,14 +142,14 @@ something you wrote (a renovation, the works on a house) drops that rule: its pi
 for the subject, so a stripped wall or a room under construction can carry its story, as long as it
 stands. A custom film of its window alone keeps the rule.
 
-A written subject requires a configured text reader; these subject rules are not available to the rules reader alone. An album handed over with a written subject (`generate --from-album "Bread" --subject "bread making
+A written subject needs a configured text reader; the rules reader alone refuses one. An album handed over with a written subject (`generate --from-album "Bread" --subject "bread making
 along the years"`) goes one step further. The album is a pool picked for that subject, so its
 pictures stand on the subject even with a standing score of 0: a loaf on a counter scores 0
 like any lone object, and stays. A video whose frames mostly miss its subject is still refused, and
 every other gate still runs: sharing and the family-viewing holds, source eligibility, provenance,
 look-alikes, duplicates and length. The allocation gives every year the album holds a shot, even a
 year whose stories the reader weighed `none`. Each shot that got in this way is kept with the run
-as `stood_on_subject`, with its score and why. `--subject` requires `--from-album`; it cannot be combined with a date-range-only request.
+as `stood_on_subject`, with its score and why. `--subject` needs `--from-album`.
 
 Once a moment's frames are through the gate, the ones that stand are sorted again: favourite first,
 then the higher standing score, then the order above. A still that scores 2 can beat a video that
@@ -169,7 +167,10 @@ The document check runs on every tier. It excludes a photographed ID card, passp
 
 Without that caption evidence, it uses Immich's own OCR. The frame head matters: a personal-record field label (date of birth, national number, and their equivalents across a dozen languages and scripts), the document's own title word, a passport's machine-readable zone, a card or IBAN number that passes its own check digit, or a gift voucher naming who it's for, counts on a frame the head calls a document or a record, or hasn't read at all; it does not count on a frame the head already calls something else, like an ordinary scene or a person. A generic ski, bus or day pass is not a document; a boarding pass still is, since it carries the traveller's name. An ordinary scene with a sign or a programme in it stays in.
 
-OCR comes from Immich's own server (2.2 and up), read through a cheap keyword search first so the full per-picture read only runs on the few pictures worth it, plus a direct read for any picture the frame head already calls a document (an MRZ line or a card number can't be found by a keyword search); on an older server, or if a read fails, that signal is just off for the run and every other check still applies.
+OCR comes from Immich's own server (2.2 and up). A cheap keyword search runs first, so the full
+per-picture read only runs on the few pictures worth it, plus a direct read for any picture the frame
+head already calls a document (a keyword search can't find an MRZ line or a card number). On an older
+server, or when a read fails, that signal is off for the run and every other check still applies.
 
 For a new cut, an explicit `generate --include` bypasses this document check; a favourite star does not. A saved owner revision can also include a picture from the pool.
 
@@ -212,6 +213,17 @@ whose clip is mostly pocket lining plays as its still. The burst and stitching r
 
 A true video whose sampled frames mostly miss its subject scores 0 on standing and is refused,
 unless you starred it: a starred video of a wall means something happened there.
+
+### Edited exports and collages
+
+A video with no camera make in its metadata and a file name no phone, camera, action camera or drone
+writes is read as a suspected edited export: an app's render with a speedometer burnt in, a clip from
+an editor, a download. It's demoted, never refused, on every tier. It ranks below every other picture
+of its moment, holds 3.5 s at most, never opens the film, and gives its slot to other footage of the
+story when the duplicate review finds some. `runs why` names the pass. A star clears the suspicion.
+
+A made still (no camera exposure) whose preview reads as a collage never opens a film, and leaves the
+pool when its day holds pictures of the same people.
 
 ## With a model planning the whole film
 

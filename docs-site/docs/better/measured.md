@@ -12,6 +12,11 @@ Every number below is a single timed run on the hardware named next to it, not a
 benchmark. Library size, cache state and shared load all move these numbers. Treat them as
 a range to expect, not a speed ranking between machines.
 
+Each section names the release it measured. A section that names none was measured on the
+development builds that became 1.0.0-rc.1. Rendering got faster in 1.0.0, mostly on a GPU:
+[the GPU render path](#gpu-render-path) has the before and after numbers, so the older render
+times below are an upper bound.
+
 ## Cold start time by hardware and tier {#cold-start-time-by-hardware-and-tier}
 
 A first film, from an empty cache, requesting a 60-second month from a library of 700 to 2,000
@@ -60,7 +65,8 @@ Same cut, same machine, rendered again at 3840×2160 60 fps HEVC 10-bit HDR inst
 | NAS + GPU render worker | adds about 13 min | | |
 | Kubernetes GPU | adds about 9 to 10 min | | |
 
-4K HDR gives you four times the pixels and 10-bit HDR; both stay at 60 fps. An SDR or
+4K HDR gives you four times the pixels and 10-bit HDR; this test cut rendered at 60 fps both
+times. A film renders at 30 fps unless most of its video is 50 or 60 fps footage. An SDR or
 lower-resolution source does not gain native HDR detail from this step. Music is generated
 separately for each export, so its time is not part of this render cost. The shared-GPU numbers
 move with other load on that card, more than the Mac numbers do.
@@ -87,6 +93,38 @@ audio; excludes media download, selection and generated music):
 | M5 | 49 s | 99 s |
 | GTX 1070 | 198 s | 468 s |
 | NVIDIA T1000 | 217 s | 575 s |
+
+## GPU render path {#gpu-render-path}
+
+Measured on the 1.0.0 code. In 1.0.0 a clip stays on the GPU from decode to encode, and HDR/SDR
+conversions, photo moves and Live Photo merges moved to the card too. CPU time is what the render
+costs the machine; wall time is what you wait.
+
+A 21-second 4K HLG cut (two 4K HEVC 10-bit phone clips, one portrait, a 1080p H.264 SDR clip and a
+Dolby Vision clip), same command before and after:
+
+| Hardware | Before | 1.0.0 |
+| --- | ---: | ---: |
+| Render worker, i9-13900T (12 CPUs) + T1000, `hevc_nvenc`, 4K HLG film | 241 CPU-s, 39.7 s wall | 72 CPU-s, 26.4 s wall |
+| Same worker, SDR film | 265 CPU-s, 37.5 s wall | 196 CPU-s, 31.8 s wall |
+| Apple Silicon Mac, `hevc_videotoolbox`, 4K HLG film | 76 CPU-s, 9.1 s wall | 22 CPU-s, 6.5 s wall |
+
+Per step, on the same worker and Mac:
+
+| Step | Before | 1.0.0 |
+| --- | ---: | ---: |
+| 6 s of 4K HLG converted to SDR, worker | 107 CPU-s | 2.7 CPU-s |
+| 6 s of 4K HLG converted to SDR, Mac (FFmpeg with libplacebo) | 16.6 CPU-s | 0.4 CPU-s |
+| One 4K photo-move frame, worker | 61 to 136 ms | 13 to 40 ms |
+| One 4K photo-move frame, Mac | 19 to 25 ms | 3 to 7 ms |
+| Three-part Live Photo merge, worker | 18.7 CPU-s | 9.3 CPU-s |
+
+The GPU frames land within a few 10-bit code values of the CPU result.
+
+Generated music now starts while a render worker renders, when the music server is on another
+machine. A three-minute, 47-clip film rendered on the same NVENC worker with an ACE-Step XL server
+on another machine took 376 and 433 seconds with music after the render, and 289 and 345 seconds
+with the two overlapping (two runs each).
 
 ## Hosted reader: time and cost per provider {#hosted-reader-time-and-cost}
 

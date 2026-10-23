@@ -4,9 +4,9 @@ title: Stop, reset or remove the app
 
 # Stop, reset or remove the app
 
-These operations affect **Immich Memories only**. Keep the separate Immich installation,
-its database/volumes and originals. Films already uploaded to Immich remain there; uninstalling
-this app does not delete remote media. No recipe below performs remote-library deletion.
+Everything here touches **Immich Memories only**. Your Immich install, its database, volumes and
+originals stay as they are, and so do films already uploaded to Immich: nothing below deletes
+anything in Immich.
 
 Use the exact project, namespace and paths selected at installation. For Kubernetes, set the
 namespace once per shell and every command below uses it:
@@ -290,8 +290,7 @@ tell the provisioner to drop it:
 kubectl patch pv <name> -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'
 ```
 
-With a CSI provisioner this deletes the backing disk (verified on proxmox-csi). It is
-permanent: films, caches and the SQLite store on that volume are gone. Check the `CLAIM`
+With a CSI provisioner this deletes the backing disk. It is permanent: films, caches and the SQLite store on that volume are gone. Check the `CLAIM`
 column twice, since a PV from another app looks the same. Snapshots are the storage owner's to
 remove.
 
@@ -307,14 +306,11 @@ longer need it, remove it the same way: `rm -r -- "$HOME/.immich-memories.before
 copied backups may hold credentials and films too. Preserve shared Hugging Face/Ollama/llama.cpp
 caches and packages.
 
-`uv tool uninstall` does not clear uv's own download cache, which can run to several GB, so
-"complete removal" leaves it behind. `uv cache clean` empties it for every uv project, not only
+`uv tool uninstall` leaves uv's own download cache behind, which can run to several GB. `uv cache clean` empties it for every uv project, not only
 this app; skip it if you use uv for other things.
 
 Check the original deployment inventory again: no running app container/pod/UI process, no active
 app Jobs or schedules, no remaining app-owned volumes/paths except deliberate backups. Separately
 verify Immich still serves its library.
 
-Native and Compose lifecycle operations (stop/start, uninstall keeping data, reinstall, reset,
-complete removal) are verified; the Kubernetes route is documented but not yet run end to end.
-See the [deployment matrix](./tested-deployments.md).
+[Tested deployments](./tested-deployments.md) says which of these routes were run end to end.

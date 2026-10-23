@@ -9,27 +9,27 @@ import Video from '@site/src/components/Video';
 
 # Immich Memories
 
-Turn your Immich photos and videos into memory films. Pick a month, a year, a trip or a person, review the cut, then render with titles and music.
+Immich Memories turns the photos and videos in your Immich library into short films with titles and music. Pick a month, a year, a trip or a person, review the cut it proposes, then render.
 
 <Video title="A sample trip film, opening on the map of the trip" src="/demo/trip-preview.mp4" poster="/img/trip-map-flyover.jpg" controls muted playsInline width="100%" style={{borderRadius: '12px'}} />
 
-A sample trip film: a road trip to Nordkapp, cut to 40 seconds from [credited Wikimedia Commons photographs](https://github.com/sam-dumont/immich-memories/blob/main/tests/e2e/fixtures/library/CREDITS.md) (CC0 or CC BY). The map is an optional feature.
+A road trip to Nordkapp, 44 seconds, made from [credited Wikimedia Commons photographs](https://github.com/sam-dumont/immich-memories/blob/main/tests/e2e/fixtures/library/CREDITS.md) (CC0 or CC BY). The map is optional.
 
 ## Make your first film {#start-with-one-month}
 
-You need an existing [Immich](https://immich.app) library, its API key, and a machine with Docker. A plain NAS can make the whole film; a GPU is optional.
+You need an existing [Immich](https://immich.app) library, an API key and a machine with Docker. A plain NAS makes the whole film; a GPU is optional.
 
-Follow [Quick start](../get-started/quick-start.md): choose Basic if you are unsure, download its two setup files, connect Immich and open the app. The same page has complete GPU and Full paths. Then [make your first film](../get-started/first-film.mdx) from 20–50 pictures, reviewing every shot before rendering.
+Follow [Quick start](../get-started/quick-start.md): choose Basic if you are unsure, download its two setup files, connect Immich and open the app. The same page has the GPU and Full paths. Then [make your first film](../get-started/first-film.mdx) from an album of 20–50 pictures, and review every shot before rendering.
 
 ## How it chooses
 
-It groups your library into stories, gives the busy days and people who matter more room, and picks shots in the order they happened. Favourites help. Videos can carry a moment better than a still. Thin periods make shorter films.
+It groups your library into stories, gives busy days and the people who matter more room, and plays the shots in the order they happened. Favourites help. A video often carries a moment better than a still. A thin period makes a shorter film instead of padding it.
 
 You can remove a shot, swap it, trim a video or add a missing picture. [How it chooses](../how-it-chooses/overview.md) explains the general idea; [improve a cut](../how-it-chooses/overrule-it.md) shows where your choices win.
 
 ## Your library stays yours
 
-The default install processes pictures locally and talks to your Immich server. It has no telemetry. It uploads the finished film only when you ask. Downloading the app and its pinned models needs internet access; optional maps, readers and remote services have their own [privacy settings](../run/privacy.md).
+The default install reads your pictures locally and talks only to your Immich server. It has no telemetry, checks for updates only when you ask, and uploads a finished film only when you tell it to. Downloading the app and its pinned models needs internet access; optional maps, readers and remote services have their own [privacy settings](../run/privacy.md).
 
 ## After the first film
 

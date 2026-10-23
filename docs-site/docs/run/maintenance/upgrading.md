@@ -42,24 +42,49 @@ Without a flag they follow `upload.enabled`; a flag wins for that run. `runs ren
 upload only with the flag and ignore `upload.enabled`, so with `upload.enabled: true` a render now
 uploads unless you pass `--no-upload-to-immich`. Every existing command line keeps working.
 
-### Generated music needs the XL model
+### Generated music: the XL model, 90-second takes
 
-Generated music now comes only from the 4B XL model. `model_variant: auto` on a host below the XL
-bar (a Mac under 64 GB of unified memory, a GPU under 16 GB) no longer loads the 2B model: films
-play a bundled track, and the run log, the report and `immich-memories preflight` say why. An XL
-model that fails to load ends the same way. In `api` mode the app reads the server's `/health`
-and generates only when it reports an XL model; a server that runs the 2B model or does not
-report its model gets the bundled library, and `model_variant: xl-turbo` states that your server
-runs XL. A config that sets `model_variant: turbo` or `base` keeps working as written, with a
-warning that names `auto`, `xl-turbo` and the bundled library.
+Generated music comes only from the 4B XL turbo model. `advanced.ace_step.model_variant` defaults
+to `auto`: local music (`mode: lib`) generates on a Mac with 64 GB or more of unified memory or a
+GPU with 16 GB or more. A smaller host, or an XL model that fails to load, plays a bundled track,
+and the run log, the report and `immich-memories preflight` say why. The 2B model is never loaded
+on its own. XL needs about 20 GB more disk for its weights, which the first render downloads.
 
-### The bundled music library grew again
+In `api` mode the app reads the server's `/health` and generates only when it reports an XL
+model. A server that runs 2B, or doesn't report its model, gets the bundled library; set
+`model_variant: xl-turbo` to state that your server runs XL. A config that sets
+`model_variant: turbo` or `base` keeps working as written, with a warning that names `auto`,
+`xl-turbo` and the bundled library. The app also asks the server to skip its planner unless
+`use_lm: true`, so a server with a planner loaded doesn't rewrite the caption.
 
-`immich-memories models fetch` now downloads the `music-v3` library (76 tracks, 118 MB) beside the
-earlier ones; the Docker image already has it. The older `music-v1/` and `music-v2/` folders under
-`~/.immich-memories/models/` are no longer read and are safe to delete. The generated styles per mood
-follow the latest listening round: happy no longer picks piano or electronic, and energetic no longer
-picks piano.
+A generated film is one version. A film longer than 82 seconds is joined from up to 3 takes of at
+most 90 s each, on bar lines; a shorter film is one take asked 8 s longer and cut at the last frame,
+so the music doesn't go quiet before the ending card. Every take gets the mood's key and a 4/4
+meter. The styles per mood follow the listening tests: happy no longer picks piano or electronic,
+and energetic no longer picks piano.
+
+When a render worker makes the film and the music server runs on another host, the music is
+generated while the worker renders, instead of after.
+
+### Music from the bundled library and your own folder
+
+`immich-memories models fetch` downloads the `music-v3` library (76 tracks, 118 MB, SHA-256
+pinned) to `~/.immich-memories/models/music-v3/`; the Docker image already has it. On a pip install
+run it once: until then films play the older, shorter tracks from the `music` extra. `models fetch`
+skips it when `audio.no_music` is on. The `music-v1/` and `music-v2/` folders an earlier candidate
+fetched are not read any more and are safe to delete.
+
+`audio.local_music_dir` (default `~/Music/Memories`) now feeds films. Laid out like the bundled
+library, one subfolder per mood, it replaces the bundled tracks for every mood it has. A working
+generator still comes first. If that folder already holds music you don't want in films, empty it
+or point the key elsewhere.
+
+A film without generated music plays one track for its whole length, looped onto itself where the
+track repeats its own opening, instead of crossfading into other tracks. To hear different music
+in a long film, put a longer track in your music folder.
+
+`audio.no_music` (default `false`) makes films silent unless a run asks for music (`--music`, or a
+track picked in the web render panel). Automation follows it too.
 
 ### Sign-in is on
 
@@ -271,7 +296,7 @@ To get them back, set `title_screens.llm_titles: true`, or pass `--llm-title` fo
 
 A film's span ends on its last picture, so its dates never said when it was made. Every uploaded
 film is now tagged with the release that made it and the day it finished, on the server's clock:
-`immich-memories/version/1.0.0` and `immich-memories/generated-on/2026-10-16`. These come on top of
+`immich-memories/version/1.0.0` and `immich-memories/generated-on/YYYY-MM-DD`. These come on top of
 `immich-memories/generated`, need the same `tag.create` and `tag.asset` permissions, and don't
 wait for `upload.film_tags`. Runs now record their release; a run made before this one has none,
 so uploading it later adds the day tag only. The store gains one column on its first start.
@@ -310,41 +335,70 @@ no-longer-supported keys) and the preflight results, the same lines the server l
 **Caches** also lists the prepared-source cache, so it can be cleared from there instead of by
 deleting `<cache.directory>/prepared-sources` by hand.
 
-### Generated music picks its model
+### Films you ask for don't hold back the schedule
 
-`advanced.ace_step.model_variant` now defaults to `auto`. Local music (`mode: lib`) loads the 4B
-XL turbo model on a Mac with 64 GB or more of unified memory or an NVIDIA GPU with 16 GB or more,
-and the 2B turbo model below that. If XL fails to load or doesn't fit in the memory free at the
-time, the render uses 2B and logs a warning. XL needs about 20 GB more disk for its weights, which
-the first render downloads.
+A forced film (`auto run --force`, **Run this suggestion** in the web UI, or the new
+`POST /api/trigger?force=true`) skips the cooldown and no longer starts it, so the next scheduled
+run goes ahead. Only unforced runs count toward the cooldown: the built-in timer, an installed
+job, a plain `POST /api/trigger` and `auto run` without `--force`. Forced films still count for
+the rotation rules. The trigger's `202` answer carries `"forced": true` or `false`. A scheduled
+call without the parameter behaves as before. The store gains one column on its first start; past
+attempts count as they did.
 
-A config that already sets `model_variant` keeps that model. To stay on 2B everywhere, set
-`model_variant: turbo`.
+### A reader that stops answering leaves the film to the rules
 
-A film longer than 82 seconds is joined from up to 3 ACE-Step takes, at most 90 s each; a shorter
-film is one take asked 8 s longer and cut at the last frame. Asked for the film's own length, a
-take ended on its outro and went quiet 3 to 4 seconds before the end. One take for a whole film sounded flat and kept tripping the
-loop check, while 90 s takes hold together (the bundled library is made of them). Every take gets
-the mood's key and a 4/4 meter. In `api` mode the app
-asks the server to skip its planner unless `use_lm: true`, so a server with a planner loaded no
-longer rewrites the caption.
+On Full, a reader host that goes away (connection refused, DNS failure, timeout, or a 5xx its
+retries can't wait out) used to end the run partway through selection. Now the run logs
+`Reader unreachable at ...` once, stops calling that reader for the rest of the run, and finishes
+with the rules: the rules draft of the cut, and a rules plan if the reader dropped mid-plan. The
+run's warnings say so. A rejected key, a missing model or a refused request still stops the run.
 
-### A bigger bundled music library
+### A bad clip leaves the film, the film still ships
 
-The image now ships 40 longer tracks in five moods. On a pip install, run `immich-memories models fetch`
-once to download them (61 MB, SHA-256 pinned, kept under `~/.immich-memories/models/music-v2/`). Until
-then films play the older, shorter tracks from the `music` extra, so nothing breaks. `models fetch`
-skips them when `audio.no_music` is on.
+A clip that decodes to no frame used to freeze the film on the frame before it, or go black, for
+the clip's whole length. It now leaves the film, the transition leads into the next clip, and the
+log names the clip and the seconds lost. A Live Photo whose motion fails, at preparation or at
+assembly, plays as its still in the same slot; if the still fails too, it leaves the film. A
+picture whose preview Immich no longer has is dropped instead of failing the run. A title card
+that gives no frame, or a film with nothing left, still stops.
 
-If you fetched the earlier `music-v1` library, the next `models fetch` downloads this one beside it. The old
-`~/.immich-memories/models/music-v1/` folder is no longer read and is safe to delete.
+On an FFmpeg built without the `drawtext` filter, captions are drawn as images instead of breaking
+every captioned clip.
 
-### Library music loops one track
+### More of the render runs on the GPU
 
-A film without generated music plays one track for its whole length: a bundled one, or one from your
-music folder. A film longer than the track loops it onto itself, cut where the track repeats its own
-opening, instead of crossfading into other tracks from the same folder. Nothing to change in your config.
-To hear different music in a long film, put a longer track in your music folder.
+On a render worker (CUDA) and on a Mac (VideoToolbox), clips stay in GPU memory from decode to
+encode: scaling, turning a sideways phone clip upright and the blur fill. Tone mapping and HDR/SDR
+conversions run on the GPU through libplacebo, and photo moves and Live Photo merges do too. The
+app probes these GPU paths once per process and keeps the CPU path when the FFmpeg build or the
+device lacks one, or when GPU tone mapping doesn't match the CPU colours. Nothing to configure,
+with one exception for your own NVIDIA manifests:
+
+- **Add `graphics` to `NVIDIA_DRIVER_CAPABILITIES`** (`compute,video,utility,graphics`) on the app
+  and render worker containers. GPU tone mapping needs Vulkan, which the NVIDIA runtime only
+  mounts with that capability. The shipped Compose, Kubernetes and Terraform files already set it.
+  Without it, tone mapping stays on the CPU.
+
+Torch, OpenMP and BLAS thread pools now follow the container's CPU limit instead of the host's
+cores. The shipped render worker manifests request 2 CPUs with an 8-CPU limit. Keep the app,
+inference image and render worker on the same release: the inference service now serves the
+obstruction head from the same encoder pass as the other heads (one DINOv2 pass per picture). An
+older inference image still works; the app then runs that head itself.
+
+### `--years-back` means the same years for every film
+
+`--years-back N` is the film's year and the N before it, for every film type. A holiday film used
+to count its own year as one of the N, so the same number now gives one more holiday. For the five
+holidays `--years-back 5` gave on 1.0.0-rc.10, pass `--years-back 4`.
+
+### A person whose Immich face changes stays one person
+
+Immich retires a face id when you merge two people, re-cluster or delete a face. The app now
+follows the person to their live face wherever it reads Immich's people (the People page,
+starting a film, automation, `people scan`), keeps their relationships and answers, and never
+splits them into a second entry. No rescan needed. Anything ambiguous is flagged on the People
+page. The People editor also suggests the relationships your confirmed family implies
+(grandparents, cousins, in-laws); nothing is stored until you accept one.
 
 ### The maximalist Kubernetes overlay holds no Secrets
 
@@ -401,10 +455,9 @@ people now joins their names with `&`, like a film for both.
 
 A holiday film used to read the five years before it. It now reads every year your library has
 around the day, so `generate --holiday` without `--years-back` covers your whole library. Pass
-`--years-back 4` to keep the old span of five holidays. `--years-back N` now means the same for
-every film type: the year the film is about and the N before it. A holiday film used to count
-the current year as one of the N, so the same number gives one more holiday than it did. The day itself leads each year, each year gets an even
-share of the film, and the title is the holiday's name with the years the cut shows. The timer
+`--years-back 5` to keep the old span (on 1.0.0, see
+[`--years-back`](#--years-back-means-the-same-years-for-every-film)). The day itself leads each year,
+each year gets an even share of the film, and the title is the holiday's name with the years the cut shows. The timer
 only proposes a holiday when the day stands out in your pictures in at least three years.
 
 ### Live Photo motion has one floor
@@ -433,7 +486,7 @@ It is also off when `cache.video_cache_enabled` is false.
 ### The preview cache holds a whole library
 
 `cache.thumbnail_cache_max_size_mb` now defaults to 30 GB (was 10 GB). A year, a lifetime or a
-captioning pass reads a preview of every picture in scope, about 0.61 MB each, so 10 GB evicted
+captioning pass reads a preview of every picture in scope, about 0.35 MB each, so 10 GB evicted
 previews a library over about 30,000 pictures still needed, and the next film downloaded and
 captioned them again. If you set the key yourself, your value still wins. Plan disk as about
 25 GB plus 0.35 GB per 1,000 pictures and videos.

@@ -9,9 +9,8 @@ The parser is developed against one real family library and synthetic households
 :::
 
 You type what you want to see ("the cars I drove", "at the park with kids", "the first picture
-of each person") and get a film of it. The part that reads the sentence is new. The part that
-makes the film is the same editor as every other memory
-([From library to film](../how-it-chooses/overview.md)).
+of each person") and get a film of it. The sentence picks the pictures; the same editor as every other
+memory makes the film ([From library to film](../how-it-chooses/overview.md)).
 
 ```bash
 immich-memories generate --ask "at the park with kids" --dry-run   # the translation, the pool and its rules
@@ -27,7 +26,9 @@ What it needs:
 - **The WordNet dictionary** (11 MB), downloaded once by `immich-memories models fetch` and
   checked against a pinned digest. Nothing downloads it at run time.
 
-Interpreting the sentence calls your configured reader and searches prepared library facts. Making the film can also use configured caption, inference, music and rendering services. [Privacy](../run/privacy.md) lists what each receives. The flags are on the
+Reading the sentence calls your configured reader and searches the prepared library facts. Making the
+film can also use your configured caption, inference, music and rendering services;
+[Privacy](../run/privacy.md) lists what each receives. The flags are on the
 [generate page](../make/cli/generate.md#a-film-from-a-sentence). The web UI has the same thing as a box on
 the **Memory** page, with a preview before any film: [The web UI](../make/free-text.md).
 
@@ -39,28 +40,29 @@ to what the library holds. No model looks at a picture to decide whether it belo
 built from captions and facts the library already has.
 
 Before any of that, a caption-dependent request pays for its own window: the run measures caption
-coverage over the request's own dates and, if anything is missing, warns with a count and an
-estimate, prepares it through the same pipeline `prepare` uses (with the usual progress lines),
-then answers. A dry run shows the same warning but never prepares, since it is a preview, not a
-commitment to pay the cost.
+coverage over the request's dates and, if anything is missing, warns with a count and an estimate,
+prepares it the way `prepare` does, then answers. When the place is one the metadata settles alone
+(home, home at the time, near home), only the pictures inside it are prepared; named places, printed
+text and trips keep the whole window. A dry run shows the same warning and prepares nothing.
 
 <Diagram name="seq-ask" headline="Ask for a film in a sentence. Pictures that aren't prepared yet get prepared first." />
 1. **Reading.** The model splits the sentence into who, when, where and what. It can only pick
    phrases your sentence contains, and it does it three times in three orders. A word counts
    where two answers agree. A part you said nothing about sets no filter: say nothing about where
-   and the film is from anywhere. Replies must match the requested field types before voting.
-   Unreadable replies get one retry; fewer than two valid readings stops the request.
+   and the film is from anywhere. A reply has to match the requested fields to vote. An
+   unreadable reply gets one retry; fewer than two valid readings stops the request.
 2. **Who.** Grammar and your people registry, no model:
    - "I", "me" and "my" are you, used for your age and your homes, never as a face in the photo
      (you are usually the one holding the phone: "the cars I drove" has no face in it).
-   - The parser currently interprets "we" and "our" as you and the people whose registered role resolves to partner. It does not treat those words as the whole household; name the people explicitly when you mean a different group.
-   - A name or a role from your people registry ("my son", a first name) means that face, as Immich
-     recognised it.
+   - "We" and "our" are you and the people whose registered role is partner, not the whole
+     household: name the people when you mean a different group.
+   - A name or a role from your people registry means that face, as Immich recognised it. A role
+     word reaches the role it belongs to: "my son" or "my daughter" is the person registered as
+     your child.
    - A plural word for people ("friends", "kids") asks for company: a caption naming people, or
-     the specific kind when the word is specific (children, teens, performers). A curated word
-     list reads this, in any of the 14 supported locales, not a dictionary lookup: "humans"
-     is an irregular plural that a dictionary lookup never reduces to its singular, so a list
-     of the words themselves is the only thing that reads it reliably.
+     the specific kind when the word is specific (children, teens, performers). A word list
+     covers this in all 14 supported languages, because a dictionary lookup misses irregular
+     plurals like "humans".
    - "No", "without" and each language's own negation word turn that company into an absence
      instead of a requirement: "landscapes, no humans" drops any picture with a face or a
      caption subject who is a person, "sans les enfants" drops children instead of requiring
@@ -212,30 +214,27 @@ With `--dry-run` the command stops after the trace and the rule preview. The mod
 banked in the store, so asking the same question twice does not ask the model twice. Translation
 timing is on [Measure your setup](../better/measured.md).
 
-## Where it is good, where it is less good
+## What it can read
 
-Requests work through the evidence the library actually contains. Captions supply named subjects and activities; Immich metadata supplies recognised people, dates and places; OCR supplies visible words. A concept that none of those sources names cannot be recovered by a clever sentence.
+A request only finds what the library already says. Captions name subjects and activities, Immich's
+metadata names people, dates and places, and OCR names printed words. A concept none of them names
+can't be found, however you phrase it.
 
-A request for one picture per person still goes through the film's length and selection rules. It is not a guarantee that every person survives the final cut.
+- **Captions decide the subject.** If the captioner never writes your word, the pool comes back thin
+  or empty. Company ("with kids") is read from captions too, not from the faces' ages.
+- **Occasions need a date or a caption.** A wedding the captions never call a wedding can't be found;
+  a birth works, dated by the people registry.
+- **Words have several senses.** "Races" finds running races AND track days. Say which one you mean.
+- **WordNet is the 2006 dictionary.** It has no "screenshot" or "app", and some first senses are
+  odd ("dashboard" is a carriage's mud panel).
+- **The model votes on some parts**: the main subject, the place, the kind of film. Three votes soften
+  a bad answer; they don't remove it.
+- **The editor still decides the film.** A list of one picture per person is cut to the film's
+  length, so not every person is guaranteed a shot, and blurry pictures still lose to sharp ones.
+- **English reads best.** Other languages go through the model and can lose meaning.
 
-## Limits
-
-- **One library.** The parser is developed against one family's pictures and synthetic households.
-  Your words, habits and cameras differ, so will the results.
-- **Captions are the basis.** If the captioner does not name the requested concept, the subject filter may return a thin or empty pool.
-- **Occasions without a date.** A wedding the captions never call a wedding can only be found by
-  its date, and there is no place to tell it that date yet (birth dates in the people registry work).
-- **Two senses.** "Races" found running races AND motor-racing track days. Say which one you mean.
-- **WordNet is from 2006.** It has no "screenshot" or "app", and some first senses are odd
-  ("dashboard" is a carriage's mud panel).
-- **The model still judges some parts**: the main subject, the place vote, the kind of film. Three
-  votes soften a bad answer; they do not remove it.
-- **Company comes from captions only.** "With kids" needs a caption naming children; the ages of
-  the faces are not used yet.
-- **The editor still decides the film.** It gets the pool and your sentence, not your special
-  cases: a list of one picture per person is cut to the film's length, and blurry pictures still
-  lose to sharp ones.
-- **English first.** Other languages go through the model and may lose meaning.
+Wrong results help: report them as below, and check the
+[issue tracker](https://github.com/sam-dumont/immich-memories/issues) for what's known.
 
 ## When a result is bad
 

@@ -11,16 +11,16 @@ The UI shows which variable controls a setting.
 
 Docker Compose reads `.env` for **substitution in the Compose file**. It does not pass every line
 to the container. The service's `environment:` block must name the variable.
-All variables in the shipped `example.env` are already wired up.
+Every variable in the shipped `example.env` is already wired up.
 
 ```ini
 IMMICH_URL=http://192.168.1.10:2283
 IMMICH_API_KEY=your-api-key
-TZ=Europe/Brussels
+TZ=Etc/UTC
 ```
 
-Home coordinates are not in the shipped `.env` contract. Set them in Settings, or add them
-to the app's `environment:` block in `docker-compose.yml`:
+The shipped `.env` has no home coordinates. Set them in Settings, or add them to the app's
+`environment:` block in `docker-compose.yml`:
 
 ```yaml
       IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE: "50.8503"

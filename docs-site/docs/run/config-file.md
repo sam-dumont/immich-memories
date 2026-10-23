@@ -27,7 +27,7 @@ output:
 Both home coordinates are needed for trips. Everything else keeps its default.
 Every server URL (`immich.url`, `llm.base_url`, `network.geocoding_url` and the rest) must start
 with `http://` or `https://`; anything else is refused when the file loads or a setting is saved.
-`immich.public_url` is the one Immich address worth knowing about here: when `immich.url` is a cluster or
+`immich.public_url` matters when `immich.url` is a cluster or
 container name your browser cannot open, set it to the address you do open, and the "View in Immich" and
 "Open in Immich" links and notification links use it. Requests still go to `immich.url`.
 `auth.public_url` is the address of Immich Memories itself; it does not set the Immich link address.
@@ -73,8 +73,9 @@ Change values in Compose or `.env`, then run `docker compose up -d`.
 To let Settings control a Compose-pinned key, remove its environment line and any YAML value.
 Keep the model cache and output paths on mounted volumes.
 
-`TIER` supplies an editable deployment default (`basic`, `gpu` or `full`), not a pinned runtime
-setting. YAML and saved Settings can override it.
+`TIER` (`basic`, `gpu` or `full`) pins `tier` like any environment variable: a `tier` in
+`config.yaml` or Settings is ignored with a warning naming it. Change the tier in `.env`.
+The service addresses that tier implies stay editable defaults.
 Home coordinates are not forwarded by the base Compose file: save them in Settings or YAML.
 
 Inspect the same result from the CLI:
@@ -208,7 +209,7 @@ explains the required services and how deployment defaults interact with Setting
 ## Immich API compatibility
 
 Leave `immich.api_version: auto`; v2 and v3 are detected. `v2`/`v3` overrides are for diagnosing
-unusual proxies, not a normal upgrade step. An unknown major stops the run.
+unusual proxies. An unknown major stops the run.
 
 ```bash
 immich-memories config test
@@ -252,19 +253,18 @@ Geocoding and map tiles are off by default. Enable them under `network` only aft
 ## Enabling a reader
 
 A model name or endpoint on its own does not turn the reader on. Set
-`advanced.llm.enabled: true` to use it for special-day titles, the selection reader,
-the Full film summary, music mood and captions; one section covers all of those. Year, month,
-season, person, couple, birthday, holiday and on-this-day films get the app's own title and never
-ask the reader for one. With it off, `preflight` warns that a
-reader is configured but disabled. Upgrading an existing config past 0.103.0 needs this one
-explicit step; see [upgrading](./maintenance/upgrading.md#config-compatibility).
+`advanced.llm.enabled: true` to use it for the music mood and, on Full, for selection; one section
+covers every model call. Naming special days and trips and writing the film's summary also needs
+the experimental `title_screens.llm_titles` (or `--llm-title` for one run). Year, month, season,
+person, couple, birthday, holiday and on-this-day films always get the app's own title. With the
+reader off, `preflight` warns that a reader is configured but disabled.
 
 ## Reader concurrency
 
 Use `advanced.llm.reader_concurrency` only when tuning model throughput. The default is one
 request for loopback, a private IP or a bare service name, and four for a dotted DNS name or
 public IP. A dotted LAN name still counts as hosted. Accepted overrides for external servers:
-1–16; the owned reader always runs one request at a time.
+1 to 16; the owned reader always runs one request at a time.
 See [Reader setup](../better/reader.md).
 
 

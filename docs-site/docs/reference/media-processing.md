@@ -47,10 +47,11 @@ The ceiling is 50 % because the photo is prepared at 1.5 times the canvas; close
 The face boxes come from Immich's faces endpoint, one request per still; framing runs no face
 detector of its own, and a still whose boxes can't be read moves toward its centre.
 
-Photo preparation uses the hardware encoder the app has verified, including NVIDIA and VAAPI.
-On Basic tier, a device with hardware H.264 but no hardware HEVC prepares photos as SDR H.264;
-HDR photos are tone-mapped before encoding. Devices with hardware HEVC keep HDR photo
-intermediates. Disabling hardware encoding keeps preparation in software.
+A photo move is encoded with the hardware encoder the app has verified (NVIDIA, VAAPI and the
+others), or as fast near-lossless x264 in software; the film's own encode does the real
+compression. In an HDR film, a still is rendered in the film's transfer. On Basic, a device with
+hardware H.264 but no hardware HEVC prepares photos as SDR H.264, tone-mapping HDR photos first.
+With hardware encoding off, preparation runs in software.
 
 Video clips are never cropped. A landscape clip in a portrait film keeps its whole frame and
 [`scale_mode`](config-reference.md) fills the rest: `blur` (default) puts a blurred, zoomed
@@ -60,9 +61,10 @@ not one face position.
 
 ## Live Photos
 
-A merge, its short final-frame hold and the certified cut are lossless x264 in software, on
-every machine: the film's own encode is the only lossy step. The hold keeps the source cadence
-and records its encoder alongside the verified frame count.
+A merge, its short final-frame hold and the certified cut are encoded losslessly: NVENC's
+lossless mode on an NVIDIA encoder, x264 at its fastest preset everywhere else. The film's own
+encode is the only lossy step. The hold keeps the source cadence and records its encoder beside
+the verified frame count.
 
 A selected motion interval keeps its verified frame rate through encoding. When frame rounding
 leaves a permitted shortfall, the renderer holds the final frame and checks the encoded duration
@@ -75,18 +77,29 @@ still stops the render.
 
 ### Original-source admission
 
-Before sealing a cut, the app downloads only the final retained Live motion originals and checks their complete presentation. The proof is bound to the source bytes, video stream, decoder identity and presentation policy. Matching proofs are reused; rejected candidates are not downloaded for this check.
+Before sealing a cut, the app downloads only the Live Photo clips the cut keeps and checks
+that each one plays in full. The check is tied to the source bytes, the video stream, the decoder
+and the presentation rules, and a matching check is reused. Rejected candidates are never
+downloaded for it.
 
-An invalid Live motion original becomes the same selected picture as a still. This does not choose another picture. Timing is recalculated for that disposition before the cut is certified. A missing source or decoder/infrastructure failure remains an error; it is not treated as corrupt media or silently filled.
+A Live Photo whose clip fails plays as its still in the same slot; no other picture takes its
+place, and the timing is worked out again before the cut is certified.
 
 ### Presentation and audio boundaries
 
-The renderer checks compressed samples and decoded presentation, then uses the MOV track's verified sample-table and edit boundary. Reference samples establish completeness but are not displayed. Every joined segment keeps its own video and audio boundary; audio samples retain their own clock.
+The renderer checks both the compressed samples and the decoded frames, then cuts on the MOV
+track's verified sample table and edit list. Reference samples count toward completeness but are
+never shown. Each joined segment keeps its own video and audio boundaries, and audio keeps its
+own clock.
 
-A permitted rounding gap holds the final video frame. An audible audio tail is not replaced with silence to make it fit, and a larger missing video tail is not invented. The encoded segment is checked against the certified interval before assembly.
+A rounding gap within the allowance holds the last video frame. An audible audio tail is never
+replaced with silence to fit, and a larger missing video tail is never invented. The encoded
+segment is checked against the certified interval before assembly.
+
+### Bursts become footage
 
 An iPhone records about 3 seconds of video with every photo. Most libraries hold thousands of them,
-and a rapid burst of them is several seconds of continuous footage nobody meant to shoot.
+and a rapid burst is several seconds of continuous footage nobody meant to shoot.
 
 Three photos of an Italian hilltop, fired off in a row, each about 3 seconds and overlapping:
 
@@ -192,9 +205,9 @@ Three photos at t = 0, 0.5 s and 2 s, each clip about 3 s:
 These times share the first shutter as zero. The span is 5.0 s in total.
 
 Clips that do not overlap stay separate. With no shared content to line up on, nothing is stitched:
-the kept picture plays its own clip if it lasts 2.5 s and moves, and its still otherwise. The merge encodes at CRF
-18 with your hardware encoder if one passed a test encode, software otherwise. HDR bursts stay H.265
-10-bit with their transfer intact; the final render decides the rest.
+the kept picture plays its own clip if it lasts 2.5 s and moves, and its still otherwise. The merge
+is lossless (see [Live Photos](#live-photos)), and an HDR burst keeps its 10-bit HLG or PQ
+transfer unless Basic hardware needs SDR H.264; the final render decides the rest.
 
 ### Devices
 

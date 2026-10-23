@@ -14,8 +14,8 @@ title: "Python installation details"
 | `music` | The bundled royalty-free track library |
 | `auth` | OIDC login (authlib) |
 | `demucs` | Local Demucs stem separation for music ducking (Torch, about 80 MB of model) |
-| `all` | All of the above except `mac` and `editorial-cuda` |
-| `all-mac` | `editorial`, `mac`, `music` and `demucs`. No `auth`: add `[all-mac,auth]` for OIDC |
+| `all` | `editorial`, `music`, `auth` and `demucs` (no `demucs` on Linux ARM64, where it has no wheel) |
+| `all-mac` | `all` plus `mac` |
 
 Never install `editorial` and `editorial-cuda` together: `onnxruntime` and `onnxruntime-gpu` own
 the same import name, and the one that answers is whichever pip wrote last.
@@ -75,9 +75,8 @@ GPU title renderer (`quadrants`) ships no 3.14 wheel, so 3.14 is refused. `uv to
 downloads a compatible interpreter on its own; the pin just makes it the same one everywhere. With
 pip, create the virtual environment from Python 3.11, 3.12 or 3.13; pip on 3.14 refuses the package.
 
-RC and final commands pin the matching PyPI version. No source checkout or local wheel build is
-part of the install. A preview without published assets cannot supply this install.
-For pip, use the same pinned package specification inside the app's virtual environment.
+That command pins the release's PyPI version, with no checkout or local wheel build. With pip,
+use the same pinned package specification inside the app's virtual environment.
 
 A bare install lacks the ONNX runtime needed for picture classifiers and for the speech detector
 (FireRedVAD, bundled in the package). Without it, a video's cut is still chosen from its picture and
@@ -102,9 +101,8 @@ cannot find `immich-memories`: add it for the current shell with
 different home directory, use the installed command's absolute path; changing the home does not
 move the uv installation.
 
-Continue with [Connect Immich and choose the tier](../uv-pip.md#2-connect-immich-and-choose-the-tier)
-in the native installation guide. If you already completed it, your connection, model files and
-output directory are ready; these troubleshooting notes do not require a second setup.
+Then continue with [Connect Immich and choose the tier](../uv-pip.md#2-connect-immich-and-choose-the-tier)
+in the native installation guide.
 
 
 ## Daily automation

@@ -4,11 +4,13 @@ title: Privacy
 
 # Privacy
 
-A default Basic film talks only to your Immich server. Hugging Face Hub telemetry is disabled
-before imports in the app and inference service, and so is ONNX Runtime's own Microsoft
-telemetry, which sends HTTP by default; there are no app analytics or update checks.
-Fetch model files during setup. Explicit download switches and some optional music backends
-can also fetch weights on first use, including during a run.
+A default Basic film talks only to your Immich server. The app sends no analytics. Hugging Face
+Hub telemetry and ONNX Runtime's Microsoft telemetry (which sends HTTP by default) are switched off
+before anything imports them, in the app and in the inference service. The update check stays off
+until you ask for it.
+
+Model files and the music library come down once, during setup. A few explicit download switches
+and the optional music backends can also fetch weights on first use, including during a run.
 
 This documentation website counts visits with the maintainer's self-hosted Plausible. GitHub
 Pages serves the tracking script alongside the docs; visit and click events go to the
@@ -32,6 +34,8 @@ your own hardware or outside your network.
 | Generated music | Mood/genre/tempo text; stem separation can send audio |
 | Notifications | Run outcome/details, optionally a thumbnail |
 | OIDC | The usual login flow to your provider |
+| Update check | One anonymous request for GitHub's public release list: no version, install id or setting |
+| Model, music and font downloads | Requests for pinned files from Hugging Face and GitHub; no library data |
 
 The reader is disabled by default. Enable it with `llm.enabled: true`, blank `base_url` and `openai-compatible` or `ollama` for an owned local reader;
 a remote URL or hosted provider preset sends text to that endpoint. Configuring a reader does
@@ -85,7 +89,15 @@ Map tiles come from ArcGIS World Imagery for trip maps and location-card backgro
 reveal the area, including home base. With tiles off, ordinary title/location cards still work.
 [Maps and titles](../make/titles-maps-music.md) explains the result.
 
-## Fonts
+## Update check
+
+Nothing asks for a newer release until you do. **Check for updates** in Settings and
+`immich-memories version --check` ask `api.github.com` once, when you click or run them. Set
+`updates.check_daily: true` to have the app ask at most once a day and show a banner when a release
+is out. The request is an anonymous `GET` of the public release list; the app compares versions
+locally.
+
+## Fonts, models and music {#fonts}
 
 Docker includes script fonts. Python installs include the core fonts; other alphabets use one
 explicit download:
@@ -98,7 +110,9 @@ Font files are pinned and digest-checked. A render never fetches a font. Detecto
 off unless allowed; the Compose inference overlay allows them, and the GPU overlay's one-shot
 `immich-memories-caption-models` container fetches the caption model's weights at `compose up`,
 before the captioner starts. `models fetch` and the web UI's **Download models** button run the same
-download on demand. ACE-Step and local Demucs can fetch their own weights on first use.
+download on demand, and fetch the 118 MB music library from the project's GitHub releases
+(digest-checked, skipped when `audio.no_music` is on; the Docker image already has it). A film
+never downloads music. ACE-Step and local Demucs can fetch their own weights on first use.
 Those downloads contain no library data. Local ACE-Step uses app-pinned immutable Hugging Face
 snapshots and refuses incomplete downloads; [checkpoint revisions](./reference/privacy-egress.md#ace-step-checkpoint-revisions)
 list the pins. API mode uses the remote music server's checkpoints.

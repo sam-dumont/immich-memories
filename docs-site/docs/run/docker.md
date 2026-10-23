@@ -6,9 +6,8 @@ import ComposePort from '@site/src/components/ComposePort';
 
 # Docker Compose
 
-Docker Compose runs the app beside your existing Immich server. Basic uses one container;
-GPU and Full add model services. This is the recommended container install.
-You need Docker Compose v2 and [4 GB free for the app](./requirements.md). On a NAS, check the
+Docker Compose is the recommended container install: the app runs beside your existing Immich
+server. Basic is one container; GPU and Full add model services. You need Docker Compose v2 and [4 GB free for the app](./requirements.md). On a NAS, check the
 [NAS notes](./nas.md) for folder permissions and device access.
 
 ## Install
@@ -17,7 +16,7 @@ Follow [Quick start](../get-started/quick-start.md) and select **Basic**, **GPU*
 It covers the release files, Immich connection, access, model preparation and first film.
 For a single file to paste into a stack editor, use the [setup builder](/setup).
 
-This page covers operating that installation. [Installation help](../reference/installation-help.md)
+This page covers running that install. [Installation help](../reference/installation-help.md)
 has port, permissions and startup fixes.
 
 <span id="1-get-the-files" />
@@ -122,7 +121,7 @@ Partner accounts need the read set only.
 | `asset.upload` | Uploading the film and checking for duplicate uploads |
 | `tag.create` | Creating or finding the app's generated-film tag |
 | `tag.asset` | Attaching that tag to the film, its release and day tags, and its type, year and story tags when `upload.film_tags` is on |
-| `asset.update` | Writing the film's description (its title and story summary). Without it the film uploads and replaces its earlier render as before, just with no description |
+| `asset.update` | Writing the film's description (its title and story summary). Without it the film still uploads and replaces its earlier render, with no description |
 | `album.create` | Creating the destination album |
 | `albumAsset.create` | Adding the film to the album |
 
@@ -254,7 +253,7 @@ Add these two lines to the service's `environment:` block, set `TZ` in `.env`, a
       IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"
 ```
 
-The running UI makes one eligible memory a day. No cron required.
+The running UI makes one eligible memory a day, no cron needed.
 [Automate it](../make/automate.md) covers selection, uploads, retries and external triggers.
 
 ## Health check and logs
@@ -285,8 +284,9 @@ fetch the current model pins and run preflight.
 
 ## Disk
 
-The preview cache defaults to 30 GB (about 0.35 MB per picture your films reach), the video and prepared-source caches to 10 GB each. Uploaded films are removed locally after confirmed
-delivery; local-only or failed deliveries keep their files. [Storage and caches](./maintenance/health-logs-cache.md#caches)
+The preview cache defaults to 30 GB (about 0.3 MB per picture your films reach), the video and
+prepared-source caches to 10 GB each, and past cut attempts to 5 GB. Uploaded films are removed
+locally after confirmed delivery; local-only or failed deliveries keep their files. [Storage and caches](./maintenance/health-logs-cache.md#caches)
 covers sizing and cleanup.
 
 ## Hardening
@@ -294,7 +294,7 @@ covers sizing and cleanup.
 <details>
 <summary>Run with a read-only root filesystem</summary>
 
-Uncomment the shipped block:
+The shipped file has no hardening block. Add this to the app service:
 
 ```yaml
     security_opt:
@@ -308,7 +308,7 @@ Uncomment the shipped block:
 ```
 
 The persistent config volume keeps the session signing key. For 4K, allow more temporary space
-(e.g. 8 GB); intermediates can exceed 2 GB. Tmpfs uses memory, so size it with the container limit
+(8 GB, say); intermediates can exceed 2 GB. Tmpfs uses memory, so size it with the container limit
 in mind.
 
 </details>

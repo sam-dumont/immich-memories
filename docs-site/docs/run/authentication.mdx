@@ -18,7 +18,7 @@ auth below. Use OIDC for your existing identity provider, or trusted headers whe
 proxy is the only route to the app.
 [Proxy, TLS and bind-address setup](./network-security.md) is a separate operator guide.
 
-<ThemedScreenshot name="login" alt="Login page" />
+<ThemedScreenshot name="login" alt="The sign-in page: username, password and Sign in" />
 
 ## The generated password
 
@@ -187,9 +187,9 @@ or the OIDC allow-list ends every session of every user.
 Auth is set in the environment or `config.yaml` only, and a change needs a restart.
 
 Sign-in failures are counted per client address (IPv6 clients per /64), per username across all
-addresses, and overall. Five failures from one address lock it out for ten minutes. A username
-that keeps failing waits 30 seconds, then twice as long after each further failure, wherever the
-guesses come from. A hundred failures in ten minutes pause every sign-in for a minute. Scripts authenticate to
+addresses, and overall. Five failures from one address lock it out for ten minutes. After five
+failures, a username waits 30 seconds, then twice as long after each further failure (up to ten
+minutes), wherever the guesses come from. A hundred failures in ten minutes pause every sign-in for a minute. Scripts authenticate to
 [the trigger endpoint](../make/automate.md#trigger-it-over-http) with
 `server.trigger_token` instead.
 

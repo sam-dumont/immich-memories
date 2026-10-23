@@ -18,9 +18,7 @@ address in **GPU box address** below. Full also needs a reader. If those service
 in Kubernetes or on another host, use the [existing-service settings](../nas.md#existing-model-services).
 [Requirements](../requirements.md) covers memory and storage.
 
-The project and folder dialogs below were checked in DSM. The SSH/Compose route has completed
-a first film; an end-to-end GUI deployment has not. See
-[tested deployments](../tested-deployments.md) for exact coverage.
+[Tested deployments](../tested-deployments.md) says which Synology routes were run end to end.
 
 ## 1. Create a project
 
@@ -33,8 +31,6 @@ a first film; an end-to-end GUI deployment has not. See
 3. Set **Source** to **Create docker-compose.yml**. This opens the editor.
 
    <Screenshot src="/img/platforms/synology-create-project.jpg" alt="Create Project dialog with the project name, Set Path button and Create docker-compose.yml source selected" />
-
-Tap either screenshot to read it at full size.
 
 Choose your tier below. Enter the Immich URL the NAS can reach, copy `docker-compose.yml` into
 the editor, and replace `replace-with-your-immich-api-key` with your
@@ -58,8 +54,9 @@ when reusing existing services.
 
 ## 3. Open the app and download models {#3-prepare-and-check}
 
-Open <code><ComposePort host="your-nas-address" /></code> (use your chosen host port) and sign in with the app
-username and password you just set. If you chose private localhost access, use its forwarded URL.
+Open <code><ComposePort host="your-nas-address" /></code> (or your chosen host port) and sign in with the
+login you set, or with the generated password from the container's log in Container Manager. With
+private localhost access, use the forwarded URL instead.
 
 On **Memory**, click **Download models** and wait for it to finish. The card lists the files and
 download hosts; it disappears when the required files are ready. If it is absent and no error is

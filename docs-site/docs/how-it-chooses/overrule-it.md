@@ -46,7 +46,7 @@ Review the film before sending it. These checks can miss or misread a picture. [
 
 A held picture says why and offers **Clear hold**. Review the picture, then choose the audience allowed to see it. Clearing is per picture; the app does not clear holds on its own.
 
-<ThemedScreenshot name="pictures-clear-dialog" alt="Clear a hold after reviewing the picture and choosing its permitted audience" />
+<ThemedScreenshot name="pictures-clear-dialog" alt="Clear this hold?: the held picture, why it was held, and which films may use it once you clear it" />
 
 **Never use** excludes a picture from future automatic cuts; an explicit pool tick can still include it in a saved revision. **Undo** forgets either decision. To remove a picture from just one film, edit that cut instead.
 

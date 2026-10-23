@@ -4,62 +4,56 @@ title: Inference service deployment and API
 
 # Inference service deployment and API
 
-On Basic the app runs the DINOv2 encoder and its eight heads in its own process, on the
-CPU, once per picture. GPU and Full also enable Marqo and Docling. The inference service moves
-the active producers to another machine:
-a GPU box, a Kubernetes node, or just a container you can restart on its own. The facts are the
-same rows either way, so you can add it, move it or drop it without re-deriving anything.
+On Basic the app runs the DINOv2 encoder in its own process, on the CPU, once per picture: that
+one pass feeds the eight context heads and the finger-over-the-lens check. GPU and Full add Marqo
+and Docling. The inference service moves those producers to another machine: a GPU box, a
+Kubernetes node, or a container you can restart on its own. The facts are the same rows either
+way, so you can add it, move it or drop it without re-deriving anything.
 
-For NVIDIA, use the [one-GPU setup](../run/reference-setup.md#one-gpu-service) to serve classifiers,
-SmolVLM captions, Demucs and rendering in one container. The ordinary inference entry point
-serves classifiers and stems only. Its Compose and Kubernetes recipes below remain separate
-from caption and render services.
+It runs two ways, both on port 8092:
 
-Both modes use port 8092. In unified mode, captions are under `/v1` and authenticated rendering
-under `/render`. In standalone mode, a separate caption server needs its own host port; shipped
-Compose publishes it on 8094.
+| Mode | Serves | Recipe |
+|---|---|---|
+| Standalone | classifiers (`/facts`) and music stems | Compose and Kubernetes recipes below; captions run in their own server, published on host port 8094 by the shipped Compose files |
+| Unified worker | classifiers, stems, SmolVLM captions under `/v1` and rendering under `/render` | [one-GPU setup](../run/reference-setup.md#one-gpu-service), NVIDIA only |
 
-Picture previews and full music tracks reach inference. Unified rendering also receives your
-Immich API key. Only `/render` authenticates requests: keep the listener private. ACE-Step and
-the text reader are not served here; Laya remains in the app process.
+Picture previews and whole music tracks reach the service, and the unified worker's render route
+also receives your Immich API key. Only `/render` checks a token, so keep the listener private.
+ACE-Step and the text reader are not served here; Laya stays in the app process.
 
 ## Unified worker admission and memory
 
-The CUDA image's default command is still `python -m immich_memories_inference`. To start all
-four services, use `python -m immich_memories_inference.gpu_worker` through the shipped
+The CUDA image's default command is `python -m immich_memories_inference` (standalone). To
+start all four services, use `python -m immich_memories_inference.gpu_worker` through the shipped
 `services/inference/compose.gpu-worker.yaml` recipe. It requires the shared render token, the
 app's Immich URL and a scratch directory; [the setup guide](../run/reference-setup.md#one-gpu-service)
 shows the environment and app settings.
 
-Requests acquire a classifier, caption or audio phase. A different active phase returns HTTP
-503 with `Retry-After: 1`. Render work waits up to 60 seconds for model work, then owns the GPU;
-model requests are refused while it is preparing or rendering. Cancellation does not release
-active native work before that work finishes. This is phase admission, not one global FIFO.
+Each request takes a phase: classifiers, captions or audio. While another phase is active the
+worker answers HTTP 503 with `Retry-After: 1`; the app's caption requests wait that out (see
+[the caption contract](./caption-service.md#unified-or-separate-service)). Render work waits up to
+60 seconds for model work to finish, then owns the GPU, and model requests are refused while it
+prepares or renders. Cancelling a request does not stop native work already running.
 
-Before a phase change, the worker unloads classifiers when leaving facts and stops its caption
-child when leaving captions. Demucs releases after its response. The next caption request
-restarts the child, which listens only on loopback inside the container. Render authentication
-headers are not forwarded to it.
+On a phase change the worker unloads the classifiers when leaving facts and stops its caption
+process when leaving captions; Demucs lets go after its response. The next caption request starts
+the caption process again, listening only on loopback inside the container. Render
+authentication headers are never forwarded to it.
 
-The bundled caption command sets context to 8192 tokens and caps the RAM prompt cache at
-128 MiB (`LLAMA_ARG_CACHE_RAM` overrides it); it sets no processing-slot count. Phase changes reduce overlapping model residency;
-they do not impose a hard host-RAM or VRAM budget. The Compose recipe has no RAM limit. Other
-containers and external readers/music backends can still consume the same card.
+The bundled caption command uses an 8192-token context and a 128 MiB RAM prompt cache
+(`LLAMA_ARG_CACHE_RAM` overrides it), with no slot count. Phases keep models from sitting on the
+card together; they are not a RAM or VRAM budget. The Compose recipe sets no RAM limit, and other
+containers, readers or music servers can still use the same card.
 
 ## Verify the rendering runtime
 
 For the unified worker, keep the `/render` suffix in `render.worker_base_url`. Check
-`http://WORKER:8092/render/health` for render readiness; `/health` checks inference and does
-not establish that the render route has the expected contract or acceleration support.
+`http://WORKER:8092/render/health` for render readiness; `/health` only covers inference.
 
-Use the app and worker images from the same release. When developing with source mounted over
-an older image, install that source revision's declared dependencies too. A source copy does
-not update its Python environment. Older custom images may lack `pi-heif`: inference succeeds,
-then remote assembly rejects HEIC photos.
-
-Before a long run with a custom image, check `import pi_heif` in the worker's Python environment
-and decode a representative HEIC source. A successful health response does not exercise every
-media decoder.
+Use the app and worker images from the same release. If you mount source over an older image,
+install that revision's dependencies too: copying source doesn't update the Python environment.
+A custom image without `pi-heif` passes inference and then fails remote assembly on HEIC photos,
+so check `import pi_heif` in the worker and decode one HEIC before a long run.
 
 ## The two images
 
@@ -68,14 +62,14 @@ media decoder.
 | `:X.Y.Z` | `linux/amd64`, `linux/arm64` | CPU |
 | `:X.Y.Z-cuda` | `linux/amd64` | CUDA, falling back to CPU |
 
-`openvino`, `armnn` and `rocm` are not shipped. Quick Sync, VAAPI and NVENC decode, scale and
-encode; they run no inference.
+There are no `openvino`, `armnn` or `rocm` images. Quick Sync, VAAPI and NVENC handle video
+(decode, scale, encode) and run no inference.
 
-The CUDA image uses ONNX Runtime GPU for the DINOv2 encoder, Marqo and Docling. The eight
-small heads project the encoder output with NumPy. A graph rejected by CUDA falls back to CPU;
-the image tag alone does not certify GPU execution.
+The CUDA image runs the DINOv2 encoder, Marqo and Docling on ONNX Runtime GPU; the eight small
+heads project the encoder output with NumPy. A graph CUDA rejects falls back to CPU, so read
+`/health` rather than trusting the tag.
 
-Use the published release image tag matching your app. The image names are:
+Use the tag that matches your app release:
 
 ```bash
 docker pull ghcr.io/sam-dumont/immich-memories/inference:YOUR_APP_TAG
@@ -90,20 +84,21 @@ From a checkout, `docker/Dockerfile.inference` builds either one: `--build-arg D
 With `advanced.inference.facts_base_url` set, the app sends generated music to `POST /audio/stems`
 and receives a ZIP containing `drums.wav`, `bass.wav`, `other.wav` and `vocals.wav`. The endpoint
 accepts one multipart `file`, up to 256 MiB. One separation runs at a time, off the HTTP event
-loop: an upload that arrives while another separates gets HTTP 429 with `Retry-After` before its
-body is read, and the app falls back as for any failed stem request. Temporary audio is deleted
-after the response. Both inference images include Demucs. The CUDA image bundles
-its weights; the CPU image downloads them on first use into `/cache/torch`.
+loop: an upload that arrives during another separation gets HTTP 429 with `Retry-After` before
+its body is read, and the app treats it as any failed stem request. Temporary audio is deleted
+after the response. Both images include Demucs; the CUDA image bundles its weights and the CPU
+image downloads them into `/cache/torch` on first use.
 
-`advanced.inference.fallback_to_local` also controls recovery from a failed stem request. Its
-default is `true`: the app uses local Demucs if installed. An explicitly enabled MusicGen server
-keeps priority for stems. Neither setting changes the ACE-Step generation endpoint.
+When a stem request fails, `advanced.inference.fallback_to_local` (default `true`) lets the app
+use local Demucs if it is installed. An enabled MusicGen server still comes first for stems.
+Neither setting touches the ACE-Step generation endpoint.
 
 ## Running it with compose
 
-The base file runs Basic. For GPU inference and captions, use the released GPU and CUDA files.
-[Compose setup files](./compose-files.md#select-the-files) covers downloads and keeping the selection
-in `.env`. The GPU file alone uses CPU images for diagnosis and does not pass GPU readiness.
+The base file runs Basic. For GPU inference and captions, add the released GPU and CUDA files;
+[Compose setup files](./compose-files.md#select-the-files) covers the downloads and keeping the
+selection in `.env`. The GPU file alone runs CPU images, useful for diagnosis, and does not pass
+the GPU check.
 
 For NVIDIA, install the
 [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
@@ -125,21 +120,23 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose
 curl -s localhost:8092/health
 ```
 
-Set `IMMICH_MEMORIES_VERSION` once in `.env` for the app and inference image. There is no
-separate inference tag. The GPU preset requests GPU; a CPU image does not satisfy its inference
-compute check. Change the inference URL in Settings for an existing install, or use the
-[setup builder](/setup) for fresh-install defaults that remain editable there.
+`IMMICH_MEMORIES_VERSION` in `.env` sets both the app and the inference image; there is no
+separate inference tag. A CPU image does not pass the GPU tier's compute check. Change the
+inference URL in Settings, or let the [setup builder](/setup) write defaults you can still edit
+there.
 
 The app detects remote GPU capability from the top-level `/health` fields `status: "ok"` and
 `provider: "CUDAExecutionProvider"`; that probe loads no models and sends no pictures.
 `/health` also names the provider per producer, in `producers.heads.providers`,
 `producers.nsfw_marqo.providers`, `producers.doc_docling.providers` and
 `producers.obstruction.providers`, each empty until that producer has loaded. The app reads the
-producer names there once per run and asks only for the ones the service serves. `CPUExecutionProvider` on a GPU host means the image is the CPU one, the
-device reservation did not reach the container, `PROVIDER` names `cpu`, or the driver and the CUDA
-runtime in the image do not match. Check the tag first: it is the usual one. A graph ONNX Runtime
-turns down gets one WARNING naming the seat and the fallback, so the service never serves CPU
-answers quietly.
+producer names there once per run and asks only for the ones the service serves, so a service
+older than the app keeps `obstruction` local instead of failing the pass.
+
+`CPUExecutionProvider` on a GPU host means one of four things: the image is the CPU one, the
+device reservation didn't reach the container, `PROVIDER` says `cpu`, or the driver doesn't match
+the image's CUDA runtime. Check the tag first; it's the usual cause. A graph ONNX Runtime turns
+down logs one WARNING naming the seat and the fallback, so CPU answers never pass silently.
 
 ## On Kubernetes
 
@@ -156,7 +153,7 @@ kubectl apply -k deploy/kubernetes/overlays/inference-cuda   # NVIDIA nodes
 `inference-cuda` is the same overlay plus one patch: `runtimeClassName: nvidia`, one
 `nvidia.com/gpu`, the two `NVIDIA_*` env vars, the `nvidia.com/gpu.present=true` node selector, the
 matching toleration and the `-cuda` tag. Each overlay pins its own tag in an `images:` entry; bump
-both together and match them to the app version you are deploying.
+both together, to the app version you deploy.
 
 Port-forward and read the provider back:
 
@@ -172,12 +169,12 @@ already allows the app egress on 8092.
 ### A cold cache volume
 
 The CUDA image bundles DINOv2, the context heads, Marqo, Docling, Laya ONNX and the SmolVLM2
-caption model and projector. Its weights live in `/opt/immich-models`, outside the writable
-cache mount. Downloads are unnecessary at startup; the image sets `HF_HUB_OFFLINE=1`.
-The app's CLI can use the same image, with the bundled paths already configured.
+caption model and projector in `/opt/immich-models`, outside the writable cache mount, and sets
+`HF_HUB_OFFLINE=1`: it downloads nothing at startup. The app's CLI can run in the same image with
+the bundled paths already configured.
 
-For **standalone** inference, a separate caption container can reuse the CUDA image and layers.
-The unified worker starts its own child; do not add this container to that setup:
+For **standalone** inference, a separate caption container can reuse the CUDA image. The unified
+worker starts its own caption process, so don't add this container there:
 
 ```bash
 image=ghcr.io/sam-dumont/immich-memories/inference:YOUR_APP_TAG-cuda
@@ -188,13 +185,11 @@ docker run --rm --gpus all -p 127.0.0.1:8094:8092 \
 
 Point `advanced.editorial.preparation.caption_base_url` at `http://localhost:8094/v1` when
 running the app on the host. Between containers, use the caption container's hostname and
-port 8092. The llama.cpp runtime bundled in the image is pinned by digest; older NVIDIA cards may compile
-kernels on their first request. Its bounded JIT cache stays on `/cache` across restarts.
-Laya runs in the app process; the `/facts` service serves the image classifiers.
+port 8092. The bundled llama.cpp runtime is pinned by digest; older NVIDIA cards may compile
+kernels on their first request, and that JIT cache stays on `/cache` across restarts.
 
-The CPU image keeps its smaller download. A fresh PVC is empty, which is fine. Both overlays
-set `ALLOW_MODEL_DOWNLOADS=true`, and the CPU
-service then fetches what it is missing on first use: the pinned DINOv2 export (88 MB), the pinned
+The CPU image bundles no weights. A fresh PVC is empty, which is fine: both overlays set
+`ALLOW_MODEL_DOWNLOADS=true`, and the CPU service fetches what it is missing on first use: the pinned DINOv2 export (88 MB), the pinned
 Marqo export (22.5 MB) and the Docling snapshot. The ONNX exports are checked against the same
 SHA-256 `immich-memories models fetch` pins, the Docling snapshot by Hugging Face revision. Only
 the first `/facts` call after a cold start waits for it.
@@ -221,8 +216,8 @@ restarts. Keep both if you write your own manifests.
 
 `http://inference:8092` only resolves inside the cluster. For a NAS or a laptop on the LAN,
 `overlays/inference-lan` adds a second Service, type LoadBalancer, on the same pods and port. The
-ClusterIP Service is untouched, so no in-cluster caller starts riding an external address, and it
-composes with either device overlay.
+ClusterIP Service stays as it is, so in-cluster callers keep the internal address, and it works
+with either device overlay.
 
 ```bash
 kubectl apply -k deploy/kubernetes/overlays/inference-lan
@@ -276,17 +271,15 @@ for each producer, plus `oldest_wait_seconds`, `mean_wait_seconds`, `mean_run_se
 throughput includes idle time. Waiting time includes admission to the shared worker pool.
 Model loading counts as run time. The response contains no pictures or asset identifiers.
 
-Each model has a FIFO queue. Waiting callers yield the worker so another model can run.
-At most `REQUEST_THREADS` model calls run at once, with one active call per model. The service
-accepts 32 waiting calls across the classifier queues by default. A full queue returns
-HTTP 429 with `Retry-After: 1`; callers should reduce concurrency and retry later. The app's
-configured local fallback still applies if the request fails. Cancelling a waiting call removes
-it; cancelling active native work keeps its worker reserved until that work finishes.
+Each model has a FIFO queue, and a waiting caller yields the worker so another model can run.
+At most `REQUEST_THREADS` model calls run at once, one per model. The classifier queues hold 32
+waiting calls between them by default (`MAX_QUEUED_REQUESTS`); one more gets HTTP 429 with
+`Retry-After: 1`, and the app's local fallback applies if the request then fails. Cancelling a
+waiting call removes it; cancelling a running one keeps its worker busy until the work finishes.
 
-These queues cover `/facts`, in both entry points. Standalone Demucs has its own serial
-scheduling. Unified mode adds phase admission across facts, captions, audio and rendering;
-`/queue` does not report those other phases. Separate caption servers based on llama.cpp can
-expose slots and metrics when their server settings enable them.
+These queues cover `/facts` in both modes. Demucs runs one separation at a time on its own, and
+`/queue` doesn't report the unified worker's other phases. A separate llama.cpp caption server
+can expose its own slots and metrics if you enable them there.
 
 ## Request limits
 
@@ -316,7 +309,7 @@ Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
 | `ENCODER` | `$CACHE_DIR/dinov2-small.onnx` | the pinned DINOv2 export, digest-verified on load |
 | `MARQO_ONNX` | `$CACHE_DIR/nsfw-marqo-384.onnx` | the pinned sensitive-content ONNX export |
 | `BUNDLE` | the packaged public bundle | head bundle `.npz` |
-| `PROVIDER` | `auto` | `auto`, `cpu`, `cuda` or `coreml`. `auto` takes CUDA where the provider is present and CPU otherwise. CoreML is selectable; Linux images use CPU or CUDA |
+| `PROVIDER` | `auto`; the CUDA image sets `cuda` | `auto`, `cpu`, `cuda` or `coreml`. `auto` takes CUDA where the provider is present and CPU otherwise. CoreML is selectable; Linux images use CPU or CUDA |
 | `REQUEST_THREADS` | `4` | the thread pool in front of ONNX Runtime. The app's `facts_concurrency` is what fills it |
 | `MAX_QUEUED_REQUESTS` | `32` | maximum waiting calls across classifier queues; excess requests get HTTP 429 |
 | `IDLE_UNLOAD_SECONDS` | `300` | drop idle weights; `0` holds them |
@@ -325,10 +318,10 @@ Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
 | `ALLOW_MODEL_DOWNLOADS` | `false` | let a cold cache fetch the pinned exports and the Docling snapshot itself |
 | `MAX_IMAGE_BYTES` | `16777216` | refuse a decoded picture larger than this, and size the `/facts` body limit from it |
 
-The CUDA image sets `OPENBLAS_NUM_THREADS=1` for NumPy's small per-picture head projection.
-This limits NumPy's BLAS worker pool, which otherwise can compete for a container's CPU quota.
-`REQUEST_THREADS` independently controls classifier request concurrency. Measure under your
-actual CPU and memory limits before overriding either setting.
+The CUDA image sets `OPENBLAS_NUM_THREADS=1`: the per-picture head projection is small, and a
+BLAS pool sized from the host's cores would eat the container's CPU quota. `REQUEST_THREADS` is
+separate: it bounds classifier calls. Measure under your real CPU and
+memory limits before changing either.
 
 Idle unload drops the weights and **keeps the process**: the next request reloads them. Changing
 the provider re-keys nothing, so any of this can be retried without re-deriving a fact.

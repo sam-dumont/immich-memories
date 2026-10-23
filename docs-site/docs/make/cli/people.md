@@ -4,7 +4,7 @@ title: People commands
 
 # People commands
 
-Scan the people Immich knows, confirm their roles, and reuse them in films. The browser's **Settings > People** edits the same registry. [People and home](../../get-started/who-is-who.md) is the simplest setup path.
+Scan the people Immich knows, confirm their roles, and reuse them in films. The browser's **People** page edits the same registry. [People and home](../../get-started/who-is-who.md) is the simplest setup path.
 
 In Docker, run these commands from the installation folder with
 `docker compose exec immich-memories` before `immich-memories`.
@@ -26,7 +26,7 @@ A named person needs enough pictures to count. The floor is a tenth of the most-
 | 120 pictures | 12 |
 | 250 pictures or more | 25 |
 
-So a small library keeps its handful of regulars, and a face caught twice in the background stays out. Once anybody is on 250 pictures the floor is 25, which is where most libraries land. The scan prints the floor it used. The browser's rescan under **Settings > People** uses the same rule. Set it by hand with `--min-assets`:
+So a small library keeps its handful of regulars, and a face caught twice in the background stays out. Once anybody is on 250 pictures the floor is 25, which is where most libraries land. The scan prints the floor it used. **Rescan the library** on the **People** page uses the same rule. Set it by hand with `--min-assets`:
 
 ```bash
 immich-memories people scan --min-assets 10
@@ -101,6 +101,6 @@ immich-memories people group rm kids
 Film titles use the saved people's names, not their internal IDs. Unnamed people still
 filter the film, but do not add an ID to its title.
 
-Removing a group removes the label, not its people. The UI can create groups under **Settings > People**, then select them from **Memory**.
+Removing a group removes the label, not its people. The **People** page can create groups too; pick them on **Memory**.
 
 The [people registry reference](../../reference/people-registry.md) documents inference, export format and ID validation. Every flag: [CLI reference](../../reference/cli-reference.md#people).

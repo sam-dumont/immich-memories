@@ -4,15 +4,13 @@ title: Store command reference
 
 # Store command reference
 
-For exact backup, restore and backend-copy behavior. Start with
-[Database and backups](../database.md) for the procedure.
+What each `store` command does, exactly. For the procedure, start with
+[Database and backups](../database.md).
 
 ## Managing the store
 
 Five routine commands, all under `immich-memories store`. They act on whatever store the config points at
 (`IMMICH_MEMORIES_DATABASE_URL`, or `database.url`, or the default SQLite file).
-
-
 
 ### `store status`
 
@@ -25,9 +23,8 @@ exist yet is reported, not created. A SQLite file on NFS, SMB or CIFS gets a war
 
 Upgrade the configured store to this release's schema. `ui`, `generate` and `auto` also upgrade
 before writing. `store status`, `store backup`, `config show` and `preflight` load saved settings
-without migrating and report an actual/expected revision mismatch. A store from before saved
-settings existed uses configuration defaults; an unreadable settings table stops configuration
-loading instead of silently losing overrides.
+without migrating and report an actual/expected revision mismatch. An unreadable settings table
+stops configuration loading instead of silently losing overrides.
 
 ### `store backup [--to FILE]`
 

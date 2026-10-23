@@ -18,7 +18,7 @@ make demo-ui DEMO_THEME=dark
 make demo-hero DEMO_THEME=dark
 ```
 
-The trip preview needs the network for map tiles and place naming. The other demo media use the public fixture. The README’s hosted hero updates when the docs site deploys. The homepage selects matching light/dark screenshots, video posters and walkthrough video. Finished films have no UI theme and use one shared preview.
+The trip preview needs the network for map tiles and place names; everything else runs on the public fixture alone. The README's hero GIF is served by the docs site, so it changes when the docs deploy. The homepage picks the light or dark screenshots, posters and walkthrough to match the visitor's theme; finished films have no theme and share one preview.
 
 The docs use the app’s pinned `@immich/ui` theme tokens. After updating that package in both projects, run `npm --prefix docs-site run ui-theme`; the docs build checks for token drift.
 
@@ -30,7 +30,7 @@ Nothing on the docs site or in the README is a screenshot of a real library. The
 React recreation of the UI rendered with Remotion over the demo library, the CLI demo is a VHS
 recording, and the app screenshots come from a hermetic run over the same library.
 
-The library is 1,119 pictures and 7 clips under `tests/e2e/fixtures/library/`, all real files from
+The library is 1,119 picture files and 7 clips under `tests/e2e/fixtures/library/`, all real files from
 Wikimedia Commons under CC0 or CC BY: one household's July 2025, ten days at home in Brussels and
 a road trip to Nordkapp that is one photographer's own holiday. `make fixture-library` builds it
 from `sources.json` (`scripts/build_fixture_library.py`): it checks each file's licence on the
@@ -46,7 +46,7 @@ hashes and the 60 MB ceiling. `tests/e2e/fake_library.py` is the script on top: 
 carries which story (30 carriers), and a reason for every picture left out, most of them computed
 from the moments the photographers' own sets form.
 
-The household is eleven people pinned onto real faces: Kit (26 pictures), Robin, Charlie,
+The household is eleven people pinned onto real faces: Kit (27 pictures), Robin, Charlie,
 Remy, Pat, Jo, Lou and Alex clear the people floor, and Sasha, Mo and Nico are the tail a real
 library has. The faces are strangers from CC0 and CC BY stock shoots, so a person's pictures
 don't show one face; the pinned boxes make Immich group them anyway. The people pictures carry
@@ -92,8 +92,8 @@ seconds; the walkthrough adds its own soundtrack. The generated fixture carries 
 positions, its weighed stories, the seconds the titles leave the pictures and where the film's last
 photograph ends.
 
-The fixture has 1,126 files on disk. Visibility and metadata rules can reduce the pool before
-selection, so the pool count can differ from the file count.
+The fixture has 1,126 media files on disk and serves 1,131 assets (1,124 photos, 7 videos): a few
+files stand for more than one asset, so the pool count in the demo is not the file count.
 
 | Command (repo root) | Produces |
 |---|---|
@@ -101,7 +101,7 @@ selection, so the pool count can differ from the file count.
 | `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the shared timeline supplies the windows), 720 px, 10 fps, under 4 MB |
 | `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4` and `docs-site/remotion/src/cli-timing.ts`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e`, types each command, and writes the second each one starts at so the scene cuts there; it also copies the video to `docs-site/static/demo/cli-demo.mp4` and cuts its poster `cli-demo-poster.jpg`, which the homepage's CLI section plays (`make demo-cli-run` plays the same session without recording; as root in a container, set `VHS_NO_SANDBOX=true`) |
 | `make demo-output` | `docs-site/remotion/public/output-preview.mp4` and `output-frame.jpg`, cut on the hermetic launch |
-| `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's road north cut as a 40-second trip memory and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |
+| `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's road north cut as a trip memory asked for 40 seconds and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |
 | `make demo-soundtrack` | `docs-site/remotion/public/demo-music.wav`, crossfaded and normalised from a bundled acoustic track; also runs with `make demo-ui` |
 | `make demo-music` | Optional ACE-Step candidates under `docs-site/static/demo/music-candidates/` |
 | `make screenshots` | the light and dark screenshots under `docs-site/static/img/screenshots/` |

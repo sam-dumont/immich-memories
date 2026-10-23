@@ -14,11 +14,10 @@ same values directly in the app service's `environment` and `ports` entries.
 
 ## SSH/Compose installation from published files
 
-This is a separate route from the Project wizard. On the NAS, enable SSH for an approved
-account and open a terminal in a new app-only directory under your DSM home. Follow
-[Quick start, Download the files](../../get-started/quick-start.md#1-download-the-files) there,
-using that documentation build's published assets. A preview without downloads cannot supply
-this prebuilt route. Never use the Immich project's directory.
+A separate route from the Project wizard. On the NAS, enable SSH for an approved account and
+open a terminal in a new, app-only directory under your DSM home (never the Immich project's
+directory). Follow [Quick start, Download the files](../../get-started/quick-start.md#1-download-the-files)
+there.
 
 Edit `.env` on the NAS: set `IMMICH_URL`, `IMMICH_API_KEY`, `TZ`, and keep `TIER=basic` and
 `UI_BIND_ADDRESS=127.0.0.1`. Use the [ten read permissions](../docker.md#the-api-key).

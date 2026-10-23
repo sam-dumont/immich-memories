@@ -4,10 +4,11 @@ title: "Network calls and data sent"
 
 # Network calls and data sent
 
-The reader is disabled by default. With `llm.enabled: true`, a blank `base_url` and `openai-compatible` or `ollama`, the app starts
-an owned local `llama-server`; its prompts stay local. Hosted provider presets fill a blank URL
-with their vendor endpoint. A nonblank URL sends them to that endpoint.
-Only `enabled: true` enables the reader. A model or endpoint alone leaves it disabled.
+The reader is off by default, and only `llm.enabled: true` turns it on: a model or an endpoint
+alone leaves it off. With a blank `base_url` and the `openai-compatible` or `ollama` provider, the
+app starts its own local `llama-server` and the prompts stay on the machine. The hosted presets
+(`openai`, `anthropic`, `zai`) fill a blank URL with their vendor endpoint, and any URL you set
+gets the prompts.
 
 ## Everything that can leave, and when
 
@@ -30,7 +31,7 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 | Apprise notification URLs | `notifications.enabled: true` | memory type, outcome, duration, output path, the last 300 characters of the redacted error output; a frame if `attach_thumbnail: true` | off |
 | Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | authentication off |
 | Configured Immich, reader, caption, render and music endpoints | `preflight`, for enabled/configured services | service/health/model requests with their configured credentials; reader probes can request a one-token reply to `hi` | probes contain no library pictures; notifications are not sent by preflight |
-| `huggingface.co`, `github.com` | `models fetch`, the web UI's **Fetch models** button (same command, as a job); permitted detector downloads during preparation; inference startup or first use | model requests and the 118 MB `music-v3` music archive (SHA-256 checked, skipped when `audio.no_music` is on); no library data | app detector downloads off unless `allow_model_downloads: true`; Compose inference allows them. The GPU overlay's one-shot `immich-memories-caption-models` container fetches the SmolVLM weights at `docker compose up`, before the captioner starts |
+| `huggingface.co`, `github.com` | `models fetch`, the web UI's **Download models** button (same command, as a job); permitted detector downloads during preparation; inference startup or first use | model requests and the 118 MB `music-v3` music archive (SHA-256 checked, skipped when `audio.no_music` is on); no library data | app detector downloads off unless `allow_model_downloads: true`; Compose inference allows them. The GPU overlay's one-shot `immich-memories-caption-models` container fetches the SmolVLM weights at `docker compose up`, before the captioner starts |
 | `dl.fbaipublicfiles.com` | local Demucs on first use, including `capabilities --test-music` | Torch Hub weight requests, no library data | optional stem separation; cache prevents repeat downloads |
 | Hugging Face and its download/CDN hosts | ACE-Step `lib` mode checkpoint preparation, including music capability tests | checkpoint requests, no library data | optional generated music; the app pins immutable snapshot revisions listed below and refuses incomplete snapshots |
 | `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
@@ -140,7 +141,7 @@ Privacy mode stops the cut's places from being asked about, but not the trip nam
 
 ## Update check
 
-Nothing in the app asks whether a newer release exists unless you ask. Three ways to ask:
+The app never looks for a newer release on its own. Three ways to ask:
 
 - **Check for updates** in Settings.
 - `immich-memories version --check`.

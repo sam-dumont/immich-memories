@@ -4,26 +4,37 @@ title: Caption service contract
 
 # Caption service contract
 
-The [caption setup guide](../better/captions.md) gets the Compose service running. This reference keeps explicit LLM captioning, pinned artifacts, alternative deployments and the contract every server must meet.
+[Add captions](../better/captions.md) gets the Compose service running. This page is the rest: the contract every caption server must meet, the pinned artifacts, other ways to serve them and explicit LLM captions.
 
 ## Unified or separate service
 
-The [unified NVIDIA worker](../run/reference-setup.md#one-gpu-service) already exposes captions
-at `/v1`. Its phase manager stops the owned caption subprocess between other GPU phases and
-restarts it on demand. The standalone Compose/Kubernetes recipes below run their own server;
-do not add one just to use unified captions.
+The [unified NVIDIA worker](../run/reference-setup.md#one-gpu-service) already serves captions
+at `/v1`. It stops its caption process while another GPU phase runs and starts it again on
+demand. The standalone Compose and Kubernetes recipes below run their own server; you don't need
+one next to the unified worker.
+
+While a render or music phase holds the worker's GPU, it answers 503. Preparation waits: 429,
+503 and dropped connections are retried with a growing delay (2 s, up to 30 s between tries,
+honouring `Retry-After`) for up to 25 minutes, with a warning that the run is waiting. A worker
+still busy after that ends the round with "the inference worker stayed busy"; the pictures stay
+outstanding for the next run. Any other 4xx is the picture's own answer and is not retried.
 
 The unified caption route has no authentication, even though `/render` on the same listener
-requires a token. Keep it private. The standalone recipes set `--cache-ram 128` and
-`--parallel 1`. The unified worker's bundled command keeps the 128 MiB prompt cache
-(`LLAMA_ARG_CACHE_RAM` overrides it) and sets no slot count. Context size is 8192
-in both recipes. The prompt cache holds reusable model state in RAM, not saved picture
-descriptions. These settings do not cap the worker's total RAM or VRAM.
+requires a token. Keep it private.
+
+| Setting | Standalone recipes | Unified worker |
+|---|---|---|
+| Context size | 8192 | 8192 |
+| Prompt cache in RAM | 128 MiB (`--cache-ram 128`) | 128 MiB (`LLAMA_ARG_CACHE_RAM` overrides it) |
+| Processing slots | 1 (`--parallel 1`) | server default |
+
+The prompt cache holds reusable model state, not saved descriptions. None of these caps the
+server's total RAM or VRAM.
 
 ## Explicit LLM captions
 
-SmolVLM is the default caption provider. An LLM configured for titles or prose never receives
-images automatically. To let a vision-capable LLM supply missing captions, opt in:
+SmolVLM is the default caption provider. The LLM you configure for titles and the reader never
+receives images unless you opt in. To let a vision-capable LLM write missing captions:
 
 ```yaml
 advanced:
@@ -36,20 +47,18 @@ advanced:
       caption_provider: llm
 ```
 
-**This is less efficient than SmolVLM and can be much more expensive, especially on hosted
-infrastructure.** The app warns at startup and in preflight. Image tiles and video frame strips
-go to the configured LLM, using its credentials and provider settings. The SmolVLM endpoint and
-`caption_api_key` are unused for this choice.
+**This is slower than SmolVLM and can cost a lot more on a hosted API.** The app warns at
+startup and in preflight. Image tiles and video frame strips go to the configured LLM with its
+credentials and provider settings; the SmolVLM endpoint and `caption_api_key` are not used.
 
-Existing valid SmolVLM captions and motion lines stay banked and are reused first. New LLM
-captions have a separate producer identity and provenance; changing models does not relabel old
-captions. Before new picture captions, three synthetic tiles must pass the schema check. A failed
-LLM caption stays outstanding, with no automatic fallback to another model.
+Banked SmolVLM captions and motion lines are reused first. LLM captions are banked under their
+own producer identity, so changing models never relabels old captions. Three synthetic tiles
+must pass the schema check before any library picture is sent. A failed LLM caption stays
+outstanding; nothing falls back to another model.
 
-Film generation still captions only the selected shots and actual candidates. `prepare` is the
-explicit job for a wider scope. This choice works on Basic without promoting selection to Full:
-automatic tiers still follow available GPU inference capability. Sharing decisions remain with
-the rules, classifiers and Laya where enabled.
+A film still captions only its selected shots and real replacement candidates; `prepare` covers a
+wider scope. This works on Basic and does not turn Basic selection into Full. Sharing decisions
+stay with the rules, the classifiers and Laya where enabled.
 
 ## The SmolVLM contract
 
@@ -60,19 +69,17 @@ temperature 0 with a repetition penalty of 1.1, a 140-token cap and a JSON schem
 honour. Two invalid answers bank `caption unavailable`; a timeout, a missing model or a transport
 error stays outstanding and the next run picks it up.
 
-The alias is a promise about behaviour, not a name lookup: any endpoint can claim it. It means the
-descriptions under that name came from SmolVLM2-500M with this prompt and this schema, so a bank
-filled last month and one filled today are comparable. Alias an unrelated vision model and the app will
-believe you, and the bank then holds two things under one name. The default SmolVLM provider
-expects this alias from your server. The explicit LLM
-option above uses the configured model's own identity instead.
+The alias is a promise about behaviour: any endpoint can claim it. It says the descriptions
+came from SmolVLM2-500M with this prompt and this schema, so captions banked months apart are
+comparable. Alias an unrelated vision model and the app believes you, and the bank then holds two
+things under one name. The explicit LLM option above uses the configured model's own name instead.
 
 `caption_api_key` goes out as `Authorization: Bearer <key>`; blank sends no header. The reader's
 `llm.api_key` is never borrowed for it.
 
 Caption reports name the producer of the caption actually reused, which can differ from the
-currently configured model. A description
-and its setting are read as one complete pair from the same producer.
+model configured today. A description and its setting are always read as one pair from the same
+producer.
 
 ## Accepted artifacts
 
@@ -92,8 +99,6 @@ Use the pinned Q8_0 artifacts to match the bundled serving contract.
 
 ## Apple Silicon, with mlxcel
 
-A native Apple Silicon serving option:
-
 ```bash
 brew install lablup/tap/mlxcel
 pip install huggingface-hub          # for the `hf` command, if you do not have it
@@ -102,9 +107,9 @@ SNAPSHOT=$(hf download mlx-community/SmolVLM2-500M-Video-Instruct-mlx \
 mlxcel serve --model "$SNAPSHOT" --alias smolvlm2-500m-base-public --host 0.0.0.0 --port 8092
 ```
 
-`--host 0.0.0.0` because mlxcel binds `127.0.0.1` by default, which an app on a NAS or another host
-cannot reach (`Caption endpoint unreachable`); nothing behind the port checks a credential, so keep
-it on your LAN.
+`--host 0.0.0.0` because mlxcel binds `127.0.0.1` by default, which an app on a NAS or another
+host cannot reach (`Caption endpoint unreachable`). Nothing behind the port checks a credential,
+so keep it on your LAN.
 
 `hf download` prints the snapshot directory it wrote, which is what the server wants. Then in your
 config:
@@ -118,23 +123,24 @@ advanced:
 ```
 
 That is the default value of `caption_base_url`. On an Apple Silicon Mac installed with the
-`all-mac` extra, automatic selection sees the Metal GPU and chooses GPU, or Full when an LLM is also configured. Install the
-[Laya checkpoint](llm-providers.md#the-laya-audience-pre-screen) too. From the app in Docker Desktop on the same Mac, the address is
-`http://host.docker.internal:8092/v1`; from a NAS, the Mac's LAN name or IP. If you run oMLX
-for the reader, use the separate SmolVLM caption server with its own process
-on its own port. A container does not see the Mac's GPU: configure a
-[GPU inference service](../better/inference.md) as well. A caption URL alone does not select the GPU tier.
+`all-mac` extra, `tier: auto` sees the Metal GPU and picks GPU, or Full when an LLM is also
+configured. Install the [Laya checkpoint](llm-providers.md#the-laya-audience-pre-screen) too.
+
+From the app in Docker Desktop on the same Mac, the address is
+`http://host.docker.internal:8092/v1`; from a NAS, the Mac's LAN name or IP. If you run oMLX for
+the reader, keep the SmolVLM caption server as its own process on its own port. A container
+doesn't see the Mac's GPU, so configure a [GPU inference service](../better/inference.md) as
+well: a caption URL alone does not select the GPU tier.
 
 ## Apple Silicon, with llama.cpp
 
 Switching the caption server from mlxcel to llama.cpp cuts its resident memory by about 4x on a
 16 GiB Mac; see [Measure your setup](../better/measured.md#caption-service-memory) for the exact
-figures. These are measured service footprints, not whole-app memory requirements. The reader
-and music still need their own memory.
+figures. That is the caption server alone; the reader and music need their own memory.
 
 Use the `llama-server` executable installed for the local reader and the GGUF files pinned in the
 table above. This is an alternative to the mlxcel caption process, so stop that process before
-using its port; leaving both loaded defeats the memory saving. Keep the same served alias.
+using its port (leaving both loaded defeats the saving). Keep the same served alias.
 
 ```bash
 CAPTION_MODELS="$HOME/.immich-memories/models/captioner-gguf"
@@ -150,12 +156,11 @@ llama-server \
   --ctx-size 8192 --cache-ram 128 --parallel 1 --threads 4 --n-gpu-layers 99
 ```
 
-Reuse these files if they are already installed, checking their hashes against the pinned table.
+If the files are already there, check their hashes against the pinned table and reuse them.
 This recipe was checked with llama.cpp build 11146; if captions fail to load, try the latest
-release. Point
-`advanced.editorial.preparation.caption_base_url` at `http://127.0.0.1:8092/v1` and run preflight.
-The application checks the real caption schema before sending missing library previews.
-A passing caption check does not certify the whole selection/render/music handoff.
+release. Point `advanced.editorial.preparation.caption_base_url` at `http://127.0.0.1:8092/v1`
+and run preflight. Preparation checks the caption schema on the control tiles before it sends any
+library preview.
 
 ## Docker and Linux, with llama.cpp
 
@@ -169,20 +174,20 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose
 curl -s localhost:8094/v1/models
 ```
 
-The first start downloads about 546 MB of model and projector weights, plus container image
-layers. Subsequent starts verify the cached weights. Compose publishes captions on host port
-**8094** and inference on **8092**. Inside the network, both use port 8092. The GPU preset supplies
-those service URLs as defaults below saved Settings. Existing installs can change the inference
-and caption URLs in Settings; runtime URL environment overrides would pin them above Settings.
+The first start downloads about 546 MB of model and projector weights, plus the container
+images; later starts only verify the cached weights. Compose publishes captions on host port
+**8094** and inference on **8092**; inside the Compose network both listen on 8092. The GPU tier
+file supplies those service URLs as defaults below saved Settings, so you can change them in
+Settings. An environment override such as `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL`
+pins them above Settings.
 
-GPU is a requested tier, not proof of a working device. Run preflight after startup. CPU
-inference does not pass the GPU compute check. Preparation follows the product tier.
+Asking for GPU doesn't prove the device works. Run preflight after startup: CPU inference does
+not pass the GPU compute check.
 
 Running `ghcr.io/ggml-org/llama.cpp:server` by hand works the same way, with the weights
 bind-mounted at `/models` and
 `--host 0.0.0.0 --ctx-size 8192 --cache-ram 128 --parallel 1 --threads 4`.
-The RAM prompt cache is bounded at 128 MiB, with one processing slot. These are host-RAM prompt-cache and processing-slot limits, not a total RAM or VRAM ceiling.
-Measure them alongside other GPU users. Completed captions stay in the app's persistent store.
+Finished captions live in the app's store, not in the server.
 
 Three more flags carry the serving contract:
 
@@ -192,9 +197,8 @@ Three more flags carry the serving contract:
 | `--mmproj …` | the model loads and answers, but cannot interpret images: the control tiles fail and no library picture is sent |
 | `--port 8092` | nothing answers where the app looks, and the row reads unreachable |
 
-Use local model and projector files with the pinned runtime. Preflight checks `/models` and the
-advertised alias. Preparation sends synthetic control tiles first; failed controls stop it before
-any library picture is sent. Preflight does not validate image responses.
+Preflight checks `/models` and the advertised alias; it does not send an image. Preparation
+sends the control tiles first, and failed controls stop it before any library picture is sent.
 
 ### On an NVIDIA host
 
@@ -206,10 +210,10 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose
 
 It selects the pinned `server-cuda-b10920` caption runtime, requests the NVIDIA device and sets
 `LLAMA_ARG_N_GPU_LAYERS=99`. No separate captioner version variable or hand-written override is
-needed. The value 99 offloads all 32 layers of the pinned 500M model. Install the NVIDIA driver
-and container toolkit first, then check captions and inference with preflight.
+needed: 99 is more than the pinned model's layer count, so every layer goes to the GPU. Install
+the NVIDIA driver and container toolkit first, then check captions and inference with preflight.
 
-Optional app concurrency, after measuring the server under load:
+Once you've measured the server under load, you can raise the app's concurrency:
 
 ```yaml
 IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_CONCURRENCY: "4"
@@ -217,10 +221,10 @@ IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_CONCURRENCY: "4"
 
 ### Speed, and what to set `caption_concurrency` to
 
-Start with the default of 1. More concurrent requests can make a CPU server slower because
-they compete for the same threads. On a GPU, try 4 and measure with the other services you run.
-Report new captions separately from cache hits: a selection run that reuses captions does not
-measure caption throughput. Dated measurements belong on [Measured](../better/measured.md).
+Start with the default of 1. On a CPU server, more requests in flight compete for the same
+threads and can make it slower. On a GPU, try 4 and measure it next to the other services you
+run. Count new captions only: a run that reuses banked captions says nothing about throughput.
+The project's own numbers are on [Measure your setup](../better/measured.md).
 
 ## Kubernetes
 
@@ -230,8 +234,8 @@ kubectl apply -k deploy/kubernetes/overlays/captioner        # CPU
 kubectl apply -k deploy/kubernetes/overlays/captioner-cuda   # NVIDIA nodes
 ```
 
-A Deployment, a ClusterIP Service on 8092, a NetworkPolicy and a 2 Gi PVC an init container fills
-and digest-checks before the server starts. Neither overlay includes `base`, so both apply without
+Each overlay is a Deployment, a ClusterIP Service on 8092, a NetworkPolicy and a 2 Gi PVC that
+an init container fills and digest-checks before the server starts. Neither overlay includes `base`, so both apply without
 the Immich secret: the captioner holds no credential. It does receive a 400 px tile of every
 picture it is asked to caption, so the Service stays ClusterIP and the NetworkPolicy allows ingress on 8092
 only.
@@ -266,9 +270,9 @@ block above plus `caption_concurrency: 4`.
 
 It deliberately does not request `nvidia.com/gpu: 1`. Where one card is time-sliced per node that
 resource has a single slot, the inference Deployment holds it, and a captioner asking for a second
-stays Pending beside an idle card. Without the request, it relies on the NVIDIA runtime exposing the same card. This is not a
-portable GPU-sharing or memory-budget guarantee. The unified worker avoids separate inference
-and caption Deployments; use its Compose recipe when one service fits your deployment. With a card to spare, put the request back:
+stays Pending beside an idle card. Without the request, it relies on the NVIDIA runtime exposing
+the same card, which is not a portable GPU-sharing or memory guarantee. The unified worker avoids
+two Deployments on one card. With a card to spare, put the request back:
 
 ```yaml
 resources:
@@ -292,9 +296,12 @@ The standalone overlays pin llama.cpp build b10920: `server-b10920` on CPU and
 | `Caption endpoint serves another model` | a server answered and advertised something else |
 | `Caption endpoint refused the request` | 401 or 403, so set `caption_api_key` |
 
-On Basic with the default caption provider the row reads `SKIPPED`. An explicit LLM-caption
-opt-in prints the image-sharing warning; it does not send a vision request. Preparation validates
-that provider's synthetic control responses before sending library pictures.
+`Caption server busy with another phase, will serve captions when free` is an OK row: the unified
+worker answered that a render or music phase holds its GPU.
+
+On Basic with the default caption provider the row is skipped (`Not required by basic`). With
+explicit LLM captions the row is a warning about sending images; preflight sends no vision
+request.
 
 ## What a missing captioner costs
 
@@ -305,8 +312,8 @@ What each tier runs: [Requirements and tiers](../run/requirements.md#the-prepara
 
 ## Knowing which build wrote a caption
 
-The alias is a contract, not a build identifier: both recipes on this page advertise it on port
-8092. So each new caption row also keeps the server's `/models` row and a 16-character digest of
+The alias doesn't identify a build: every recipe on this page advertises it on port 8092. So
+each new caption row also keeps the server's `/models` row and a 16-character digest of
 its answers to the three controls, plus an optional label of your own
 (`advanced.editorial.preparation.caption_artifact_id`). `prepare` prints one line naming every
 captioner behind the bank, with `MIXED` when there is more than one, and
@@ -332,7 +339,7 @@ happens in it, from the same caption server and model. So does every Live Photo 
 sentence beside the video's row, so the reader compares a video with a still in text and never
 sees a video frame.
 
-The app does not download the video for it. Immich answers byte ranges on its playback rendition,
+The app doesn't download the whole video. Immich answers byte ranges on its playback rendition,
 so preparation reads the index (tens of kilobytes), picks the three keyframes nearest a quarter,
 half and three quarters of the clip, and reads only those. FFmpeg copies exactly those packets
 out of a sparse local copy and decodes them, which behaves the same on FFmpeg 5.1 (the app

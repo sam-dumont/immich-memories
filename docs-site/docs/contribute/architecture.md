@@ -7,15 +7,13 @@ import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
 
 # Codebase architecture
 
-How the code is organized and where to make changes.
-
 ## Runtime boundaries
 
 The web UI and terminal use the same CLI workflow: **choose a cut → render it → optionally upload it**. A render consumes the chosen cut; it does not choose footage again. The store keeps reusable facts, settings and history; per-attempt records explain the decisions in one cut.
 
 ## Data and service boundaries
 
-Explore the deployment and processing phase below. Select a service for its data and runtime responsibilities. These are service boundaries, not a promise about GPU placement.
+Pick a service in the diagram to see the data it holds and what it runs. These are service boundaries: they don't say where the GPU work runs.
 
 <DeploymentDiagram chooseTopology />
 
@@ -36,12 +34,15 @@ preparation, the two readings, the structure and story planners, and certifies t
 `generate_memory()` in `generate.py` then does extract → assemble → music → upload. Hand it no
 clips and it raises rather than going to find some.
 
-`analysis/` is one package per stage of that selection, from `runtime` (the composition the CLI
-drives) down through `structure`, `selection`, `stories`, `reading`, `preparation` and `corpus` to
-`llm` (the model transport). A stage imports only the stages below it, and only the modules a
-stage lists in its `__all__`; `make arch-check` and `make private-imports` fail a change that
-breaks either rule. No module imports another module's `_private` names. The full map is in
-`ARCHITECTURE.md`.
+`analysis/` is 18 packages, one per stage of that selection. Top to bottom: `runtime` (the
+composition the CLI drives), `structure`, `polish`, `selection`, `stories`, `film`, `audience`,
+`special_days`, `reading`, `preparation`, `captions`, `clips`, `facts`, `sources`, `corpus`,
+`places`, `judgments` and `llm` (the model transport). A stage imports only the stages below it,
+and only the modules a package lists in its `__all__`. The order lives in the
+`analysis-stages-are-layered` contract in `pyproject.toml`: `make arch-check` fails a change that
+breaks it, and `make private-imports` fails one that imports another module's `_private` names.
+Config is its own package, `config/`, with the section models in `config/models/`. The full map is
+in `ARCHITECTURE.md`.
 
 | Orchestrator | Services | What it does |
 |---|---|---|

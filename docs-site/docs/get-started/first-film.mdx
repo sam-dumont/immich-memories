@@ -8,7 +8,7 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 # Your first film
 
 Use an Immich album with **20–50 photos and short videos**, and make a **30-second film**.
-A small album keeps the first preparation manageable. These steps work on Basic, GPU and Full.
+A small album keeps the first preparation short. The steps are the same on Basic, GPU and Full.
 
 ## Before you start {#prepare-and-check-first}
 
@@ -25,14 +25,13 @@ In Immich Memories:
 2. Select your album. Its picture count appears in the dropdown.
 3. Open **Length and pictures** and set **Length in minutes** to **0.5**.
 
-Keep your tier's configured services. Bundled music is ready to use; leave upload off for
-this first film so you can download it locally.
+The bundled music is ready to use. Leave upload off for this first film so you can download it.
 
 ## 2. Make the cut {#cut}
 
 Press **Cut**. The app prepares the pictures and chooses the shots. The first cut takes longer;
-compatible preparation is reused for later films. A shorter output does not reduce the input
-pool, which is why this first film uses a small album.
+later films reuse the preparation. A shorter film still prepares every picture in scope, which
+is why this first one uses a small album.
 
 When the cut finishes, its run opens. You can also find it under **Runs**.
 
@@ -48,7 +47,7 @@ Use **Remove from this cut**, **Start here** / **End here** to trim, or **Use th
 to swap a shot. Press **Save revision**. To add a missing picture, open **Pool**, select it and
 press **Preview with these choices**.
 
-<ThemedScreenshot name="first-film-edit" alt="Editing a shot and viewing its alternatives" />
+<ThemedScreenshot name="first-film-edit" alt="One shot opened from the cut: its picture, Remove from this cut, Keep the original, its screen time, why it was picked, and the other pictures of its moment" />
 
 [Editing a cut](../how-it-chooses/overrule-it.md) covers the other controls, including choices that
 apply to future films.
@@ -61,7 +60,7 @@ then press **Render**. Leave **Upload the film to Immich** off.
 When the film is ready, the run shows a player and **Download film** underneath it.
 Watch it with sound, then download the MP4.
 
-<ThemedScreenshot name="memory-export" alt="The finished film in the player" />
+<ThemedScreenshot name="memory-export" alt="The run page once the film is ready: the player, Download film, and the render options for another version" />
 
 Films stay in your configured output storage: `./output` with the release Compose file,
 a Docker volume with the stack-editor setup, or `~/Videos/Memories` on a native install.
@@ -74,7 +73,11 @@ left once it has something to measure (a first run may not). Reloading the brows
 work. Return to **Memory** for an active cut or **Runs** for a saved cut or render.
 
 Use **Cancel** to stop a job. For a failure or interrupted run, see
-[film progress and recovery](../run/film-progress.md); compatible prepared facts remain cached.
+[film progress and recovery](../run/film-progress.md); prepared pictures stay cached.
+
+One bad source doesn't sink the film. A picture whose preview Immich no longer has, or a clip
+that won't decode, drops out and the run's warnings name it; a Live Photo whose motion fails
+plays as its still. On Full, a reader that stops answering leaves the cut to the rules.
 
 ## Your next film {#next}
 

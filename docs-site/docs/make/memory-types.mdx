@@ -6,7 +6,7 @@ description: Pick the right film for a month, a person, a trip or an occasion.
 
 # Choose a film
 
-Pick the subject in **Memory type**. Start with **Monthly Highlights** if you are trying the app. Every type works on the default Basic setup; some need a little more context from your library.
+Pick the subject under **Memory type**. Start with **Monthly Highlights** if you are trying the app. Every type works on Basic; a few need more context from your library first.
 
 | Make a film of | Choose | Before you start |
 |---|---|---|
@@ -14,12 +14,13 @@ Pick the subject in **Memory type**. Start with **Monthly Highlights** if you ar
 | A whole year | Year in Review | Pick a year |
 | Summer or another season | Season | Pick a season and year |
 | One person | Person Spotlight | Name their face in Immich |
-| Several people | Multi-person | Name the faces; choose all together or any of them |
+| Several people | Multi-Person | Name the faces; choose all together or any of them |
 | This date across the years | On This Day | Have pictures from several years |
 | Christmas or another recurring occasion | Holiday | Pick a holiday; it covers every year you photographed it |
 | A holiday away | Trip | Set home coordinates and have GPS-tagged pictures |
 | Your own collection | Album | Create the album in Immich |
-| One memorable day | Special Day | Pick the day, or use a discovered suggestion |
+| One memorable day | Special day | Pick the day, or use a discovered suggestion |
+| Any dates you choose | Custom date range | Pick a start and an end, or a start and a period |
 
 import RecordedFilms from '@site/src/components/RecordedFilms';
 
@@ -27,7 +28,7 @@ import RecordedFilms from '@site/src/components/RecordedFilms';
 
 These films were made from the [demo library](../welcome/demo-library.md): one household's July, ten days at home and a road trip to the North Cape, all real photographs under CC0 or CC BY. Each one is a single real run on the Full tier with a local model, kept as it came out. The bars show what the run read and what it kept; the lines under them say why the rest stayed out.
 
-The library is made of strangers' stock photos and one photographer's holiday, so the stories are thinner than in a real family's library. Treat the films as what the app does with what it's given, not as the best it can do.
+The library is strangers' stock photos and one photographer's holiday, so its stories are thinner than a real family's. Your own library will make fuller films.
 
 <RecordedFilms />
 
@@ -35,7 +36,7 @@ The library is made of strangers' stock photos and one photographer's holiday, s
 
 Leave the length empty and the app fits it to the material. A busy month can make about a minute; a thin month may be much shorter. A year has a larger budget, not twelve glued-together monthly films.
 
-For a 30-second portrait film, enter **0.5** in **Length in minutes (fitted to the pictures when empty)**, then choose **Portrait** under **Render > Orientation**. On the CLI, use `--short-form 30 --orientation portrait`. It is a target, and the app will not pad a period just to reach it. [Exact length rules](../reference/film-types.mdx#how-long-a-film-runs) are available when you need them.
+For a 30-second portrait film, enter **0.5** in **Length in minutes (fitted to the pictures when empty)**, then choose **Portrait** under **Render > Orientation**. On the CLI, `--short-form 30` does both. The length is a target: the app will not pad a period to reach it. [Exact length rules](../reference/film-types.mdx#how-long-a-film-runs).
 
 ## People and birthdays
 

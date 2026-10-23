@@ -3,9 +3,11 @@ title: Home and people
 description: Set your home and confirm the people who matter in your films.
 ---
 
+import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
+
 # Home and people
 
-Two pieces of context make the cut much better: where home is, and who is close family. Immich already knows dates and faces. This app needs you to confirm what they mean.
+Two things make the cut much better: where home is, and who is close family. Immich already knows dates and faces; you tell the app what they mean.
 
 ## Where home is
 
@@ -36,7 +38,7 @@ trips:
 
 ## Who's who
 
-Name the faces that matter in Immich first. In this app, open **Settings > People**:
+Name the faces that matter in Immich first. Then open **People** in this app:
 
 1. Press **Rescan the library**.
 2. Check **Account owner**. The scan only guesses whose library this is, and a lot hangs on it: what everyone is "to the library owner", the family seat, the titles. Pick the right person, or **Nobody in this library** for a shared family account. What you pick stays through every rescan.
@@ -44,7 +46,9 @@ Name the faces that matter in Immich first. In this app, open **Settings > Peopl
 4. Answer the links the scan found. It notices pairs that appear together all the time, but it cannot know what they are to each other. Under **Relationships**, pick the real one ("parent of", "partner of") and both sides get written, with the reverse kind. **No, they are not** closes the question for good.
 5. Accept what your family tree implies. Once someone's parent, sibling or partner is set, the page suggests what follows: siblings who share a parent, a parent's partner as the other parent, then grandparents, aunts and uncles, nieces and nephews, cousins and in-laws, however many steps away. Each one shows its chain ("parent of Bob, who is a parent of Riley") and appears as soon as you add the link it comes from. The tick records it on both cards, **Accept all suggestions** takes a whole card, and **No, they are not** turns it down for good. Nothing counts until you accept it: the tree can't tell a half-sibling from a sibling, a step-parent from a parent, or a partner from a spouse.
 
-An unanswered pair shows up once among the visible cards, including when you filter by name. Naming it updates both cards. Once you name it, the scan's guess is gone, and a rescan will not bring it back. If you confirmed a link in an older release without naming it, it reads "linked, relationship not named" until you pick a kind. We never guess one for you, and until you do it is left out of titles and prompts.
+<ThemedScreenshot name="people-relationship-suggestions" alt="Kit's card: child of Robin confirmed, and two suggestions with their chains, child of Charlie and grandchild of Pat, each with a tick and a cross" />
+
+An unanswered pair shows up once among the visible cards, including when you filter by name. Naming it updates both cards. Once you name it, the scan's guess is gone, and a rescan will not bring it back. A link confirmed without a kind reads "linked, relationship not named" until you pick one. The app never guesses the kind, and until you pick it the link stays out of titles and prompts.
 
 If **Account owner** says **not known yet**, the account name has not been matched to a named
 person. Choose the owner yourself, or name people in Immich and rescan.

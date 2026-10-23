@@ -33,10 +33,10 @@ Check the caption server from the host running Compose:
 curl -s localhost:8094/v1/models
 ```
 
-The preset supplies the inference and caption service URLs below saved Settings. On an existing
-install, change those URLs in Settings. The captioner is published on host port **8094**; inside
-Compose it listens on **8092**. GPU is a requested tier: preflight still checks the inference
-provider and Laya runtime. A CPU service does not satisfy GPU readiness.
+The Compose files set the inference and caption URLs; a URL saved in Settings wins over them, so
+on an existing install change it there. The captioner is published on host port **8094**; inside
+Compose it listens on **8092**. Captions alone don't make the install GPU: preflight also checks
+the inference service and Laya, and a CPU-only inference service doesn't count.
 
 For NVIDIA, use the CUDA image and device reservation together. The exact [CUDA recipe](../reference/caption-service.md#on-an-nvidia-host) and [Kubernetes overlays](../reference/caption-service.md#kubernetes) are in the service reference.
 

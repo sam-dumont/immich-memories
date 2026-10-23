@@ -27,8 +27,8 @@ Create the target database/role using one of the [PostgreSQL modes](./reference/
 immich-memories store copy --to 'postgresql+psycopg://immich_memories:password@postgres:5432/immich_memories'
 ```
 
-The target must be empty unless you deliberately use `--force`. The command compares row counts
-and content after copying. Point `IMMICH_MEMORIES_DATABASE_URL` at the target and restart.
+The target must be empty; `--force` empties one that already holds rows. The command migrates the
+target first and compares every table's row count and content digest after copying. Point `IMMICH_MEMORIES_DATABASE_URL` at the target and restart.
 The old SQLite file remains your way back. Protect URLs containing passwords like other secrets.
 
 For an existing Docker Compose SQLite installation:
@@ -52,7 +52,6 @@ For an existing Docker Compose SQLite installation:
 
 Enabling the app URL before copying makes PostgreSQL the source, so the original SQLite rows
 would never be copied.
-
 
 ## 2. A separate PostgreSQL service
 

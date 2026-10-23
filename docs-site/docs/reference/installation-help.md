@@ -7,20 +7,24 @@ import ComposePort from '@site/src/components/ComposePort';
 
 # Installation help
 
-For a first installation, follow [Quick start](../get-started/quick-start.md) or your
-[platform guide](../run/overview.md). Use this page when a step fails.
+Use this page when an install step fails. For the steps themselves, see
+[Quick start](../get-started/quick-start.md) or your [platform guide](../run/overview.md).
 
 ## Download models from the CLI
 
-The app's **Download models** button and the CLI fetch the same files for your configured tier.
-Use either one. For Docker Compose, run from the installation folder:
+The **Download models** button and the CLI fetch the same files for your tier. With Docker
+Compose, from the installation folder:
 
 ```bash
 docker compose exec -T immich-memories immich-memories models fetch
 ```
 
-On a native install, run `immich-memories models fetch` as the user who runs the app.
-Wait for it to finish before making a film. Later runs reuse verified files.
+On a native install, run `immich-memories models fetch` as the user who runs the app. Let it
+finish before making a film; later runs reuse the verified files.
+
+A pinned download that hits a dropped connection, a timeout, a 429 or a 5xx is retried three times, after 1, 3 and 9
+seconds, each time from the first byte. A 404, an oversized file or a digest mismatch fails at
+once: rerun later, or check that a proxy or mirror isn't rewriting the download.
 
 ## Read preflight {#read-preflight}
 
@@ -34,9 +38,9 @@ docker compose exec -T immich-memories immich-memories capabilities
 On a native install, use `immich-memories preflight` and `immich-memories capabilities`
 directly. For a container manager, run those two commands in its app container console.
 
-`preflight` checks the Immich connection, required models, output and configured services.
-`capabilities` reports the resolved tier. Read the individual checks; a warning count alone
-cannot tell you whether a film can run.
+`preflight` checks the Immich connection, the required models, the output folder and the
+configured services; `capabilities` reports the resolved tier. Read the rows, not the warning
+count: some warnings are harmless.
 
 | Result | What to do |
 |---|---|
@@ -44,20 +48,24 @@ cannot tell you whether a film can run.
 | Output is not writable | Give UID/GID 1000 access to the output folder; use the [Synology ACL recipe](../run/nas.md#the-output-folder) on DSM |
 | Immich connection failed | Check its container-reachable URL and the [API-key permissions](../run/docker.md#the-api-key) |
 | Missing GPU inference, captions or Laya | Wait for the model services, then check their configuration; see [GPU requirements](../run/requirements.md#which-tier-you-get) |
-| Full needs an enabled reader | Configure the reader URL, model and explicit enable switch before starting Full |
+| `Caption server busy with another phase` | Nothing: the unified worker is rendering or making music and will serve captions when free |
+| Full needs an enabled reader | Set the reader URL, model and `READER_ENABLED=true` before starting Full |
 | Basic uses software encoding or CPU titles | Supported; no fix needed |
 | Home coordinates skipped | Optional for album films; set them later for trips |
 | Upload permissions missing on a read-only key | Local films still work; add upload permissions when enabling uploads |
 
-The output row names the destination and its configuration source. Environment variables beat
-`config.yaml`, including the output path set by the image. A path outside a mounted volume gets
-a warning because its files do not survive container replacement.
-[Configuration sources](../run/config-file.md#where-a-setting-comes-from) explains how to change it.
+The output row names the folder and where that setting came from. Environment variables beat
+`config.yaml`, including the output path the image sets. A path outside a mounted volume gets a
+warning: its files are lost when the container is replaced.
+[Where a setting comes from](../run/config-file.md#where-a-setting-comes-from) explains how to
+change it.
 
 ## Port or container name already in use
 
-The release Compose file uses host port <ComposePort /> and `container_name: immich-memories`.
-Change only the host port in its `ports:` entry, preserving the bind address. For example:
+**Cause:** another service holds host port <ComposePort />, or another container is already
+called `immich-memories`.
+
+**Fix:** change only the host port in the `ports:` entry and keep the bind address:
 
 ```yaml
 ports:
@@ -68,17 +76,18 @@ Recreate with `docker compose up -d` and open port 8081. The setup builder has a
 field for the same choice. Natively, use `immich-memories ui -p 8081`.
 
 For a second installation on the same host, use a separate project folder, a unique
-`COMPOSE_PROJECT_NAME` in `.env`, a different container name for each service and free host ports.
-Two directories with the same basename otherwise get the same Compose project name and volume
-names. Run commands from the correct project directory with `docker compose exec`; it finds
-services by their service name even when their container names differ.
+`COMPOSE_PROJECT_NAME` in `.env`, a different container name for each service and free host
+ports. Two folders with the same name otherwise share a Compose project name and its volumes.
+Run `docker compose exec` from the right project folder; it finds services by service name
+whatever their container names are.
 
 ## Cuts hang on thumbnails although preflight passes
 
-An Immich metadata check can pass while larger thumbnail transfers hang when the host route's
-MTU is smaller than Docker's. This can occur with a VPN, a Kubernetes node or a cloud network.
+**Cause:** the host's route to Immich has a smaller MTU than Docker's network (common behind a
+VPN, on a Kubernetes node or in a cloud network). Small metadata answers get through; larger
+thumbnail transfers hang.
 
-Run `ip route get 192.168.1.10` with your Immich address. The device follows `dev`; read its MTU
+**Fix:** run `ip route get 192.168.1.10` with your Immich address. The device follows `dev`; read its MTU
 with `cat /sys/class/net/eth0/mtu`, substituting that device (for example `ovs_eth0` on Synology).
 If it is below 1500, add `docker-compose.override.yml` with a smaller value, for example:
 
@@ -94,15 +103,20 @@ so Compose uses the override too. Follow the [network recreation procedure](./tr
 
 ## SSH forwarding is refused
 
-SSH login does not imply permission to forward ports. On DSM, a non-admin account can log in
-while a tunnel gets `administratively prohibited`. Use an approved forwarding-enabled account,
-[app login on the LAN](../run/docker.md#reaching-the-ui-from-another-machine), or the
-[Synology HTTPS proxy](../run/reference/synology-operations.md#authenticated-proxy).
-Do not change global SSH policy to follow an app installation guide.
+**Symptom:** the tunnel fails with `administratively prohibited`.
+
+**Cause:** the account may log in but not forward ports; on DSM that is any non-admin account.
+
+**Fix:** use an account allowed to forward,
+[sign in on the LAN](../run/docker.md#reaching-the-ui-from-another-machine) instead, or set up the
+[Synology HTTPS proxy](../run/reference/synology-operations.md#authenticated-proxy). Don't loosen
+the host's SSH policy for this.
 
 ## Running checks over SSH
 
-Use `-T` without a terminal and set the width when the table wraps:
+**Symptom:** the command hangs, eats the rest of a script, or its table wraps.
+
+Use `-T` when there is no terminal, and set the width:
 
 ```bash
 docker compose exec -T -e COLUMNS=140 immich-memories immich-memories preflight

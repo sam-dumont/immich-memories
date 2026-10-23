@@ -53,16 +53,17 @@ These hold on every tier.
 ## The route through the code
 
 The web UI's **Cut** runs `immich-memories generate --no-render` on the server, so both take the same
-route. The quoted stage names are what the web UI and the terminal print: "Web Cut or CLI generate"
-starts the runtime editorial planner, which prepares evidence and builds cards, selects and
-certifies timing, then projects the render inputs.
+route: the runtime editorial planner prepares evidence and builds cards, selects shots and certifies
+their timing, then hands the render its inputs.
 
 `_select` in `analysis/structure/planner.py` is where the film gets decided. Everything the
 other pages of this section describe happens inside it.
 
 ## Preparation: what gets read, and when
 
-Preparation banks versioned picture facts before selection, then reads missing captions and clip evidence for selected shots and candidates. [Pixel evidence and preparation](./pixel-evidence.md) lists the reach, admission rules and exact producers for each tier.
+Preparation banks versioned picture facts before selection, then reads missing captions and clip
+evidence for the selected shots and their candidates. [Pixel evidence and preparation](./pixel-evidence.md)
+lists the reach, the admission rules and the producers for each tier.
 
 ## What a run leaves behind
 

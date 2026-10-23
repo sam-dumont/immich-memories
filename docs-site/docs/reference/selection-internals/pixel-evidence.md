@@ -10,21 +10,24 @@ This page lists what preparation reads, which pictures it covers, and when each 
 ## Scope and timing
 
 A film acquires cheap facts for its **reach**: the pictures it could select (for a person film,
-exactly the pictures Immich recognised that person on, strict per picture), the other stills of their Live Photo bursts, and every picture of the same
-five-minute capture run, because the exposure rule reads the whole run. The rest of the window is
-read as Immich metadata only, since moments and episodes are cut from all of it. A cut that selects
-a picture it never prepared stops rather than ship it. Captions and clip checks wait until after
+exactly the pictures Immich recognised that person on, strict per picture), the other stills of
+their Live Photo bursts, and every picture of the same five-minute capture run, because the exposure
+rule reads the whole run. The rest of the window is read as Immich metadata only, since moments and
+episodes are cut from all of it. A cut that selects a picture it never prepared stops rather than ship
+it. A picture whose preview Immich no longer has (HTTP 404) is dropped from the cut; the film goes on
+without it. Captions and clip checks wait until after
 the rules draft, for selected shots and actual candidates. A reader may use the selected shot's
 whole episode for context without captioning every neighbour. `immich-memories prepare` reads a
-whole scope ahead of time when explicitly requested.
+whole scope ahead of time when you ask for it.
 
 In order: resolve the reach, acquire the required pixel facts, build the rules draft, caption and
 inspect the selected candidates, then bank the complete evidence.
 
 Admission refuses a few things before anything is read: a video over five minutes
 (`advanced.analysis.max_source_video_seconds`, 300 s), the video half of a Live Photo (it plays
-inside its still), anything tagged `immich-memories/generated` or listed in this install's upload receipts (a film this app made
-is not footage), and pictures that look forwarded rather than shot on your camera.
+inside its still), anything tagged `immich-memories/generated` or listed in this install's upload
+receipts (a film this app made isn't footage), and pictures that look forwarded rather than shot on
+your camera.
 
 Forwarded copies and saved images can come back with `advanced.analysis.forwarded_copies_when_short`, off
 by default (`corpus/forwarded_fallback.py`). With it on, a copy may fill a gap in the film's camera
@@ -41,8 +44,8 @@ document detector, enabled on GPU and Full, calling it a screenshot, a table or 
 The eight heads are small classifiers over one pinned DINOv2 encoder: `location`, `people`,
 `children`, `activity`, `venue`, `frame_kind`, `screen` and `uncovered_person`. The two detectors are
 `nsfw_marqo` (exposure) and `doc_docling` (documents), enabled on GPU and Full only. Basic keeps
-the eight heads, including screen, frame-kind and uncovered-person checks. Every fact is banked in the store
-under its producer's version, so the next cut asks nothing twice.
+the eight heads, including the screen, frame-kind and uncovered-person checks. Every fact is banked
+in the store under its producer's version, so the next cut asks nothing twice.
 
 Preparation follows the resolved product tier (`tier: auto` by default):
 

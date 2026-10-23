@@ -36,7 +36,7 @@ with diagram(STEM, nodesep="0.6", ranksep="0.5"):
         5,
         "Render",
         icon("si:ffmpeg", "machine"),
-        "FFmpeg cuts clips,<br/>titles and music together",
+        "FFmpeg joins clips and titles,<br/>then lays the music under them",
     )
     film = node(
         "<b>Your film</b>",
@@ -65,7 +65,10 @@ with diagram(STEM, nodesep="0.6", ranksep="0.5"):
         sub="no film, exit 0",
     )
     worker = node(
-        "Render worker", icon("mdi:expansion-card", "network"), px=40, sub="if you set one up"
+        "Render worker",
+        icon("mdi:expansion-card", "network"),
+        px=40,
+        sub="if you set one up;<br/>music can be made meanwhile",
     )
     upload = node(
         "Back into Immich",

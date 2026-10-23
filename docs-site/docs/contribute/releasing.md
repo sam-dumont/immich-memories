@@ -6,9 +6,8 @@ title: Releasing
 
 ## Merging and releasing
 
-PRs are squash-merged. Before merging a large integration branch, preserve its individual
-commits on a `history/` branch. Pick a name for that integration and date, then run this from
-the branch being merged:
+PRs are squash-merged with one commit each. To keep the commits of a large integration branch,
+push them to a `history/` branch first, from the branch being merged:
 
 ```bash
 git push origin HEAD:refs/heads/history/my-integration
@@ -68,11 +67,11 @@ The nightly runs without the `production` environment approval, since nobody is 
 it. Everything else is the release's own jobs: provenance on the wheel and every image, and
 the same packaging for the setup files. **Release** dispatches offer only `stable` and `rc`.
 
-Run the prebuilt first-install checks against a forced nightly's public inputs. Record anonymous
-pulls, exact host/service/Immich versions, cold versus warm state and the bounded playable film. Publishing artifacts alone is not acceptance.
-After RC tagging, verify the actual RC identities/links and rerun affected lanes if runtime
-artifacts differ. Check Pages, release downloads and GHCR separately after a repository rename;
-a GitHub redirect does not prove a Pages redirect. GHCR keeps the documented package name.
+Run the first-install checks against a forced nightly's public files and images. Record the
+anonymous pulls, the exact host, service and Immich versions, cold or warm state, and the
+playable film each one made: a published artifact that nobody installed proves nothing. After
+tagging a candidate, check its real tags and links, and rerun the lanes whose artifacts differ
+from the nightly's.
 
 ### Release candidates
 
@@ -176,7 +175,7 @@ that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit use
 
 ## Household validation before release
 
-Before the first RC, validate the exact candidate revision against the private test households. Check people/groups, selection, titles, wording and relevant celebrations, including expected no-film outcomes. Report the tiers actually checked; an older report does not validate the candidate.
+Before tagging, validate the exact commit against the private test households. Check people and groups, selection, titles, wording and the celebrations that apply, including the cases where no film is the right answer. Report the tiers you actually checked: an older report does not validate a new commit.
 
 Private validation media and detailed reports stay private. Publish only anonymous aggregate results. Public screenshots and demos use the separate [demo fixture library](./demo-assets.md#fixture-and-asset-contracts).
 

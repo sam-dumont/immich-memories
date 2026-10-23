@@ -29,7 +29,7 @@ Each story is named from what its pictures say, never from what an image classif
 - a day out by its place and date ("Tervuren, Sunday 6 July");
 - days at home by their span ("Days at home, 1–4 July").
 
-Names are written in the film's language, with its own month and weekday names ("Jours à la maison, 1–4 juillet"). A film that covers more than one calendar year puts the year in every date ("Monday 15 August 2016"). Without a text reader, the film's summary is these names in order, and weeks at home one after another are told once as their span.
+Names are written in the film's language, with its own month and weekday names ("Jours à la maison, 1–4 juillet"). A film that covers more than one calendar year puts the year in every date ("Monday 15 August 2016"). With the experimental summary on (`title_screens.llm_titles`) and no text reader, the film's summary is these names in order, and weeks at home one after another are told once as their span.
 
 A stay away is a trip only by your own trip settings: at least `trips.min_distance_km` from home (50 km by default) over at least `trips.min_duration_days` (2). An evening concert 11 km away is a day out.
 

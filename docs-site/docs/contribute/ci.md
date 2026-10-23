@@ -41,9 +41,9 @@ library run in three (`make test-features FEATURE_SHARD=1/3`). The render worker
 as a CI job too. `immich-gate.yml` runs the real-Immich gate on v2, 3.2 and v3, and the feature tests against a
 real Immich on v2 and v3 in two shards each, every job seeding its own Immich; scoped the same way.
 
-Shards cost runner slots. A pull request that changes Python runs about 35 jobs across `ci.yml`
+Shards cost runner slots. A pull request that changes Python runs 30 to 40 jobs across `ci.yml`
 and `immich-gate.yml`, and the account runs 20 at once (5 of them macOS), so with a few pull
-requests open some jobs wait for a runner, and the wall time grows with the queue.
+requests open, jobs wait for a runner and the wall time grows with the queue.
 
 `scripts/shard_tests.py` deals whole test files to the shards, longest first, by the seconds each
 took in that suite (`tests/shard_durations.json`; refresh it with `make shard-durations` after a
@@ -82,19 +82,22 @@ needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
 
 ## The pre-commit hook
 
-The hook runs the gates and tests a commit can affect, not all of them. On a one-file source change
-that is about 2 to 3 minutes instead of 5 on an idle machine, and a fraction of the CPU, which is
-what counts when several worktrees commit at once.
+The hook runs the gates and tests a commit can affect, not all of them. A one-file source change
+runs a few minutes and a fraction of the CPU of a full run, which is what counts when several
+worktrees commit at once.
 
 **Gates run when a staged file is one of their inputs** (`files:` in `.pre-commit-config.yaml`):
 
 | Staged | Gates |
 |---|---|
-| Anything | Gitleaks, the private-terms gate, the unit tests the change can affect |
+| Anything | Gitleaks, the private-terms gate, the latest-release pin (`make pin-latest`), the unit tests the change can affect |
+| Any Python file | Ruff lint and format |
 | `src/` or `services/` Python, `pyproject.toml`, `uv.lock`, `Makefile` | mypy, file length, refurb, Xenon, Vulture, Bandit, complexipy, deptry, import-linter, jscpd |
+| Python in `src/`, `services/` or `scripts/`, `Makefile` | `make private-imports` |
 | Python in `src/`, `services/` or `tests/` | `make critique` |
 | `src/immich_memories/` Python | The CLI and config reference checks, which are generated from source |
-| `docs-site/` | The docs build; `docs-site/docs/` and `README.md` add the voice gate, the documented-commands check and the feature inventory |
+| `docs-site/`, `Makefile`, `web/package.json` | The docs build |
+| `docs-site/docs/`, `README.md` | The voice gate, the documented-commands check and the feature inventory |
 | `.github/workflows/` | `make workflow-guard` |
 | `web/`, `src/immich_memories/web/` | `make web-check` |
 | The diagrams, `docker-compose.yml`, `uv.lock`, research data | Their own check |
@@ -114,9 +117,12 @@ picks:
 - a changed test file, and the tests below a changed `conftest.py`.
 
 Before running the subset, the hook imports each changed source module in a fresh interpreter and
-collects the whole suite (about 10 seconds), which imports every test module, so a module that no
-longer loads, a circular import or a broken decorator still fails the commit. diff-cover
-then checks 80% of the changed lines, as before.
+collects the whole suite, which imports every test module, so a module that no longer loads, a
+circular import or a broken decorator still fails the commit. diff-cover then checks 80% of the
+changed lines. The hook runs the tests with `HOOK_CI_PARITY=1` (`tests/ci_parity.py`): every installed module
+outside the base dependencies and CI's unit extras is hidden, so a test that skips without torch or
+ACE-Step in CI skips in the hook too, and diff-cover sees the same coverage CI will. A test for code
+behind such an import fakes the module.
 
 The whole suite runs when the selection can't vouch for itself: no map yet (the first commit on a
 machine), `tests/conftest.py`, `tests/immich_fakes.py`, `tests/e2e/fake_*.py`, `pyproject.toml`,
@@ -128,7 +134,7 @@ tree counts as changed, so an old map or one from another branch only selects mo
 
 To run everything: `HOOK_FULL=1 git commit`, `make pre-commit` (every hook, every file, the whole
 suite) or `make ci`. Main, the release and the nightly run every suite in CI either way, so a
-selection miss surfaces within the hour of a merge, before any release.
+selection miss surfaces on the merge's own run, before any release.
 
 ## Quality gates
 
@@ -145,7 +151,8 @@ selection miss surfaces within the hour of a merge, before any release.
 | Security | Bandit + Semgrep | Common vulnerability patterns |
 | Secrets | Gitleaks | Committed API keys |
 | Dependencies | pip-audit + deptry | Known CVEs; unused, missing or transitive imports |
-| Architecture | import-linter | The core packages (`analysis`, `processing`, `titles`, `people`, `store`, `triage`, `operations`, `free_text`) must not import `cli`, and neither may `audio`. They plus `cache` and `tracking` must not import the web server (`web`). `web` runs the CLI as a child process and never imports it. The inference service in `services/inference` imports neither, and the app never imports it |
+| Architecture | import-linter | The core packages (`analysis`, `config`, `processing`, `titles`, `people`, `store`, `triage`, `operations`, `free_text`) must not import `cli`, and neither may `audio`. They plus `cache` and `tracking` must not import the web server (`web`). `web` runs the CLI as a child process and never imports it. Each `analysis` stage imports only the stages below it ([Architecture](./architecture.md#composition-over-inheritance)). The inference service in `services/inference` imports neither `web` nor `cli`, and the app never imports it |
+| Private imports | `make private-imports` | A module importing another module's `_private` names |
 | Compose | `make compose-check` | A `docker-compose.yml` that only parses with the repo beside it |
 | Commits | commitizen | Non-conventional commit messages |
 | Docs | docs-voice, docs-cli-check, docs-config-check, notices-check | Chatbot prose and em dashes; drift between the generated references and the code |

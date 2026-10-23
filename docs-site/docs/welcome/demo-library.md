@@ -21,7 +21,7 @@ The scripted cut the tests use keeps 30 of them. Everything else is left out wit
 
 They are real photographs from [Wikimedia Commons](https://commons.wikimedia.org), under CC0 or CC BY. Each file is credited with its author, its source page and its licence in [CREDITS.md](https://github.com/sam-dumont/immich-memories/blob/main/tests/e2e/fixtures/library/CREDITS.md).
 
-- **The trip is one photographer's own holiday:** Lukas Beck's July 2025 drive to Nordkapp and back, about 1,000 pictures and their clips (CC BY 4.0). It keeps the duds a real trip has: the same island eight times from a moving ferry, the sign at the Ramsvik tunnel, a polar bear warning.
+- **The trip is one photographer's own holiday:** Lukas Beck's July drive to Nordkapp and back, about 1,000 pictures and their clips (CC BY 4.0). It keeps the duds a real trip has: the same island eight times from a moving ferry, the sign at the Ramsvik tunnel, a polar bear warning.
 - **The home days are other people's summer days in Brussels:** walks in Duden park, the top of the Atomium, the Botanique, Tervuren and the Sonian forest, each from one photographer's afternoon.
 - **The people pictures are strangers' family photos and stock shoots:** one family's birthday at home from cake to bedtime film, kids in superhero capes, grandparents with babies, children at a beach, a playdate.
 
@@ -29,7 +29,7 @@ They are real photographs from [Wikimedia Commons](https://commons.wikimedia.org
 
 **True:** where and when each picture was taken. A picture is served with the GPS in its own file, or with none. The one exception is indoors: a single birthday shoot (one family's kitchen, stairs and living room, all from the same afternoon) stands for the household's home, so it is placed there. The trip is served at the minute it was shot. The home days are moved by whole days into July, so the hour stays true (a sunrise is still a sunrise). Trip detection finds the road north from the GPS, the same way it would in your library.
 
-**Made up:** the household. Kit, Robin, Charlie, Remy, Pat, Lou, Jo, Alex, Sasha, Mo and Nico are names, not people. The faces belong to strangers. Each face is assigned to a household member by rough age, so the People page groups them, even though no two of Kit's 26 pictures show the same child. Eight of them have enough pictures to count as people of the library; three are seen once or twice, like the tail of any real library. The people pictures carry no GPS: a stock photo's own place (often the US) would be a lie in a Brussels July.
+**Made up:** the household. Kit, Robin, Charlie, Remy, Pat, Lou, Jo, Alex, Sasha, Mo and Nico are names, not people. The faces belong to strangers. Each face is assigned to a household member by rough age, so the People page groups them, even though no two of Kit's 27 pictures show the same child. Eight of them have enough pictures to count as people of the library; three are seen once or twice, like the tail of any real library. The people pictures carry no GPS: a stock photo's own place (often the US) would be a lie in a Brussels July.
 
 ## The sample films
 

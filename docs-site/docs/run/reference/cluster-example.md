@@ -53,10 +53,9 @@ explains that serving contract.
 
 ## Configure your endpoints and access
 
-From the deployment bundle or release checkout:
-
-The overlay stores no credentials, like the base. Create its three Secrets in the cluster first,
-each from its example, filled in outside the checkout:
+Like the base, the overlay stores no credentials. From the deployment bundle or release checkout,
+create its three Secrets in the cluster first, each from its example, filled in outside the
+checkout:
 
 ```bash
 cd deploy/kubernetes
@@ -72,7 +71,7 @@ for example in base/secret.yaml.example \
 done
 ```
 
-Fill in those three Secrets, then edit `overlays/maximalist/config-map.yaml`:
+What goes in each Secret, and what to change in `overlays/maximalist/config-map.yaml`:
 
 | File or setting | Replace or confirm |
 |---|---|

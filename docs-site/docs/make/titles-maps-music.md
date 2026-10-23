@@ -9,7 +9,25 @@ These are render choices. You can change them after reviewing the cut, without a
 
 ## Titles and language
 
-Under **Render**, type a **Title** and **Subtitle**, or leave them empty for the app's own. Most films are titled by what they are and when, in the film's language, and no model writes it: a year, month or season by its period ("2025", "July 2025", "Summer 2025"), a person's film by their first name and the year ("Kit · 2025"), or the first and last year its pictures show when you gave it no dates ("Kit · 2003–2026"; a film of several people does the same), a birthday by whose it is and the year being celebrated ("Kit's birthday · 2026"), a film of several people by every first name, picked by name, group or expression ("Kit, Pat & Lou · 2025"), a holiday by its own name and the span of years its cut shows ("Assomption · 2015–2026"), and an "on this day" film by the day you asked for and its span of years ("October 15 · 2012–2025"). Nothing goes under that title unless you type a subtitle. A special day the scan never catalogued is named after its place ("A day in Lisbon"). With `title_screens.llm_titles: true` (experimental, off by default) an optional [text reader](../better/reader.md) names it instead, from its stories, people and places. A reader title keeps whichever year the matching template title would show; a title that drops it falls back to the template. A reader subtitle may only carry dates, places, people and words the film's facts use: a mood line the facts do not back ("salt air and golden light") is dropped and the title stands.
+Under **Render**, type a **Title** and **Subtitle**, or leave them empty for the app's own. The
+app titles a film by what it is and when, in the film's language. No model writes these:
+
+| Film | Title |
+|---|---|
+| A year, month or season | its period: "2025", "July 2025", "Summer 2025" |
+| One person | first name and year: "Kit · 2025"; with no dates, the first and last year their pictures show: "Kit · 2003–2026" |
+| Several people | every first name, whether you picked them by name, group or expression: "Kit, Pat & Lou · 2025", with the same span of years when you gave no dates |
+| A birthday | whose it is and the year being celebrated: "Kit's birthday · 2026" |
+| A holiday | its own name and the years the cut shows: "Assomption · 2015–2026" |
+| On this day | the day and its span of years: "October 15 · 2012–2025" |
+| A special day the scan never catalogued | its place: "A day in Lisbon" |
+
+Nothing goes under the title unless you type a subtitle. With `title_screens.llm_titles: true`
+(experimental, off by default) an optional [text reader](../better/reader.md) names special days
+instead, from their stories, people and places. A reader title keeps the year the template title
+would show; one that drops it falls back to the template. A reader subtitle may only carry dates,
+places, people and words the film's facts use: a mood line the facts don't back ("salt air and
+golden light") is dropped and the title stands.
 
 The film's language is separate from the interface language. Save **Settings > Title screens > locale**
 (including in Docker), or set it in your configuration. A special day found by the automatic
@@ -31,9 +49,6 @@ spread) and every part of that name is shown in this same configured language, i
 title, the trip picker in the web UI, and the discovery table a `generate --memory-type trip`
 run prints before cutting one. A French film never shows a region translated next to its
 country in English, or the other way round.
-
-Clip crossfades use whole video frames, and the original audio overlaps by the same duration.
-At 30 fps, a requested 0.25-second fade uses 7 frames (about 0.233 seconds).
 
 ## Opening and closing fades
 
@@ -134,7 +149,7 @@ For the same choice on the CLI, add `--no-original-audio` to `generate` or `runs
 immich-memories runs render RUN_ID --no-original-audio --music ~/Music/track.mp3
 ```
 
-Automatic uses a bundled track by default: 76 generated tracks, each about 90 seconds, in five moods (calm, tender, nostalgic, happy, energetic) and styles from piano and lo-fi to downtempo, neo-soul, post-rock, funk and city pop. The Docker image has them built in; on a pip install, `immich-memories models fetch` downloads them once (61 MB, checked against a pinned SHA-256), and a film never downloads music. Without them a film plays the smaller set of 28 shorter tracks that ships with the `music` extra. `models fetch` skips the download when `audio.no_music` is on. A configured [music generator](../better/music.md) can make an original one and enables **Preview a track** so you can listen first. A failed generator falls back to a bundled track and leaves a warning.
+Automatic uses a bundled track by default: 76 generated tracks, each about 90 seconds, in five moods (calm, tender, nostalgic, happy, energetic) and styles from piano and lo-fi to downtempo, neo-soul, post-rock, funk and city pop. The Docker image has them built in; on a pip install, `immich-memories models fetch` downloads them once (118 MB, checked against a pinned SHA-256), and a film never downloads music. Without them a film plays the smaller set of 28 shorter tracks that ships with the `music` extra. `models fetch` skips the download when `audio.no_music` is on. A configured [music generator](../better/music.md) running the XL model makes an original track instead and enables **Preview a track** so you can listen first. A generator that fails, or can't run XL, falls back to a bundled track and leaves a warning.
 
 ### Your own music folder
 
@@ -171,7 +186,7 @@ immich-memories generate --year 2025 --music ~/Music/track.mp3 --music-volume 0.
 
 ## When a model names the film
 
-Model-written titles and summaries are experimental and off by default: they miss too often, and the [planned rework](https://github.com/sam-dumont/immich-memories/issues/2594) tracks the fix. Turn them on with `title_screens.llm_titles: true`, or for one run with `--llm-title`. Then a text reader names special days (and trips, with `--llm-title`) and writes the film's summary. A reader still chooses the music mood on the Basic tier, whatever this setting says. Those calls use text, not pictures. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title whatever the reader could say. Your typed title wins over all of it. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
+Model-written titles and summaries are experimental and off by default: they miss too often. Turn them on with `title_screens.llm_titles: true`, or for one run with `--llm-title`. Then a text reader names special days (and trips, with `--llm-title`) and writes the film's summary. A reader still chooses the music mood on the Basic tier, whatever this setting says. Those calls use text, not pictures. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title whatever the reader could say. Your typed title wins over all of it. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
 
 A model title can use a first name, a place, an occasion name or a relationship word your family record actually states between the people it names, such as "her grandmother". It never calls someone family, or states a relationship, that your record doesn't back, and it never names a year that isn't true for the span. It also never narrates a parent or grandparent from a child's point of view ("maman", "papy", "mum", "oma") even when your record backs the relation; standard words such as "abuela" or "mormor", which have no separate child's-eye form in their own language, are unaffected. A title that breaks a rule falls back to the plain template instead.
 

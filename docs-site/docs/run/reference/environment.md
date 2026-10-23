@@ -4,7 +4,8 @@ title: Environment variable exceptions
 
 # Environment variable exceptions
 
-For credential precedence, logging, local music and scheduling. Start with the
+The variables that don't follow the `IMMICH_MEMORIES_<SECTION>__<KEY>` pattern: credential
+shorthands, logging, local music and scheduling. Start with the
 [common variables](../environment-variables.md).
 
 ## The ones that do not follow the pattern
@@ -51,7 +52,7 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | `IMMICH_MEMORIES_LOG_FORMAT` | `text` (default) or `json` |
 | `IMMICH_MEMORIES_LOG_LEVEL` | `INFO` (default), `DEBUG`, `WARNING` or `ERROR`. The CLI's `-v` and `--log-level` win for one run |
 | `IMMICH_MEMORIES_LOG_FILE` | Also write logs to this file |
-| `IMMICH_FORCE_CPU` | `1`, `true` or `yes` puts the title renderer on the CPU even with a GPU |
+| `IMMICH_FORCE_CPU` | `1`, `true` or `yes` puts the GPU kernels (titles and photo moves) on the CPU even with a GPU. FFmpeg's decode and encode are untouched |
 | `IMMICH_MEMORIES_FONTS_DIR` | Where `titles fonts --install` puts the Noto fonts for other alphabets and where titles look for them (default `~/.immich-memories/fonts/noto`; the image sets its own) |
 | `IMMICH_MEMORIES_MUSIC_DIR` | Where `models fetch` unpacks the bundled `music-v3` library and where films look for it (default `~/.immich-memories/models/music-v3`; the image sets its own) |
 | `IMMICH_MEMORIES_OWNER` | Who "you" is in the people registry, for `people scan` (same as `--owner`) |

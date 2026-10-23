@@ -4,31 +4,34 @@ title: Render memory and encoder calibration
 
 # Render memory and encoder calibration
 
-For diagnosing memory limits or comparing encoders. To enable a GPU, use
-[Hardware encoding](../hardware.md).
+How the render sizes itself to the memory it has, and how one quality setting maps onto each
+encoder. To turn on a GPU, see [Hardware encoding](../hardware.md).
 
 ## Memory budget
 
-Less memory means fewer photos rendered at once. The app reserves 1 GiB for the parent
-  process, then allows 3 GiB per preparation worker, with at least one and at most two workers.
-  It uses the container memory limit when set, otherwise the machine's RAM. A 4 GiB container
-  prepares one source at a time; an 8 GiB container can prepare two.
-  `immich-memories preflight` prints what it picked, for example
-  `Photo preparation: 1 at a time (2.0 GB available, container limit)`. Setting
-  `advanced.analysis.source_prepare_workers` to a number (1 to 4) overrides it.
-  The same memory figure caps the threads of each clip decode in the render (one per 2 GB, up
-  to 4): FFmpeg's own default of one per core cost 1.2 GB per 4K decode on an 18-core Mac.
-  A box with no hardware HEVC encoder encodes in libx265, which holds about 52 MB per frame it
-  looks ahead at 4K. Source encoders share the memory left after the parent reserve; each
-  encoder uses its own share to size its lookahead. Above 1080p, a share below 4 GiB allows
-  5 frames, 4 to less than 6 GiB allows 10, and larger shares keep the x265 default. A bounded
-  encoder processes one frame at a time, matching the memory measurements. Assembly uses the
-  whole process budget after source preparation finishes. `preflight` shows the assembly choice on its Memory line. 1080p output keeps the default.
-  Below 3 GB there is no room for a 4K software HEVC film at all, so when the film's resolution
-  is `auto` and the box has no hardware HEVC encoder, a 4K film renders at 1080p instead, in the
-  same orientation. `preflight` and the run log say so. A resolution you set yourself, in the
-  config or with `--resolution`, is kept: a 4K set that way below 3 GB gets a warning that the
-  render may run out of memory, and the fix is `auto` or `1080p`.
+Less memory means fewer photos prepared at once. The app reads the container memory limit when
+there is one, otherwise the machine's RAM, reserves 1 GiB for the parent process and allows
+3 GiB per preparation worker, with one or two workers. A 4 GiB container prepares one source at a
+time; an 8 GiB container prepares two. `immich-memories preflight` prints what it picked, for
+example `Photo preparation: 1 at a time (2.0 GB available, container limit)`. Set
+`advanced.analysis.source_prepare_workers` to a number from 1 to 4 to override it.
+
+The same figure caps the threads of each clip decode in the render: one per 2 GB, at most 4 and
+never more than the CPUs. FFmpeg's own default of one thread per core cost 1.2 GB per 4K decode
+on an 18-core Mac.
+
+A box with no hardware HEVC encoder encodes in libx265, which holds about 52 MB per lookahead
+frame at 4K. Source encoders share the memory left after the parent reserve, and each sizes its
+lookahead from its share. Above 1080p, a share under 4 GiB allows 5 frames, 4 to 6 GiB allows
+10, and anything larger keeps the x265 default. 1080p output always keeps the default. Assembly
+gets the whole budget once source preparation is done; `preflight` shows its choice on the
+Memory line.
+
+Below 3 GB there is no room for a 4K software HEVC film at all. When the film's resolution is
+`auto` and the box has no hardware HEVC encoder, a 4K film renders at 1080p instead, in the same
+orientation, and `preflight` and the run log say so. A resolution you set yourself, in the config
+or with `--resolution`, is kept: a 4K film set that way below 3 GB gets a warning that the render
+may run out of memory. The fix is `auto` or `1080p`.
 
 ## Quality: one dial, calibrated per encoder
 
@@ -63,12 +66,13 @@ line says what is drawing:
 Title kernels: quadrants 1.3.0 on the Metal backend
 ```
 
-Metal on Apple Silicon, CUDA on NVIDIA and Vulkan where supported render animated effects.
+Metal on Apple Silicon, CUDA on NVIDIA and Vulkan where supported draw the animated effects. The same
+kernels also run the photo moves (the per-frame warp, fill and composite) on any of those GPU
+backends.
 Each GPU backend is tested in a child process first; a failed backend is skipped and named in the
 log. Kernels are cached in `~/.immich-memories/cache/kernels`.
 
-CPU rendering draws the text once with Pillow, then FFmpeg slides, scales and fades it over a
-still background. This also covers
-`IMMICH_FORCE_CPU=1`, a CPU-only kernel backend, a missing compatible Quadrants wheel or a CPU
-without AVX. It keeps text and timing without animated kernel effects. Preflight reports the
-renderer selected on your machine.
+Without a GPU backend (`IMMICH_FORCE_CPU=1`, a CPU-only kernel backend, no compatible Quadrants
+wheel, or a CPU without AVX), titles are drawn once with Pillow and FFmpeg slides, scales and fades
+them over a still background: same text and timing, no animated effects. Photo moves fall back to
+OpenCV on the CPU, frame for frame. Preflight names the renderer your machine picked.
