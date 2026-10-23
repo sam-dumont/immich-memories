@@ -386,3 +386,140 @@ def test_a_film_of_separate_windows_is_told_from_its_windows_not_the_years_betwe
     assert account
     assert "winter" not in account
     assert not any("winter" in prompt for prompt in reader.prompts)
+
+
+def _with_a_quiet_episode(tmp_path):
+    """A month whose account the reader has to write: one read episode, one only its facts."""
+    from immich_memories.analysis.film.contract import EpisodeReadingCard
+
+    bank = annotation_store()
+    captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
+    quiet = EpisodeReadingCard(
+        episode_id="quiet-episode",
+        evidence_key="facts",
+        what_happened="walking at the park",
+        representative_asset_ids=(tuple(captured.assets)[-1],),
+        cache_hit=False,
+    )
+    captured = replace(captured, episode_readings={**captured.episode_readings, "M999": quiet})
+    model_reader(captured.config)
+    return bank, captured
+
+
+class _Asked:
+    def __init__(self, error: Exception) -> None:
+        self.error, self.prompts = error, []
+
+    def __call__(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        raise self.error
+
+
+def test_a_period_account_with_the_reader_gone_ships_the_rules_draft(tmp_path):
+    """The reader stopped answering: the period goes unread, which the polish step turns into
+    the rules draft, instead of the error failing the film. A gone reader is not asked twice."""
+    import httpx
+    import pytest
+
+    from immich_memories.analysis.polish.layer import PeriodUnread
+
+    bank, captured = _with_a_quiet_episode(tmp_path)
+    gone = _Asked(httpx.ConnectError("All connection attempts failed"))
+
+    polish = backend_for(captured, gone, BankedDemand(bank, IDENTITY))._thin_polish(captured)
+
+    with pytest.raises(PeriodUnread, match="unreachable"):
+        polish["thin"].read_period({"S1": tuple(captured.assets)})
+    assert len(gone.prompts) == 1
+    assert library_period_account(bank, "2020-05") == ""
+
+
+def test_a_period_account_the_reader_refused_is_asked_once_more(tmp_path):
+    """One refused answer can be a fluke; the second ask is what an answering reader gets."""
+    import pytest
+
+    from immich_memories.analysis.polish.layer import PeriodUnread
+
+    bank, captured = _with_a_quiet_episode(tmp_path)
+    refusing = _Asked(ValueError("the reader refused the request"))
+
+    polish = backend_for(captured, refusing, BankedDemand(bank, IDENTITY))._thin_polish(captured)
+
+    with pytest.raises(PeriodUnread, match="refused"):
+        polish["thin"].read_period({"S1": tuple(captured.assets)})
+    assert len(refusing.prompts) == 2
+
+
+def test_a_short_film_whose_reader_is_gone_reads_no_records(tmp_path):
+    import httpx
+
+    class Gone(BankedDemand):
+        def readings_for(self, asset_ids):
+            raise httpx.ConnectError("All connection attempts failed")
+
+    bank = annotation_store()
+    captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
+    model_reader(captured.config)
+
+    short = (
+        backend_for(captured, Reader(), Gone(bank, IDENTITY))._thin_polish(captured)["thin"].short
+    )
+
+    assert short.records(tuple(captured.assets)) == {}
+
+
+def test_a_short_film_read_that_breaks_in_an_unexpected_way_still_fails(tmp_path):
+    """A bug is not a dropped reader: it stops the run so it gets fixed."""
+    import pytest
+
+    class Broken(BankedDemand):
+        def readings_for(self, asset_ids):
+            raise KeyError("a bug")
+
+    bank = annotation_store()
+    captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
+    model_reader(captured.config)
+
+    short = backend_for(captured, Reader(), Broken(bank, IDENTITY))._thin_polish(captured)["thin"]
+
+    with pytest.raises(KeyError):
+        short.short.records(tuple(captured.assets))
+
+
+def test_a_period_account_that_breaks_in_an_unexpected_way_still_fails(tmp_path):
+    import pytest
+
+    bank, captured = _with_a_quiet_episode(tmp_path)
+    broken = _Asked(KeyError("a bug"))
+
+    polish = backend_for(captured, broken, BankedDemand(bank, IDENTITY))._thin_polish(captured)
+
+    with pytest.raises(KeyError):
+        polish["thin"].read_period({"S1": tuple(captured.assets)})
+    assert len(broken.prompts) == 1
+
+
+def test_a_period_account_whose_reader_goes_on_the_second_ask_ships_the_rules_draft(tmp_path):
+    import httpx
+    import pytest
+
+    from immich_memories.analysis.polish.layer import PeriodUnread
+
+    class RefusedThenGone:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def __call__(self, prompt: str) -> str:
+            self.prompts.append(prompt)
+            if len(self.prompts) == 1:
+                raise ValueError("the reader refused the request")
+            raise httpx.ConnectError("All connection attempts failed")
+
+    bank, captured = _with_a_quiet_episode(tmp_path)
+    reader = RefusedThenGone()
+
+    polish = backend_for(captured, reader, BankedDemand(bank, IDENTITY))._thin_polish(captured)
+
+    with pytest.raises(PeriodUnread):
+        polish["thin"].read_period({"S1": tuple(captured.assets)})
+    assert len(reader.prompts) == 2
