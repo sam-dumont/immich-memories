@@ -4,7 +4,12 @@ import { COLORS } from "../theme";
 import { WindowFrame, onScreen } from "../components/WindowFrame";
 import { AppShell, MAIN_X } from "../components/AppShell";
 import { AnimatedCursor } from "../components/AnimatedCursor";
-import { FloatingEditBar, RUN_ID, RunPage } from "../components/RunPage";
+import {
+  BELOW_SHEET_SHIFT,
+  FloatingEditBar,
+  RUN_ID,
+  RunPage,
+} from "../components/RunPage";
 import { elapsedLabel } from "../components/JobPanel";
 import { EDITED } from "./EditScene";
 import { SCENE_FRAMES } from "../timeline";
@@ -17,12 +22,13 @@ import { CUT_CONTENT_BUDGET } from "../fixture";
  */
 
 // The render panel's heading, from the top of the page (below the saved bar and the revision).
-const RENDER_Y = 1416;
+// The numbers are a four-row sheet's; a shorter cut moves the panel up by the rows it lacks.
+export const RENDER_Y = 1416 - BELOW_SHEET_SHIFT;
 const FORM_Y = RENDER_Y + 32;
-const PANEL_SCROLL = 1306;
-const BUTTON_SCROLL = 1688;
+const PANEL_SCROLL = 1306 - BELOW_SHEET_SHIFT;
+const BUTTON_SCROLL = 1688 - BELOW_SHEET_SHIFT;
 // Once the form is gone the page is shorter, and the browser pulls the scroll back with it.
-export const JOB_SCROLL = 860;
+export const JOB_SCROLL = 860 - BELOW_SHEET_SHIFT;
 
 const OPEN_SELECT = 38;
 const PICK_REVISION = 64;

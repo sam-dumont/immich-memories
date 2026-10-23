@@ -6,7 +6,7 @@ import { WindowFrame, onScreen } from "../components/WindowFrame";
 import { AppShell, MAIN_X, MAIN_Y } from "../components/AppShell";
 import { AnimatedCursor } from "../components/AnimatedCursor";
 import { Badge, Button, Check, CommandLine, Field, Heading } from "../components/ui";
-import { REQUEST_SECONDS } from "../fixture";
+import { CAST, REQUEST_SECONDS } from "../fixture";
 
 /**
  * web/src/routes/create/+page.svelte: the memory type as chips, the fields
@@ -33,8 +33,9 @@ const TYPES = [
 ];
 // The month select lists names, in the interface language.
 const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August"];
-// The fixture library's cast (tests/e2e/fake_library.py), nobody's family.
-const PEOPLE = ["Robin", "Charlie", "Kit", "Pat"];
+// The fixture library's cast (tests/e2e/fake_library.py), nobody's family: the page lists
+// everyone the library names, all eleven on one line at this width.
+const PEOPLE = CAST;
 
 const PICK_TYPE = 48;
 const CLICK_YEAR = 88;

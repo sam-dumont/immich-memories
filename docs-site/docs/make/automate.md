@@ -3,6 +3,8 @@ title: Automatic films
 description: Let the app choose and make one worthwhile memory film each day.
 ---
 
+import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
+
 # Automatic films
 
 `immich-memories auto run` is the single daily entry point. It chooses one memory worth making today: a recent trip, a birthday, last month's highlights or a year you have not cut yet. If nothing qualifies, it skips the day.
@@ -68,6 +70,8 @@ answers "insufficient permissions", so read the transcript above instead.
 It ranks suitable memories and avoids repeating the same category or person too often. That choice selects the subject; the normal editor still chooses the shots. Trips wait until after you are home and birthdays wait a little for phone uploads. A person is only suggested when they have pictures in the period the film would read (last year for a spotlight), and the count shown is for that period, not their lifetime.
 
 Besides those, it can propose the season that just ended, a holiday your pictures show you keep (the day stands out from the days around it in at least three years), across every year you photographed it, a new or grown album, and months that never got a film. It films the last month of each person close to you, and weighs birthdays and spotlights by how close each person is, so a trip outranks the birthday of someone who isn't close to you. Each is a switch under `automation:` in the [config reference](../reference/config-reference.md#automation); the [automation reference](../reference/automation-contract.md#how-it-picks-one-memory) lists the thresholds. A season needs your home base, since the hemisphere comes from it.
+
+<ThemedScreenshot name="suggestions" alt="Suggestions: the most recent month and a new album never filmed, each with Check eligibility and Run this suggestion, and why the others were skipped" />
 
 **Suggestions** shows each reason. **Check eligibility** previews the checks without rendering, and **Run this suggestion** makes that candidate now. A manual request still respects the rotation rules, but not the daily cooldown: you asked for this film. It doesn't start the cooldown either, so the next scheduled film still comes on time. `immich-memories auto run --force` does the same from a terminal. A check is a dry run: it shows up in the history, and the day's scheduled film still runs at its time.
 

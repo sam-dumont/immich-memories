@@ -820,8 +820,11 @@ const Inspector: React.FC<{ state: RunPageState }> = ({ state }) => {
   );
 };
 
-/** Where the sheet's four rows end, and so where the edit bar sits in the page. */
-export const SHEET_BOTTOM = ROW_Y + 4 * (CARD_H + 16) - 16;
+/** The sheet's rows of five, and where they end: where the edit bar sits in the page. */
+export const SHEET_ROWS = Math.ceil(SHOTS.length / 5);
+export const SHEET_BOTTOM = ROW_Y + SHEET_ROWS * (CARD_H + 16) - 16;
+/** How far everything below the sheet moves up from where a four-row sheet puts it. */
+export const BELOW_SHEET_SHIFT = (4 - SHEET_ROWS) * (CARD_H + 16);
 export const BAR_Y = SHEET_BOTTOM + 24;
 export const BAR_H = 62;
 export const BAR_SAVED_H = BAR_H + 32;

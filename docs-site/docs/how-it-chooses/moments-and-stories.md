@@ -2,6 +2,8 @@
 title: Moments and stories
 ---
 
+import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
+
 # Moments and stories
 
 A **moment** is a short stretch of pictures of the same thing: thirty frames of a jump, or ten minutes at the dog park. A **story** gives related moments a place in the film: ordinary days at home, an evening out, or a trip.
@@ -28,6 +30,10 @@ Each story is named from what its pictures say, never from what an image classif
 - a trip by the album you made for it, else the farthest place it reached ("Trip to Nordkapp"). Each leg of a long trip runs from its first place to its last ("Copenhagen to Nordkapp");
 - a day out by its place and date ("Tervuren, Sunday 6 July");
 - days at home by their span ("Days at home, 1–4 July").
+
+On a run's page, **Stories** shows the cut by story, with its weight, its first day and its pictures:
+
+<ThemedScreenshot name="memory-story-ranked" alt="A July cut by story: Kit's birthday, Lou and Pat's visit and The road north, each marked Important with its date, its count and its pictures" />
 
 Names are written in the film's language, with its own month and weekday names ("Jours à la maison, 1–4 juillet"). A film that covers more than one calendar year puts the year in every date ("Monday 15 August 2016"). With the experimental summary on (`title_screens.llm_titles`) and no text reader, the film's summary is these names in order, and weeks at home one after another are told once as their span.
 

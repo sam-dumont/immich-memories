@@ -35,6 +35,8 @@ export type PoolCard = {
   outcome: string;
 };
 
+// The household, in the order the brief's people chips list them.
+export const CAST = ["Robin", "Charlie", "Kit", "Pat", "Lou", "Remy", "Jo", "Alex", "Mo", "Sasha", "Nico"];
 export const THESIS = "Kit's birthday, then Lou and Pat's visit, then The road north";
 export const SUMMARY_LINE = "6 stories, 15 pictures";
 export const POOL_LINE = "1131 in the pool (7 videos, 1124 photos)";
