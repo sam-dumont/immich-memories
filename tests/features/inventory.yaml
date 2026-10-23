@@ -1605,6 +1605,16 @@ features:
     tests:
       - tests/test_auto_day_run.py::TestOnlyAnAttemptThatTriedToMakeAFilmIsTheDaysRun::test_a_dry_run_in_progress_at_the_daily_time_leaves_the_film_to_the_timer
       - tests/test_auto_day_run.py::TestOnlyAnAttemptThatTriedToMakeAFilmIsTheDaysRun::test_a_stale_suggestion_click_leaves_the_film_to_the_timer
+  - id: automation.forced-runs-skip-pacing
+    promise: "A forced run or a picked suggestion never pushes back the scheduled film."
+    doc: reference/automation-contract.md#docker-switch-on-the-built-in-timer
+    tests:
+      - tests/test_manual_runs_skip_cooldown.py::TestAForcedFilmStartsNoCooldown::test_a_picked_suggestion_leaves_the_cooldown_where_it_was
+      - tests/test_manual_runs_skip_cooldown.py::TestAForcedFilmStartsNoCooldown::test_auto_run_force_leaves_the_cooldown_where_it_was
+      - tests/test_manual_runs_skip_cooldown.py::TestAForcedFilmStartsNoCooldown::test_the_next_trigger_is_not_skipped_for_the_cooldown
+      - tests/test_manual_runs_skip_cooldown.py::TestAScheduledFilmStillStartsIt::test_a_trigger_starts_the_cooldown
+      - tests/test_manual_runs_skip_cooldown.py::TestAScheduledFilmStillStartsIt::test_an_unforced_run_starts_the_cooldown
+      - tests/test_manual_runs_skip_cooldown.py::TestTheDailyTimerAfterAForcedFilm::test_the_timer_still_makes_the_days_film
   - id: automation.dead-attempts-end
     promise: "An automation attempt left by a dead process stops reading running."
     doc: make/automate.md#check-on-it

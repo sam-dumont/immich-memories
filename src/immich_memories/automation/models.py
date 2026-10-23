@@ -94,3 +94,5 @@ class AutomationAttempt:
     error: str | None = None
     last_phase: OperationalPhase | None = None
     phase_events: list[dict[str, Any]] = field(default_factory=list)
+    # Started on purpose, outside the schedule: neither the cooldown nor the timer counts it.
+    forced: bool = False
