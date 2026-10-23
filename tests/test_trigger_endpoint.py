@@ -366,7 +366,9 @@ def test_an_accepted_trigger_runs_even_when_its_request_loop_shuts_down_at_once(
     ran = threading.Event()
 
     class Started:
-        def execute(self):
+        attempt = SimpleNamespace(forced=False)
+
+        def execute(self, **_: object):
             ran.set()
             return SimpleNamespace(outcome=SimpleNamespace(value="completed"), reason="test")
 

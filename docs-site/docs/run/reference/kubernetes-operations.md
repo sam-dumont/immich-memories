@@ -451,6 +451,18 @@ and, once there is one, the `run`. `kubectl exec -n immich-memories deploy/immic
 shows the same run from inside the pod, though it can say "No runs found" for the first seconds.
 [The trigger contract](../../reference/automation-contract.md#kubernetes) has every field.
 
+**Ask for a film by hand.** A Job made from the CronJob sends the scheduled call, so its film starts
+the cooldown and the next night's run is skipped. For a film on demand, send the by-hand call from inside
+the app pod instead. The pod already holds the token, so nothing leaves the cluster:
+
+```bash
+kubectl exec -n immich-memories deploy/immich-memories -- python -c "import os, urllib.request as r; print(r.urlopen(r.Request('http://localhost:8080/api/trigger?force=true', method='POST', headers={'x-api-key': os.environ['IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN']})).read().decode())"
+```
+
+It answers like the Job does, with `"forced":true`, and you follow the attempt the same way.
+The same thing as a CLI call is `kubectl exec ... -- immich-memories auto run --force`, which holds
+your terminal until the film is done.
+
 For a fixed recipe, prefer `kubectl exec ... -- immich-memories generate ...`.
 The separate `base/job.yaml` contains only the one-off generate Job. It mounts the PVCs
 directly; use it with the Deployment scaled to zero. Never include it just to enable schedules.

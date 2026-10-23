@@ -1615,6 +1615,15 @@ features:
       - tests/test_manual_runs_skip_cooldown.py::TestAScheduledFilmStillStartsIt::test_a_trigger_starts_the_cooldown
       - tests/test_manual_runs_skip_cooldown.py::TestAScheduledFilmStillStartsIt::test_an_unforced_run_starts_the_cooldown
       - tests/test_manual_runs_skip_cooldown.py::TestTheDailyTimerAfterAForcedFilm::test_the_timer_still_makes_the_days_film
+  - id: automation.trigger-by-hand
+    promise: "A trigger call marked ?force=true skips the cooldown and never pushes back the scheduled film."
+    doc: reference/automation-contract.md#trigger-it-over-http
+    tests:
+      - tests/test_trigger_by_hand.py::TestACallWithoutTheMarker::test_is_still_held_back_by_the_cooldown
+      - tests/test_trigger_by_hand.py::TestACallWithoutTheMarker::test_is_the_scheduled_call_it_always_was
+      - tests/test_trigger_by_hand.py::TestAByHandCall::test_makes_its_film_and_starts_no_cooldown
+      - tests/test_trigger_by_hand.py::TestAByHandCall::test_runs_while_the_cooldown_is_active
+      - tests/test_trigger_by_hand.py::TestAByHandCall::test_still_needs_the_token
   - id: automation.dead-attempts-end
     promise: "An automation attempt left by a dead process stops reading running."
     doc: make/automate.md#check-on-it
