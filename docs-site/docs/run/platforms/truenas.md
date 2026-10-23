@@ -10,9 +10,10 @@ import StackAccess from './_stack-access.mdx';
 
 # TrueNAS
 
-Use the Docker-based Apps system in TrueNAS 24.10 or newer. Older Kubernetes-based SCALE installs need a different deployment. These steps follow [TrueNAS's custom app documentation](https://apps.truenas.com/managing-apps/installing-custom-apps/); a recorded installation on TrueNAS is still pending.
-
-This platform route has not been tested end to end. See [tested deployments](../tested-deployments.md) for coverage.
+Use the Docker-based Apps system in TrueNAS 24.10 or newer; older Kubernetes-based SCALE installs
+need a different deployment. These steps follow
+[TrueNAS's custom app documentation](https://apps.truenas.com/managing-apps/installing-custom-apps/).
+[Tested deployments](../tested-deployments.md) lists the platforms that were run end to end.
 
 ## 1. Open the YAML installer
 
@@ -39,8 +40,9 @@ Set film language after startup in [Settings](../../get-started/after-install.md
 
 ## 3. Open the app and download models {#3-prepare-and-check}
 
-Open <code><ComposePort host="your-server-address" /></code> (use your chosen host port) and sign in with the app
-username and password you just set. If you chose private localhost access, use its forwarded URL.
+Open <code><ComposePort host="your-server-address" /></code> (or your chosen host port) and sign in with the
+login you set, or with the generated password from the app's logs (**Workloads → Logs**). With
+private localhost access, use the forwarded URL instead.
 
 On **Memory**, click **Download models** and wait for it to finish. The card lists the files and
 download hosts; it disappears when the required files are ready. If it is absent and no error is

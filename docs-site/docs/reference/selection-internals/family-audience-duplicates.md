@@ -5,20 +5,20 @@ sidebar_position: 5
 
 # Family, audience and duplicates
 
-`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
+`generate --include` steers a new cut and goes through the checks on this page. A tick in the web UI's
+pool saves an owner revision without scoring or choosing pictures again.
 
-Once the draft is cut, a few passes make sure it is a film you'd show, to the people you cut it for. Your partner, who is on 300
+Once the draft is cut, a few passes make sure it's a film you'd show to the people you cut it for. Your partner, who is on 300
 pictures of the month and starred in none, gets a shot. A picture the family-viewing gate refuses
 leaves and another frame of the same moment takes its place, unless the refused picture was that
 moment's favourite: then the whole moment goes and another moment gets the slot. Two near-identical photos of the same
 sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
 cut is checked against everything the passes promised.
 
-Basic runs these passes with rules and the eight shared-DINO heads, including `screen`,
-`frame_kind` and `uncovered_person`. Marqo and Docling are off on Basic. This is a measured cost
-tradeoff, with less detector coverage, not proven equivalence to Full. GPU and Full add both
-detectors and Laya
-over the selected shots' captions. No tier asks the prose LLM to decide sharing.
+Basic runs these passes with rules and the eight heads over the shared DINOv2 encoder, including
+`screen`, `frame_kind` and `uncovered_person`. Marqo and Docling are off on Basic, so it sees less than
+GPU and Full, which add both detectors and Laya over the selected shots' captions. No tier asks the
+prose LLM to decide sharing.
 
 ## After the draft
 
@@ -58,7 +58,8 @@ Setting roles takes five minutes: [Home and people](../../get-started/who-is-who
 
 ## The family-viewing gate
 
-These are conservative automatic sharing defaults. They do not judge bodies, caregiving or what your household considers private. Review the cut and use per-picture decisions to set what may be shown.
+These are cautious automatic defaults. They don't judge bodies, caregiving or what your household
+considers private. Review the cut, and use per-picture decisions to set what may be shown.
 
 Every shot gets one of four verdicts, and the strictest reading wins:
 
@@ -168,7 +169,8 @@ Nothing in the cut changes. The run summary prints the count, and `runs why` sho
 
 ## Your word on a picture
 
-These decisions govern automatic selection. Editing an existing saved cut is a separate final-owner revision; its selected pictures follow the review choices, subject to renderable media.
+These decisions govern automatic selection. Editing a saved cut is a separate owner revision: its
+pictures follow your review choices, as long as they can be rendered.
 
 You answer a hold per picture, in the media pool or with `pictures` in the CLI.
 The walkthrough with screenshots is on [Edit the cut](../../how-it-chooses/overrule-it.md#your-word-on-a-picture). The

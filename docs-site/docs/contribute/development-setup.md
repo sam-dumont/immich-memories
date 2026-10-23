@@ -4,12 +4,12 @@ sidebar_label: "Development Setup"
 
 # Development setup
 
-The full contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam-dumont/immich-memories/blob/main/CONTRIBUTING.md).
+The contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam-dumont/immich-memories/blob/main/CONTRIBUTING.md).
 
 You need Python 3.11 to 3.13, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make. The web UI
-also needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)). On
-3.14, `uv sync` installs fine but skips the GPU title renderer (`quadrants` has no wheel for it
-yet): pin the checkout's virtualenv with `uv venv --python 3.12` before `make dev`.
+also needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)).
+Python 3.14 is refused: the GPU title renderer (`quadrants`) has no 3.14 wheel. If 3.14 is your
+default, create the checkout's virtualenv with `uv venv --python 3.12` before `make dev`.
 
 ```bash
 git clone https://github.com/sam-dumont/immich-memories.git
@@ -53,21 +53,22 @@ Changes for different families, households and celebrations are welcome. An issu
 
 Give an anonymized example: who belongs to the household, which people or dates matter, what the app does now, and what you expected instead. For holidays, include the country or culture and how the date is determined. Made-up names and synthetic pictures are fine. Please keep API keys, birth dates and private photos out of public issues.
 
-Help me check the result against your example. Inclusive labels alone don't prove the selection, people groups, titles or calendar behave correctly. Once we have a reproducible case, it can become a regression test.
+Then help me check the result against your example: a label alone doesn't prove the selection, people groups, titles or calendar behave. A reproducible case becomes a regression test.
 
 ## Check the install
 
 `make check` runs lint, format check, type check, the file length and complexity gates, and the
-unit tests. If it passes, your setup is correct. `make ci` adds everything else and is what you run
-before opening a PR: passing locally catches the checks you can reproduce before CI. Both depend on `ensure-dev`, which
-syncs the same CPU extras as `make dev`, so either adds the heavy optional packages to a `make dev-test` environment. On Linux, demucs pulls torch and NVIDIA wheels even though ONNX stays on the CPU variant. To keep a prepared lightweight environment, set `ENSURE_DEV_COMMAND=true` explicitly.
+unit tests. If it passes, your setup is correct. `make ci` adds every other gate and is what the
+pre-commit hook and CI run. Both depend on `ensure-dev`, which syncs the same CPU extras as
+`make dev`, so either one adds the heavy optional packages to a `make dev-test` environment (on
+Linux, demucs pulls torch and NVIDIA wheels even though ONNX stays on the CPU variant). Set
+`ENSURE_DEV_COMMAND=true` to keep a lightweight environment as it is.
 
-`make help` lists common targets; the Makefile contains the full list. Use the make targets for
-the checks CI runs. While changing a feature, run its targeted tests with
-`uv run pytest tests/test_example.py` (replace the path with the test file you are working on).
-Keep pytest's default options for unit tests: they seal the test home and store away from your
-own data. Use
-[conventional commit](https://www.conventionalcommits.org/) messages.
+`make help` lists the common targets; the Makefile has them all. CI runs the make targets, so
+use those for the checks. While changing a feature, run its tests directly:
+`uv run pytest tests/test_example.py`. Keep pytest's default options for unit tests: they seal the
+test home and store away from your own data. Commit messages follow
+[conventional commits](https://www.conventionalcommits.org/).
 
 The test tiers, what each needs, and what to do when diff-cover fails on your PR are in the
 [Testing guide](./testing.md).
@@ -108,7 +109,8 @@ Maintainers use the [release workflow](./releasing.md). It covers candidate prom
 ```text
 src/immich_memories/
   api/          # Immich API client
-  analysis/     # Story-first selection (the editorial route)
+  analysis/     # Story-first selection, one package per stage
+  config/       # Config loading; section models in config/models/
   store/        # The annotation store: every banked fact and reading
   db/           # The store's engine, tables, migrations, backup and restore
   triage/       # The pinned ONNX encoder and its eight context heads
@@ -124,6 +126,7 @@ src/immich_memories/
   operations/   # Lifecycle phases, storage report
   planning/     # Auto-duration planning
   automation/   # auto suggest/run
+  free_text/    # --ask: reading a free-text request
   memory_types/ # Preset system
 ```
 

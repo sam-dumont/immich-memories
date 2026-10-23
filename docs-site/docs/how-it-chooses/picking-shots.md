@@ -4,7 +4,7 @@ title: Picking a shot
 
 # Picking a shot
 
-Within a moment, your favourite comes first. A big event is several moments: roughly one shot for every five distinct pictures of it, so a month with one real afternoon still makes a film. Without one, the editor looks for motion, recognisable people, good framing and a sharper picture. Near-identical frames compete for one place.
+Within a moment, your favourite comes first. A big event is several moments: one shot for every five distinct pictures of it, or one every five minutes, so a month with one real afternoon still makes a film. Without one, the editor looks for motion, recognisable people, good framing and a sharper picture. Near-identical frames compete for one place.
 
 A selected video plays as video, usually up to six seconds. Clips shorter than two seconds are skipped.
 
@@ -19,7 +19,9 @@ A short film lets a video play longer, up to twelve seconds, when it has content
 
 Detected speech can extend the cut to a pause, up to twelve seconds. A run of "speech" longer than twelve seconds (a crowd, a PA, music) is no sentence and never stretches a cut. A pause means a full second of quiet: the breath between two people trading lines doesn't count, so a joke keeps its punchline and the laugh after it.
 
-A Live Photo plays as motion when its clip, stitched with nearby Live Photos or its own, lasts at least 2.5 seconds, moves and keeps its subject in view. Otherwise its still can remain in the film. See [Photos and Live Photos](../make/photos-and-live-photos.md).
+A Live Photo plays as motion when its clip, stitched with nearby Live Photos or its own, lasts at least 2.5 seconds, moves and keeps its subject in view. Otherwise its still plays in that slot, and the same happens when its motion won't decode at render time. See [Photos and Live Photos](../make/photos-and-live-photos.md).
+
+A bad file costs a shot, never the film. A video that won't decode at render time leaves the film, which runs that many seconds shorter, and a picture whose preview Immich no longer has is skipped.
 
 A finger over the edge of the lens (a skin-toned, out-of-focus blob touching the border) is a warning, never a drop. The check runs on photos and on videos while the period is prepared. A flagged picture loses to a clean shot of the same moment, a flagged favourite still wins its moment, and a moment with only a flagged picture to show still gets shown. On a video it moves the cut, never the clip: when the picture decides where to cut, of two equally busy stretches the one with fewer flagged seconds plays. When the whole clip is flagged, the cut lands where it would have without the check.
 

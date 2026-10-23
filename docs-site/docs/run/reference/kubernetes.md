@@ -189,11 +189,18 @@ use 8000 or 9999 (the maximalist oMLX example uses 9999), and a separate render 
 Intel Quick Sync and AMD VA-API need `/dev/dri` in the pod, which takes a device plugin these
 manifests do not ship; without one the encode runs on the CPU.
 `components/gpu/deployment-gpu.yaml` patches the Deployment with `runtimeClassName: nvidia`, one
-`nvidia.com/gpu`, the two `NVIDIA_*` env vars, the `nvidia.com/gpu.present=true` node selector and
-the matching toleration. The app uses that card for NVENC encoding and the title kernels and
-nothing else. These overlays run separate services: classifiers and Demucs share inference; captions and the render sidecar have their own processes. The [unified CUDA worker](../reference-setup.md#one-gpu-service) is a separate Compose recipe, not part of these overlays. See [container boundaries](../../better/inference.md#one-nvidia-container). When the card
-cannot start the title kernels, titles still render, on the CPU, and the log says why in one warning
-line.
+`nvidia.com/gpu`, `NVIDIA_VISIBLE_DEVICES=all`, `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics`,
+the `nvidia.com/gpu.present=true` node selector and the matching toleration. The app renders on
+that card: decode, scaling and blur fill, tone mapping (libplacebo through Vulkan, which is why
+`graphics` is on the list), photo moves, the title kernels and NVENC encoding. Each GPU filter is
+probed once; whatever the card or the FFmpeg build can't do stays on the CPU, and a failed
+hardware decode re-runs the assembly in software. When the card cannot start the title kernels,
+titles still render on the CPU and the log says why in one warning line.
+
+These overlays run separate services: classifiers and Demucs share inference; captions and the
+render sidecar have their own processes. The [unified CUDA worker](../reference-setup.md#one-gpu-service)
+is a separate Compose recipe, not part of these overlays. See
+[container boundaries](../../better/inference.md#one-nvidia-container).
 
 
 ## Render worker as a sidecar
@@ -270,7 +277,8 @@ The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writ
 another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a
 network filesystem does not give two hosts). So the two CronJobs never mount the PVCs: they `curl`
 the Deployment's `POST /api/trigger` route instead, running whatever decision `auto run` would have
-made. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the existing `immich-memories-secrets` Secret first, or use the in-process
+made. These scheduled calls count toward the cooldown (24 hours by default); a hand-made call with
+`?force=true` skips it and doesn't count. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the existing `immich-memories-secrets` Secret first, or use the in-process
 daily timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment) and skip the CronJob
 entirely. The one-off `generate` Job still mounts the PVCs directly, since the trigger route takes
 no `--year`/`--person` parameters: prefer

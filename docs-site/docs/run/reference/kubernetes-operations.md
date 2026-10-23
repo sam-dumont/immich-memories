@@ -73,14 +73,14 @@ kubectl apply -k base
 kubectl rollout status -n immich-memories deploy/immich-memories
 ```
 
-`rollout status` waits. The GPU tier's first start pulls a multi-GB CUDA image (about 5 minutes on a
-test cluster) and the pod sits in `ContainerCreating` the whole time. That is the pull, not a stuck
+`rollout status` waits. The GPU tier's first start pulls a multi-GB CUDA image, which takes
+minutes, and the pod sits in `ContainerCreating` the whole time. That is the pull, not a stuck
 pod: `kubectl describe pod -n immich-memories` shows `Pulling image`.
 
 On the GPU and Full tiers the app is Ready well before the model services are. A `preflight` in
-that gap prints three GPU warnings (`No verified inference GPU for requested gpu tier`, kernels on
-the CPU) that clear on their own about two minutes later. Wait for both first, or re-run
-`preflight` once they are Ready:
+that gap prints GPU warnings (`No verified inference GPU for requested gpu tier`, kernels on
+the CPU) that clear once the services are up. Wait for both first, or re-run `preflight` once they
+are Ready:
 
 ```bash
 kubectl rollout status -n immich-memories deploy/immich-memories-inference
@@ -88,7 +88,7 @@ kubectl rollout status -n immich-memories deploy/immich-memories-captioner
 ```
 
 The [setup builder](/setup) puts both after the app's own `rollout status` on those tiers, and it
-sets the tier you picked, Basic included, as an editable `IMMICH_MEMORIES_DEPLOYMENT_TIER` default.
+writes the tier you picked, Basic included, into `IMMICH_MEMORIES_DEPLOYMENT_TIER`.
 
 The temporary Secret file is private (mode 0600); remove it after applying.
 The base uses an existing `immich-memories-secrets` Secret. GitOps users can skip the plaintext
@@ -103,10 +103,10 @@ For a source checkout, set the image before applying:
 The `kustomize edit` command requires the standalone Kustomize CLI; `kubectl kustomize` only
 builds. You can also edit `images[].newTag` in `base/kustomization.yaml` by hand.
 
-The init container fetches model files needed by its configuration. Its guard includes GPU
-detector files, so Basic runs fetch again on every start; existing files are digest-checked rather
-than blindly downloaded. Before the first film,
-check the running app's actual tier and requirements:
+The init container fetches the model files its configuration needs. Its guard includes GPU
+detector files, so a Basic pod runs the fetch on every start; files already there are
+digest-checked, not downloaded again. Before the first film, check the running app's tier and
+requirements:
 
 ```bash
 kubectl exec -n immich-memories deploy/immich-memories -- immich-memories models fetch
@@ -114,8 +114,10 @@ kubectl exec -n immich-memories deploy/immich-memories -- immich-memories prefli
 kubectl port-forward -n immich-memories svc/immich-memories 8080:80
 ```
 
-Open `http://localhost:8080`. Port 8080 taken on your machine? `kubectl port-forward -n immich-memories svc/immich-memories 8081:80` serves it at `http://localhost:8081`: the service port stays 80. Set home coordinates and timezone below, then make
-[your first film](../../get-started/first-film.mdx).
+Open `http://localhost:8080`. Port 8080 taken on your machine?
+`kubectl port-forward -n immich-memories svc/immich-memories 8081:80` serves it at
+`http://localhost:8081`: the Service port stays 80. Set home coordinates and time zone below, then
+make [your first film](../../get-started/first-film.mdx).
 
 :::caution Know your sign-in before you expose it
 Sign-in is on by default. The first start generates a password and prints it once in the pod log
@@ -134,11 +136,10 @@ kubectl apply -k deploy/kubernetes/custom
 kubectl rollout restart -n immich-memories deploy/immich-memories
 ```
 
-On the GPU tier this took 36 seconds and restarted only the app pod. `apply` prints `configured`
-for objects that did not change (the captioner and inference Deployments among them); they are not
-restarted. Rotate the Immich API key
-this way. Leave `IMMICH_MEMORIES_SECRET_KEY` alone: changing it makes saved credentials unreadable (see
-[the secret key](#keep-the-secret-key)).
+Only the app pod restarts. `apply` also prints `configured` for objects that did not change (the
+captioner and inference Deployments among them); those are not restarted. Rotate the Immich API
+key this way. Leave `IMMICH_MEMORIES_SECRET_KEY` alone: changing it makes saved credentials
+unreadable (see [the secret key](#keep-the-secret-key)).
 
 ### Keep the secret key
 
@@ -180,12 +181,11 @@ kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- fin
 kubectl cp -n immich-memories -c immich-memories <pod>:/app/output/<run folder>/<name>.mp4 ./film.mp4
 ```
 
-`kubectl cp` is fine for a short film. For anything over about 100 MB, neither it nor a plain
-`exec ... cat > film.mp4` can be trusted: on a 128 MB film, 4 of 4 streamed copies stopped short
-(130 to 133 MB of 134 MB, one with `connection reset by peer`) and `kubectl cp` gave 1 full copy
-in 2. The size check caught every bad copy, so use it as the loop's exit condition. This copies
-in chunks, resumes from the bytes it already has with `tail -c +N`, and stops only when the local
-size matches the pod's:
+`kubectl cp` is fine for a short film. Past about 100 MB, neither it nor a plain
+`exec ... cat > film.mp4` can be trusted: both stop short, sometimes with
+`connection reset by peer` and sometimes silently. Compare sizes. This loop copies in chunks,
+resumes from the bytes it already has with `tail -c +N`, and stops only when the local size
+matches the pod's:
 
 ```bash
 NS=immich-memories
@@ -202,7 +202,7 @@ echo "got $(wc -c < film.mp4 | tr -d ' ') of $want bytes"
 ```
 
 It works in bash and zsh, on macOS and Linux. A dropped connection costs one retry from where it
-stopped, not the whole film. Play the file to the end before you delete anything.
+stopped. Play the file to the end before you delete anything.
 
 Two other routes skip the problem. The film page in the web UI has a **Download film** link under
 the player (port-forward, open the run, click it), and the browser can resume that. Or mount the
@@ -263,9 +263,9 @@ The base policy allows DNS and TCP ports 80, 443, 2283, 11434 and 8092 to any de
 A separate rule permits 8080 only to app pods with the `web-ui` component in the same namespace: trigger CronJobs
 call Service port 80, which is translated to that backend port.
 
-Ingress allows 8080 without a source selector, so any pod in the cluster can reach the
-unauthenticated app. This is not a trusted-pod allow-list. Keep it private until authentication
-works and add your own source/destination selectors when you need stricter isolation.
+Ingress allows 8080 without a source selector, so any pod in the cluster can reach the app and
+its sign-in page. This is not a trusted-pod allow-list: add your own source and destination
+selectors when you need stricter isolation.
 Add the actual ports of your services: 8000 or 9999 for your reader configuration, PostgreSQL
 5432 and a separate render worker's 8093. oMLX's port is configurable; the maximalist example
 uses 9999. The CNI must enforce NetworkPolicy for any of these rules to matter.
@@ -296,9 +296,9 @@ kubectl apply -k overlays/captioner-cuda
 ```
 
 CPU service variants are `overlays/inference` and `overlays/captioner`. The CUDA captioner
-deliberately requests no `nvidia.com/gpu`; it depends on device sharing/time-slicing and has no
-scheduler GPU reservation. Configure that on your cluster or add a GPU request on a separate
-card. Applying the overlay alone does not make a GPU available.
+requests no `nvidia.com/gpu` on purpose: it relies on device sharing or time-slicing, with no
+scheduler reservation. Configure that on your cluster, or add a GPU request on a separate card.
+Applying the overlay alone does not make a GPU available.
 The base deployment defaults to Basic. After connecting both services, set
 `IMMICH_MEMORIES_DEPLOYMENT_TIER=gpu` in the app environment: it is the deployment's one tier
 setting, and a `tier` in Settings or `config.yaml` is ignored with a warning. For Full, configure and explicitly enable an
@@ -415,12 +415,11 @@ HTTP backend.
 
 **`concurrencyPolicy: Forbid` does not guard anything here.** The Job only sends the trigger and
 exits in under a second whatever the outcome, so Kubernetes never sees two Jobs overlap. The guard
-is the app's own run lease: while a run is active, a second `POST /api/trigger` is refused with
-`HTTP 409` and `{"detail":"a run is already active","attempt_id":"..."}`. Twelve simultaneous
-POSTs after a finished film gave 2 accepted (202) and 10 refused (409), and two CronJobs firing in
-the same second both got 202, then both ended `skipped` for cooldown. The curl in these Jobs uses
-`-f`, so a 409 makes it exit non-zero, and `restartPolicy: OnFailure` retries a failed pod. The
-Job's own handling of a 409 has not been observed: only the HTTP answers were checked.
+is the app's own run lease: while a run holds it, another `POST /api/trigger` gets `HTTP 409` and
+`{"detail":"a run is already active","attempt_id":"..."}`. Two scheduled calls that both get in
+still make one film at most: the first starts the cooldown and the second ends `skipped`.
+The curl in these Jobs uses `-f`, so a 409 makes it exit non-zero, and `restartPolicy: OnFailure`
+retries the pod.
 
 **Test a schedule now, and follow what it started.** Fire a Job from the CronJob without waiting
 for its clock:
@@ -431,9 +430,10 @@ kubectl logs -n immich-memories job/trigger-test
 ```
 
 `Complete` only means the trigger was accepted: the Job's log is just
-`{"status":"accepted","attempt_id":"...","status_url":"/api/trigger/..."}` and the Job is done in a
-few seconds. The film is made by the running app, detached from that HTTP request, and a year can
-take close to an hour on four CPU cores (55 minutes for a 538 s film on the first trigger of a fresh library). Follow it with the attempt id and the token.
+`{"status":"accepted","attempt_id":"...","status_url":"/api/trigger/...","forced":false}` and the
+Job is done in a few seconds. The running app makes the film, detached from that HTTP request, and
+a long film on a CPU-only pod takes more than an hour on a cold library ([Measure your
+setup](../../better/measured.md) has the timings). Follow it with the attempt id and the token.
 
 The app image has no `curl`, so `kubectl exec` can't make this call. Run it from your machine
 instead: this reads the attempt id from the Job's log, forwards a local port, asks, and stops the
@@ -451,17 +451,21 @@ and, once there is one, the `run`. `kubectl exec -n immich-memories deploy/immic
 shows the same run from inside the pod, though it can say "No runs found" for the first seconds.
 [The trigger contract](../../reference/automation-contract.md#kubernetes) has every field.
 
-**Ask for a film by hand.** A Job made from the CronJob sends the scheduled call, so its film starts
-the cooldown and the next night's run is skipped. For a film on demand, send the by-hand call from inside
-the app pod instead. The pod already holds the token, so nothing leaves the cluster:
+**Ask for a film by hand.** A Job made from the CronJob sends the scheduled call: it waits for the
+cooldown like the schedule does, and a film it makes starts the cooldown again
+(`automation.cooldown_hours`, 24 by default). For a
+film on demand, add `?force=true`. That call skips the cooldown and doesn't count toward it, so
+the next scheduled run goes ahead as planned. Send it from inside the app pod, which already holds
+the token, so nothing leaves the cluster:
 
 ```bash
 kubectl exec -n immich-memories deploy/immich-memories -- python -c "import os, urllib.request as r; print(r.urlopen(r.Request('http://localhost:8080/api/trigger?force=true', method='POST', headers={'x-api-key': os.environ['IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN']})).read().decode())"
 ```
 
-It answers like the Job does, with `"forced":true`, and you follow the attempt the same way.
-The same thing as a CLI call is `kubectl exec ... -- immich-memories auto run --force`, which holds
-your terminal until the film is done.
+It answers like the Job does, with `"forced":true`, and you follow the attempt the same way. A run
+already holding the lease still gets you a 409. The CLI equivalent is
+`kubectl exec ... -- immich-memories auto run --force`, which holds your terminal until the film
+is done.
 
 For a fixed recipe, prefer `kubectl exec ... -- immich-memories generate ...`.
 The separate `base/job.yaml` contains only the one-off generate Job. It mounts the PVCs
@@ -547,8 +551,9 @@ sections; runtime names in the table omit that wrapper. See the [complete field 
 | `auth.*`, `server.*` | Environment or file only; ignored if saved by old Settings | Recreate/restart after changes; protect credentials in Kubernetes Secrets |
 | `database.url`, `database.schema` | Environment/file bootstrap only | Stop writers before changing store; restart; keep the database URL secret |
 | `immich.*`, `llm.*`, `editorial.preparation.*`, `inference.*`, `render.*` | Settings unless environment/file pins the key | Saved changes affect subsequent work; changed credential-bearing URLs require credential re-entry; recreate for environment changes |
-| `tier`, `output.*`, `audio.*`, `trips.*`, `upload.*`, `automation.*` | Same precedence | Keep output/cache paths on actual mounts; restart after changing the running timer's deployment configuration |
-| `IMMICH_MEMORIES_DEPLOYMENT_*` service wiring | Low-priority deployment defaults | Settings can override; these are not the normal high-priority runtime environment keys |
+| `tier` | `IMMICH_MEMORIES_DEPLOYMENT_TIER`, ranked as an environment variable | The manifests set it; a `tier` in Settings or `config.yaml` is ignored with a warning. Restart after changing it |
+| `output.*`, `audio.*`, `trips.*`, `upload.*`, `automation.*` | Same precedence | Keep output/cache paths on actual mounts; restart after changing the running timer's deployment configuration |
+| Other `IMMICH_MEMORIES_DEPLOYMENT_*` service wiring | Low-priority deployment defaults | Settings can override; these are not the normal high-priority runtime environment keys |
 
 `${VAR}` interpolation happens **in the YAML file only**. Settings rejects literal secret
 references; Kubernetes `env.value` does not shell-expand them. Inject an environment value from

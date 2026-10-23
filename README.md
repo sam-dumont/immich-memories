@@ -14,8 +14,9 @@ Immich Memories turns the photos and videos in your Immich library into MP4 film
 and music. Pick a month, a year, a trip, an album or a person. Review the proposed cut, swap what
 you don't like, then render. A quiet month makes a short film rather than 3 minutes of filler.
 
-It runs on a plain NAS with no GPU or text reader. Basic uses small local picture classifiers;
-GPU adds descriptions and extra checks, and Full adds a text reader to refine the cut.
+It runs on a plain NAS with no GPU and no model server. Basic reads the pictures with small local
+classifiers, GPU adds picture descriptions and extra checks, and Full adds a text reader that
+refines the cut.
 
 **[Quick start](#make-your-first-film)** · **[Documentation](https://sam-dumont.github.io/immich-memories/docs/)** · **[Install guides](https://sam-dumont.github.io/immich-memories/docs/run/overview)** · **[Demo](https://sam-dumont.github.io/immich-memories/demo/demo.mp4)**
 
@@ -39,12 +40,14 @@ makes a complete film, and you can change tiers later.
 |---|---|---|---|
 | **Basic** | Dates, favourites, people, places and small picture classifiers guide the cut; up to 1080p. | 2 CPU cores and 4 GiB RAM for the app, in addition to Immich. | Follow the steps below. |
 | **GPU** | Picture descriptions, document/sensitive-content checks and a family-viewing pre-screen. | NVIDIA services with the Container Toolkit, or native Apple Silicon. Allow 8 GiB for the Compose app plus its model services. | Select **GPU** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start), or use [native Mac](https://sam-dumont.github.io/immich-memories/docs/run/uv-pip#apple-silicon). |
-| **Full** | A text reader refines the cut, writes the film's summary and names special days. | The GPU setup plus an enabled reader with a 32k context window. | Select **Full** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start). |
+| **Full** | A text reader refines the cut. | The GPU setup plus an enabled reader with a 32k context window. | Select **Full** in [Quick start](https://sam-dumont.github.io/immich-memories/docs/get-started/quick-start). |
 
-You need an existing Immich server, Docker Compose v2 and **about 25 GB of app data plus 0.35 GB per 1,000
-pictures and videos in your library, plus images and finished films**. Immich v2 (2.7.5 or later) and v3 (3.2.4 or later) both work; the [deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
-records tested versions. GPU services can run on another machine.
-For a NAS container manager, [use its platform guide](https://sam-dumont.github.io/immich-memories/docs/run/nas).
+You need an existing Immich server (2.7.5 or later on v2, 3.2.4 or later on v3), Docker Compose v2
+and disk space: about 25 GB of app data plus 0.35 GB per 1,000 pictures and videos in your
+library, plus the images and your finished films. The
+[deployment matrix](https://sam-dumont.github.io/immich-memories/docs/run/tested-deployments)
+records what has been tested. GPU services can run on another machine. On a NAS container
+manager, [use its platform guide](https://sam-dumont.github.io/immich-memories/docs/run/nas).
 
 1. **Download the two Basic files** into a new folder:
 
@@ -96,13 +99,14 @@ For a NAS container manager, [use its platform guide](https://sam-dumont.github.
 
 4. **Open the app** at `http://localhost:22830`, or `http://your-server-address:22830` for LAN
    access. Sign in as `admin` with the generated password, printed once in
-   `docker logs immich-memories` (or use the login you set). On **Memory**, click **Download models** and
-   wait for the card to disappear. If no card or error appears, the required files are ready.
+   `docker logs immich-memories` (or use the login you set). On **Memory**, click **Download models**
+   and wait for the card to disappear. No card means the files are already there.
 
    Make [your first film](https://sam-dumont.github.io/immich-memories/docs/get-started/first-film)
    from an album of **20–50 photos and short videos**: choose **Album**, set the length to
    **0.5 minutes**, then **Cut**, review and **Render**. Leave upload off and use **Download film**
-   to keep the MP4. A full month can take hours on a NAS; a small album limits the first preparation.
+   to keep the MP4. A full month can take hours to prepare on a NAS; a small album gets you a film
+   first.
 
 For a failed step, use [Installation help](https://sam-dumont.github.io/immich-memories/docs/reference/installation-help).
 Once the first film works, [After install](https://sam-dumont.github.io/immich-memories/docs/get-started/after-install)
@@ -111,7 +115,7 @@ covers home, people, language, backups and automation.
 ## What you can do
 
 - **Photos and videos in one film.** Stills get animated, videos give their best few seconds,
-  and a Live Photo plays as motion when its clip lasts 2.5 s and actually moves. Favourites and
+  and a Live Photo plays as motion when its clip lasts at least 2.5 s and actually moves. Favourites and
   named people win close calls. Every shot says why it's in the cut, and the pool shows
   everything that was left out.
 - **Change the cut before rendering.** Remove a shot, trim a video, swap a picture or pull one
@@ -119,10 +123,10 @@ covers home, people, language, backups and automation.
   dropping a shot from one film.
 - **Titles and music out of the box.** A film is titled by what it is and when, in the film's
   language: "Summer 2025", "Kit's birthday · 2026", "Kit & Pat · 2025", "Christmas ·
-  2019–2025". Those are the app's own titles, never a model's. A text reader names special
-  days, and trips when you pass `--llm-title`.
-  Every film gets a bundled track. Maps and generated music are optional extras with their own
-  setup.
+  2019–2025". Those are the app's own titles, never a model's. Model-written titles and
+  summaries are an experimental opt-in (`--llm-title`).
+  Every film gets a bundled track, or your own music folder. Maps and generated music are
+  optional extras with their own setup.
 - **Automate it later.** A daily timer picks one memory worth making (a trip, a birthday, last
   month) and can upload it to Immich, with its title and story summary as the description, or
   keep it on disk. Tags for the type, years and stories are opt-in (`upload.film_tags`). Make a
@@ -130,8 +134,8 @@ covers home, people, language, backups and automation.
 - **Ask in your own words.** "our cat through the years" can become a film. Highly
   experimental: tuned on one real library, so preview before you trust it.
 - **Add a GPU or a model when you want.** Basic makes complete films on a CPU. A GPU adds
-  captions and extra picture checks, Full adds a text reader on top. A hardware encoder only
-  speeds up rendering.
+  captions and extra picture checks, Full adds a text reader on top. A hardware encoder speeds
+  up rendering and changes nothing about which pictures make the cut.
 
 [How it chooses](https://sam-dumont.github.io/immich-memories/docs/how-it-chooses/overview)
 explains the selection rules. [Improve a film](https://sam-dumont.github.io/immich-memories/docs/make/improve-a-film)
@@ -141,8 +145,9 @@ covers length, missing people and shot changes. What doesn't work yet is in the
 ## Access and privacy
 
 The app talks to Immich with a scoped API key and never modifies your originals. Uploading a
-film is opt-in. Model downloads, optional model servers, maps, notifications and workers each
-have their own data flow, and a local URL alone doesn't prove nothing leaves.
+film is opt-in. There is no telemetry, and the update check only runs when you ask for it.
+Model downloads, optional model servers, maps, notifications and workers each have their own
+data flow, and a local URL alone doesn't prove nothing leaves.
 [Privacy](https://sam-dumont.github.io/immich-memories/docs/run/privacy) lists every recipient
 and how to check the Basic tier is offline.
 

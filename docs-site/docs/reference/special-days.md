@@ -7,17 +7,17 @@ title: Special-day discovery
 ## `discover-days`
 
 Finds the days something happened on and keeps them in the special-days catalogue in the
-[store](../run/database.md), so a film can arrive years later without you asking ("five years ago today"). Run it once, then now and then. Films from it
-are the **Special day** type on [Memory types](film-types.mdx#special-day).
+[store](../run/database.md), so a film can arrive years later without you asking ("five years ago
+today"). Run it once, then now and then. Films from it are the **Special day** type on
+[Memory types](film-types.mdx#special-day).
 
 ```bash
 immich-memories discover-days --since 2015
 immich-memories discover-days --since 2015 --also-skip 09-14 --also-skip "ascension day"
 ```
 
-Repeat `--also-skip` to add household dates (`MM-DD`) or holiday names to the calendar. These
-receive the same holiday handling below; the flag does not unconditionally exclude a different
-occasion that happened on that date.
+Repeat `--also-skip` to add household dates (`MM-DD`) or holiday names to the calendar. They get the
+holiday handling below, so a different occasion that happened on that date can still be kept.
 
 A day ends when the pictures stop for five hours, not at midnight. Days inside a trip are skipped (the trip film
 tells that story). A holiday spent at home has its own type, so with a reader it is judged like any day
@@ -25,7 +25,7 @@ and then asked one narrow question: was its occasion the holiday itself? A Fathe
 holiday's, and stays out; a cycling race that happened to fall on that date is a special day. With no
 answer, or on Basic and GPU, a holiday spent at home is skipped.
 
-**On Basic and GPU** (no model reader; Basic is the default) nothing is asked. A day counts when one recorded fact is loud: most of its
+**On Basic and GPU** (no model reader) nothing is asked. A day counts when one recorded fact is loud: most of its
 located pictures away from home, at least three favourites, at least three videos making half the day, or a
 long day (20 pictures over six active hours) with your close family on it. Each year keeps its strongest
 `advanced.automation.special_days_per_year` (6): days away first, the furthest first, then favourites, then
@@ -37,13 +37,16 @@ its own title in the film's language at render time; the stored catalogue entry 
 
 **On Full tier** (optional), every run of activity is read a month at a time as one line of recorded facts
 (time, place, counts, who Immich recognised, close family by role, up to three captions), and the model names
-distinct occasions rather than recurring everyday activity. This is a discovery heuristic; it can miss a day that matters to you. Choose a Special day date explicitly or edit the catalogue when that happens. No yearly cap. Titles are checked against what the day recorded: a place it never went or a claim nothing supports
-gets the title asked for once more, then the day is dropped.
+distinct occasions rather than recurring everyday activity. It can miss a day that matters to you: pass
+that day to `generate --day`, or add it to the catalogue. There is no yearly cap. Titles are checked
+against what the day recorded: a title naming a place the day never went, or a claim nothing supports, is
+asked for once more, then the day is dropped.
 
 Each proposed occasion is checked against that day's own evidence. An ordinary-day verdict drops it. An
 empty or unreadable answer is asked once more; a day still without a verdict stays unjudged, and the scan
-prints why (nothing written about its pictures, the reader failed, or its answer could not be read). A missing subtitle does not discard an otherwise valid confirmation, and
-existing valid cached answers are reused.
+prints why (nothing written about its pictures, the reader failed, or its answer could not be read). A
+missing subtitle doesn't void a confirmation, and valid cached answers are reused.
+
 The month reading compares a month's days and can miss one. So the scan also proposes, with no
 model, the days whose own captions keep using words the rest of the year barely does: "race
 track" and "Ferrari" on one day, where a cat or a baby written about every week cancels out. There
@@ -59,8 +62,8 @@ when the day's title names none of those words, the moment is asked about alone,
 found there gives the day its name and its window. The moment only renames: it never makes an
 ordinary day an occasion.
 
-A small reader can call a whole run of ordinary days occasions: a newborn's first months came back as
-fifty-five "new beginnings". So a confirmed day with four or more other confirmed days within fifteen days
+A small reader can call a whole run of ordinary days occasions: a newborn's first months, every one a
+"new beginning". So a confirmed day with four or more other confirmed days within fifteen days
 of it has to show what the days before it did not: at least half its captions must write a word it
 repeats and that no earlier day within those fifteen days writes. Only earlier days count, so the day a
 run starts from stays: the birth itself writes the same baby as the weeks after it, but nothing before it
@@ -69,7 +72,7 @@ day), nor is a day that stands out from its year.
 
 A picture stored as several files counts once. A shared album keeps the camera's file and a smaller copy
 under the same name at the same instant; discovery reads the full-size one, with a star either file
-carries, the same way the editor does (one real library year held 2,368 such copies in 21,520 files).
+carries, the same way the editor does.
 
 Pictures forwarded to the library (sent by someone else or saved: stills with no camera in their
 EXIF) are evidence, not material. They never make a day of their own and never count toward its

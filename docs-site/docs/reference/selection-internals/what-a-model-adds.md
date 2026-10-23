@@ -5,7 +5,8 @@ sidebar_position: 6
 
 # What a model adds
 
-`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
+`generate --include` steers a new cut and goes through the checks on this page. A tick in the web UI's
+pool saves an owner revision without scoring or choosing pictures again.
 
 The Basic tier makes the whole film from metadata, pixels and small CPU classifiers. The `gpu` tier
 adds captions and Laya for the pictures in the cut and their candidates. The `full` tier adds a text
@@ -18,9 +19,9 @@ changing the selection tier. Costs and setup are on [What a model adds, what it 
 
 ## Which route a cut takes
 
-Every cut resolves the product tier first, then drafts with rules on every tier; on Full, it
-either refines that draft or (Route C) plans the whole film explicitly; every route ends through
-the same shared admission and final checks.
+Every cut resolves the tier first, then drafts with rules on every tier. On Full it either refines
+that draft or, on Route C, plans the whole film. Every route ends with the same admission and final
+checks.
 
 - `tier: auto` picks the tier: [The three tiers](../../run/requirements.md#the-preparation-tier).
   The tier owns the reader and preparation switches; they are not independent choices.
@@ -106,12 +107,18 @@ keeps what it asked against that budget, and the run logs a warning when it goes
 exactly: the run logs *The model polish did not run (...); the film is the rules draft*, the record
 says `ran: false` with the reason. The filler pass runs either way.
 
+**When the reader stops answering** (connection refused or dropped, DNS failure, timeout, or a 5xx its
+retries couldn't wait out), the run gives up on it once, logs *Reader unreachable at ...; falling back
+to rules and default wording*, and asks it nothing more for that run; answers already banked are still
+read. The polish keeps the rules draft and records why, and a Route C film is planned again by the
+rules. A rejected key, a missing model or a refused request still stops the run.
+
 **When an episode can't be read**, the account can still use its factual card. The run record keeps
 each demanded episode's availability and exact evidence identity under
 `episode_reading_health`. An unresolved reading marks that section `degraded` and adds a warning
 to the selection trace. A later successful read is marked `recovered`; it clears the unresolved
-warning and keeps the successful reading banked. A completed film can therefore still have an
-incomplete model pass, which the run evidence now makes visible.
+warning and keeps the successful reading banked. A completed film can still have an incomplete
+model pass, and the run evidence shows it.
 
 ## Reading on demand
 
@@ -136,14 +143,18 @@ serializes requests.
 
 ## What else the model writes
 
-- **The title**, for special-day and `--ask` films; trips only with `--llm-title`, and
-  `--no-llm-title` keeps the template. Year, month, season, person, birthday, several-people,
-  holiday and on-this-day films always get the app's own title ("Kit · 2025", "Christmas ·
-  2019–2025") and no subtitle unless you type one (`STATIC_TITLE_MEMORY_TYPES` in
-  `titles/title_routing.py`). With no model the template writes every title.
+- **The title**, only when the experimental `title_screens.llm_titles` is on (off by default) or a
+  run passes `--llm-title`: a special day's title, and a trip's with `--llm-title`.
+  `--no-llm-title` keeps the app's title for one run. Year, month, season, person, birthday,
+  several-people, holiday and on-this-day films always get the app's own title ("Kit · 2025",
+  "Christmas · 2019–2025") and no subtitle unless you type one (`STATIC_TITLE_MEMORY_TYPES` in
+  `titles/title_routing.py`); an album film gets its album's name. Otherwise the app writes every
+  title.
 - **The music's mood**, from the film's story titles and captions, in one text call
   (`audio/text_mood.mood_for_cut`). With no model the clips' own mood decides, or "calm".
-- **The summary**, up to 150 words on what the film was about and which stories mattered. One
+- **The summary**, under the same experimental switch: off, a film has no summary and its Immich
+  description is its title. On, it's up to 150 words on what the film was about and which stories
+  mattered. One
   question, fed the film's own stories: their names, days, people, occasions, places, and the trip
   each leg belongs to. The question names the film's kind, dates and subject, so a person, season or
   year film never gets a month's summary back from the bank. The storyboard, the film page and the

@@ -4,11 +4,11 @@ title: Text reader and provider contracts
 
 # Text reader and provider contracts
 
-For the working local and hosted recipes, start with [Add a text reader](../better/reader.md). This reference covers the audience classifier and provider transport. The selection reader receives text; image captions require a separate explicit choice.
+The working local and hosted recipes are in [Add a text reader](../better/reader.md). This page covers what the app sends to a provider, how it adapts to each one, and the Laya audience classifier. The selection reader only ever receives text; sending images takes a separate, explicit choice.
 
 ## Reader operating modes
 
-`advanced.llm.enabled` defaults to `false`; a model, URL or key alone never enables it. With it enabled, an empty `base_url` with `openai-compatible` or `ollama` selects the app-owned llama.cpp process; a nonempty URL selects an external server. The default local model is `gemma-4-E4B-it-Q4_0`. For the install recipe, use [Add a reader](../better/reader.md).
+`advanced.llm.enabled` defaults to `false`; a model, URL or key alone never enables it. Enabled with an empty `base_url` and `openai-compatible` or `ollama`, the app runs its own llama.cpp process; a URL points it at an external server. The default local model is `gemma-4-E4B-it-Q4_0`.
 
 ```yaml
 advanced:
@@ -20,76 +20,88 @@ advanced:
     local_context: 32768
 ```
 
-Owned inference supports Linux and macOS. `models fetch` downloads the pinned default GGUF and projector when this local reader is configured. A custom `model` names a GGUF path; `local_mmproj` supplies its projector. Preflight checks the executable and files without loading the model.
+The owned reader runs on Linux and macOS. `models fetch` downloads the pinned default GGUF and its projector when it is configured. A custom `model` names a GGUF path, and `local_mmproj` its projector. Preflight checks the executable and the files without loading the model.
 
-The app loads the owned reader on demand and waits for active requests before stopping it to release memory for local ACE-Step or Demucs. At the render boundary, selection also closes its Laya scorer, stops the owned reader and clears unused local-runtime buffers. The next reader call loads it again. Cancellation waits for native audio work to finish or time out before releasing its memory lease. The owned reader always serves one request at a time (`reader_concurrency` cannot increase it). Docker and Kubernetes need an external server; the app image has no `llama-server`. An external server owns its own model lifetime: the app cannot assume it is safe to unload it for other clients.
+The app starts the owned reader on demand and stops it, once active requests finish, to free memory for local ACE-Step or Demucs. When selection hands over to rendering it also closes its Laya scorer, stops the owned reader and clears unused runtime buffers; the next reader call starts it again. The owned reader serves one request at a time, whatever `reader_concurrency` says. Docker and Kubernetes need an external server: the app image has no `llama-server`. The app never unloads an external server's model, since other clients may be using it.
 
 ```bash
 immich-memories capabilities
 immich-memories capabilities --verify-local
 ```
 
-`--verify-local` uses synthetic inputs and installed weights to check the configured owned reader and local audio path. It does not certify external services or a complete film, and cannot be combined with `--test-music`, which may download models.
+`--verify-local` runs the owned reader and the local audio path on synthetic inputs with the installed weights. It doesn't check external services or a whole film, and can't be combined with `--test-music`, which may download models.
 
 ### Local server defaults {#use-an-existing-server}
 
 For an external `openai-compatible` server, the app classifies the `base_url` host. Loopback,
 private IP addresses and single-label service names count as local: one request at a time, with
 prompt-only episode JSON and a repetition penalty of 1.0. A dotted hostname counts as hosted:
-four concurrent requests, episode schemas enabled and no repetition penalty by default. For a
-LAN server with a dotted name, set `reader_concurrency: 1` and `structured_output: false` if its
-constrained decoding stalls; the latter disables schemas for every request, not just episode
-readings.
+four concurrent requests, episode schemas on and no repetition penalty. For a LAN server with a
+dotted name, set `reader_concurrency: 1`, and `structured_output: false` if its constrained
+decoding stalls (that turns schemas off for every request, not only episode readings).
+
+### When the reader stops answering
+
+A reader that stops answering (connection refused, DNS failure, timeout, or a 5xx its retries
+couldn't wait out) gets one warning per endpoint:
+
+```text
+Reader unreachable at <endpoint> (…); falling back to rules and default wording
+```
+
+The app then stops asking it for the rest of the run, still reads answers it already banked,
+and the film goes on: the polish ships the rules draft, a model-planned film is planned again by
+the rules, and titles use default wording. A rejected key, a missing model or a refused payload
+is a configuration error and still stops the run.
 
 ## The Laya audience pre-screen
 
-Laya answers the sharing question locally: does the caption describe
-a bath, a nappy change, breastfeeding or one of the other
-private activities a family film holds back. Laya is a 0.4B text classifier (Apache-2.0),
-fine-tuned on captions of public CC BY photographs whose authors are credited in the archive. It
-reads the ingest caption, in about 14 ms a shot on Apple silicon. It works with the rules reader
-and the prose reader when preparation produces captions. The `gpu` and `full` tiers enable it;
-the default `basic` tier uses the picture classifiers and rules.
+Laya answers the sharing question locally: does the caption describe a bath, a nappy change,
+breastfeeding or another private moment a family film holds back? It is a 0.4B text classifier
+(Apache-2.0), fine-tuned on captions of public CC BY photographs whose authors are credited in
+the archive, and reads a shot's caption in about 14 ms on Apple silicon. The `gpu` and `full`
+tiers turn it on, with no separate switch, and it works with both the rules reader and the model
+reader. `basic` has no captions, so it uses the picture classifiers and rules.
 
 ```bash
 uv tool install --python 3.12 "immich-memories[all-mac]" --with laya-mlx  # Apple Silicon uv-tool install
 immich-memories models fetch --laya          # platform-specific, digest-pinned
 ```
 
-`laya-mlx` is not included in an app extra. In a checkout, use
+No app extra includes `laya-mlx`. In a checkout, use
 `uv pip install --python .venv/bin/python laya-mlx`; with pip, run
-`python -m pip install laya-mlx` using the app's Python. A bare system `pip install` does not
-add it to a `uv tool` environment. Without the runtime, sharing reports that heads and rules
-are being used alone.
+`python -m pip install laya-mlx` with the app's Python. A system-wide `pip install` doesn't reach
+a `uv tool` environment. Without the runtime, sharing says it is using the heads and rules alone.
 
 `models fetch` chooses the Apple archive on Apple silicon and the portable ONNX archive on
 Linux, Windows and Intel Macs. ONNX needs the `editorial` extra for CPU or `editorial-cuda` for
-NVIDIA. The Apple download is 811 MiB (851 MB). The ONNX download is 836 MiB (877 MB)
-and expands to about 1.70 GB;
-its calibrated default threshold is
-0.185, while MLX keeps 0.186. Both archives are SHA-256 checked. A download mirror must keep the
-archive's filename. When configuring a checkpoint for a different backend manually, set its
-threshold explicitly too.
+NVIDIA.
 
-The GPU and Full product tiers enable Laya automatically; the tier decides, with no separate switch. Fetch the checkpoint and check the services with `immich-memories preflight`.
+| Archive | Download | Default threshold |
+|---|---|---|
+| Apple (MLX) | 811 MiB (851 MB) | 0.186 |
+| Portable (ONNX) | 836 MiB (877 MB), about 1.70 GB unpacked | 0.185 |
 
-It only adds holds. The detector holds (the sensitive-content detector and the uncovered-person
+Both are SHA-256 checked, and a download mirror must keep the archive's file name. If you point
+the setting at the other backend's checkpoint by hand, set its threshold too. Then run
+`immich-memories preflight`.
+
+Laya only adds holds. The detector holds (the sensitive-content detector and the uncovered-person
 head) apply first and are never lifted, its findings go through the same support checks as the
 reader's, and a shot it doesn't answer stays held to the family. Sharing never asks the prose
-LLM, including when Laya is absent or a detector flags exposure. The MLX threshold,
-0.186, kept every hold of its public calibration split. Its known gap:
-a travel or administrative document (a boarding pass, an invoice) can slip
-through, since few such captions were in its training data. The detectors stay the floor either way.
+LLM, even when Laya is missing or a detector flags exposure. The MLX threshold, 0.186, kept
+every hold of its public calibration split. A travel or administrative document (a boarding
+pass, an invoice) can slip through, since few such captions were in its training data; the
+detectors stay the floor either way.
 
 To use an extracted ONNX checkpoint, point `advanced.editorial.laya_checkpoint` at the
 directory containing `model.onnx`, `model.onnx.data`, `rl_agent_config.json` and `tokenizer/`.
 The scorer chooses CUDA when available and otherwise uses CPU. This path needs neither
 PyTorch nor MLX.
 
-The audience ONNX export uses a fixed threshold of 0.185 and the app picks it with the backend. It was
-chosen on the public calibration split to retain all 15 MLX holds. On 3,143 held-out
-captions it retained all 23 MLX holds and added one. These are classifier checks, not
-end-to-end film performance; the calibration numbers stand on their own.
+The ONNX threshold, 0.185, was chosen on the same public calibration split to keep all 15 MLX
+holds. On 3,143 held-out captions it kept all 23 MLX holds and added one. Those are classifier
+numbers, not a judgement on whole films.
 
 ## Ollama
 
@@ -109,11 +121,10 @@ advanced:
         num_ctx: 32768
 ```
 
-Pull that model with `ollama pull gemma4:e4b-it-q4_K_M`. The explicit tag records
-the quantization tested. `extra_params.think: false` overrides thinking on every
-native request, including titles; omit it if you deliberately want reasoning and
-allow enough output tokens for it. Without it, thinking can consume part of the
-first large episode request's token budget, leaving the JSON answer truncated.
+Pull it with `ollama pull gemma4:e4b-it-q4_K_M`; the explicit tag is the quantization that
+was tested. `extra_params.think: false` turns thinking off on every native request, titles
+included. Without it, thinking can eat the first large episode request's token budget and cut
+the JSON answer short. Leave it out only if you want reasoning and give it the tokens.
 
 For Ollama's OpenAI route, use its own reasoning switch:
 
@@ -136,11 +147,9 @@ Ollama's compatible route. See [Ollama context length](https://docs.ollama.com/c
 and [OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility).
 From a container, use the host's reachable address instead of `localhost`.
 
-Both recipes passed the larger episode and story-selection probes on an M5 Max.
-The native recipe passed 33/34 synthetic feature checks; the compatible recipe
-passed 32/34. Motion failed on both; the compatible route also missed a period-summary
-fact. [Measure your setup](../better/measured.md#local-reader-time-and-accuracy) has the
-numbers. These settings were tested with Gemma 4 E4B, not every model Ollama can serve.
+Both recipes passed the larger episode and story-selection probes on an M5 Max, with Gemma 4
+E4B only. [Measure your setup](../better/measured.md#local-reader-time-and-accuracy) has the
+per-check results.
 
 ## Providers and dialects
 
@@ -152,7 +161,10 @@ the one provider that picks its adapter from the `base_url` path, because z.ai s
 on one host: `.../api/anthropic` gets `/v1/messages`, `.../api/paas/v4` gets `/chat/completions`.
 
 `openai`, `anthropic` and `zai` fill a blank `base_url` with `https://api.openai.com/v1`,
-`https://api.anthropic.com` and `https://api.z.ai/api/anthropic`, respectively. Set an explicit URL for other external servers. Blank `openai-compatible` or `ollama` uses an owned local reader. The named providers supply their reasoning dialect where settings retain their defaults; explicit request parameters take precedence.
+`https://api.anthropic.com` and `https://api.z.ai/api/anthropic`. Any other external server
+needs an explicit URL; a blank `openai-compatible` or `ollama` URL means the owned local reader.
+The named providers fill in their reasoning dialect where you left the defaults; parameters you
+set yourself win.
 
 The Messages API path is `POST {base_url}/v1/messages` with `x-api-key`,
 `anthropic-version: 2023-06-01` and the prompt as one user message. Nothing about it is
@@ -185,10 +197,10 @@ advanced:
     thinking: "low"
 ```
 
-Set `base_url: https://api.z.ai/api/anthropic` for its Messages API; use the endpoint your account supports. The
-other route, `https://api.z.ai/api/paas/v4`, is the OpenAI-compatible one and answers that account
-`429 code 1113, Insufficient balance`; set it explicitly if your account is the other kind. The
-GLM-5 line refuses `disabled`, so the preset sends `low`.
+z.ai sells two kinds of account. The Messages route above works for one; the other uses the
+OpenAI-compatible route, `https://api.z.ai/api/paas/v4`, which answers the wrong kind of account
+with `429 code 1113, Insufficient balance`. Set the URL your account supports. The GLM-5 line
+refuses `disabled`, so the preset sends `low`.
 
 For any other host serving the Messages API, set `base_url` yourself and use `thinking: "auto"`,
 which sends no reasoning field and takes the host's default.
@@ -227,12 +239,11 @@ and `message` go into the log line, cut at 300 characters.
 
 ## Structured replies
 
-The default selects the mode by request type. Free-text questions, titles and period accounts
-request their JSON schemas on local and hosted endpoints. External local episode readings use prompt-only
-JSON because oMLX can stall on their nested schema. The app-owned llama.cpp reader and hosted
-episode readings retain the schema.
-Both modes work against the same endpoint in one process. `advanced.llm.structured_output` can
-explicitly enable or disable structured output for that endpoint.
+By default the mode follows the request. Free-text questions, titles and period accounts send
+their JSON schemas to every endpoint. Episode readings on an external local server get the shape
+in the prompt instead, because oMLX can stall on their nested schema; the owned llama.cpp reader
+and hosted endpoints keep the schema. `advanced.llm.structured_output` forces it on or off for
+the endpoint.
 
 Occasion discovery, holiday checks and special-day decisions request JSON object mode.
 Native Ollama receives `format: "json"` for these calls. Plain-text requests do not inherit
@@ -246,7 +257,8 @@ For a provider already known to lack schema support, `structured_output: false` 
 
 ## Batch mode
 
-Episode readings are independent prompts. Supported external providers can submit them as batches; pricing and completion latency depend on the host. Owned local inference does not use batch APIs.
+Episode readings are independent prompts, so a provider with a batch API can take them as one
+batch. Price and turnaround are the host's. The owned local reader never batches.
 
 ```yaml
 advanced:
@@ -256,10 +268,9 @@ advanced:
     batch_max_wait_minutes: 60  # then ask whatever is left in real time
 ```
 
-It pays on an unattended run (the nightly `auto run`, a `prepare --overviews` over a year) and not
-on a run someone is waiting for: a batch is queued work, and "usually within minutes" is not a
-promise you want between a click and a film. If it goes wrong you lose the discount and nothing
-else. Anything unanswered by `batch_max_wait_minutes`, any line the provider refused and any
+It pays on an unattended run (the nightly `auto run`, a `prepare --overviews` over a year), not
+on a run someone is waiting for: a batch is queued work, and "usually within minutes" is not what
+you want between a click and a film. If it goes wrong you lose the discount, nothing else. Anything unanswered by `batch_max_wait_minutes`, any line the provider refused and any
 answer the parser won't read is asked again in real time.
 
 | Provider dialect | Batch route |
@@ -268,15 +279,15 @@ answer the parser won't read is asked again in real time.
 | Anthropic-compatible | `/v1/messages/batches` |
 | Ollama native | No batch route |
 
-The endpoint must support the route. A compatibility dialect alone does not establish that it does, and pricing comes from the provider. Owned local inference stays in real time.
-
-The route is probed once before anything is queued. A host that doesn't serve it is asked once,
-logs why, and reads in real time for the rest of the run.
+Speaking a dialect doesn't mean serving its batch route. The app probes the route once before
+queueing anything; a host that doesn't serve it logs why and is read in real time for the rest of
+the run.
 
 ## What the software sends
 
 - **Prompts are bounded before they go out**: episode reads at 24,000 characters and 90 pictures a
-  page, story synthesis at 32,000, the period account split into pages. The owned reader defaults to a 32k context; context memory also depends on the server and concurrent work.
+  page, story synthesis at 32,000, the period account split into pages. The owned reader
+  defaults to a 32,768-token context.
 - **Answers are parsed against the stage's contract.** An answer the contract refuses costs one
   repair round on that call. A moment pick still refused after its repair doesn't end the film:
   those rows get the moments the no-model film would pick, and the story's pick record says why
@@ -286,9 +297,9 @@ logs why, and reads in real time for the rest of the run.
   again gets the full 4,000-token ceiling rather than its own estimate.
 - **The selection reader receives text only.** Image captions use the same settings only with an explicit [LLM-caption opt-in](../better/captions.md#explicit-llm-captions).
 
-For endpoint validation, use the provider conformance checks below. Record usage and timings
-separately from the quality of a finished film; [measurement guidance](performance-evidence.md)
-explains the comparison.
+To check an endpoint, run the conformance suite below. Keep usage and timings apart from the
+quality of a finished film; [Benchmarking your own setup](performance-evidence.md) explains
+how.
 
 ## Provider conformance
 
@@ -303,17 +314,16 @@ through production features and can incur provider charges. Free-text cases also
 public WordNet corpus installed by `immich-memories models fetch`. Each banked feature gets a
 fresh temporary SQLite store. The suite opens no personal library or people file.
 
-The 35 probes cover occasion and trip titles; free-text reading, linking and pool
+The 37 probes cover occasion and trip titles; free-text reading, linking and pool
 selection; occasion discovery; music mood, quiet and lively; image captions and motion; full and
 lean episode readings; month and year accounts; the film summary; editorial grouping, weighting,
 picking and recurring activities; and both audience text readers still present in the code.
 
 Each row reports whether the provider was called, HTTP attempts, reported tokens, elapsed
-seconds, validity and a feature-specific quality check. Unknown usage is shown as unknown.
-A local fallback fails the check. A failed feature leaves its row and the other checks continue.
-The command exits with status 1 if a feature fails or a production model call site has no case.
-The guard test scans the code for model calls and shared prompt adapters; runtime observation
-also checks that each case reached its declared call sites.
+seconds, validity and a feature-specific quality check; usage the provider didn't report shows
+as unknown. A local fallback fails the check. A failed feature keeps its row and the others still
+run. The command exits 1 if a feature fails or a production model call site has no case: a guard
+scans the code for model calls, and each case must reach the call sites it declares.
 
 `OUTPUT` is optional. When set, it receives an incremental JSON report, a Markdown table,
 and private request/reply evidence without HTTP headers. Keep these files private: provider
@@ -325,5 +335,5 @@ Use the report to compare passes, failures, call counts and reported-token cost 
 [Measure your setup](../better/measured.md#hosted-reader-time-and-cost) records tested endpoints,
 elapsed time, token costs and quality limits, including the motion-direction weak spot.
 
-These checks measure the configured endpoint on small fixtures. They do not replace checking
-the quality of a complete film or testing asynchronous batch delivery.
+These checks run small fixtures. They don't test batch delivery, and they don't replace
+watching a whole film.

@@ -24,7 +24,7 @@ makes a complete one on a NAS. This page is for when you have the hardware and w
 |---|---|---|---|
 | The app: web UI, selection, Laya, the store | Cluster, one CPU-only pod | Everything in Basic: stories, people, trips, titles, time order, the cut itself | 2 CPU and 4 GiB requested, 8 GiB limit; a 10 GiB cache volume and 10 GiB for finished films; no GPU |
 | GPU worker (the CUDA inference image) | T1000 node, one time-sliced slot | Captions, the picture classifiers and the document and sensitive-content detectors, music stems for ducking under clip audio, NVENC rendering | About 0.3 GB VRAM for the classifiers and 1 GB for captions; 2 GiB RAM requested, 8 GiB limit; a 10 GiB model cache; up to 20 GiB of render scratch |
-| ACE-Step API server | T1000 node, same card | A soundtrack written for the film's length and mood, instead of a bundled track | The 2B turbo model with its 0.6B planner, offloaded to CPU between phases so it fits beside everything else on 8 GB; 20 GiB RAM limit; a 28 GB image |
+| ACE-Step API server | T1000 node, same card | A soundtrack written for the film's length and mood, instead of a bundled track | The XL turbo model (the app only generates with XL, and turns the server's planner off), offloaded to CPU between phases so it fits beside everything else on 8 GB; 20 GiB RAM limit; a 28 GB image |
 | Text reader: Gemma 4 E4B, 6-bit, on oMLX | Apple Silicon Mac, on the LAN | Full tier: it reads the period, refines the rules draft and writes the film summary; also trip titles and music mood | Unified memory on the Mac. Mine has 128 GB, which is a lot more than a 4B-class model needs: a 16 GB Mac runs Full |
 | Spare caption server (llama.cpp CUDA build) | GTX 1070 node, scaled to zero | Nothing while the worker is up; it's my fallback if the T1000 is busy or down | About 1 GB VRAM and 2 GiB RAM when on |
 | Immich and its machine learning | Cluster, GPU nodes | The library, faces and smart search that selection reads | Immich's own budget, not this app's |
@@ -32,7 +32,7 @@ makes a complete one on a NAS. This page is for when you have the hardware and w
 | Geocoding and map tiles | Public services | Place names, trip names, the map fly-over | Calls leave my network; both are opt-in ([Privacy](privacy.md)) |
 | Push notifications | A public ntfy topic | A ping when a film is done or failed | Nothing |
 
-A few choices in there are deliberate:
+Why it looks like this:
 
 - **One GPU worker instead of three pods.** One slot on the card, one queue, one token. The
   worker unloads its weights after five idle minutes, so between films it holds almost nothing.
@@ -65,8 +65,9 @@ Start with Basic and add one thing at a time. Each step below changes the film b
   run on the app's CPU. Rendering on it works too.
 - **No Mac, or no spare memory.** Skip the reader: the GPU tier is a good film. Or use a
   [hosted reader](../better/reader.md#hosted) for a few cents a film.
-- **Music.** Bundled tracks are fine. ACE-Step without its planner needs about 7 GB of free
-  memory ([music](../better/music.md)); don't squeeze it onto a card that is already full.
+- **Music.** Bundled tracks are fine. Generated music needs the XL model, about 21 GB of free
+  memory: a Mac with 64 GB or an NVIDIA card with 16 GB ([music](../better/music.md)). Below that
+  the film plays a bundled track.
 - **Only a Mac.** The [Apple Silicon setup](reference/mac-example.md) runs everything natively,
   reader and music included.
 

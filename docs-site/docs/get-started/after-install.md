@@ -11,7 +11,7 @@ regularly. These steps apply to every tier.
 ## Set home and people {#3-set-home}
 
 In **Settings**, set your home coordinates for trips and local holidays. Name important people
-in Immich, then use **Settings → People → Rescan the library** and confirm relationships.
+in Immich, then open **People**, press **Rescan the library** and confirm relationships.
 [Home and people](./who-is-who.md) explains the choices. An album film works without them.
 
 <span id="4-confirm-people" />
@@ -25,8 +25,8 @@ film have separate language settings. [Titles and music](../make/titles-maps-mus
 ## Make a larger film {#5-make-one-month}
 
 Try **Monthly Highlights** for a month with pictures you like, or choose a trip, a birthday or a
-year. A larger period needs more preparation. Compatible picture facts from earlier films are
-reused. Review the cut and finished film before sharing.
+year. A larger period needs more preparation; pictures prepared for earlier films are reused.
+Review the cut and the finished film before sharing.
 
 ## Save credentials in Settings
 
@@ -46,7 +46,7 @@ docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backup
 
 On a native install, run `immich-memories store backup`; it prints the backup path.
 Copy backups off the host. Keep each backup with its `.manifest.json`, your deployment config
-and the encryption key if you save credentials in Settings. Losing that key means re-entering
+and, if you save credentials in Settings, the encryption key. Lose that key and you re-enter
 those credentials.
 [Storage and backups](../run/maintenance/storage-backups.md) covers restore and PostgreSQL.
 
@@ -59,9 +59,15 @@ To send films back to Immich, add the [upload permissions](../run/docker.md#the-
 
 ## Change the tier or services {#7-add-what-you-need}
 
-[Choose your setup](./choose-your-setup.md) explains Basic, GPU and Full. Follow its
-[tier-change steps](./choose-your-setup.md#change-services-later) to download any missing models and check the new configuration. Compatible facts and review
-decisions stay in your store.
+[Choose your setup](./choose-your-setup.md) explains Basic, GPU and Full. Its
+[tier-change steps](./choose-your-setup.md#change-services-later) download any missing models
+and check the new configuration. Prepared pictures and review decisions stay in your store.
+
+## Hear about new releases
+
+**Settings** has a **Check for updates** button, and `immich-memories version --check` does the
+same from a terminal. Nothing goes out until you ask. Set `updates.check_daily: true` to check
+once a day and show a banner when a release is out.
 
 <span id="1-fetch-the-models" /><span id="2-check-the-installation" />
 

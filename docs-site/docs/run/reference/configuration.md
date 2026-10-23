@@ -199,5 +199,5 @@ generate a video, create an album, or upload anything. It reports the connection
 
 ## Output codecs and HDR
 
-`codec: h265` with `hdr_mode: auto` can retain HDR when supported by the selected output path.
-H.264 is always SDR and tone-maps HDR sources. Basic output remains capped at 1080p.
+`codec: h265` with `hdr_mode: auto` keeps HDR when the output path supports it. H.264 is always
+SDR and tone-maps HDR sources. On the Basic tier the film is capped at 1080p.

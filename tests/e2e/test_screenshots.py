@@ -442,6 +442,48 @@ def test_capture_the_pages_around_the_film(
     _save(page, d, _name("settings-people", theme))
 
 
+# What the owner confirms on the People page; the family tree suggests the rest on Kit's card:
+# Pat as a grandparent, through Robin, and Charlie as the other parent, as Robin's partner.
+_CONFIRMED = (
+    ("Robin", "parent-of", "Kit"),
+    ("Pat", "parent-of", "Robin"),
+    ("Charlie", "partner-of", "Robin"),
+)
+
+
+@pytest.mark.parametrize("theme", _THEMES)
+def test_capture_relationship_suggestions(
+    page: Page, launch_app_url: str, roster_restored: None, screenshot_dir: Path, theme: str
+) -> None:
+    """A card whose confirmed links imply others: the suggestions, their chains, Accept all."""
+    _open(page, f"{launch_app_url}/app/settings/people", theme)
+    page.wait_for_load_state("networkidle")
+    if page.get_by_text("Nobody yet.", exact=False).count():
+        page.get_by_role("button", name="Rescan the library").click()
+    card = page.get_by_role("listitem").filter(has=page.locator("p.font-semibold", has_text="Kit"))
+    expect(card).to_be_visible(timeout=120_000)
+    page.evaluate(
+        """async (confirmed) => {
+          const roster = await (await fetch('/api/v1/roster')).json();
+          const id = (name) => roster.people.find((p) => p.name === name).person_id;
+          for (const [who, kind, whom] of confirmed) {
+            const response = await fetch(`/api/v1/roster/${encodeURIComponent(id(who))}/relationships`, {
+              method: 'POST',
+              headers: {'content-type': 'application/json'},
+              body: JSON.stringify({kind, target_id: id(whom)}),
+            });
+            if (!response.ok) throw new Error(`${who} ${kind} ${whom}: ${response.status}`);
+          }
+        }""",
+        [list(row) for row in _CONFIRMED],
+    )
+    page.reload()
+    suggested = card.locator("[data-testid='relationship-row'][data-status='suggested']")
+    expect(suggested.first).to_be_visible(timeout=30_000)
+    page.wait_for_load_state("networkidle")
+    _save_padded(page, card, screenshot_dir, _name("people-relationship-suggestions", theme), pad=8)
+
+
 @pytest.fixture(scope="session")
 def first_launch_workspace(first_launch_workspace):
     """Use the shipped Basic tier, independent of the capture host's GPU."""

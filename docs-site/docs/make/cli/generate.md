@@ -60,10 +60,10 @@ A birthday window (set the birth date in Immich):
 immich-memories generate --year 2025 --birthday --person "Riley"
 ```
 
-A portrait short:
+A 30-second portrait short (`--short-form` sets the length and turns the film vertical):
 
 ```bash
-immich-memories generate --year 2025 --month 8 --short-form 30 --orientation portrait
+immich-memories generate --year 2025 --month 8 --short-form 30
 ```
 
 ## Trips
@@ -96,6 +96,6 @@ Each render writes a new folder under `output.directory`; reruns do not overwrit
 
 Use `--upload-to-immich --album "Memories"` to deliver the film to Immich. Without a flag, `generate` and `runs render` both follow `upload.enabled`; `--no-upload-to-immich` keeps one film local when it is on, and the flag always wins for that run; `upload.album_name` supplies the default album. Once delivery is confirmed, the app removes the local output and keeps the run record and Immich link. Leave upload off to keep the file locally.
 
-The key must have the [read permissions](../../run/docker.md#the-api-key) before a cut starts. Upload permissions are optional. If the key cannot upload, tag or file the film into its album, generation still completes and prints the retained local path with the reason. The run page offers **Download**. Missing `asset.delete` only keeps the previous version in Immich.
+The key must have the [read permissions](../../run/docker.md#the-api-key) before a cut starts. Upload permissions are optional. If the key cannot upload, tag or file the film into its album, generation still completes and prints the retained local path with the reason. The run page offers **Download film**. Missing `asset.delete` only keeps the previous version in Immich.
 
 The [generated CLI reference](../../reference/cli-reference.md#generate) lists every flag. The [generation contract](../../reference/generation-contract.md) covers person expressions, accounts, title precedence, sharing, recipe hashes and timelines.

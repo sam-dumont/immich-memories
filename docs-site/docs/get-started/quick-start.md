@@ -13,19 +13,20 @@ import ComposePort from '@site/src/components/ComposePort';
 
 Run Immich Memories beside your existing Immich server, then make a short film from one album.
 **Start with Basic if you are unsure.** It makes a complete film on a CPU. Choose GPU if you have
-an NVIDIA GPU and want picture descriptions; choose Full if you also have a text reader.
-You can change tiers later.
+an NVIDIA GPU and want picture descriptions, and Full if you also run a text reader.
+You can switch tiers later.
 
 | Tier | What you get | What you need |
 |---|---|---|
 | **Basic** | A complete film with titles and bundled music, up to 1080p | 2 CPU cores, 4 GiB RAM for the app |
 | **GPU** | Basic plus picture descriptions and extra selection and sharing checks | NVIDIA GPU, driver and Container Toolkit; room for the app and model services |
-| **Full** | GPU plus a text reader that refines the draft and writes the film's summary | The GPU setup and a reader server with 32k context |
+| **Full** | GPU plus a text reader that refines the draft | The GPU setup and a reader server with a 32k context window |
 
-All three need Docker Compose v2, an Immich library and an API key, on Immich 2.7.5 or later (v2) or 3.2.4 or later (v3). Older v3 releases have security holes Immich has since fixed. Allow at least
-About 25 GB for app data plus 0.35 GB per 1,000 pictures and videos, plus images, model-service caches and finished films. GPU and Full give the
-app an 8 GiB limit; model services need memory too. Check the [tier requirements](../run/requirements.md)
-if you are choosing hardware.
+All three need Docker Compose v2, an Immich library and an API key, on Immich 2.7.5 or later (v2)
+or 3.2.4 or later (v3). Older v3 releases have security holes Immich has since fixed. Allow about
+25 GB for app data plus 0.35 GB per 1,000 pictures and videos, plus the images, model caches and
+finished films. GPU and Full give the app an 8 GiB limit, and the model services need memory on
+top. Check the [tier requirements](../run/requirements.md) if you are choosing hardware.
 
 **Other platforms:** [Synology Container Manager, with screenshots](../run/platforms/synology.md),
 [Unraid, TrueNAS and Portainer](../run/nas.md),
@@ -50,8 +51,8 @@ This starts one app container. No GPU or separate model server is needed.
 
 <InstallationFiles tier="gpu" />
 
-This starts the app, CUDA inference and a caption server. The caption weights download on first
-start. The commands select the NVIDIA override in `.env` for you.
+This starts the app, CUDA inference and a caption server. The caption weights download on the
+first start. The commands set `TIER` and the NVIDIA override in `.env` for you.
 
 </TabItem>
 <TabItem value="full" label="Full">
@@ -140,8 +141,8 @@ docker compose up -d
 ```
 
 The first start pulls the container images. GPU and Full also wait for the caption weights
-and service health checks before starting the app. Leave the command running until it finishes.
-Later starts reuse the downloaded files.
+and the service health checks before starting the app, so let the command finish. Later starts
+reuse the downloaded files.
 
 ## 4. Open the app and download models {#4-open-the-app}
 
@@ -154,11 +155,11 @@ username and password. Write it down: later starts do not print it again. Lost i
 [the generated password](../run/authentication.mdx#the-generated-password).
 
 Open **Memory**. In the **Download models** card, review the files and press **Download models**.
-Wait for it to finish: the card disappears when the required files are ready. These are downloaded
-once and kept in the app's data volume. If they are already present, there is no card.
+The card disappears when the required files are ready. They download once and stay in the app's
+data volume; if they are already there, there is no card.
 
 <div style={{maxWidth: 420}}>
-  <ThemedScreenshot name="model-setup" alt="First visit to Basic: the Download models card lists the encoder and WordNet files and waits for consent" />
+  <ThemedScreenshot name="model-setup" alt="First visit on Basic: the Download models card lists the DINOv2 export, the WordNet corpus and the music library, with their sizes, hosts and checksums, and downloads nothing until you press the button" />
 </div>
 
 Basic is shown above. GPU and Full list more files.

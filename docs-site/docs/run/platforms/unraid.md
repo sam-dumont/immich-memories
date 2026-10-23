@@ -10,13 +10,14 @@ import StackAccess from './_stack-access.mdx';
 
 # Unraid
 
-Use the native Docker template for the Basic setup, or the Compose Manager alternative below. The app needs its own 4 GiB memory budget alongside Immich. These steps follow the Compose Manager documentation; a recorded installation on Unraid is still pending.
-
-This platform route has not been tested end to end. See [tested deployments](../tested-deployments.md) for coverage.
+Use the native Docker template for Basic, or the Compose Manager route below for any tier. The app
+needs its own 4 GiB of memory beside Immich. [Tested deployments](../tested-deployments.md) lists
+the platforms that were run end to end.
 
 ## Native Docker template
 
-The Unraid XML template is published with each release. This is a distributable Community Applications format template; it is not yet listed in the Community Applications catalog.
+Each release publishes an Unraid XML template in the Community Applications format. It is not in
+the Community Applications catalog, so install it from the terminal.
 
 In Unraid's **Terminal** in the browser, install the unconfigured template:
 
@@ -26,7 +27,7 @@ Open **Docker → Add Container**, select **immich-memories** from **Template**,
 
 Choose persistent host directories for configuration/models and finished films. They must be writable by UID/GID 1000; allow about 25 GB plus 0.35 GB per 1,000 pictures for state, plus films. Do not change permissions on an entire existing share. Set **Settings encryption key** to a random secret of at least 32 characters if you want to save credentials in Settings, and retain it across upgrades.
 
-Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its <code>--publish=127.0.0.1:<ComposePort />:8080/tcp</code> mapping is deliberately private. There is no separate port entry. For direct LAN access, set **both UI username and UI password**, then change it to <code>--publish=0.0.0.0:<ComposePort />:8080/tcp</code>. Choose another host port if <ComposePort /> is taken. Host networking bypasses it. The Unraid admin login does not protect the app.
+Keep **Network Type: Bridge** and the existing **Extra Parameters**. Its <code>--publish=127.0.0.1:<ComposePort />:8080/tcp</code> mapping is deliberately private. There is no separate port entry. Sign-in is on either way: leave **UI username** and **UI password** empty to get a generated password in the container log (the log icon), or fill both. For direct LAN access, change the mapping to <code>--publish=0.0.0.0:<ComposePort />:8080/tcp</code>. Choose another host port if <ComposePort /> is taken. Host networking bypasses it. The Unraid admin login does not protect the app.
 
 Set film language after startup in [Settings](../../get-started/after-install.md).
 
@@ -53,8 +54,9 @@ fill in **GPU box address** and start the provided worker files on that machine 
 
 ## 3. Open the app and download models {#3-prepare-and-check}
 
-Open <code><ComposePort host="your-server-address" /></code> (use your chosen host port) and sign in with the app
-username and password you just set. If you chose private localhost access, use its forwarded URL.
+Open <code><ComposePort host="your-server-address" /></code> (or your chosen host port) and sign in with the
+login you set, or with the generated password from the container log. With private localhost
+access, use the forwarded URL instead.
 
 On **Memory**, click **Download models** and wait for it to finish. The card lists the files and
 download hosts; it disappears when the required files are ready. If it is absent and no error is

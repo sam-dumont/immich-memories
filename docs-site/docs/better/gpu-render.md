@@ -75,24 +75,28 @@ reaches it at `http://127.0.0.1:8093`, loopback, with neither HTTPS nor
 
 ## How long a render may take
 
-A worker spends most of its time animating photos and encoding, so a long film takes far longer
-than a short one. On a 4-CPU worker with an entry-level NVIDIA card, a photo takes 20 to 25
-seconds to animate and the encode runs at about a third of real time: a one-minute month film
-takes about 11 minutes, a ten-minute film with 150 clips about an hour and a half.
+A long film takes far longer than a short one: the worker's time goes into animating photos and
+encoding, and both grow with the cut.
 
-The card encodes, renders the titles and cuts the photo moves. Crossfades and captions run on
-the worker's CPU, so its CPU limit sets the pace more than the card does. A one-minute, 13-clip film
-kept about four cores busy on average for its 75 seconds of assembly, with peaks above that.
-Give the worker 8 CPUs, or at least 6: under a 4-CPU limit, long films kept it throttled in 44% of
-its scheduler periods. The worker sizes its FFmpeg, OpenCV, OpenMP and BLAS thread pools from that
-limit. The standalone worker manifest and the sidecar component request 2 CPUs and set an
-8-CPU limit.
+On the card, a clip stays in GPU memory from decode to encode: scaling, turning a sideways phone
+clip upright, the blurred fill behind a portrait clip, HDR and SDR conversions, photo moves, title
+cards and the encode all run there. Each GPU step is checked once against the CPU result and falls
+back to the CPU when it doesn't match or isn't available. Crossfades and captions stay on the
+worker's CPU, so its CPU limit still sets the pace. Give the worker 8 CPUs, or at least 6: a
+4-CPU limit throttles long films. The worker sizes its FFmpeg, OpenCV, OpenMP and BLAS thread
+pools from that limit. The standalone worker manifest and the sidecar component request 2 CPUs
+and set an 8-CPU limit.
+
+HDR and SDR conversions on the card need Vulkan, which the NVIDIA runtime only mounts with the
+`graphics` driver capability. The shipped Compose file and manifests ask for it; without it those
+conversions run on the CPU. [Measure your setup](./measured.md#gpu-render-path) has the before
+and after numbers.
 
 Both sides size their deadline from the film itself: 60 seconds per clip plus 10 seconds per
 second of film, capped at 12 hours. The app's `render.timeout_seconds` and the worker's
 `IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS` (both 3,600 seconds by default) are the least
 any film gets, so a short film keeps the hour and a 155-clip, ten-minute film gets about four and
-a half hours. Raise either setting only when your worker is slower than that or its queue is long:
+a quarter hours. Raise either setting only when your worker is slower than that or its queue is long:
 the app's wait includes the queue and the download.
 
 A render that stops moving fails sooner: when a running job reports no progress for 20 minutes,
@@ -132,8 +136,8 @@ held on its last frame (FFmpeg's own error follows it), and `Photo move on the C
 card could not take. A clip that gives no frame at all isn't held. A Live Photo's motion is
 replaced by the photo itself for the same seconds (`plays as its still`); any other clip leaves the
 film (`it leaves the film`, with FFmpeg's error), as does a Live Photo whose still fails too. On a
-render worker a clip leaving changes the cut, so the same cut renders locally instead. A film that comes back up to 3% off its planned
-length is kept and logged; further off, it fails. A worker busy with another film makes captioning
+render worker a clip leaving changes the cut, which fails the job; with `fallback_to_local: true`
+the same cut renders locally instead. A film that comes back up to 3% off its planned length is kept and logged; further off, it fails. A worker busy with another film makes captioning
 wait, up to 25 minutes, instead of failing the pictures.
 
 ## What to expect

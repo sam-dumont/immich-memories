@@ -54,8 +54,7 @@ container, as your platform guide describes.
 
 ## NAS operating notes {#install}
 
-The following sections cover storage, network access, encoding and resource tuning.
-For first startup, use the platform guide above, then [make a film](../get-started/first-film.mdx).
+Storage, network access, encoding and resource tuning. For first startup, use the platform guide above, then [make a film](../get-started/first-film.mdx).
 
 ### The output folder
 
@@ -85,8 +84,8 @@ the ACL holds only uid 1000 and your own account gets "Permission denied" on `to
   Linux mode, so the first `-addace` creates an ACL with only uid 1000 in it. The second line
   puts your account back (`$(id -un)` is your DSM user name).
 
-This ACL fix is confirmed to work on current DSM: a uid-1000 container can write files, your
-own DSM user can read and remove them, and a UI render writes its film through the bind mount.
+With both entries, the uid-1000 container writes its films through the bind mount and your
+own DSM user can read and remove them.
 
 **Plain Linux NAS** (no Synology ACLs):
 
@@ -154,15 +153,12 @@ Laya pre-screen. Compatible facts already in the store stay banked when you chan
 [what the upgrades add](../get-started/choose-your-setup.md).
 
 CPU titles draw their background and text once, then move, scale and fade the text with FFmpeg.
-The background stays still to keep software encoding cheap. No extra package is needed. For cheaper trip
-maps, use `preset: fast`: three geographic views replace the smooth flight, with short fades and
-full-resolution labels. Hardware video encoding still works. [Titles and maps](../make/titles-maps-music.md)
-explains these choices.
+The background stays still to keep software encoding cheap, and no extra package is needed.
+[Titles and maps](../make/titles-maps-music.md) covers the title and map options.
 
 [Measured results](../better/measured.md) records whole-film wall times and separate stage costs.
-Preparation-only figures exclude downloads, music and rendering where explicitly labelled. A long
-film also gets a full playback check after rendering, which can take time. The log reports progress
-once a minute.
+Figures labelled preparation-only exclude downloads, music and rendering. A long film also gets
+a full playback check after rendering; the log reports its progress about once a minute.
 
 ## Encoding
 
@@ -191,7 +187,7 @@ ARM64 Docker uses software encoding. Non-AVX Celerons use the simpler title rend
 ## Memory and disk
 
 Allow about 25 GB plus 0.35 GB per 1,000 pictures and videos for persistent data, plus the image and finished films. Keep the persistent
-store. The preview cache grows with the pictures your films can reach, roughly 0.35 MB each, up to
+store. The preview cache grows with the pictures your films can reach, about 0.3 MB each, up to
 its 30 GB default; video clips and prepared sources take up to 10 GB each.
 [Storage and caches](./maintenance/health-logs-cache.md#caches) covers caps and cleanup.
 Uploaded films are removed locally after confirmed delivery; local-only films keep growing.
@@ -209,9 +205,10 @@ Stay at 1080p on NAS. For rendering on a stronger machine, use a
 
 ## What a NAS can't do
 
-GPU selection and local generated music need their respective GPU services. A reader alone still
-names special days (trips too with `--llm-title`) and helps with the music mood. Use the [add-on guide](../get-started/choose-your-setup.md)
-to choose the next useful piece.
+GPU selection needs the GPU services, and generated music needs an ACE-Step server on a GPU or
+Apple Silicon machine. A reader alone helps with the music mood, and names special days and trips when you turn
+on `--llm-title` (off by default). The [add-on guide](../get-started/choose-your-setup.md) helps you
+choose the next piece.
 
 ## Everything else
 

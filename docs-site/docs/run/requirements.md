@@ -32,7 +32,7 @@ A 30-minute film fits inside the default 4 GiB container limit on a NAS, with so
 library and output settings still affect memory use. See the
 [measured examples](../better/measured.md#longer-films-memory-and-duration).
 
-A few limits worth knowing before you install:
+Before you install:
 
 - **Basic output stops at 1080p**, even if you request 4K. More RAM alone does not change that.
 - **The first film takes longer.** It prepares the pictures in your chosen period. Later films
@@ -115,5 +115,6 @@ Immich v2 and v3 API contracts, x86-64/ARM64 CPU deployments, NVIDIA CUDA infere
 Apple Silicon inference. Hardware and driver combinations still need checking on your machine;
 Terraform is an example module to adapt to your cluster.
 
-This release candidate does not certify every deployment combination. Use preflight after install
-and [render memory details](./reference/rendering.md) when planning 4K or a worker.
+[Can I run this?](./tested-deployments.md) lists the combinations tested for this release. Run
+`preflight` after installing, and read the [render memory details](./reference/rendering.md) before
+planning 4K or a worker.

@@ -30,7 +30,7 @@ To make a video-only film, untick **Include photos** under **Length and pictures
 
 A Live Photo enters the cut as one photograph. Nearby Live Photos are stitched into one clip, and that clip plays as motion when it lasts at least 2.5 seconds and really moves. A lone Live Photo plays its own clip by the same rule. Anything shorter plays as its still, with the same zoom and pan as any photo: a 1.2-second clip is half a sentence, while a 2.9-second one carries a moment.
 
-The app verifies selected motion companions before sealing the cut: a malformed video keeps the photograph as a still, while unavailable sources or tools stop the check. When a burst cannot be stitched, the kept picture's own clip gets the same 2.5-second test, and the still otherwise. `runs story` and `runs why` say when a Live Photo was held as its still, and why. A Live Photo you add during review is stitched with its neighbours and decided the same way.
+The app verifies selected motion companions before sealing the cut: a malformed video keeps the photograph as a still, while unavailable sources or tools stop the check. When a burst cannot be stitched, the kept picture's own clip gets the same 2.5-second test, and the still otherwise. `runs story` and `runs why` say when a Live Photo was held as its still, and why. A Live Photo you add during review is stitched with its neighbours and decided the same way. If the motion still gives no frame when the film is assembled, the still takes its slot, so the timeline and music don't move.
 
 Album films use the same Live Photo handling as date, people and event films. Add the
 photographs to your album; the app reads their linked videos automatically. Those videos support
@@ -62,7 +62,7 @@ Untick **Include Live Photos**, pass `--no-live-photos`, or set `advanced.analys
 
 Plain photos use an SDR H.264 clip during preparation, with hardware encoding when available. Gain-mapped HDR photos keep HDR only when the film uses HDR H.265; an SDR film tone-maps them during preparation. In an HDR film whose videos already decide its transfer (HLG for iPhone footage), every still is prepared in that transfer, so the film plays it without converting each frame. Without a hardware encoder these clips are fast, near-lossless x264 (CRF 12, ultrafast).
 
-Live Photo merges, their final-frame holds and the cut a film takes from them are lossless x264, so the film's own encode is the only lossy step a Live Photo goes through. Expect about 50 MB of scratch space per 3-second Live Photo while the film renders.
+Live Photo merges, their final-frame holds and the cut a film takes from them are lossless x264, so the film's own encode is the only lossy step a Live Photo goes through. Lossless clips are big: allow tens of megabytes of scratch space per Live Photo while the film renders.
 
 On the Basic tier, Live Photo merges are limited to 1080p. With automatic HDR output, a device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation. An explicit HDR output keeps photo HDR through software HEVC.
 

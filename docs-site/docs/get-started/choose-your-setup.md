@@ -5,15 +5,14 @@ description: Choose Basic, GPU or Full and follow its installation path.
 
 # Choose your setup
 
-Every tier makes a complete film with titles and music. Choose the one that fits your hardware
-and the extra picture interpretation you want. **Start with Basic if you are unsure.**
-You can change tiers later.
+Every tier makes a complete film with titles and music. Pick the one your hardware can run.
+**Start with Basic if you are unsure**: you can switch tiers later and keep your work.
 
 | Tier | What changes in the film | Install |
 |---|---|---|
 | **Basic** | Dates, favourites, people and places guide the edit; small CPU classifiers read the pictures. Output is up to 1080p. | [Docker Compose](./quick-start.md), [NAS](../run/nas.md) or [native Mac/Linux](../run/uv-pip.md) |
 | **GPU** | Adds picture descriptions, document/sensitive-content checks and a family-viewing pre-screen. | Choose **GPU** in [Quick start](./quick-start.md) or the [setup builder](/setup); on Apple Silicon use [native Mac](../run/uv-pip.md#apple-silicon) |
-| **Full** | Adds an enabled text reader that can refine the draft and write the film's summary. | Choose **Full** in [Quick start](./quick-start.md) or the [setup builder](/setup); on Apple Silicon use [native Mac](../run/uv-pip.md#apple-silicon) |
+| **Full** | Adds a text reader that refines the draft. | Choose **Full** in [Quick start](./quick-start.md) or the [setup builder](/setup); on Apple Silicon use [native Mac](../run/uv-pip.md#apple-silicon) |
 
 For an existing cluster, [Kubernetes](../run/kubernetes.md) covers all three tiers.
 [Compare the same source material](../better/tier-example.md) to see what the tiers can change.
@@ -21,10 +20,11 @@ For an existing cluster, [Kubernetes](../run/kubernetes.md) covers all three tie
 ## Basic: start with the film {#basic-start-with-the-film}
 
 Basic runs on the app's CPU without a separate model server. Allow two cores, 4 GiB for the app,
-and about 25 GB of app data plus 0.35 GB per 1,000 pictures, plus images and finished films. A plain NAS can do the whole job.
+and about 25 GB of app data plus 0.35 GB per 1,000 pictures, plus the images and finished films.
+A plain NAS does the whole job.
 
-The first cut prepares pictures it needs; later cuts reuse compatible facts. Rendering still
-runs each time. Start with a small album to get a film before preparing a large period.
+The first cut prepares the pictures it needs; later cuts reuse that work. Rendering still runs
+each time. Start with a small album to get a film before preparing a large period.
 
 ## GPU: understand more of the pictures {#gpu-understand-more-of-the-pictures}
 
@@ -58,8 +58,8 @@ the selection checks. If refinement fails, the app keeps the rules draft and rep
 Hardware video encoding speeds up rendering and does not select the GPU tier.
 [Encoding](../run/hardware.md), [remote rendering](../better/gpu-render.md) and
 [generated music](../better/music.md) can be configured separately.
-A reader on Basic can name special days and pick the music mood; it does not enable
-Full selection by itself.
+A reader on Basic picks the music mood (and names special days when model titles are on); it
+does not turn on Full selection by itself.
 
 ## Change services later
 

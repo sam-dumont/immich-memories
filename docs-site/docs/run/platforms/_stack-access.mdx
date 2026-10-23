@@ -1,19 +1,20 @@
 import ComposePort from '@site/src/components/ComposePort';
 
-Give Immich Memories its own app login before publishing its port on your trusted LAN. The
-setup builder on this page does both for you: tick the LAN box and enter a username and a
-password of at least 12 characters, and the generated file carries them.
+The app asks for a sign-in either way. To open it to your trusted LAN, tick **Open the UI to
+other machines on my LAN** in the builder above. Leave the login empty to get a generated password
+(read it with `docker logs immich-memories` or in the container's log view), or enter a username
+and a password of at least 12 characters and the generated file carries them.
 
 To do it by hand, edit the lines the file already has. Do not add a second copy: Compose refuses a
-file that defines the same key twice. Under the app service's `environment:` block, change the
-two empty values:
+file that defines the same key twice. To pick your own login, change the two empty values under the
+app service's `environment:` block:
 
 ```yaml
 IMMICH_MEMORIES_AUTH_USERNAME: admin
 IMMICH_MEMORIES_AUTH_PASSWORD: replace-with-your-own-long-password
 ```
 
-Choose a password of at least 12 characters. In the same service's `ports:`, change
+The password needs at least 12 characters. To publish the port, in the same service's `ports:` change
 <code>127.0.0.1:<ComposePort />:8080</code> to <code>0.0.0.0:<ComposePort />:8080</code>. If the host already uses <ComposePort />, choose another host
 port, for example `0.0.0.0:22831:8080`. The last number remains 8080.
 

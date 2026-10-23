@@ -28,32 +28,51 @@ advanced:
     daily_at: "09:00"    # the container's local time (set TZ=)
 ```
 
-Or add `IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"` and
-`IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"` to the app's Compose `environment:` block
-and set the time there. A line in `.env` alone
-does not reach the container. Recreate with `docker compose up -d`.
-Settings also exposes **Automation > enabled** and **daily_at** while those Compose lines are absent.
-`upload.enabled: true` requests delivery to Immich for manual and automatic films; `upload.album_name` names the destination. The film arrives with the same description and tags a manual upload gets, a retry included ([What Immich sees](../run/privacy.md#what-immich-sees)). Confirmed delivery removes the local copy.
+Or put `IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"` and `IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"`
+in the app's Compose `environment:` block. A line in `.env` alone does not reach the container. Recreate
+with `docker compose up -d`. While those Compose lines are absent, **Settings > Automation** shows
+`enabled` and `daily_at` too.
 
-The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
-and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
-run already happened (a manual `docker compose exec immich-memories immich-memories auto run` counts) it waits
-for tomorrow. A forced one (`auto run --force`, `POST /api/trigger?force=true`, or **Run this suggestion** in the web UI) doesn't: it's an extra
-film you asked for, and neither the timer nor the cooldown counts it. A run counts when it made a film, tried and failed, or found nothing worth one (a period the child read and judged empty ends as one `skipped` attempt, reason `nothing worth a film: …`, with no completed run behind it, so the 24 h cooldown is untouched and that candidate sits out for 7 days). A dry run doesn't
-(a **Check eligibility** or an `auto run --dry-run`, finished or still running, leaves the scheduled film in place), and neither does a
-`cooldown active` skip, which is what most HTTP triggers get back, a **Run this suggestion** whose candidate was gone by then, or an attempt whose process died. When the timer waits, the log says which run it
-counted. A manual `auto run` in progress holds the same automation lock: the timer's attempt comes back `skipped`
-("automation already running") before it records anything, so `auto history` and `auto status` never show it, and
-the timer tries again at its next poll. When the timer's own run is skipped for the cooldown (it caught up at 14:00
-yesterday, say), it tries again once the cooldown ends, the same day.
+`upload.enabled: true` delivers manual and automatic films to Immich, into `upload.album_name`. The film
+gets the same description and tags a manual upload gets, a retry included
+([What Immich sees](../run/privacy.md#what-immich-sees)). Confirmed delivery removes the local copy.
+
+The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload
+retry and notifications as the CLI. A container that was down at `daily_at` catches up when it starts.
+If the day's run already happened, it waits for tomorrow.
+
+### What counts as the day's run
+
+| Attempt | Counts as the day's run |
+|---|---|
+| made a film, or tried and failed | yes |
+| decided nothing is worth a film (`skipped`, reason `no eligible candidates` or `nothing worth a film: …`) | yes |
+| an unforced `auto run` from the shell, the installed job or an HTTP trigger without `?force=true` | yes: they can't be told apart from the timer |
+| a forced one: `auto run --force`, `POST /api/trigger?force=true`, **Run this suggestion** in the web UI | no: it's an extra film you asked for |
+| a dry run (**Check eligibility**, `auto run --dry-run`), finished or still running | no |
+| a `cooldown active` skip (what most HTTP triggers get back) | no |
+| a **Run this suggestion** whose candidate was gone by then | no |
+| an attempt whose process died | no |
+
+When the timer waits, the log says which run it counted. A period the child read and judged empty ends
+as one `skipped` attempt with no completed run behind it: the 24 h cooldown is untouched, and that
+candidate sits out for 7 days.
+
+A manual `auto run` in progress holds the automation lock: the timer's attempt comes back `skipped`
+("automation already running") before it records anything, so `auto history` and `auto status` never show
+it, and the timer tries again at its next poll (every 30 seconds). When the timer's own run is skipped for
+the cooldown (it caught up at 14:00 yesterday, say), it tries again once the cooldown ends, the same day.
+
+A manual `generate` in progress holds a different lock, the pipeline lock. The timer's attempt does start,
+its child `generate` can't get the pipeline lock, and the attempt ends `failed`, not `skipped`.
 
 An attempt whose process died mid-run (a killed container, a reboot) reads `failed`, reason
-`interrupted: …`, everywhere status is shown. It is ended for good, with one failure notification, by the next
-run, by the web server's timer (it checks every 30 seconds) or by `immich-memories auto status`. A status read
-such as `/health/ready` only reports it and changes nothing. A
-manual `generate` in progress holds a different lock (the pipeline lock), so the timer's own attempt does start,
-its child `generate` then fails to get the pipeline lock, and the attempt ends `failed`, not `skipped`.
-`/health/ready` shows the timer under `in_process_scheduler`; after a restart it starts from the last attempt in the store, so `last_fired_at`, `last_outcome` and `last_reason` are not blank.
+`interrupted: …`, everywhere status is shown. The next run, the web server's timer or
+`immich-memories auto status` ends it for good, with one failure notification. A status read such as
+`/health/ready` only reports it and changes nothing.
+
+`/health/ready` shows the timer under `in_process_scheduler`. After a restart it starts from the last
+attempt in the store, so `last_fired_at`, `last_outcome` and `last_reason` are filled in.
 
 ## Bare metal: auto install
 
@@ -61,9 +80,14 @@ its child `generate` then fails to get the pipeline lock, and the attempt ends `
 immich-memories auto install --hour 9
 ```
 
-The installed job reads `automation.cooldown_hours` on every run; `--cooldown N` pins a number into the scheduler command instead. A job installed before 1.0 carries `--cooldown 24`: reinstall to let the config decide.
+This writes a launcher at `~/.immich-memories/bin/immich-memories-auto` and the scheduler files: a launchd
+plist on macOS, a systemd user timer on Linux, or a crontab line to paste elsewhere. It prints
+**Activate:** and **Deactivate:** commands and runs neither: run the activation command to start the
+schedule. The launcher looks `immich-memories` up on every fire, so an upgrade in place needs no
+reinstall.
 
-This writes a launcher at `~/.immich-memories/bin/immich-memories-auto` and scheduler files: a launchd plist on macOS, a systemd user timer on Linux, or a crontab command to paste elsewhere. It prints **Activate:** and **Deactivate:** commands; it does not run them. Run the printed activation command to start the schedule. The launcher looks `immich-memories` up on every fire, so an upgrade in place needs no reinstall.
+The installed job reads `automation.cooldown_hours` on every run; `--cooldown N` pins a number into the
+scheduler command instead. An older install: [Upgrading](../run/maintenance/upgrading.md#scheduled-runs).
 
 There is one managed launcher per operating-system user, and one launchd job or systemd timer.
 Installing with another `--config` replaces that user's existing schedule; it does not add a
@@ -76,28 +100,31 @@ On headless Linux, enable lingering so the user timer survives logout:
 loginctl enable-linger "$USER"
 ```
 
-Before `immich-memories auto install --uninstall`, run the printed deactivation command: `launchctl unload` on macOS or `systemctl --user disable --now immich-memories-auto.timer` on Linux. Uninstall deletes the launcher and scheduler files without unloading a running schedule. After removing systemd files, run `systemctl --user daemon-reload`. For cron, remove the pasted entry before deleting its launcher.
+Uninstall deletes the launcher and scheduler files without unloading a running schedule, so run the
+printed deactivation command first: `launchctl unload` on macOS, `systemctl --user disable --now
+immich-memories-auto.timer` on Linux. Then `immich-memories auto install --uninstall`, and on Linux
+`systemctl --user daemon-reload`. For cron, remove the pasted line before deleting its launcher.
 
 Three things a scheduled job does differently from your shell:
 
 - it does not inherit your environment. `auto install` copies `PATH` and the ACE-Step and torch variables it
-  knows, nothing else; credentials belong in the config file;
+  knows, nothing else, so credentials belong in the config file;
 - it refuses a git worktree or a checkout behind its upstream, because a nightly job on stale code looks fine
   in the logs (`--force` overrides);
 - `--config` goes before `auto`, and the installed job keeps the resolved path.
 
 On macOS a missed job runs when the Mac wakes; launchd does not wake it.
 
-The launchd job writes its wrapper output to `~/.immich-memories/logs/auto.log` and `auto-error.log`.
-The systemd unit sets no `StandardOutput`, so its output goes to the user journal, which a user outside
-`systemd-journal` may not be allowed to read. The per-attempt transcript under the cache is always
-readable by its owner: see [where a scheduled run's logs go](../make/automate.md#where-a-scheduled-runs-logs-go).
+The launchd job writes its wrapper output to `auto.log` and `auto-error.log` in `~/.immich-memories/logs/`
+(next to the config file when you installed with `--config`). The systemd unit sets no `StandardOutput`,
+so its output goes to the user journal, which a user outside `systemd-journal` may not be allowed to read.
+The per-attempt transcript under the cache is always readable by its owner: see [where a scheduled run's logs go](../make/automate.md#where-a-scheduled-runs-logs-go).
 
 ## How it picks one memory
 
 Fifteen detectors propose candidates, hard rotation rules reject some, the rest are scored, and the top one is
-made. The score ranks memories against each other; it never touches which pictures go in a film. That is the
-editor's job, see [How it chooses](../how-it-chooses/overview.md).
+made. The score ranks memories against each other and never touches which pictures go in a film. That is
+the editor's job: see [How it chooses](../how-it-chooses/overview.md).
 
 | Detector | Proposes | Score |
 |---|---|---|
@@ -131,13 +158,18 @@ another video out:
 - a category cannot appear more than twice in the last six completed automatic runs, except backfill, which runs every quiet night;
 - a person cannot come back if they were in either of the last two person runs.
 
-Timing: birthdays fire 2 days after the date and trips 7 days after coming home, so the phone has uploaded.
+Birthdays fire 2 days after the date and trips 7 days after coming home, so the phone has uploaded.
 Trips need `trips.homebase_latitude` and `trips.homebase_longitude` (see
 [Home and people](../get-started/who-is-who.md)). Special days come from the catalogue `discover-days`
 writes. A birth date you gave the people store wins over the one Immich holds. Automation passes that resolved month and day explicitly to `generate --birthday`, including a leap-day birthday.
 
-`auto suggest` prints eligible candidates in rank order with their reasons, then the reasons a detector proposed nothing where it could have: no home base for a season, a birthday under 50 pictures, a close person with too little in last month, albums left out for spanning more than six months. Its terminal output also names failure-backoff skips; it does not list rejected candidates or their rotation rules. `auto status` shows current rejection rules. A candidate that failed twice in a row waits before it comes back (24 hours, then 3 days, then 7);
-one failure never counts, and a success clears it.
+`auto suggest` prints eligible candidates in rank order with their reasons, then why a detector proposed
+nothing where it could have: no home base for a season, a birthday under 50 pictures, a close person with
+too little last month, albums left out for spanning more than six months. It also names failure-backoff
+skips. It does not list candidates the rotation rules rejected: `auto status` shows those.
+
+A candidate that failed twice in a row waits before it comes back: 24 hours, then 3 days after a third
+failure, then 7 days. One failure never counts, and a success clears the streak.
 
 ## Closeness
 
@@ -152,8 +184,8 @@ says each person is:
 | episodic | 0.3 |
 | event | 0.15 |
 
-A pair or a group takes the average of its people. Someone the list says nothing about keeps the full weight, so
-a library that never ran the people scan scores as it did before. The same list decides who gets a monthly film:
+A pair or a group takes the average of its people. Someone the list says nothing about keeps the full
+weight, so a library that never ran the people scan scores everyone at 1.0. The same list decides who gets a monthly film:
 inner tier or a confirmed partner, child or parent.
 
 Hand-made films count. A season, holiday, month or per-person month you made yourself with `generate` is the
@@ -174,8 +206,9 @@ advanced:
     include_shared_albums: false  # albums other people shared with you
 ```
 
-The thresholds above are fixed. Holidays come from the country the home base is in, as Immich's own geodata names
-it; an unknown country keeps only `extra_holidays`.
+The thresholds above are fixed. Holidays come from the country the home base is in, as Immich's own
+geodata names it. With no known country, the detector proposes Christmas, New Year's Day, Easter and
+your `extra_holidays`.
 
 ## Across accounts, and saved groups
 
@@ -199,19 +232,30 @@ people discovery counts is skipped. It shares the multi-person cap and rotation 
 
 ## What auto run does, exactly
 
-One action per run, one memory per invocation: retry the oldest pending upload if there is one, otherwise make
-the top candidate. `--cooldown` (`automation.cooldown_hours`, 24) is measured from the last run's start with
-30 minutes of slack, so a daily timer fires every day. `--candidate KEY` runs one exact `memory_key` from
-`auto suggest --json`; the rules still apply, `--force` skips only the cooldown, and a stale key fails rather
-than making something else. The cooldown runs from the last film nobody forced: a `--force` film still counts
-for the rotation rules, but it never pushes back the next scheduled one. The HTTP trigger has the same switch,
-[`?force=true`](#trigger-it-over-http). Without it, the CLI, the built-in timer, the installed job and the HTTP
-trigger can't be told apart, so all of them count.
+One action per run, one memory per invocation: retry the oldest pending upload if there is one, otherwise make the top candidate.
+
+The cooldown (`--cooldown`, default `advanced.automation.cooldown_hours`, 24) runs from the start of the last
+completed automatic film that wasn't forced, with 30 minutes of slack so a daily timer fires every day.
+`auto status`, the built-in timer and the HTTP trigger read the same cooldown.
+
+| Started by | Skips the cooldown | Starts the next one |
+|---|---|---|
+| the built-in timer, the installed job, `auto run`, `POST /api/trigger` | no | yes |
+| `auto run --force`, `POST /api/trigger?force=true`, **Run this suggestion** | yes | no |
+| `generate`, a web UI render | not an automatic run | no |
+
+A forced film still counts for the rotation rules; it just never pushes back the next scheduled film.
+
+`--candidate KEY` runs one exact `memory_key` from `auto suggest --json`. The rotation rules still apply,
+`--force` skips only the cooldown, and a key that isn't eligible any more fails rather than making something
+else.
 
 <Diagram name="state-scheduled-attempt" headline="Every attempt ends one of four ways, and the lock always comes back." />
-The outcomes are `skipped`, `dry_run`, `completed` and `failed`; the first three exit 0.
-Quiet output is a stable JSON object with `runtime` as its first key. Key a wrapper on `outcome`: `action` is
-`generation` or `delivery_retry`. Logging is disabled during `auto run --quiet`; its result is one JSON line, not formatted multiline output.
+The outcomes are `skipped`, `dry_run`, `completed` and `failed`. The first three exit 0, `failed` exits 1.
+
+Quiet output is a stable JSON object with `runtime` as its first key: `auto run --quiet` turns
+logging off and prints it as one line. Key a wrapper on `outcome`; `action` is `generation` or
+`delivery_retry`.
 
 An attempt killed mid-run reads `failed`, reason `interrupted: …`, as described
 [above](#docker-switch-on-the-built-in-timer).
@@ -220,14 +264,19 @@ An attempt killed mid-run reads `failed`, reason `interrupted: …`, as describe
 {"runtime": {"version": "<running version>", "checkout": null, "commit": null, "upstream": null, "commits_behind": null, "stale": false}, "outcome": "dry_run", "action": "generation", "reason": "dry run", "candidate_key": "trip:2026-07-02:2026-07-09:", "category": "trip", "run_id": null, "error": null, "output_path": null, "recent_categories": ["monthly_review", "birthday"], "rejections": []}
 ```
 
-An upload that keeps failing is dropped after `automation.max_delivery_attempts` (5) tries, with a notification
-carrying the error; the video stays on disk. If the output or cache volume is running low
-(`output.min_free_space_gb`, 5 GB by default), a completed run's notification carries that warning too, and a
-film that would not fit at all fails the attempt with the same message before anything is rendered: this is the
-one place a headless cron deployment sees it, since nobody is watching a terminal. Every attempt writes its full
-output to `automation-output/<attempt-id>.private.log` under the cache (owner-readable, credentials redacted,
-downloadable from the **Runs** page). `auto status` shows the running code's version and commit, the scheduler in use, the
-last attempt, the cooldown, notification health and pending deliveries. It refreshes discovery and exposes its outcome/error under `suggestion`, without naming the next candidate; use `auto suggest` for that.
+An upload that keeps failing is dropped after `automation.max_delivery_attempts` (5) tries, with a
+notification carrying the error; the video stays on disk.
+
+When the output or cache volume runs low (`output.min_free_space_gb`, 5 GB by default), a completed run's
+notification carries the warning, and a film that would not fit fails the attempt with the same message
+before anything renders. On a headless cron deployment, that notification is the only place you see it.
+
+Every attempt writes its full output to `automation-output/<attempt-id>.private.log` under the cache:
+owner-readable, credentials redacted, downloadable from the **Runs** page.
+
+`auto status` shows the running code's version and commit, the scheduler in use, the last attempt, the
+cooldown, notification health and pending deliveries. It refreshes discovery and puts the outcome and
+error under `suggestion` without naming the next candidate: `auto suggest` does that.
 
 ## Check on it
 
@@ -237,9 +286,16 @@ immich-memories auto status --json      # the same, for a script or jq
 immich-memories auto history --limit 5  # the last five films it made on its own
 ```
 
-The `Scheduler:` line names what actually wakes automation, and lists every one in use: `built-in timer (enabled, daily at 07:45 CEST, next firing 2026-10-08 07:45)`, an installed `launchd`/`systemd`/`cron` unit, or `external trigger (POST /api/trigger), last trigger 2026-10-07 07:45` when a trigger token is set or the trigger API has been called. With none of them it says `none`. `--json` adds `scheduler.in_use` and `scheduler.summary` next to the existing keys. The last trigger time is kept per host, beside the automation lock.
+The `Scheduler:` line lists everything that wakes automation: `built-in timer (enabled, daily at 07:45 CEST,
+next firing 2026-10-08 07:45)`, an installed `launchd`, `systemd` or `cron` unit, and
+`external trigger (POST /api/trigger), last trigger 2026-10-07 07:45` once a trigger token is set or the
+trigger API has been called. With none of them it starts with `none`. `--json` carries the same under
+`scheduler.in_use` and `scheduler.summary`. The last trigger time is kept per host, beside the
+automation lock.
 
-While a run works, its log carries a `Phase …` line for each step and at least one about every 30 seconds: counted steps (preparation, the family-viewing check, the render) show `n/N`, and a step that has gone quiet repeats itself with `process alive; no new progress (Nm in this step)`.
+While a run works, its log carries a `Phase …` line for each step, and at least one every 30 seconds or so.
+Counted steps (preparation, the family-viewing check, the render) show `n/N`; a step that has gone quiet
+repeats itself with `process alive; no new progress (Nm in this step)`.
 
 `auto history` lists only completed automatic runs; a film you made with `generate` or the web UI is in
 `runs list` ([runs](../make/cli/runs.md)). In Docker, prefix each with `docker compose exec immich-memories`.
@@ -247,10 +303,8 @@ While a run works, its log carries a `Phase …` line for each step and at least
 ## Get told when it runs
 
 Notifications go through [Apprise](https://github.com/caronc/apprise), so one URL per target covers ntfy,
-Discord, Telegram, email and more than a hundred others. They are off by default:
-
-Use `ntfys` for HTTPS. Public ntfy topics can be read by others; personal run details belong in
-a private, authenticated topic.
+Discord, Telegram, email and more than a hundred others. They are off by default. Use `ntfys` for HTTPS,
+and a private, authenticated topic: anyone can read a public ntfy topic.
 
 ```yaml
 advanced:
@@ -267,21 +321,24 @@ immich-memories auto test-notification
 ```
 
 `auto test-notification` sends one message to every URL and says whether it went through. It ignores the
-cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Successful
-films from `auto run`, the Docker timer, plain `generate`, app **Render** and `runs render` send a completion
-message; saving a cut without rendering sends none. The message carries the memory type, the
-outcome, the duration, the output path, a direct Immich link when the run has an uploaded asset, and, on a failure, the last lines of the redacted output (up to 300 characters, so the error itself, not the lead-up); no picture unless you set
-`attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
+pause that follows a failed delivery (`notifications.cooldown_hours`, 24), and a test that succeeds ends it.
+
+Every rendered film sends a completion message: `auto run`, the Docker timer, plain `generate`, the web
+UI's **Render** and `runs render`. Saving a cut without rendering sends none. The message carries the
+memory type, the outcome, the duration, the output path and, once the film is uploaded, a direct Immich
+link. A failure adds the last 300 characters of the redacted output, which is the error itself. No picture
+unless you set `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the
+database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
 
 ## Trigger it over HTTP
 
-One POST starts the decision `auto run` would have made, on the same detectors, rules, cooldown and history.
-You choose *when*, not *what*: an Immich workflow when an album fills up, a cron on another box, a phone
-shortcut, Home Assistant.
+One POST starts the decision `auto run` would have made, with the same detectors, rules, cooldown and
+history. You choose when, the app chooses what: an Immich workflow when an album fills up, a cron on
+another box, a phone shortcut, Home Assistant.
 
-The app serves the route only when something can authenticate the caller, because this process holds your
-Immich API key.
+This process holds your Immich API key, so the app serves the route only when something can
+authenticate the caller.
 
 | `auth.enabled` | `server.trigger_token` | `POST /api/trigger` |
 |---|---|---|
@@ -297,13 +354,13 @@ curl -X POST https://memories.example.com/api/trigger \
   -H "x-api-key: $IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN"
 ```
 
-For Docker, put `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN=your-generated-token` in `.env` and run
-`docker compose up -d`. The shipped Compose file forwards this key. Use the same token in the
-caller's `Authorization: Bearer` header.
+The token goes in `x-api-key` or in `Authorization: Bearer <token>`. For Docker, put
+`IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN=your-generated-token` in `.env` and run `docker compose up -d`: the
+shipped Compose file forwards it.
 
-Keep the token in the environment: `server` is not a section that expands `${VAR}`, so `"${SOMETHING}"` in
-`config.yaml` is those literal characters. It must be 32 random characters or more, without placeholder words
-like `change-me`; a shorter token stops the app at startup. It is compared in constant time and redacted from
+Keep the token in the environment. `server` doesn't expand `${VAR}`, so `"${SOMETHING}"` in `config.yaml`
+is those literal characters. The token needs 32 random characters or more and no placeholder words like
+`change-me`; a weaker one stops the app at startup. It is compared in constant time and redacted from
 logs, `/health` and the config viewer. Send it only over HTTPS, behind the same reverse proxy as the web UI.
 
 A caller that sends no `Origin` header (curl, a CronJob, Home Assistant) needs no change. One that sends an
@@ -311,8 +368,18 @@ A caller that sends no `Origin` header (curl, a CronJob, Home Assistant) needs n
 `server.allowed_hosts`; the shipped Kubernetes CronJobs send `Host: localhost` for that reason. See
 [Allowed hosts](../run/network-security.md#allowed-hosts).
 
-The answer is `202 Accepted` with an `attempt_id`, a `status_url` and `forced`, sent once the run has started; `Authorization: Bearer <token>` works too.
-**401** means authentication failed (`{"detail":"invalid trigger token"}`). **409** means a run is already going, and the body names it. GET the `status_url` for attempt fields: `attempt_id`, `state`, `reason`, `started_at`, `finished_at`, `phase`, `memory_type` and `error`. The final `state` is `completed`, `failed`, `skipped` or `dry_run`. Its `run` is null until a run exists, then holds `run_id`, `status`, timestamps, `last_phase`, `output_duration_seconds`, `delivery_status` and `immich_asset_id`.
+| Status | Body | Means |
+|---|---|---|
+| **202** | `status: "accepted"`, `attempt_id`, `status_url`, `forced` | the run has started |
+| **401** | `{"detail": "invalid trigger token"}` | authentication failed |
+| **404** | `{"detail": "trigger API is not enabled"}` | neither auth nor a token is set |
+| **409** | `{"detail": "a run is already active", "attempt_id": …}` | a run is already going |
+
+`GET` the `status_url` (`/api/trigger/<attempt_id>`, same authentication) for `attempt_id`, `state`,
+`reason`, `started_at`, `finished_at`, `phase`, `memory_type`, `error` and `run`. `state` is `running`
+until it ends `completed`, `failed`, `skipped` or `dry_run`. `run` is null until the attempt has a run,
+then holds `run_id`, `status`, `created_at`, `completed_at`, `last_phase`, `output_duration_seconds`,
+`delivery_status` and `immich_asset_id`. An unknown id gets **404**.
 
 Add `?force=true` for a film you're asking for by hand:
 
@@ -321,40 +388,47 @@ curl -X POST "https://memories.example.com/api/trigger?force=true" \
   -H "x-api-key: $IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN"
 ```
 
-That call is `auto run --force` over HTTP: it skips the cooldown, and the film it makes doesn't start one, so
-the next scheduled film still comes on time. The rotation rules still apply, and a run already going still gets
-**409**. Only `true`, `1` or `yes` count; anything else, a typo included, is a normal call. The `202` body says
-which one it got in `forced`. Anyone holding the token can force a film this way, which is one more reason to keep
-it secret. Leave the parameter off a schedule: a scheduled call that forced would make a film every time it fired.
+That call is `auto run --force` over HTTP: it skips the cooldown, and the film it makes doesn't start
+one, so the next scheduled film still comes on time. The rotation rules still apply, and a run already
+going still gets **409**. Only `true`, `1` or `yes` count (any case); anything else, a typo included, is a
+normal call, and `forced` in the `202` body says which one it got. Anyone holding the token can force a
+film this way. Leave the parameter off a schedule: a scheduled call that forced would make a film every
+time it fired.
 
-`skipped` is a normal answer: a workflow that fires on every upload mostly gets it back, and one that fires on a
-trip album asks for the best candidate right now, not for that album. For a specific film, use the CLI or the
-web UI.
+`skipped` is a normal answer: a workflow that fires on every upload mostly gets it back. One that fires on
+a trip album asks for the best candidate right now, not for that album. For a specific film, use the CLI
+or the web UI.
 
 ## Kubernetes
 
-`deploy/kubernetes/base/cronjobs.yaml` contains two HTTP-trigger CronJobs. They read only the
-trigger token from `immich-memories-secrets`, mount no application PVCs, and call
-`POST /api/trigger` on the running Deployment. Both schedules use the normal `auto run`
-decision; the one named monthly does not force a monthly film.
+`deploy/kubernetes/base/cronjobs.yaml` holds two CronJobs that call `POST /api/trigger` on the running
+Deployment: `immich-memories-auto` daily at 09:00 and `immich-memories-monthly` at 02:00 on the 1st. They
+read only the trigger token from `immich-memories-secrets` and mount no application PVCs. Both make the
+normal `auto run` decision: the monthly one does not force a monthly film.
 
-Set the trigger token, add `- cronjobs.yaml` to `base/kustomization.yaml` (the setup builder does both when you tick **Scheduled films (CronJobs)**), then render and apply:
+Set the trigger token and add `- cronjobs.yaml` to `base/kustomization.yaml` (the setup builder does both
+when you tick **Scheduled films (CronJobs)**), then render and apply:
 
 ```bash
 kubectl kustomize deploy/kubernetes/base
 kubectl apply -k deploy/kubernetes/base
 ```
 
-A `Complete` Job only means the trigger was accepted (`202`); the film is made by the running app. Follow it with `GET /api/trigger/<attempt_id>` and the token, as shown under [Batch jobs](../run/reference/kubernetes-operations.md#batch-jobs). `concurrencyPolicy: Forbid` does not stop overlapping runs: the run lease answers a second trigger with `409`.
+A `Complete` Job only means the trigger was accepted (`202`); the running app makes the film. Follow it
+with `GET /api/trigger/<attempt_id>` and the token, as shown under
+[Batch jobs](../run/reference/kubernetes-operations.md#batch-jobs). `concurrencyPolicy: Forbid` does not
+stop overlapping runs; the run lease does, by answering a second trigger with `409`. The base
+NetworkPolicy lets the CronJobs reach the app pod on 8080, the Service's port 80 after translation.
 
-The base NetworkPolicy permits their app-pod backend on 8080 after Service-port translation.
-The separate `base/job.yaml` runs a one-off `generate` command and mounts the SQLite PVCs;
-include it only with the Deployment scaled to zero. For a fixed recipe while the app runs,
-use `kubectl exec ... -- immich-memories generate ...` so there is no second SQLite writer.
+`base/job.yaml` is different: it runs a one-off `generate` and mounts the app's PVCs, so include it only
+with the Deployment scaled to zero. For a fixed recipe while the app runs, use
+`kubectl exec ... -- immich-memories generate ...`, so there is never a second writer on the store.
 
 ## A named memory on a named date
 
-The one thing `auto` cannot say is "a year in review every 15 January". A cron line that runs `generate` says it. The shipped Kubernetes monthly trigger uses the normal `auto run` decision and does not force a monthly film. Replace `/absolute/path/to/immich-memories` with the installed executable and set cron’s `PATH` to include FFmpeg and other required tools:
+`auto` can't say "a year in review every 15 January". A cron line that runs `generate` can. Replace
+`/absolute/path/to/immich-memories` with the installed executable, and set cron’s `PATH` so it finds
+FFmpeg:
 
 ```bash
 # 15 January, 09:00: last year's review, uploaded to an album

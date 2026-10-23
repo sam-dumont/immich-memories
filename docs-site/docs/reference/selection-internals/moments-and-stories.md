@@ -37,8 +37,8 @@ back to UTC.
 as three weekly stories. Setting it is step one of [Home and people](../../get-started/who-is-who.md).
 
 **A trip that changes where it stays is two stories.** A week hiking village to village and then four
-days in a city are two chapters. As one story, the hike's favourites took every slot and the city got
-none. A road trip that never stays three days in one place is still one story, and so is a week on an
+days in a city are two chapters. As one story, the hike's favourites would take every slot and leave
+the city none. A road trip that never stays three days in one place is still one story, and so is a week on an
 island with day trips. Each leg is weighed on its own, with its own name and the same rules for days
 without a favourite. A trip film splits the same way.
 
@@ -72,8 +72,8 @@ generic ("result", "time", "rank", "record", "score", "certificate", "prize"...)
 one Immich search per word, only for the events the draft found. The run record keeps the events
 and whether a screen backed them up.
 
-Known limit: a dinner out photographed like an occasion (40 pictures in 3 bursts across town) is
-an event too. From counts, places and labels alone it looks exactly like one.
+A dinner out photographed like an occasion (40 pictures in 3 bursts across town) is an event too:
+from counts, places and labels alone, it looks exactly like one.
 
 **A birthday or a visit is its own story.** Two facts your household recorded take a day at home
 out of its week (`stories/occasions.py`, `take_out_occasions` in
@@ -135,8 +135,9 @@ remarkable seeds `minor`, maybe seeds `glimpse`, background gets `none`. Then th
 - **A big story** is raised to `major` too: one that is both dense (at least
   2.0 times the period's median
   photographed day, in pictures per day) **and** has enough close family (at least
-  0.3 of its pictures show a partner, child or parent). Density alone
-  never does it: a race day with no confirmed close-family members does not meet the people condition.
+  0.3 of its pictures show a partner, child or parent). Both are settings:
+  `advanced.editorial.big_story_density` and `big_story_family_share`. Density alone never does it:
+  a race day with no confirmed close family doesn't meet the people condition.
 - **Present** stories (remarkable, or holding a favourite, or close family) are floored at `minor`.
 - **A birthday, a visit or a one-leg trip** weighs at least `major` (`raise_kept_days`): what the
   household keeps outweighs the days around it.
@@ -190,7 +191,11 @@ moments) goes deeper, as deep as any other `major` story. A trip and a big famil
 they carry their own weight, so a birth-sized day next to smaller days of the same label keeps
 everything it had. The kinds found (`stories/same_kind.py`) are kept with the run record.
 
-**Every year gets a shot.** A person film with one date window longer than 548 days, a custom film over several date ranges, and an album with a written subject are split into calendar years. A person film with several windows has window partitions but no one-shot-per-window guarantee. Before any story takes a second shot, each year that holds a funded story gets one, from its first story in funding order. When no picture that story offered stands
+**Every year gets a shot.** A person film with one date window longer than 548 days (about 18
+months), a custom film over several date ranges, and an album with a written subject are split into
+calendar years. A person film with several windows is split by window, without the one-shot
+guarantee. Before any story takes a second shot, each year that holds a funded story gets one, from
+its first story in funding order. When no picture that story offered stands
 on its own, the year's next story gets the shot, and so on down the year. A year where none stands
 stays quiet, and the run record names the year and the stories that were tried
 (`quiet_partitions`). The passes that cut for length or taste keep a year's only shot: the favourite

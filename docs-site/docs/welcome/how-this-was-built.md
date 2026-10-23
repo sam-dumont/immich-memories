@@ -1,11 +1,11 @@
 ---
 title: How this was built
-description: Nine months of building Immich Memories, the experiments that failed, and why the product took its current shape.
+description: Ten months of building Immich Memories, the experiments that failed, and why the product took its current shape.
 ---
 
 # How this was built
 
-This is the project's history through release candidate 1.0.0-rc.8, in October 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
+This is the project's history up to the 1.0.0 release, in late October 2026. It includes retired tools, failed experiments and measurements from those versions. For the current product, start with [what it does](./introduction.mdx); for the current code, see [the architecture](../contribute/architecture.md).
 
 > "what was supposed to be a weekend project became a 9 month constant refactor but I’m getting where
 > I want"
@@ -136,7 +136,7 @@ scoring out:
 > "ANY PICTURE IN THIS SHOULD BE ABLE, IN ITSELF, TO BE ON THE MEMORY."
 
 I studied photography, and that is how a photographer edits: cull, group, pick, sequence. Selection
-became an edit ([#764](https://github.com/sam-dumont/immich-memories/issues/764)).
+became an edit.
 
 ## Training models, and throwing them away
 
@@ -244,8 +244,7 @@ the report explicit about what it didn't prove
 agents going over all 103 public pages, every CLI example checked
 against the real `--help` output, every config key checked against the actual schema, a disposable
 Postgres cluster used to test backup and restore for real. It came back with 256 findings, 5 of
-them release blockers, and landed as
-[#1812](https://github.com/sam-dumont/immich-memories/issues/1812): least-privilege API keys,
+them release blockers, and landed as one change: least-privilege API keys,
 forwarded-header rejection, session invalidation on sign-out, and a public-docs voice pass. The
 docs now say plainly the product assumes nothing about family shape. It was written by one
 household's worth of assumptions, and it needs people outside that household to say where it's
@@ -257,7 +256,7 @@ On October 3 I watched my own rendered films and found the selection right and t
 a bike race's finish line played only the empty road before the riders arrived, and a joke on a
 walk got cut mid-breath, dropping the punchline. Claude traced both to one commit three weeks
 earlier,
-[deleting the code](https://github.com/sam-dumont/immich-memories/pull/1953) that chose *where
+deleting the code that chose *where
 inside a clip* to start playing. The story-first rewrite had replaced the old scorer, and nothing
 called that code anymore, which was true and also missed the point: nobody had picked the job
 back up. The fix reads
@@ -269,7 +268,7 @@ window they're actually in frame. It shipped with a sibling fix for
 conversations that stayed intact unless a full second of quiet separated them.
 
 That evening I finally let the thing I'd been putting off actually run:
-[#1719](https://github.com/sam-dumont/immich-memories/issues/1719), 30 real requests rendered
+30 real free-text requests rendered
 through both the plain and the full selection tier, 60 outcomes, on one shared cache so the only
 variable was the tier. Codex ran it overnight and logged every defect rather than fixing anything
 live, exactly as asked. The worst one: a people filter that checked "are these people somewhere in
@@ -395,7 +394,36 @@ endpoints were already in the shipped examples. My deployment needed to use them
 docs needed to say so. The first automatic film after the upgrade uploaded successfully, with its
 public link and notification checked against the delivered file.
 
-## Nine months at a glance
+## From rc.10 to 1.0.0
+
+rc.9 and rc.10 went out on October 9 and 14. After rc.10 the rule changed: every known bug ships
+fixed in 1.0.0, and 1.0.1 is only for what slips through. That made the last nine days a cleanup
+pass, not a feature push.
+
+- **The cleanup itself.** `analysis/` was one flat folder of 229 modules, 146 of them named
+  `editorial_*`. On October 15 it became 18 packages, one per stage, each importing only the stages
+  below it, and 173 imports of another module's private names went to zero. The same day, sign-in
+  went on by default (a request naming `localhost` used to reach an open server on the LAN), the
+  four tier knobs became one `tier` setting, and the internal tuning keys left the documented config.
+- **Music.** The bundled tracks became a library fetched and pinned by checksum like the model
+  files, grew to 40 tracks, then to 76 after a blind listening batch of 76 takes rated per mood and
+  style. Generated music now comes only from the XL model: a host that can't hold it plays the
+  library instead of a worse model.
+- **Rendering.** Films render at 30 fps unless most of the footage is faster. On the render worker
+  and on a Mac, a clip now stays in GPU memory from decode through scaling and the blur fill, and
+  tone mapping, transitions and photo moves run there too.
+- **People.** Immich retires a person's id when you merge two records of them. Every film naming
+  that person then came back "nothing worth a film", and the next scan gave them a second entry. The
+  app now follows them to the new id by itself, and the family tree suggests the relationships it
+  implies.
+- **Models going away.** With the reader's host switched off, a film ended 23 minutes into
+  selection on a connection error. Now the run gives up on a reader once, says so in one line, and
+  ships the rules draft: the same film a NAS without a model makes.
+
+The last change was for my own cluster: a film asked for by hand through the trigger now skips the
+daily cooldown and no longer pushes back the scheduled one.
+
+## Ten months at a glance
 
 | Period | What changed |
 |---|---|
@@ -408,6 +436,7 @@ public link and notification checked against the delivered file.
 | Late September - early October 2026 | Launch triage, a real-hardware control gate, a render-speed pass and a 256-finding docs audit, then a strict people filter and a restored in-clip cut. |
 | Early October 2026 | A feature-by-feature check of everything the docs advertise, a finger-over-lens warning trained only on public photos, and a rewrite of these docs: **1.0.0-rc.1**. |
 | October 7–9, 2026 | Five routes on the frozen rc.8 source, a clapper test for accumulated audio drift, public delivery links and a production upgrade. |
+| October 9–23, 2026 | rc.9 and rc.10, then the 1.0.0 cleanup: sign-in on by default, one tier setting, a music library pinned like the models, frames kept on the GPU, faces that follow Immich's merges, and runs that finish when a model goes away. |
 
 ## See what sticks, then cut
 

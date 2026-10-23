@@ -87,7 +87,8 @@ the film that comes back asks for the same music (same scenes, moods and cadence
 longer than the take; otherwise it makes the music again. Stems are separated after the film is
 back, because the separator often runs on the worker's GPU. A take that fails while the worker
 renders is made once more after the film is back. On a three-minute film with an XL server on
-another machine, the whole render went from 372 to 428 seconds down to 284 to 340.
+another machine and an NVENC worker, the run's wall time went from 376 to 433 seconds down to 289
+to 345 ([numbers](./measured.md#gpu-render-path)).
 
 The app only overlaps them when they can't fight over one card:
 

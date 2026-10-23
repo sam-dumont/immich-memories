@@ -7,18 +7,16 @@ import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
 
 # Apple Silicon with local services
 
-Run natively to use the Mac's Metal GPU. This setup keeps the app, captions and text reader on one
-Mac; Immich can live elsewhere on your network. For a packaged install without local music
+Run natively to use the Mac's GPU: Metal for preparation, titles and photo moves, VideoToolbox for
+decode and encode. The app, captions and the text reader stay on one Mac; Immich can live
+elsewhere on your network. For a packaged install without local music
 generation, use the [Python install](../uv-pip.md).
 
 <DeploymentDiagram topology="mac" />
 
 <Diagram name="deploy-mac" headline="On a Mac the app and captions run natively. Add a reader, music or a daily timer when needed." />
-This path works on Apple Silicon with Metal and VideoToolbox; see
-[measured examples](../../better/measured.md#cold-start-time-by-hardware-and-tier) for real numbers. That check
-didn't activate the reader or generate music; the Full and optional music steps below need their
-own configuration checks.
-
+Timings for this path, on Metal and VideoToolbox, are in the
+[measured examples](../../better/measured.md#cold-start-time-by-hardware-and-tier).
 
 ## Install the app
 
@@ -52,9 +50,9 @@ the [requirements page](../requirements.md) covers memory and supported platform
 Set your Immich connection in Settings or a [small config file](../config-file.md#quick-start-config).
 Keep the normal `tier: auto` setting. Start the
 [local caption server](../../reference/caption-service.md#apple-silicon-with-llamacpp) in another
-terminal, using its pinned model and `smolvlm2-500m-base-public` alias. The llama.cpp recipe used
-less resident memory on the 16 GiB M2 smoke host. An existing mlxcel service is a separate process;
-stop it when replacing it, otherwise both models remain loaded. For an app on this same Mac,
+terminal, using its pinned model and `smolvlm2-500m-base-public` alias. The llama.cpp recipe
+holds less resident memory than an mlxcel service; if you already run one, stop it, or both models
+stay loaded. For an app on this same Mac,
 bind the caption server to `127.0.0.1`.
 
 ## Connect captions and the reader

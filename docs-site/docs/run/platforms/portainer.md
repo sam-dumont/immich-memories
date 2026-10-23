@@ -12,7 +12,9 @@ import StackAccess from './_stack-access.mdx';
 
 Use a **Docker Standalone** environment in Portainer. This recipe runs the app on that Docker host, which may be a different machine from the Portainer server. The interface steps follow [Portainer's stack documentation](https://docs.portainer.io/user/docker/stacks/add).
 
-Portainer CE on Docker Standalone has been checked on an Apple Silicon host: Web editor deployment, app readiness and the Console commands below. A remote NAS and a published-release download have not. [Tested deployments](../tested-deployments.md) covers the other platforms.
+This recipe was run with Portainer CE on Docker Standalone on an Apple Silicon host (Web editor
+deploy, app readiness, the Console commands below), not on a remote NAS.
+[Tested deployments](../tested-deployments.md) covers the other platforms.
 
 ## 1. Create the stack
 
@@ -37,8 +39,9 @@ Set film language after startup in [Settings](../../get-started/after-install.md
 
 ## 3. Open the app and download models {#3-prepare-and-check}
 
-Open <code><ComposePort host="your-server-address" /></code> (use your chosen host port) and sign in with the app
-username and password you just set. If you chose private localhost access, use its forwarded URL.
+Open <code><ComposePort host="your-server-address" /></code> (or your chosen host port) and sign in with the
+login you set, or with the generated password from the container's **Logs**. With private
+localhost access, use the forwarded URL instead.
 
 On **Memory**, click **Download models** and wait for it to finish. The card lists the files and
 download hosts; it disappears when the required files are ready. If it is absent and no error is

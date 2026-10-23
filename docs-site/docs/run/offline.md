@@ -189,6 +189,8 @@ possible recipient. A successful first film and a denied unrelated destination c
 the app container/pod are separate evidence.
 
 Leave hosted readers, image-caption opt-ins, geocoding, map tiles, notifications, generated
-music and remote render workers off. LAN readers/captioners/inference can be deliberate
+music, remote render workers and the daily update check (`updates.check_daily`) off. The example
+doesn't pin that last one: it is off by default, and **Check for updates** in Settings only
+reports that GitHub is out of reach. LAN readers/captioners/inference can be deliberate
 exceptions once their weights are seeded and their own egress is restricted. Open only
 those destinations; do not open every host on port 443 to make a warning disappear.

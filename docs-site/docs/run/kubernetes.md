@@ -14,7 +14,7 @@ For Terraform-managed resources, use the [Terraform module](./terraform.md).
 ## Prerequisites
 
 - Immich reachable from the cluster, with a [scoped API key](./docker.md#the-api-key).
-- A default storage class for three ReadWriteOnce volumes: 30 GiB data/cache, 50 GiB output and
+- A default storage class for three ReadWriteOnce volumes: 60 GiB data/cache, 50 GiB output and
   5 GiB models. Use local/block storage for the SQLite data volume, not NFS/SMB. Check the
   storage class's reclaim policy before installation.
 - Capacity for the app: it requests 1 CPU / 2 GiB and has a limit of 4 CPUs / 8 GiB.

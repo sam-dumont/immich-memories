@@ -4,7 +4,7 @@ title: Testing Guide
 
 # Testing guide
 
-Start with unit tests, then run the checks for the boundaries your change touches: optional backends, real Immich, the store or the browser. `make help` lists common suites; the Makefile contains all per-suite targets.
+Start with unit tests, then run the checks for the boundaries your change touches: optional backends, real Immich, the store or the browser. `make help` lists the common suites; the Makefile has every per-suite target.
 
 | Tier | Command | What it needs |
 |------|---------|---------------|
@@ -38,7 +38,9 @@ Every worker builds its own sealed home, store and fake services, and tests run 
 the scheduler picks. So a test owns the state it asserts on: no counting uploads, runs or log lines
 that an earlier test may have left, no module global left changed, no `patch.dict(sys.modules, ...)`
 (it drops every module first imported inside it; use `monkeypatch.setitem`). A test that only passes
-after another one is a bug in that test, never a reason to run it in series.
+after another one is a bug in that test, never a reason to run it in series. A sealed test that opens a file under
+`~/.immich-memories` or `~/.config/immich-memories` fails: an audit hook in `tests/conftest.py`
+watches every `open`.
 Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). The Makefile lists the per-suite targets. Three suites are outside `make test-integration`: `cli`, which
 re-runs the pipeline `pipeline` already covers and is the slowest in the tree; `audio`, which wants
 the demucs and ACE-Step packages; and `automation`, which has no dedicated make target. For that
@@ -114,13 +116,13 @@ does, on Immich 2.7, 3.2 and 3.3 when the change scope calls for it (see [CI](./
    `tests/integration/immich_gate/docker-compose.yml`. Every image is pinned by digest, there is no
    machine-learning container, and Postgres and the uploads live on tmpfs, so `make immich-gate-down`
    leaves no volume behind.
-2. `seed.py` signs up an admin, uploads the July 2025 fixture month (1,119 pictures and 7 clips,
+2. `seed.py` signs up an admin, uploads the July 2025 fixture month (1,124 pictures and 7 clips,
    with EXIF camera, capture time and offset), places the ones whose file holds GPS, draws the
-   face boxes the fixture pins to its four made-up people by hand,
+   face boxes the fixture pins to its eleven made-up people by hand,
    files the story albums, and adds 1,010 tiny pictures in one album so reads have to go past
    Immich's 1,000-item search page. Then it writes a rules-tier config under `.immich-gate/`.
-   There is no hosted reader or music API, but local detector models and WordNet still need
-   download/cache preparation; this is not a guarantee of no model or network use.
+   No hosted reader or music API is configured. The local detector models and WordNet are still
+   downloaded or read from the cache, so the gate does use models and the network.
 3. The tests in `tests/integration/immich_gate/` run with `REQUIRE_IMMICH=1`, which turns
    `requires_immich` and `make_immich_client()` from a skip into a failure.
 
@@ -144,8 +146,8 @@ service would not survive the workflow's Docker daemon restart), unless
 `IMMICH_GATE_DATABASE_URL` names a server. The runs get the store through `IMMICH_MEMORIES_DATABASE_URL`, the same variable a
 deployment uses.
 
-The gate is deliberately small and stable. Wider real-Immich coverage stays in the other
-integration folders. `IMMICH_GATE_KEEP=1` leaves the stack running after the tests; a failed run
+The gate stays small and stable. Wider real-Immich coverage lives in the other integration
+folders. `IMMICH_GATE_KEEP=1` leaves the stack running after the tests; a failed run
 writes the server logs to `.immich-gate/immich-<version>.log` (CI uploads them as an artifact).
 
 In CI the pinned images come from the Actions cache, not the registries: one `docker save` tarball per

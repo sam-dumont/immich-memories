@@ -6,9 +6,9 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # A second Immich account
 
-Combine people pictures from two Immich accounts in one film. By default, the app reads only your primary
-account. Connect a second account and explicitly select both when making a people film.
-The primary remains the only upload destination.
+Combine people pictures from two Immich accounts in one film. The app reads only your primary
+account until you connect a second one and select both when making a people film. Films still
+upload to the primary only.
 
 ## What you need
 
@@ -16,8 +16,9 @@ The primary remains the only upload destination.
 - Named faces, connected through native identities or explicit account bindings.
 - Your primary account already connected and [family set up](../get-started/who-is-who.md).
 
-The example calls the second account `partner`; it can belong to another household member and the label does not assign a relationship. Extra accounts are configured in YAML or environment variables. Settings shows the primary
-connection only. The second account can be on another Immich server.
+The examples call the second account `partner`; it can belong to any household member, and the
+label sets no relationship. Extra accounts live in YAML or environment variables (Settings shows
+the primary connection only), and can be on another Immich server.
 
 ## The steps
 
@@ -65,8 +66,7 @@ Configuring the account alone does not change a film's source scope.
 
 ## Native person identities
 
-Native identity support is optional. It keeps both owner keys and the same library merge:
-Immich hides a partner's favourite flag from the recipient, and timeline settings change
+Native identities are optional. They keep both owner keys and the same library merge, because Immich hides a partner's favourite flag from the recipient, and timeline settings change
 which partner assets appear in search. Owner reads keep both signals complete.
 
 ```yaml
@@ -128,7 +128,7 @@ A linked person shows by name, with **Open in Immich** (it uses `immich.public_u
 
 <ThemedScreenshot name="people-accounts-bind" alt="Person settings with a partner-account person linked by name" />
 
-Face matching between the two accounts is not part of this. It would mean comparing both libraries' face data, which is a separate pipeline step. For now a person is linked because you picked them.
+Linking is manual: the app does not compare faces across the two libraries.
 
 The same thing from the terminal needs the partner's id, from the `/people/<id>` part of the URL when the other owner opens that person in Immich:
 

@@ -6,7 +6,9 @@ title: Add a text reader
 
 Installing Full from scratch? Select its tab in [Quick start](../get-started/quick-start.md), or use [native Mac](../run/uv-pip.md#apple-silicon). This page sets up the reader those routes need.
 
-A reader names special days (and trips with `--llm-title`) and picks the music mood on any tier. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title. On Full it also writes the film's short summary. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
+A reader picks the music mood on any tier. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
+
+Model-written titles and summaries are experimental and off by default. Turn them on with `title_screens.llm_titles: true` (or `--llm-title` for one run) and the reader names special days and writes the film's short summary. Years, months, seasons, people, birthdays, holidays and "on this day" films always keep the app's own title.
 
 Use a model with a 32k context and valid structured replies. The app can run its local default, or call an API server you already use.
 
@@ -88,10 +90,10 @@ immich-memories preflight
 immich-memories capabilities
 ```
 
-These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. GPU capability includes a remote inference service, a working local CUDA ONNX runtime, or a Mac's Metal GPU. Without these, selection remains Basic and the reader can still name special days and albums and pick the music mood. GPU and Full also require captions and Laya.
+These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. GPU capability includes a remote inference service, a working local CUDA ONNX runtime, or a Mac's Metal GPU. Without these, selection stays Basic and the reader still picks the music mood. GPU and Full also require captions and Laya.
 
-Review the result. A failed refinement can leave the rules draft and reports that refinement did not run. [Laya](../reference/llm-providers.md#the-laya-audience-pre-screen) handles caption-based sharing separately; sharing never asks the prose reader.
+Review the result. When the reader stops answering (host down, connection refused, timeouts), the run says so once and the film ships the rules draft. A rejected API key or a missing model stops the run instead. [Laya](../reference/llm-providers.md#the-laya-audience-pre-screen) handles caption-based sharing separately; sharing never asks the prose reader.
 
-One `advanced.llm` section supplies titles, the selection reader, music mood, special days and optional LLM captions. Add `enabled: true` and keep title settings in `advanced.llm`.
+One `advanced.llm` section configures the reader for every role: selection, music mood, titles and summaries, and optional LLM captions.
 
 Image captioning with the reader is a separate [opt-in](./captions.md#explicit-llm-captions). That role sends pictures and needs a vision-capable model.

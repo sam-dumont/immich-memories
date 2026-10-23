@@ -22,7 +22,7 @@ with diagram(STEM, nodesep="0.3", ranksep="0.4"):
             {
                 "q": "Cooldown<br/>still active?",
                 "icon": icon("mdi:timer-sand", "neutral"),
-                "sub": "24 h by default;<br/>pending uploads retried first",
+                "sub": "24 h by default, skipped when forced;<br/>pending uploads retried first",
                 "exit": ("skipped", SKIP, "cooldown active", "neutral"),
             },
             {

@@ -8,7 +8,8 @@ Start with preflight when a film fails. Health endpoints are for monitoring the 
 
 ## Preflight
 
-The endpoints answer "is the web process up". `preflight` answers "will a film work on this box":
+The health endpoints say whether the web process is up. `preflight` says whether a film will work
+on this machine:
 
 ```bash
 immich-memories preflight        # one row per check: OK, WARNING, ERROR or SKIPPED
@@ -27,7 +28,6 @@ enabled geocoding and map destinations, not every outside endpoint ([Privacy](..
 A warning names what is missing and the cut still runs
 without it, for example `Music (ACE-Step)` falling back to a bundled track. Any error exits 1, so a
 script or a setup step can stop on it. Run it after an install, an upgrade or a config change.
-
 
 The reader check waits up to 10 seconds per HTTP operation. If a connected reader times out while
 sending its answer, its row says **Reader is slow to answer**; retry once the server is idle. This
@@ -85,7 +85,9 @@ are present as `null`:
 
 `INFO` by default. `immich-memories -v generate …` logs at `DEBUG`; `--log-level WARNING` keeps
 warnings and errors. Both are root options, so they go before the subcommand and work for `ui` too.
-In a container, set `IMMICH_MEMORIES_LOG_LEVEL=DEBUG`. `generate --quiet` changes terminal presentation. `auto run --quiet` disables logging entirely during the run and prints one JSON result line; stale-code warnings can still go directly to stderr. The generation child’s captured output remains available in the private attempt log.
+In a container, set `IMMICH_MEMORIES_LOG_LEVEL=DEBUG`. `generate --quiet` only changes what the
+terminal shows. `auto run --quiet` turns logging off for the run and prints one JSON result line;
+the generation's own output is still kept in the private attempt log.
 
 Lines look like `2025-12-15 10:30:00,123 [INFO] immich_memories.generate [abc123]: Assembling final
 video...`: the bracketed run id ties one run's lines together (`-` outside a run).
@@ -110,7 +112,7 @@ fetch detectors and Laya. An enabled app-owned local reader also fetches its pin
 `--detectors` fetches detectors even on Basic. `--no-detectors` skips them, but does not make a
 GPU/Full cut work without required models.
 
-## Find the run's output
+## Where a run's output goes
 
 Docker:
 
@@ -136,29 +138,10 @@ Selection attempts record model calls, cache hits and token counts in `llm-usage
 
 ## Caches
 
-[Storage and backups](./storage-backups.md#caches) covers disk growth and safe cleanup.
-
-### Clearing
-
-[Clear only disposable caches](./storage-backups.md#clearing), while idle.
-
-### Moving an install
-
-[Move config, keys and the store](./storage-backups.md#moving-an-install).
-
-### What a second cut asks again
-
-Compatible facts are reused. New inputs or changed producers may need preparation again.
-[Detector versions](../reference/detector-facts.md) explain reuse and refresh.
-
-### The facts a cut measures
-
-[Selection internals](../../reference/selection-internals/pixel-evidence.md) describe banked measurements.
-
-### The preview cache scales with your library
-
-[Preview sizing](./storage-backups.md#caches).
-
-### Video cache mechanics
-
-Downloaded files are checked before reuse; incomplete downloads are not treated as valid hits.
+- Disk growth, sizing and safe cleanup: [Storage and backups](./storage-backups.md#caches), and
+  [clear only disposable caches](./storage-backups.md#clearing), while idle.
+- Moving an install: [config, keys and the store](./storage-backups.md#moving-an-install).
+- What a second cut reuses: compatible facts are reused, and new inputs or changed producers are
+  prepared again ([detector versions](../reference/detector-facts.md)).
+- The facts a cut measures: [selection internals](../../reference/selection-internals/pixel-evidence.md).
+- Downloaded video files are checked before reuse; an incomplete download is never a cache hit.

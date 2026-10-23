@@ -34,9 +34,9 @@ the instance, `database_schema` (default `immich_memories`).
 IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@postgres:5432/immich_memories
 ```
 
-Plain PostgreSQL 14+. No extensions, no `vchord`, no pgvector: every vector comparison in this app
-is exact numpy over a small candidate set (one film, one story, a 14-day window), so there is no
-extension to install and no extension to keep in step with an upstream image.
+Plain PostgreSQL (the overlay and the tests use 16), with no extensions: no `vchord`, no
+pgvector. Every vector comparison in this app is exact numpy over a small candidate set (one film,
+one story, a 14-day window), so there is nothing to install or keep in step with an upstream image.
 
 ## A separate database on your existing PostgreSQL instance {#3-a-separate-database-on-your-existing-postgresql-instance}
 
@@ -59,9 +59,8 @@ CREATE ROLE immich_memories WITH LOGIN PASSWORD 'change-me';
 CREATE DATABASE immich_memories OWNER immich_memories;
 ```
 
-Nothing here reads or writes Immich's own database. This mode exists for hosts that already pay
-for one PostgreSQL instance and want a second logical database on it rather than a second
-container.
+Nothing here reads or writes Immich's own database: it is a second logical database on an
+instance you already run, instead of a second container.
 
 ## A dedicated schema in Immich's own database {#4-a-dedicated-schema-in-immichs-own-database}
 
@@ -88,7 +87,7 @@ GRANT CREATE ON DATABASE immich TO immich_memories;
 Execute those statements separately. The database `CREATE` privilege lets restore recreate the
 store schema after dropping it; it also permits creating other schemas in this shared database.
 Restore checks this privilege before changing the existing store and refuses if it is missing.
-Use mode 3 if that grant is too broad for your deployment. There is no `GRANT` on `public`, no
+If that grant is too broad for you, use [a separate database](#3-a-separate-database-on-your-existing-postgresql-instance) instead. There is no `GRANT` on `public`, no
 grant on any Immich table, no cross-schema foreign key, no search-path change on Immich's own
 role. Alembic's version table (`alembic_version`) lives inside `immich_memories`, and autogenerate
 is scoped to this app's own `MetaData`, so a migration here never touches Immich's tables and an

@@ -6,9 +6,9 @@ import Video from '@site/src/components/Video';
 
 # Film types and length rules
 
-Ten types. Most are a date range with a filter on it. Trip, album, holiday and special day are not,
-and those are the ones worth reading about. Every type works on a plain NAS: the default
-install uses Immich metadata and the locally prepared picture facts (dates, places, faces, favourites and context heads).
+Ten types. Most are a date range with a filter on it; trip, album, holiday and special day aren't, and
+those are the ones worth reading about. Every type works on a plain NAS from Immich's metadata and the
+picture facts prepared locally (dates, places, faces, favourites and context heads).
 
 | Type | Covers | Target | Needs |
 |---|---|---|---|
@@ -27,19 +27,17 @@ Every type except a trip, an album and a special day opens on a title the app wr
 the film is and when: "Kit · July 2025", "Christmas · 2019–2025", "October 14 · 2012–2025". See
 [where the title came from](output-rendering.md#where-the-title-came-from).
 
-Two setup steps make every type better, not only trips: a home base, so the editor can tell a week
-away from a week at home, and who's who, so it knows which people to prioritise. Set them in [Home and people](../get-started/who-is-who.md).
+Two setup steps make every type better: a home base, so the editor can tell a week away from a week at
+home, and who's who, so it knows which people come first. Set both in [Home and people](../get-started/who-is-who.md).
 
 ## How long a film runs
 
 <Diagram name="decide-length" headline="A film is as long as its distinct shots can carry. It's never padded." />
-The target is where the length starts, not a promise. A film never runs longer than the distinct
-shots its days hold: a video counts once its window clears every one already kept, a photo or
-Live Photo counts once it's five real minutes from every frame already kept in its moment, and a
-pile of near-identical frames counts as one shot, not many. A dense day can supply well past the
-old flat 30 s cap; a thin day still supplies much less. The preset target and the available
-material both limit the cut. It goes short rather than padding. The run record says what set the
-length:
+The target is where the length starts. A film never runs longer than the distinct shots its days
+hold: a video counts once its window clears every one already kept, a photo or Live Photo counts once
+it's five real minutes from every frame already kept in its moment, and a pile of near-identical frames
+counts as one shot. A dense day supplies a lot, a thin day much less. The film goes short rather than
+padding. The run record says what set the length:
 
 | What set it | When |
 |---|---|
@@ -49,10 +47,10 @@ length:
 | the preset floor | neither flag, and the period holds nothing to measure |
 
 A trip and an album count active days: 30 s plus 10 s a day, held between 60 s and 5 min. A special
-day runs as long as its distinct shots allow, up to 3 min: a rich day is a full short film, a thin
-one stays short, and never fewer than 30 s of pictures on top of its title and ending. Twelve
-one-minute months do not make a twelve-minute year: the year has its own ten-minute target. How the editor spends
-those seconds is in [Length, quiet weeks and filler](../how-it-chooses/length-and-filler.md).
+day runs as long as its distinct shots allow, up to 3 min, with at least 30 s of pictures on top of
+its title and ending. Twelve one-minute months don't make a twelve-minute year: the year has its own
+ten-minute target. How the editor spends those seconds is in
+[Length, quiet weeks and filler](../how-it-chooses/length-and-filler.md).
 
 ## Filtering by people
 
@@ -80,7 +78,7 @@ immich-memories generate --memory-type year_in_review --year 2025
 
 The editor groups the year into stories (a trip, a birthday, a run of ordinary weeks), weighs them
 against each other and gives each the shots its weight earns. [From library to film](../how-it-chooses/overview.md)
-has the rules. A thin year will not reach 10 minutes and the cut says how far short it landed.
+has the rules. A thin year won't reach 10 minutes, and the cut says how far short it landed.
 
 Each month is checked afterwards: a month with worthy material that ends up silent makes the run's
 verdict `coverage_incomplete`. Nothing reserves a slot per month up front. If everything you have is
@@ -347,8 +345,8 @@ titled after the album and named `album_<slug>_<hash>.mp4` unless `--output` nam
 candidates and their IDs; the web UI lists albums largest first and stores the choice by ID.
 
 Smart albums like *Recents* can hold tens of thousands of assets. Album mode reads at most
-10,000 assets per media type, newest first, and says so. Past that you
-probably want a date range.
+10,000 per media type, newest first, and says so. Past that,
+you probably want a date range.
 
 ### An album made for one subject
 
@@ -367,8 +365,8 @@ each shot that got in on the subject alone ([Picking each shot](selection-intern
 
 ## Special day
 
-The nine types above cover something you named. A special day is one you did not: a day from your
-own library that a scan flagged, wrote down, and offers back when its anniversary comes round.
+The nine types above cover something you named. A special day is one you didn't: a day from your
+library that a scan flagged, wrote down and offers back when its anniversary comes round.
 `--day` is required. When the catalogue holds several events on that day, also pass `--event-id`
 with the event's ID from `days-export`. An ID that does not match an event on the chosen day is refused.
 
@@ -393,8 +391,8 @@ than 48 hours is not one occasion. `window_origin` in the run record says what b
 Three routes bring a day back: `auto run` offers anniversaries within 3 days (round ones first, a
 decade before a seventh), the **Special day** type on the Memory page offers the whole catalogue, and
 `generate --day` takes any day, catalogued or not. An uncatalogued day is scoped to itself and named
-by `--title`, else by a model from the day's facts, else after its place ("A day in Lisbon") with
-the date under it.
+by `--title`, else by a model from the day's facts when model titles are on (below), else after its
+place ("A day in Lisbon") with the date under it.
 
 Catalogue titles name real people and places, so they never reach the command line: automation
 passes `--day` alone and `generate` re-reads the title. What automation prints is the evidence:
@@ -408,13 +406,15 @@ via special-days catalogue
 
 A text model adds three things here, and changes nothing else about the types:
 
-- `discover-days` first reads each month's days together, then checks each proposed occasion
-  against that day's own picture descriptions. Both readings must agree it was an occasion;
-  a title alone does not qualify it. No picture is sent. Confirmed occasions need enough varied
-  material for a film, with no six-per-year cap. Unread days remain marked for retry. Use
-  `discover-days --rescan` to recheck catalogue entries.
-- A special day gets a title written from its facts, catalogued or not. The reader invents no
-  event name the facts do not carry. Years, months, seasons, people, birthdays, holidays and "on
+- `discover-days` reads each month's days together, then checks each proposed occasion against
+  that day's own picture descriptions. Both readings must agree it was an occasion; a title alone
+  doesn't qualify it. No picture is sent. Confirmed occasions need enough varied material for a
+  film, and the six-a-year cap doesn't apply. Unread days stay marked for a retry.
+  `discover-days --rescan` rebuilds the catalogue; `--replace` redoes only the years between
+  `--since` and `--until`.
+- With the experimental `title_screens.llm_titles` on (off by default) or `--llm-title`, a special
+  day gets a title written from its facts, catalogued or not. The reader invents no event name the
+  facts don't carry. Years, months, seasons, people, birthdays, holidays and "on
   this day" keep the app's own title ("Summer 2025", "Kit & Pat · 2025"); no model writes those.
 - A month or year gets a light polish on top of the Basic draft. What that polish does and costs
   is on [What a model adds](../how-it-chooses/what-a-model-adds.md) and

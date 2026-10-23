@@ -4,9 +4,9 @@ title: Benchmarking your own setup
 
 # Benchmarking your own setup
 
-A service benchmark is not a whole-film benchmark. Record the release, hardware, resolved tier
-and cache state before comparing runs. For the project's own numbers, see
-[Measure your setup](../better/measured.md). Current deployment choices are in
+A fast service doesn't make a fast film. Before comparing two runs, write down the release, the
+hardware, the resolved tier and whether the facts were already banked. The project's own numbers
+are on [Measure your setup](../better/measured.md); what to deploy is on
 [Requirements](../run/requirements.md) and [Optional upgrades](../better/overview.md).
 
 ## Keep four measurements separate
@@ -18,23 +18,32 @@ and cache state before comparing runs. For the project's own numbers, see
 | Rendering | Source media, output dimensions, frame rate, codec, encoder and title backend |
 | Music | Bundled or generated track, generator model, stem separation and fallback |
 
-Make the same cut twice to distinguish first-run acquisition from reused work:
+Make the same cut twice to separate first-run preparation from reused facts:
 
 ```bash
 immich-memories runs show RUN_ID
 immich-memories report RUN_ID
 ```
 
-Compare the same saved cut with the same output settings. Record failures and fallback routes rather than counting them as successful accelerated runs. The [measured examples](../better/measured.md#longer-films-memory-and-duration) show whole-run timings and memory scopes by release and hardware.
+Compare the same saved cut with the same output settings. A run that fell back to the CPU or to
+a bundled track is not an accelerated run: record the fallback. The
+[measured examples](../better/measured.md#longer-films-memory-and-duration) show whole-run
+timings and memory by release and hardware.
 
 ## Memory
 
-Measure the app and each service separately. Process RAM does not establish GPU memory use, and a reachable CUDA service does not prove that every producer ran on CUDA. Use the service's health response to inspect its loaded providers; use container statistics and your GPU's monitoring tools for memory.
+Measure the app and each service separately. Process RAM says nothing about GPU memory, and a
+reachable CUDA service doesn't prove every producer ran on CUDA: read the providers in the
+service's `/health`, and use container statistics and your GPU's own tools for memory.
 
-The unified GPU worker admits one phase at a time and releases model resources between phases. This changes residency, so measurements from separate always-resident services do not establish its memory requirement.
+The unified GPU worker runs one phase at a time and unloads models between phases, so numbers from
+separate, always-loaded services don't tell you what it needs.
 
 ## Cost and quality
 
-Use the provider's reported input, cached-input and output tokens with the prices applicable to your account. Include retries, failed requests and incomplete usage reports. A local reader has hardware and electricity costs even without an API bill.
+Price the provider's reported input, cached-input and output tokens at your account's rates,
+retries and failed requests included; a run with missing usage gives only a floor. A local reader
+has no bill, but it does have hardware and electricity.
 
-Watch the finished film before choosing an upgrade. Correct JSON, a passing API probe and a fast model do not establish that its edit is the one you prefer.
+Watch the finished film before choosing an upgrade. Valid JSON, a passing probe and a fast model
+don't mean you'll prefer its edit.

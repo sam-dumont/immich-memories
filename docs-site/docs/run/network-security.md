@@ -70,7 +70,7 @@ A `POST`, `PUT`, `PATCH` or `DELETE` under `/api` or `/auth` that a browser send
 site is refused with **403**, with auth on or off. The browser's `Sec-Fetch-Site` header decides
 when it is present; otherwise an `Origin` that differs from the request's host is refused.
 Calls without either header (curl, CronJobs, the CLI) pass, so `POST /api/trigger` with its token
-works as before.
+still works.
 
 Every HTTP request accepts a body up to 4 MiB, including reads and sign-in pages. Larger requests
 receive **413 Content Too Large**, including streamed requests without a content length.
@@ -308,12 +308,9 @@ render without arriving in one lump at the end. An unrelated browser origin must
 403 for writes; do not fix that refusal by stripping headers. Check that
 `docker compose port immich-memories 8080` reports no published port.
 
-Caddy, Nginx Proxy Manager and Traefik are verified against the real app: TLS, Basic login with
-a Secure session cookie, authenticated Settings reads and saves, foreign-Origin rejection (403),
-logout, an unpublished app port, and incremental SSE delivery through the proxy rather than
-progress arriving in one lump. See the [deployment matrix](./tested-deployments.md) for exact
-versions tested. OIDC, header authentication, public ACME issuance and physical NAS installs
-still need host validation on your own setup.
+The Caddy, Nginx Proxy Manager and Traefik recipes were run against the real app with exactly
+these checks; [tested deployments](./tested-deployments.md) lists the versions. With OIDC, header
+authentication or a public ACME certificate, run the same checks on your own setup.
 
 These recipes use the standard public HTTPS port **443**. NPM's generated `Host` header drops
 a nonstandard public port: a browser Origin such as `https://memories.example.com:8443` can
@@ -334,8 +331,9 @@ If you try one, [report your proxy version, host platform and the checks that pa
 | App to another reader | Its configured port, often 8000/9999 | That reader |
 | App to render worker | 8093 standalone; 8092 with `/render` in the unified worker | Remote rendering |
 | DNS / HTTPS downloads | 53 / 443 | Name resolution / explicit setup downloads |
+| App to `api.github.com` | 443 | Update check: when you ask, or daily with `updates.check_daily` (off by default) |
 
-Other music/map/notification endpoints use their configured ports.
+Other music, map and notification endpoints use their configured ports.
 [Exact payloads and destinations](./reference/privacy-egress.md).
 The Kubernetes base allows ports, not hosts. Custom reader/worker ports require a policy patch;
 [PostgreSQL needs the 5432 patch](./reference/kubernetes.md#postgresql-network-policy).
@@ -366,8 +364,8 @@ file it overwrites, or the host that receives your Immich keys. These keys are r
 - `editorial.preparation.detector_python`, `editorial.preparation.detector_cache_dir`,
   `editorial.preparation.marqo_onnx`.
 
-The settings API refuses them. A value saved from the UI by an older release is ignored at
-startup with a warning; move it to `config.yaml` or the environment.
+The settings API refuses them. A value already saved in the store is ignored at startup with a
+warning; move it to `config.yaml` or the environment.
 
 
 ## Configured service addresses

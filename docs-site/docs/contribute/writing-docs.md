@@ -97,7 +97,9 @@ Markdown.
 
 ## Gates
 
-`make docs-voice`, `make docs-build`, `make docs-cli-check`, `make docs-config-check`.
+`make docs-voice`, `make docs-commands`, `make docs-build`, `make docs-cli-check`,
+`make docs-config-check`, and `make docs-diagrams-check` when a diagram changed. The pre-commit
+hook runs the ones a staged file feeds ([CI and quality gates](./ci.md#the-pre-commit-hook)).
 
 ## Publish docs without an app release
 

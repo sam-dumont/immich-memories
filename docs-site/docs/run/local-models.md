@@ -6,18 +6,19 @@ title: Basic with a local text model
 
 This reference adds **Ollama 0.35.1**, model **`gemma4:e4b-it-q4_K_M`**, to the prebuilt Basic
 app. It supplies a reader: a **text model (LLM)** configured under `advanced.llm`.
-It names special days (trips too with `--llm-title`) and picks the music mood. Year, month, season, person,
-couple, birthday, holiday and on-this-day films keep the app's own title and never ask it.
-It does **not** add GPU selection, Full or vision captions.
-Full additionally needs GPU inference, the caption service and Laya.
+It picks the music mood and, with the experimental `--llm-title` (off by default), names
+special days and trips. Selection stays on the rules: only Full reads with a model. Year, month, season,
+person, couple, birthday, holiday and on-this-day films always keep the app's own title.
+It does **not** add GPU selection or vision captions: Full also needs GPU inference, the
+caption service and Laya.
 
 The published Docker image has no `llama-server`: Docker and Kubernetes require an external
 text-model server. Native Linux/macOS can instead run the [app-owned llama.cpp reader](../better/reader.md),
 which is a different model/runtime recipe. External services own their memory and shutdown.
 
 This exact model has [recorded conformance results](../better/measured.md#local-reader-time-and-accuracy):
-validated for text use, with motion interpretation as a known weak spot, not a strength.
-[Other providers and their failures](../reference/llm-providers.md) are tracked separately.
+it passes for text use and is weak at reading motion.
+[Other providers](../reference/llm-providers.md) have their own results.
 
 ## Prepare the two services
 
@@ -86,12 +87,12 @@ docker compose exec immich-memories immich-memories preflight
 docker compose exec immich-memories immich-memories capabilities
 ```
 
-Expect Basic selection and an enabled Ollama reader. A model name alone does not establish
-readiness: fix failed reader connectivity first. Keep bundled music, local output and the
-[20-50-item trial](../get-started/first-film.mdx). Reader failure falls back to rules and
-default wording rather than stopping the run; `preflight` reports it
+Expect Basic selection and an enabled Ollama reader. A model name alone proves nothing: fix a
+failed reader connection first. Keep bundled music, local output and the
+[20-50-item trial](../get-started/first-film.mdx). A reader that can't be reached, or stops
+answering mid-run, leaves the film to the rules and default wording instead of stopping it; `preflight` reports it
 (`LLM  WARNING  Cannot connect`, exit 0), and the run log carries one line:
-`Reader unreachable at <host> (<error>); falling back to rules and default wording`. Check for
+`Reader unreachable at <host> (<error type>: <error>); falling back to rules and default wording`. Check for
 that line before counting a film as reader-assisted.
 
 ## Network phases and verification

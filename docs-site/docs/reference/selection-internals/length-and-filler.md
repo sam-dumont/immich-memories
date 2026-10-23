@@ -5,17 +5,17 @@ sidebar_position: 4
 
 # Length, quiet weeks and filler
 
-`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
+`generate --include` steers a new cut and goes through the checks on this page. A tick in the web UI's
+pool saves an owner revision without scoring or choosing pictures again.
 
-A film's target length is where it starts, not a promise. A month with three photographed days
-gets about 20 seconds, not a minute, and a quiet month with a week of nothing in it spends no shot
-on that week. When a film runs out of pictures worth showing, it ends early. A shorter film with
+A film's target length is where it starts, not a promise. A month with three photographed days gets
+far less than its minute, and a quiet month with a week of nothing in it spends no shot on that week. When a film runs out of pictures worth showing, it ends early. A shorter film with
 every shot earned beats a full one padded with the fridge, the ceiling and a screenshot.
 
 Taken to the end, a period can hold nothing worth a film at all: three pictures of a floor
 being laid, say. Then no film is made, the run says `Nothing worth a film in February 2019` and
-exits 0. That is an answer, not a failure. But one shot worth showing is a film: a special day
-that keeps two good clips gets a 13-second film, not nothing. The only exception is on this day,
+exits 0. That's an answer, not a failure. But one shot worth showing is a film: a special day that
+keeps two good clips gets a short film, not nothing. The only exception is on this day,
 which is about a day coming back, so it needs two years that hold something, or the one year
 `--years-back 1` asked for. When it declines, the line says why: `Nothing worth a film in Jul 11,
 2024 - Jul 13, 2025: only 1 of the 2 years asked for holds pictures of the day, and a film about
@@ -80,9 +80,9 @@ empty.
 So when at least two thirds of a period's at-home weeks have no indicator at all, the no-model
 path stops treating that as the ordinary case and funds each of them with its own best picture
 instead: sharpest frame, no SOFT, DARK or BLOWN OUT warning, not a screenshot or a document, not
-on hold. A week whose only pictures fail every one of those stays unfunded anyway, same as before,
-and the reason why is kept on the record. Below two thirds, the ordinary rule still applies: a
-quiet week among mostly-indicated ones goes short, same as it always did.
+on hold. A week whose only pictures fail every one of those stays unfunded, and the reason is kept on
+the record. Below two thirds, the ordinary rule applies: a quiet week among mostly indicated ones gets
+no shot.
 
 ## Filler nothing vouches for
 

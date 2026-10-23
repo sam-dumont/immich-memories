@@ -16,12 +16,13 @@ and people* is the long one; a later cut over the same pictures reuses what it b
 estimates are made: [Film progress and recovery](../run/film-progress.md). The stages:
 [From library to film](../how-it-chooses/overview.md).
 
-**Copy as CLI command** copies an equivalent command for the cut or render. It omits the server's
-executable and config paths, and its output or progress-file paths. The cut runs on the server, not in the tab. Reload, close the laptop, come back: the page finds the
-running cut and follows it again. **Cancel** stops it. A cut that fails shows the command's own last
-lines, and keeps showing them after a reload, because they usually name the command that fixes it
-(`immich-memories models fetch` on a fresh install). One job runs at a time.
-The job API accepts saved job IDs; a missing or invalid ID returns HTTP 404.
+**Copy as CLI command** copies the equivalent command for the cut or render, without the server's
+executable, config, output and progress-file paths.
+
+The cut runs on the server, not in the tab. Reload, close the laptop, come back: the page finds the
+running cut and follows it again. **Cancel** stops it. A cut that fails shows the command's last lines,
+after a reload too, because they usually name the fix (`immich-memories models fetch` on a fresh
+install). One job runs at a time. A missing or invalid job ID returns HTTP 404.
 
 A job's own record is `running` until it ends `succeeded`, `failed` or `cancelled` (**Cancel**
 sends SIGTERM to the whole process group). A server restart or crash while a job is running
@@ -30,26 +31,26 @@ read as `interrupted` instead of staying `running` forever.
 
 ### Input and saved edits
 
-Concurrent saves keep separate numbered cut revisions. Invalid JSON text, NUL characters,
-unpaired Unicode surrogates and nesting beyond 64 levels return a client error before a job
-starts. Music uploads must contain an audio stream with a positive duration; truncated files
-are refused, and an unavailable audio probe asks you to install FFmpeg.
+Two saves at once get two numbered cut revisions. Invalid JSON, NUL characters, unpaired Unicode
+surrogates and nesting beyond 64 levels return a client error before a job starts. A music upload
+needs an audio stream with a positive duration; a truncated file is refused, and if the server can't
+probe audio, the page asks you to install FFmpeg.
 
 If the cache, output or database storage fills up, the API returns a storage-full message (HTTP 507),
-and a job that fails for that reason shows the same advice under its status, even when the disk could
-not save a complete log. Free space or expand the volume before retrying; do not delete the store. A failed revision save keeps earlier revisions and removes its
-temporary file. A job whose initial record cannot be saved is stopped before returning the
-error, so it cannot keep working without a job the page can follow or cancel.
+and a job that fails for that reason shows the same advice under its status, even when the disk couldn't
+hold a complete log. Free space or expand the volume before retrying; don't delete the store. A failed
+revision save keeps the earlier revisions. A job whose first record can't be saved is stopped before the
+error returns, so nothing runs that the page can't follow or cancel.
 
 ## Saved revisions
 
-**Keep the original** undoes a swap. The sheet marks removed and swapped shots. A bar at the bottom counts the changes and adds up the
-seconds; past what the titles left, it says the film grows to hold them. Your edits are the last
-pass, so length never refuses one. **Undo** (or Ctrl/Cmd+Z) walks back one change; **Discard changes** drops them all.
+**Keep the original** undoes a swap. The sheet marks removed and swapped shots. A bar at the bottom
+counts the changes and adds up the seconds; past what the titles left, it says the film grows to hold
+them. Your edits are the last pass, so length never refuses one. **Undo** (or Ctrl/Cmd+Z) walks back
+one change; **Discard changes** drops them all.
 
-**Save revision** keeps the edits as a numbered revision beside the run, in its attempt folder.
-It only refuses what the renderer cannot
-play, like a trim past the end of a video, and says which edit. **Revisions** lists every saved
+**Save revision** keeps the edits as a numbered revision beside the run, in its attempt folder. It only
+refuses what the renderer can't play, like a trim past the end of a video, and says which edit. **Revisions** lists every saved
 one; **Open** loads it back into the editor.
 
 ## Settings and configuration sources
@@ -76,15 +77,15 @@ The strongest source wins: environment, then `config.yaml`, then the database, t
 says, or move it out of the file with `immich-memories config move-to-db KEY`. The **auth** and
 **server** sections are always greyed out: they are set in the environment or `config.yaml` and
 change on restart. So are the render worker address and token, the local reader program
-(`llm.local_server`) and the model-file and detector paths. Changing a server URL that receives a credential needs that credential typed in
-the same save; otherwise the page says "The server URL changed: enter the credential for the new
+(`llm.local_server`) and the model-file and detector paths. Changing a server URL that receives a
+credential needs that credential typed in the same save; otherwise the page says "The server URL changed: enter the credential for the new
 server." A value containing `${` is refused. Everything else is
 editable, and each section's **Save** writes only the keys you changed, to the database. The page never
 writes `config.yaml` or the environment. Lists and mappings are edited as JSON. **Reload from Disk**
 re-reads the file (its path is shown as **Config file**) after a hand edit.
 
 Any key named `api_key`, `api_keys`, `caption_api_key`, `client_secret`, `password`, `secret`, `token`,
-`trigger_token` or `urls` is a secret: it shows as `***`, masked on the server, and an empty field
+`trigger_token`, `worker_token` or `urls` is a secret: it shows as `***`, masked on the server, and an empty field
 keeps the stored value. Secrets are encrypted in the database with `IMMICH_MEMORIES_SECRET_KEY`;
 without it the page greys them out and says "Secrets cannot be saved here until
 IMMICH_MEMORIES_SECRET_KEY is set". That is fine if your keys already come from `.env` or
@@ -95,11 +96,15 @@ IMMICH_MEMORIES_SECRET_KEY cannot decrypt it" was saved under a different key: t
 until you save it again. Every key:
 [configuration reference](../reference/config-reference.md).
 
-**Checks** shows what loading your config warned about (removed, unknown or no-longer-supported
-keys, a reader set up but switched off) and the rows `immich-memories preflight` prints. These are
+**Checks** shows what loading your config warned about (removed, unknown or unsupported keys, a
+reader set up but switched off) and the rows `immich-memories preflight` prints. These are
 the same lines the server log carries, so a Docker or NAS install sees them without reading the
 container log. They name keys, never values. The preflight rows wait for **Run the preflight
 checks**: they ask Immich and the reader and probe the encoder, which takes a few seconds.
+
+**Updates** has a **Check for updates** button: one anonymous request for GitHub's public release list,
+sent only when you click. A newer release comes with its notes and the update command for this kind of
+install. With `updates.check_daily` on, the app checks once a day and shows a banner you can dismiss.
 
 **Caches** lists the three caches a run fills, with their size and a **Clear** button each.
 
@@ -109,6 +114,6 @@ checks**: they ask Immich and the reader and probe the encoder, which takes a fe
 | **Thumbnail cache** | Immich previews, read back for pixel facts, heads, contact sheets and the grid | re-fetched on demand |
 | **Prepared-source cache** | cut segments, merged Live Photos and animated photos a re-render reuses (`<cache.directory>/prepared-sources`, capped by `advanced.analysis.prepared_source_cache_max_size_gb`) | the next render prepares them again |
 
-The expensive thing on disk is not behind those buttons. The editor's bank lives in the store
-(`store.db`), not under the cache directory, and holds every fact it read about your pictures.
-Delete it and the next cut reads your library from scratch. More on [Health, logs and caches](../run/maintenance/health-logs-cache.md).
+The expensive part isn't behind those buttons. The editor's bank lives in the store (`store.db`), not
+under the cache directory, and holds every fact it read about your pictures. Delete it and the next cut
+reads your library from scratch. More on [Health, logs and caches](../run/maintenance/health-logs-cache.md).
