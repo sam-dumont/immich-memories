@@ -11,6 +11,7 @@ from scripts.release_pin import (
     PINNED_FILES,
     newer_release_than_pin,
     pin_repository,
+    pin_text,
     pin_to_latest_release,
 )
 
@@ -187,3 +188,22 @@ def test_the_dev_docs_pin_the_setup_files_to_their_nightly(tmp_path):
         text = (tmp_path / name).read_text(encoding="utf-8")
         assert "nightly-20261014" in text, name
         assert not re.search(r"1\.0\.0-rc\.\d+", text), name
+
+
+@pytest.mark.parametrize(
+    "name", ["deploy/terraform/README.md", "docs-site/docs/run/reference/terraform.md"]
+)
+def test_pinning_a_terraform_table_moves_only_the_image_tag(name):
+    """Every other default in the table is a size or a resolution; a release must not stamp
+    its version over them, as it once did to tmp_size, the PVC sizes and output_resolution."""
+    table = (
+        '| `image_tag` | Image tag | `string` | `"1.0.0-rc.10"` |\n'
+        '| `tmp_size` | `/tmp` emptyDir | `string` | `"4Gi"` |\n'
+        '| `output_storage_size`, `cache_storage_size` | PVC sizes | `"50Gi"`, `"60Gi"` |\n'
+        '| `output_resolution` | `720p`, `1080p` or `4k` | `"1080p"` |\n'
+    )
+
+    pinned = pin_text(name, table, "1.0.0")
+
+    assert '`"1.0.0"`' in pinned.splitlines()[0]
+    assert pinned.splitlines()[1:] == table.splitlines()[1:]

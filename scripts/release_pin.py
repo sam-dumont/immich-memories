@@ -23,6 +23,7 @@ NIGHTLY_TAG = re.compile(r"nightly-\d{8}")
 # (a `-cuda` suffix, a closing quote or brace).
 _COMPOSE = re.compile(r"(?P<pre>\$\{IMMICH_MEMORIES_VERSION:-)[^}]*(?P<post>\})")
 _ENV_LINE = re.compile(r"(?m)^(?P<pre>IMMICH_MEMORIES_VERSION=).*$")
+_VERSION_ASSIGN = re.compile(r"(?P<pre>IMMICH_MEMORIES_VERSION=)[^\s]+")
 _UNRAID = re.compile(
     r"(?P<pre><Repository>ghcr\.io/sam-dumont/immich-memories:)[^<]*(?P<post></Repository>)"
 )
@@ -42,7 +43,10 @@ _TERRAFORM_DEFAULT = re.compile(
 _TFVARS = re.compile(r"(?m)^(?P<pre>image_tag\s*=\s*\")[^\"]*(?P<post>\")")
 _COMPOSE_HOST_PORT = re.compile(r"(?m)^\s*-\s*\S*:(?P<port>\d+):8080\s*$")
 _README_URL = re.compile(r"(?P<pre>http://(?:localhost|your-server-address):)\d+")
-_TABLE_DEFAULT = re.compile(r"(?P<pre>`\")(?:latest|nightly-\d{8}|\d[^\"]*)(?P<post>\"`)")
+# Only the `image_tag` row: the other defaults in these tables are sizes and resolutions.
+_TABLE_DEFAULT = re.compile(
+    r"(?m)(?P<pre>^\|[^\n]*`image_tag`[^\n]*`\")(?:latest|nightly-\d{8}|\d[^\"]*)(?P<post>\"`)"
+)
 
 _MANIFESTS = (_MANIFEST_IMAGE,)
 _KUSTOMIZATIONS = (_NEW_TAG,)
@@ -52,7 +56,7 @@ PINNED_FILES: dict[str, tuple[re.Pattern[str], ...]] = {
     "docker-compose.gpu.yml": (_COMPOSE,),
     "docker-compose.cuda.yml": (_COMPOSE,),
     "docker-compose.gpu-worker.yml": (_COMPOSE,),
-    "docker-compose.maximalist.yml": (_CUDA_TAG,),
+    "docker-compose.maximalist.yml": (_VERSION_ASSIGN,),
     "docker/hwaccel.inference.yml": (_CUDA_TAG,),
     "example.env": (_ENV_LINE,),
     "deploy/unraid/immich-memories.xml": (_UNRAID,),
