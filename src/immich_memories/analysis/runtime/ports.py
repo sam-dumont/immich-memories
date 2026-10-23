@@ -20,6 +20,7 @@ from immich_memories.analysis.preparation.obstruction_bank import OBSTRUCTION_FR
 from immich_memories.analysis.reading.episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
 from immich_memories.analysis.runtime.period_accounts import catalogue_requester
 from immich_memories.analysis.structure.planner import plan_structure
+from immich_memories.api.immich import ImmichNotFoundError
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
 from immich_memories.store.cut_measurements import banked_motion_residuals
@@ -86,12 +87,18 @@ def _fetch_preview(
     unedited picture while the film renders the edit. `known_edited` (see
     `edited_by_id`) answers this without a request when the caller already holds
     the asset; only an id missing from it costs a `get_asset` call.
+
+    A preview Immich no longer has (404 "Asset media not found") is no preview:
+    the picture drops, the film goes on.
     """
-    if known_edited is not None and asset_id in known_edited:
-        edited = known_edited[asset_id]
-    else:
-        edited = getattr(client.get_asset(asset_id), "is_edited", False)
-    return client.get_asset_thumbnail(asset_id, size="preview", edited=edited)
+    try:
+        if known_edited is not None and asset_id in known_edited:
+            edited = known_edited[asset_id]
+        else:
+            edited = getattr(client.get_asset(asset_id), "is_edited", False)
+        return client.get_asset_thumbnail(asset_id, size="preview", edited=edited)
+    except ImmichNotFoundError:
+        return None
 
 
 @dataclass(frozen=True, slots=True)
