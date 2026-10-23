@@ -60,6 +60,7 @@ def _row_to_attempt(row: Mapping[Any, Any]) -> AutomationAttempt:
         run_id=row["run_id"],
         error=row["error"],
         last_phase=OperationalPhase(row["last_phase"]) if row["last_phase"] else None,
+        forced=bool(row["forced"]),
     )
 
 
@@ -76,6 +77,7 @@ class AutomationStateStore:
         candidate_category: str | None = None,
         memory_type: str | None = None,
         memory_key: str | None = None,
+        forced: bool = False,
     ) -> AutomationAttempt:
         """Insert and return a new running attempt."""
         attempt = AutomationAttempt(
@@ -87,6 +89,7 @@ class AutomationStateStore:
             candidate_category=candidate_category,
             memory_type=memory_type,
             memory_key=memory_key,
+            forced=forced,
         )
         with self.store.begin() as conn:
             conn.execute(
@@ -105,6 +108,7 @@ class AutomationStateStore:
                         "error": None,
                         "last_phase": None,
                         "phase_events": [],
+                        "forced": attempt.forced,
                     }
                 ],
             )
@@ -253,7 +257,8 @@ class AutomationStateStore:
         that nothing is worth a film today. A dry run, finished or still running, generated
         nothing; a cooldown skip (what most HTTP triggers get back), a chosen candidate that
         was no longer eligible and an attempt whose process died decided nothing about
-        today. None of them cancels the timer.
+        today. A forced run is an extra film somebody asked for. None of them cancels the
+        timer.
         """
         running = sa.and_(
             _ATTEMPTS.outcome == AutoOutcome.RUNNING.value,
@@ -276,7 +281,7 @@ class AutomationStateStore:
         )
         return self._first(
             sa.select(automation_attempts)
-            .where(sa.or_(ran, decided_nothing))
+            .where(sa.or_(ran, decided_nothing), _ATTEMPTS.forced.is_not(True))
             .order_by(_ATTEMPTS.started_at.desc(), _ATTEMPTS.seq.desc())
             .limit(1)
         )

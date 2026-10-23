@@ -65,7 +65,7 @@ Models, the store, temporary render files and finished films need space too. See
 
 **Can it make films on its own?**
 
-Yes. The default `automation.cooldown_hours: 24` suits a daily schedule; it is configurable, and `auto run --force` bypasses that cooldown. Rotation rules still apply. [Automatic films](../make/automate.md) covers setup.
+Yes. The default `automation.cooldown_hours: 24` suits a daily schedule; it is configurable, and `auto run --force` bypasses that cooldown. A forced film doesn't start a new one, so the next scheduled film still comes on time. Rotation rules still apply. [Automatic films](../make/automate.md) covers setup.
 
 **Several people on one Immich server?**
 

@@ -238,15 +238,13 @@ def _settle_interrupted_attempts(config: Config) -> None:
 
 
 def _cooldown_until(config: Config, now: datetime) -> datetime | None:
-    """When the cooldown the last completed auto run started ends, if it is active."""
+    """When the cooldown the last scheduled auto run started ends, if it is active."""
     from immich_memories.automation.status import cooldown_status
     from immich_memories.db import open_store
     from immich_memories.tracking.run_database import RunDatabase
 
-    runs = RunDatabase(open_store(config)).list_runs(
-        limit=1, status="completed", source="auto", order_by_completion=True
-    )
-    status = cooldown_status(runs[0] if runs else None, config.automation.cooldown_hours, now)
+    last = RunDatabase(open_store(config)).last_pacing_auto_run()
+    status = cooldown_status(last, config.automation.cooldown_hours, now)
     return status.until if status.active else None
 
 

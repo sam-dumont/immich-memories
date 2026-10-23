@@ -266,7 +266,7 @@ class AutoRunner:
             last_attempt=as_it_stands(self.state.get_last_attempt(), self._lease().held_elsewhere),
             last_completed_auto_run=recent_runs[0] if recent_runs else None,
             cooldown=cooldown_status(
-                recent_runs[0] if recent_runs else None,
+                self.db.last_pacing_auto_run(),
                 effective_cooldown,
             ),
             recent_categories=tuple(
@@ -604,13 +604,17 @@ class AutoRunner:
         finally:
             lease.release()
 
-    def start_one(self, *, reason: str = "daily wake", dry_run: bool = False) -> StartedAutoRun:
+    def start_one(
+        self, *, reason: str = "daily wake", dry_run: bool = False, forced: bool = False
+    ) -> StartedAutoRun:
         """Take the automation lease and open the durable attempt that owns it.
 
         The caller must execute the returned handle — that is what releases the
         lease. `reason` becomes the attempt's history entry, so a triggered run
         is told apart from a nightly one everywhere automation is inspected; a
-        dry run says so from its start, so it never stands in for the day's run.
+        dry run says so from its start, so it never stands in for the day's run. A
+        `forced` attempt is a film somebody asked for: it paces nothing, so neither the
+        cooldown nor the daily timer counts it.
 
         Raises:
             AutomationAlreadyRunningError: another process holds the lease.
@@ -620,7 +624,7 @@ class AutoRunner:
         try:
             end_interrupted_attempts(self.config, self.state)
             attempt = self.state.start_attempt(
-                reason=f"{reason}{DRY_RUN_MARK}" if dry_run else reason
+                reason=f"{reason}{DRY_RUN_MARK}" if dry_run else reason, forced=forced
             )
         except BaseException:
             lease.release()
@@ -638,7 +642,7 @@ class AutoRunner:
     ) -> AutoRunResult:
         """Run one durable automation decision and return its exact outcome."""
         try:
-            started = self.start_one(dry_run=dry_run)
+            started = self.start_one(dry_run=dry_run, forced=force)
         except AutomationAlreadyRunningError:
             return AutoRunResult(
                 outcome=AutoOutcome.SKIPPED,

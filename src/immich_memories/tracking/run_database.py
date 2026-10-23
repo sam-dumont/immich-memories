@@ -543,6 +543,29 @@ class RunDatabase:
             query.order_by(*order).limit(limit).offset(offset), with_events=with_events
         )
 
+    def last_pacing_auto_run(self) -> RunMetadata | None:
+        """The last completed automatic film that paces the next one.
+
+        A film from a forced attempt (`auto run --force`, Run this suggestion) was asked for
+        on purpose: the cooldown runs from the scheduled film before it.
+        """
+        forced = sa.select(automation_attempts.c.id).where(automation_attempts.c.forced.is_(True))
+        query = (
+            sa.select(*_SUMMARY_COLUMNS)
+            .where(
+                _RUNS.status == "completed",
+                _RUNS.source == "auto",
+                sa.or_(
+                    _RUNS.automation_attempt_id.is_(None),
+                    _RUNS.automation_attempt_id.not_in(forced),
+                ),
+            )
+            .order_by(*_COMPLETION_ORDER)
+            .limit(1)
+        )
+        runs = self._select_runs(query, with_events=False)
+        return runs[0] if runs else None
+
     def _runs_about(
         self, name: str, ordered: sa.Select, limit: int, offset: int, with_events: bool = True
     ) -> list[RunMetadata]:
