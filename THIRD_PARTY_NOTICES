@@ -393,7 +393,7 @@ anyio 4.14.2
   License: MIT
   URL: https://github.com/agronholm/anyio
 
-apprise 1.13.1
+apprise 2.0.1
   License: BSD-2-Clause
   URL: https://appriseit.com
 
@@ -465,7 +465,7 @@ einops 0.8.2
   License: MIT
   URL: https://github.com/arogozhnikov/einops
 
-fastapi 0.143.2
+fastapi 0.150.0
   License: MIT
   URL: https://github.com/fastapi/fastapi
 
@@ -501,7 +501,7 @@ hf-xet 1.6.0
   License: Apache-2.0
   URL: https://github.com/huggingface/xet-core
 
-holidays 0.106
+holidays 0.107
   License: MIT
   URL: https://github.com/vacanza/holidays/
 
@@ -773,7 +773,7 @@ rich 15.0.0
   License: MIT
   URL: https://github.com/Textualize/rich
 
-setuptools 84.0.0
+setuptools 84.2.0
   License: MIT
   URL: https://github.com/pypa/setuptools
 
@@ -785,7 +785,7 @@ soundfile 0.14.0
   License: BSD
   URL: https://github.com/bastibe/python-soundfile
 
-sqlalchemy 2.1.4
+sqlalchemy 2.1.5
   License: MIT
   URL: https://www.sqlalchemy.org
 
