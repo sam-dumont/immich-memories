@@ -43,7 +43,10 @@ updates:
       - dependency-name: "@sveltejs/adapter-static"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
-    directory: /
+    # `/` covers .github/workflows only; the composite actions need their own entries.
+    directories:
+      - /
+      - /.github/actions/*
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
