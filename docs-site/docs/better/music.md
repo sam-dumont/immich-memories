@@ -34,8 +34,7 @@ make check-local-audio
 ```
 
 Every checkout and worktree needs its own `make install-acestep`. The audio stack lives in `.venv-acestep` next to the checkout. The check generates and separates real audio locally; a bundled fallback does not pass it.
-It uses the 2B model with a 0.6B planner, requiring about **9 GB for resident weights** and
-**7 GB on disk**. That test profile is larger than the planner-free configuration below.
+It picks the model the same way films do, so it loads the 4B XL model without a planner: about **21 GB free for resident weights** and **20 GB on disk**. On a host below the XL bar (described below) it generates nothing: it says films there play the bundled library and fails, since a pass on the 2B model wouldn't tell you anything about your films.
 
 Then turn it on:
 

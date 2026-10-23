@@ -125,7 +125,8 @@ the server answers any host name, since the sign-in is what protects it.
 `tier` (`auto`, `basic`, `gpu`, `full`) is the only tier setting. `editorial.preparation.tier`,
 `editorial.reader`, `editorial.laya_audience` and `editorial.detectors_enabled` stop being
 settings: the tier sets them, as it already did at runtime. A config, environment variable or
-saved setting that still names one logs a warning naming `tier`. They stop being read in 2.0.
+saved setting that still names one logs a warning naming `tier`, and the tier's value replaces
+it.
 
 A Compose, Kubernetes or Terraform install sets the tier with one variable,
 `IMMICH_MEMORIES_DEPLOYMENT_TIER` (`TIER` in the Compose `.env`). It now ranks like any other
@@ -141,51 +142,53 @@ both, `IMMICH_MEMORIES_TIER` wins.
 
 ### Settings that left the config
 
-These keys are no longer documented settings. Each one still works through 1.x and logs a warning
-when set (the key, never its value); in 2.0 they stop being read. Delete them to use the default.
+These keys are no longer documented settings. When a config file, environment variable or saved
+setting sets one, the app logs a warning with the key (never its value) and what replaces it. What
+your value does until 2.0 depends on the key; in 2.0 none of them is read. Delete them to get the
+2.0 behaviour now.
 
-| Key | What replaces it |
-|---|---|
-| `editorial.preparation.tier` | `tier` |
-| `editorial.reader` | `tier` |
-| `editorial.laya_audience` | `tier` |
-| `editorial.detectors_enabled` | `tier` |
-| `musicgen.hemisphere` | `trips.homebase_latitude`: generated music now reads seasons in your home's hemisphere, like the titles |
-| `ace_step.hemisphere` | `trips.homebase_latitude`, as above |
-| `automation.upload_to_immich` | `upload.enabled`: one switch for manual and automatic films; the old value is applied to it |
-| `automation.album_name` | `upload.album_name`, the same way |
-| `server.allow_unauthenticated_lan` | nothing: ignored; without sign-in the UI answers on localhost only |
-| `musicgen.num_versions` | nothing: a generated film is one take; ignored |
-| `ace_step.num_versions` | nothing: a generated film is one take; ignored |
-| `audio.max_regenerations` | nothing: generated music is one take and is never regenerated; the key still loads, is ignored and warns |
-| `analysis.optimal_clip_duration` | nothing: fixed at 5 s |
-| `analysis.min_source_short_side` | nothing: fixed at 1080 px |
-| `analysis.max_album_assets` | nothing: fixed at 10,000 per media type |
-| `title_screens.title_duration` | nothing: fixed at 3.5 s |
-| `title_screens.month_divider_duration` | nothing: fixed at 2 s |
-| `title_screens.ending_duration` | nothing: fixed at 7 s |
-| `title_screens.month_divider_threshold` | nothing: fixed at 2 clips |
-| `llm.preflight_timeout_seconds` | nothing: fixed at 10 s |
-| `speech.vad_threshold` | nothing: fixed at 0.25 |
-| `speech.min_silence_ms` | nothing: fixed at 200 ms |
-| `analysis.live_photo_merge_window_seconds` | nothing: fixed at 10 s |
-| `analysis.live_photo_min_clip_seconds` | nothing: fixed at 2.5 s |
-| `photos.burst_window_seconds` | nothing: fixed at 300 s |
-| `photos.burst_hash_threshold` | nothing: fixed at 8 bits |
-| `title_screens.map_move_min_seconds` | nothing: fixed at 6 s |
-| `title_screens.map_move_max_seconds` | nothing: fixed at 8 s |
-| `audio.music_block_seconds` | nothing: fixed at 90 s |
-| `audio.max_music_blocks` | nothing: fixed at 3 |
-| `automation.burst_threshold` | nothing: fixed at 2.0 |
-| `editorial.preparation.batch_size` | nothing: fixed at 32 |
-| `editorial.people.seat_min_pictures` | nothing: fixed at 20 |
-| `editorial.people.seat_min_share` | nothing: fixed at 0.05 |
-| `editorial.people.big_story_density` | nothing: fixed at 2.0 |
-| `editorial.people.big_story_family_share` | nothing: fixed at 0.3 |
-| `editorial.laya_audience_threshold` | nothing: the platform's calibrated threshold |
-| `editorial.description_model` | nothing: set by the caption provider |
-| `editorial.head_versions` | nothing: the shipped producer versions |
-| `editorial.pixel_producer_key` | nothing: the shipped producer |
+| Key | Until 2.0 | From 2.0 |
+|---|---|---|
+| `editorial.preparation.tier` | ignored: `tier` sets it | `tier` |
+| `editorial.reader` | ignored: `tier` sets it | `tier` |
+| `editorial.laya_audience` | ignored: `tier` sets it | `tier` |
+| `editorial.detectors_enabled` | ignored: `tier` sets it | `tier` |
+| `musicgen.hemisphere` | your value still applies | `trips.homebase_latitude`: generated music reads seasons in your home's hemisphere, like the titles |
+| `ace_step.hemisphere` | your value still applies | `trips.homebase_latitude`, as above |
+| `automation.upload_to_immich` | applied to `upload.enabled` while that one is at its default | `upload.enabled`: one switch for manual and automatic films |
+| `automation.album_name` | applied to `upload.album_name` the same way | `upload.album_name` |
+| `server.allow_unauthenticated_lan` | ignored: without sign-in the UI answers on localhost only | nothing |
+| `musicgen.num_versions` | ignored: a generated film is one take | nothing |
+| `ace_step.num_versions` | ignored: a generated film is one take | nothing |
+| `audio.max_regenerations` | ignored: generated music is one take and is never regenerated | nothing |
+| `analysis.optimal_clip_duration` | your value still applies | fixed at 5 s |
+| `analysis.min_source_short_side` | your value still applies | fixed at 1080 px |
+| `analysis.max_album_assets` | your value still applies | fixed at 10,000 per media type |
+| `title_screens.title_duration` | your value still applies | fixed at 3.5 s |
+| `title_screens.month_divider_duration` | your value still applies | fixed at 2 s |
+| `title_screens.ending_duration` | your value still applies | fixed at 7 s |
+| `title_screens.month_divider_threshold` | your value still applies | fixed at 2 clips |
+| `llm.preflight_timeout_seconds` | your value still applies | fixed at 10 s |
+| `speech.vad_threshold` | your value still applies | fixed at 0.25 |
+| `speech.min_silence_ms` | your value still applies | fixed at 200 ms |
+| `analysis.live_photo_merge_window_seconds` | your value still applies | fixed at 10 s |
+| `analysis.live_photo_min_clip_seconds` | your value still applies | fixed at 2.5 s |
+| `photos.burst_window_seconds` | your value still applies | fixed at 300 s |
+| `photos.burst_hash_threshold` | your value still applies | fixed at 8 bits |
+| `title_screens.map_move_min_seconds` | your value still applies | fixed at 6 s |
+| `title_screens.map_move_max_seconds` | your value still applies | fixed at 8 s |
+| `audio.music_block_seconds` | your value still applies | fixed at 90 s |
+| `audio.max_music_blocks` | your value still applies | fixed at 3 |
+| `automation.burst_threshold` | your value still applies | fixed at 2.0 |
+| `editorial.preparation.batch_size` | your value still applies | fixed at 32 |
+| `editorial.people.seat_min_pictures` | your value still applies | fixed at 20 |
+| `editorial.people.seat_min_share` | your value still applies | fixed at 0.05 |
+| `editorial.people.big_story_density` | your value still applies | fixed at 2.0 |
+| `editorial.people.big_story_family_share` | your value still applies | fixed at 0.3 |
+| `editorial.laya_audience_threshold` | your value still applies | the platform's calibrated threshold |
+| `editorial.description_model` | your value still applies | set by the caption provider |
+| `editorial.head_versions` | your value still applies | the shipped producer versions |
+| `editorial.pixel_producer_key` | your value still applies | the shipped producer |
 
 If you set only `automation.upload_to_immich: true`, manual films now upload too: it lands on
 `upload.enabled`, which covers both. Delivering only the automatic films is no longer a separate
@@ -195,7 +198,7 @@ the same way, unless `upload.album_name` names an album of its own.
 The warning reads like this:
 
 ```text
-Config key photos.burst_hash_threshold is no longer supported: it is internal tuning with no supported use; remove it, it stops being read in 2.0
+Config key photos.burst_hash_threshold is no longer supported: it is internal tuning, so your value still applies until 2.0, when the default replaces it; remove it to use the default now
 ```
 
 ### A birthday film is the year

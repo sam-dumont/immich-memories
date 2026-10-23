@@ -32,10 +32,10 @@ allocations and shared, mapped, dirty or pinned pages remain occupied.
 | 2B with the 0.6B planner | about 9 GB | about 7 GB |
 | 2B, `use_lm: false` | about 7 GB | about 6 GB |
 
-`immich-memories capabilities --test-music` generates 15 seconds with each local profile whose
-weights fit the memory free now, the 2B ones included (films only use those when you set
-`turbo` or `base`). The 0.6B and 1.7B names are the planner; the audio model is still 2B. It
-reports a memory refusal separately from a failed generation. A reader loaded in oMLX holds
+`immich-memories capabilities --test-music` generates 15 seconds with the profile your films
+load on this host: XL for `auto` (with your `use_lm` and `lm_model_size`), or the variant you
+pinned. On a host below the XL bar it generates nothing and reports `bundled`, since films there
+play the bundled library. It reports a memory refusal separately from a failed generation. A reader loaded in oMLX holds
 unified memory while idle, so unload it first if you want to test with that memory free.
 
 The [app-owned reader](../better/reader.md) stops its model process after selection, before
@@ -67,10 +67,11 @@ memory.
 `make install-acestep` installs ACE-Step v0.1.8 and Demucs into a sibling `.venv-acestep`, because
 ACE-Step's Transformers pin wants an older Hugging Face library than the editor. `make
 check-local-audio` generates 15 seconds, splits all four stems and fails loudly if any of it didn't
-happen locally, so a remote server or a bundled track can't pass it. By default it uses the 2B
-model with its 0.6B planner (about 9 GB of resident weights, 7 GB on disk), which proves the
-stack works but is not the model films use; `make check-local-audio AUDIO_CHECK_ARGS="--quality high"`
-checks XL with its 4B planner. Every clone and every git worktree needs its own install, since
+happen locally, so a remote server or a bundled track can't pass it. It picks the model the
+way films do (`model_variant: auto`), so it runs XL without a planner (about 21 GB of resident
+weights, 20 GB on disk); `make check-local-audio AUDIO_CHECK_ARGS="--quality high"` adds the 4B
+planner. On a host below the XL bar it generates nothing, says films there play the bundled
+library, and fails. Every clone and every git worktree needs its own install, since
 the environment sits next to the checkout. Rerun the installer after moving the checkout or
 changing the app version; it also repairs `operator torchvision::nms does not exist`. A bare
 `uv sync` can remove Demucs from the editor's environment, and the installer puts it back.

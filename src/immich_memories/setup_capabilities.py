@@ -20,62 +20,64 @@ class Capability:
 
 
 def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capability]:
-    """Offer smaller local profiles without calling a weight budget a successful test."""
+    """Check the one ACE-Step profile films load here, without calling a weight budget a test.
+
+    The profile is the one a local film picks: XL for ``auto`` on a host that clears the XL
+    bar, the configured variant otherwise. Below the bar films play the bundled library, so
+    nothing is generated and the row says so instead of passing on a model films never use.
+    """
     from immich_memories.audio.generators.ace_step_isolated import install_hint, isolated_python
-    from immich_memories.audio.generators.ace_step_model_choice import resolve_model_variant
+    from immich_memories.audio.generators.ace_step_model_choice import measure_host
+    from immich_memories.audio.generators.ace_step_music_path import local_check_profile
     from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
+
+    settings = config.ace_step
+    path, variant = local_check_profile(settings.model_variant, measure_host())
+    variant = variant.removeprefix("acestep-v15-")
+    planner = settings.lm_model_size if settings.use_lm else None
+    name = f"ACE-Step {variant} / {planner + ' planner' if planner else 'no planner'}"
+    path_row = _music_path_row(config)
+    rows = [path_row] if path_row else []
+    if isolated_python() is None and not is_ace_step_importable():
+        rows.append(Capability(name, "missing", install_hint()))
+    elif not path.generate:
+        rows.append(
+            Capability(
+                name, "bundled", f"Not tested: films here play a bundled track; {path.reason}"
+            )
+        )
+    else:
+        rows.append(_profile_row(name, variant, planner, test_music=test_music))
+    return rows
+
+
+def _profile_row(name: str, variant: str, planner: str | None, *, test_music: bool) -> Capability:
     from immich_memories.audio.generators.memory_budget import (
         available_memory_bytes,
         required_memory_bytes,
     )
 
-    installed = isolated_python() is not None or is_ace_step_importable()
-    configured = config.ace_step
-    path_row = _music_path_row(config)
-    profiles = dict.fromkeys(
-        [
-            (
-                resolve_model_variant(configured.model_variant).removeprefix("acestep-v15-"),
-                configured.lm_model_size if configured.use_lm else None,
-            ),
-            ("turbo", None),
-            ("turbo", "0.6B"),
-        ]
+    available = available_memory_bytes()
+    required = required_memory_bytes(variant, planner)
+    if available is None:
+        return Capability(name, "untested", "Cannot measure available memory; no model loaded")
+    if available < required:
+        return Capability(
+            name,
+            "blocked",
+            f"Needs {required / 2**30:.1f} GiB for weights; "
+            f"{available / 2**30:.1f} GiB available now. "
+            "An idle local model server may still hold memory; unload its model and retry.",
+        )
+    if test_music:
+        return _test_music(name, variant, planner)
+    return Capability(
+        name,
+        "untested",
+        f"Weight budget {required / 2**30:.1f} GiB; "
+        f"{available / 2**30:.1f} GiB available now. "
+        "Run capabilities --test-music to generate audio",
     )
-    rows = [path_row] if path_row else []
-    for variant, planner in profiles:
-        available = available_memory_bytes()
-        name = f"ACE-Step {variant} / {planner + ' planner' if planner else 'no planner'}"
-        required = required_memory_bytes(variant, planner)
-        if not installed:
-            rows.append(Capability(name, "missing", install_hint()))
-        elif available is None:
-            rows.append(
-                Capability(name, "untested", "Cannot measure available memory; no model loaded")
-            )
-        elif available < required:
-            rows.append(
-                Capability(
-                    name,
-                    "blocked",
-                    f"Needs {required / 2**30:.1f} GiB for weights; "
-                    f"{available / 2**30:.1f} GiB available now. "
-                    "An idle local model server may still hold memory; unload its model and retry.",
-                )
-            )
-        elif test_music:
-            rows.append(_test_music(name, variant, planner))
-        else:
-            rows.append(
-                Capability(
-                    name,
-                    "untested",
-                    f"Weight budget {required / 2**30:.1f} GiB; "
-                    f"{available / 2**30:.1f} GiB available now. "
-                    "Run capabilities --test-music to generate audio",
-                )
-            )
-    return rows
 
 
 def _music_path_row(config: Config) -> Capability | None:
