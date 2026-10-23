@@ -70,7 +70,7 @@ dependencies = [
     # The store (#871): one Alembic history on SQLite (default) or PostgreSQL.
     "sqlalchemy>=2.1.4",
     "alembic>=1.13",
-    "psycopg[binary]>=3.2",  # PostgreSQL driver, loaded by SQLAlchemy's postgresql+psycopg dialect
+    "psycopg[binary]>=3.3.6",  # PostgreSQL driver, loaded by SQLAlchemy's postgresql+psycopg dialect
     "cryptography>=50.0.2",  # Fernet for secrets the settings layer keeps in the store
     # WordNet through nltk: which words of a request typed as a sentence are things, places or
     # names. The corpus is a model file `models fetch` downloads; nothing fetches it at run time.
