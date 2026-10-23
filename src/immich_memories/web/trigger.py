@@ -1,8 +1,9 @@
 """The HTTP trigger API: one POST that runs the decision `auto run` would make.
 
 Immich's Workflows can call an external URL when something happens in the library.
-This is the URL. It takes no parameters on purpose — the server decides what to
-generate, through exactly the machinery the nightly timer and the CLI already use.
+This is the URL. The server decides what to generate, through exactly the machinery the
+nightly timer and the CLI already use. Its one parameter, `?force=true`, marks a call
+somebody made by hand: like `auto run --force`, it skips the cooldown and starts none.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from immich_memories.automation.last_trigger import record_trigger
-from immich_memories.automation.models import AutoOutcome
+from immich_memories.automation.models import AutoOutcome, AutoRunResult
 from immich_memories.automation.runner import (
     AutomationAlreadyRunningError,
     AutoRunner,
@@ -44,6 +45,11 @@ TRIGGER_PATH = "/api/trigger"
 # What the attempt history records for a run somebody asked for over HTTP, so
 # `auto status` and /health can tell it apart from the nightly wake.
 TRIGGER_REASON = "http trigger"
+
+# The query parameter a by-hand call carries. Only these values mean yes: anything
+# else, a typo included, is the scheduled call the endpoint has always answered.
+FORCE_PARAM = "force"
+_YES = frozenset({"true", "1", "yes"})
 
 # The run fields a caller polling for its artifact actually needs. The full record
 # carries host paths and person names that this contract has no reason to promise.
@@ -88,16 +94,29 @@ def _submit_to_background(started: StartedAutoRun) -> None:
 
 
 def _execute(started: StartedAutoRun) -> None:
-    """Execute one accepted decision, leaving its record to the runner."""
-    result = started.execute()
+    run_accepted(started)
+
+
+def run_accepted(started: StartedAutoRun) -> AutoRunResult:
+    """Execute one accepted decision, leaving its record to the runner.
+
+    A forced attempt skips the cooldown here, as `auto run --force` does.
+    """
+    result = started.execute(force=started.attempt.forced)
     logger.info("Triggered automation: %s (%s)", result.outcome.value, result.reason)
+    return result
 
 
-def _start(config: Config) -> StartedAutoRun | None:
+def _forced(request: Request) -> bool:
+    """Whether the caller marked this call as made by hand."""
+    return request.query_params.get(FORCE_PARAM, "").strip().lower() in _YES
+
+
+def _start(config: Config, *, forced: bool) -> StartedAutoRun | None:
     """Take the automation lease, or None when another run already holds it."""
     try:
         started = AutoRunner(config, config_path=loaded_config_file()).start_one(
-            reason=TRIGGER_REASON
+            reason=TRIGGER_REASON, forced=forced
         )
     except AutomationAlreadyRunningError:
         return None
@@ -169,7 +188,7 @@ def register_trigger_routes(
         if refused := _refused(config, request):
             return refused
 
-        started = await asyncio.to_thread(_start, config)
+        started = await asyncio.to_thread(_start, config, forced=_forced(request))
         if started is None:
             active = await asyncio.to_thread(_active_attempt_id, config)
             return JSONResponse(
@@ -183,6 +202,7 @@ def register_trigger_routes(
                 "status": "accepted",
                 "attempt_id": started.attempt.id,
                 "status_url": f"{TRIGGER_PATH}/{started.attempt.id}",
+                "forced": started.attempt.forced,
             },
             status_code=202,
         )
