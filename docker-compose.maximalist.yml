@@ -1,30 +1,22 @@
 # The maximalist reference for Docker Compose: every optional piece this
-# project ships, together on one GPU box. An override, not a replacement.
-# The store on PostgreSQL needs one more step: uncomment the `postgres`
-# service in docker-compose.yml first (it ships commented out, same as the
-# reservations.devices GPU blocks), then:
+# project ships, together on one NVIDIA box. It sits on top of the GPU, CUDA
+# and PostgreSQL overrides, which already run the inference service, the
+# captioner and the store:
 #
-#   CAPTIONER_TAG=server-cuda-b10920 INFERENCE_TAG=1.0.0-rc.10-cuda \
-#     docker compose -f docker-compose.yml -f docker-compose.maximalist.yml \
-#     --profile captioner --profile inference --profile postgres up -d
+#   IMMICH_MEMORIES_VERSION=1.0.0-rc.10 docker compose -f docker-compose.yml \
+#     -f docker-compose.gpu.yml -f docker-compose.cuda.yml \
+#     -f docker-compose.postgres.yml -f docker-compose.maximalist.yml up -d
 #
-# Walkthrough, hardware needed per piece, and the config keys:
+# This file adds what those don't: OIDC behind a reverse proxy, a text reader
+# and ACE-Step on a LAN machine, geocoding and map tiles, and cache caps sized
+# for a bigger library. Walkthrough, hardware per piece and the config keys:
 # docs-site/docs/run/reference-setup.md. The Kubernetes equivalent is
 # deploy/kubernetes/overlays/maximalist.
-#
-# What this file does NOT need to reinvent: the CUDA captioner and CUDA
-# inference service are already the `captioner`/`inference` profiles in
-# docker-compose.yml with CAPTIONER_TAG/INFERENCE_TAG set and the commented
-# `reservations.devices` block uncommented there (see that file). This
-# override only adds what nothing in docker-compose.yml demonstrates yet:
-# OIDC behind a reverse proxy, an LLM and ACE-Step on a LAN machine,
-# geocoding/map tiles, and cache caps sized for a bigger library.
 services:
   immich-memories:
     environment:
       IMMICH_MEMORIES_DEPLOYMENT_TIER: "full"
-      # The two profiles below are only started by --profile; docker-compose.yml
-      # ships the app's pointers to them commented out, so name them here.
+      # The captioner and inference services come from docker-compose.gpu.yml.
       IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL: "http://immich-memories-captioner:8092/v1"
       IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL: "http://immich-memories-inference:8092"
 

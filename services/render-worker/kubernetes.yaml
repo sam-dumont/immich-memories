@@ -67,7 +67,8 @@ spec:
               cpu: "2"
               memory: 1Gi
             limits:
-              # Frames are composed on the CPU; the card only encodes. Four CPUs throttle.
+              # Frames stay on the GPU from decode to encode; crossfades and captions still
+              # run on the CPU, and four CPUs throttle them.
               cpu: "8"
               memory: 4Gi
               nvidia.com/gpu: "1"
