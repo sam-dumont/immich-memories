@@ -112,7 +112,10 @@ def test_hosted_episodes_overlap_with_exact_usage_and_reusable_ordered_readings(
             maximum = max(maximum, active)
             if active == 4:
                 overlap.set()
-        overlap.wait(timeout=0.1)
+        # The four overlapping requests release each other the moment the fourth arrives;
+        # the timeout only bounds a broken limit. At 0.1 s a loaded 4-CPU runner started
+        # the fourth thread too late and the test read a peak of 3.
+        overlap.wait(timeout=5)
         await asyncio.sleep(0.04 if number == 0 else 0.001)
         with lock:
             active -= 1
