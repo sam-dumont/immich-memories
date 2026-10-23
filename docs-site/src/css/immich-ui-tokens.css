@@ -1,4 +1,4 @@
-/* Generated from @immich/ui 0.90.0 (MIT). Run npm run ui-theme. */
+/* Generated from @immich/ui 0.91.0 (MIT). Run npm run ui-theme. */
 :root, [data-theme='light'] {
   --immich-ui-primary-50: oklch(0.9616 0.0166 271.24);
   --immich-ui-primary-100: oklch(0.897 0.033 281.96);
