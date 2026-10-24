@@ -133,7 +133,10 @@ def _advice(key: str) -> str:
         return f"use {MOVED[key]} instead, which this value is applied to; {_REMOVAL}"
     if key in IGNORED:
         return f"it is ignored: {IGNORED[key]}; remove it"
-    return f"it is internal tuning with no supported use; remove it, {_REMOVAL}"
+    return (
+        "it is internal tuning, so your value still applies until 2.0, when the default "
+        "replaces it; remove it to use the default now"
+    )
 
 
 def warn_unsupported_keys(config: Config) -> list[str]:
