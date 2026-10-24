@@ -11,7 +11,7 @@
 #     file: docker/hwaccel.inference.yml
 #     service: cuda          # or cpu, which reserves nothing
 #
-# `cuda` also needs the `-cuda` image: set INFERENCE_TAG=1.0.0-rc.11-cuda (or
+# `cuda` also needs the `-cuda` image: set INFERENCE_TAG=1.0.0-rc.12-cuda (or
 # X.Y.Z-cuda). The cpu image has no CUDA provider in it and will not grow one
 # because a device was reserved.
 #

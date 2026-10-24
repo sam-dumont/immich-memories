@@ -19,7 +19,7 @@ variable "namespace" {
 variable "image_tag" {
   description = "Container image tag (no `v` prefix)"
   type        = string
-  default     = "1.0.0-rc.11"
+  default     = "1.0.0-rc.12"
 }
 
 # Immich

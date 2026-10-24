@@ -24,7 +24,7 @@ spec:
     spec:
       initContainers:
         - name: install-config
-          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.11
+          image: ghcr.io/sam-dumont/immich-memories:1.0.0-rc.12
           imagePullPolicy: Always
           command:
             - /bin/sh
