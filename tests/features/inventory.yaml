@@ -1718,6 +1718,7 @@ features:
       - tests/test_upgrading_page.py::test_every_default_on_detector_is_listed_with_a_key_that_exists
       - tests/test_upgrading_page.py::test_the_page_has_one_security_section_naming_each_change_and_its_fix
       - tests/test_upgrading_page.py::test_the_settings_that_moved_to_the_file_are_listed
+      - tests/test_upgrading_page.py::test_every_key_that_left_the_config_says_what_its_value_does_until_2_0
   - id: preflight.wrong-address-fast
     promise: "A wrong Immich address fails preflight quickly with a clear reason, not a one-minute hang."
     doc: reference/troubleshooting.md#cannot-connect-to-immich

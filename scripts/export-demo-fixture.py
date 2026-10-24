@@ -7,7 +7,7 @@ page's first page and its counters. This exports them into
 ``docs-site/remotion/src/fixture.ts`` so the demo cannot drift from the fixture.
 Run it through ``make demo-fixture``.
 
-With ``IMMICH_MEMORIES_E2E_RECORDING`` naming a recording (the Makefile sets it
+With ``IMMICH_E2E_RECORDING`` naming a recording (the Makefile sets it
 to the month the screenshots replay) the cut is that recorded real run: its
 one-line summary, its pictures, stories and reasons, and for every other picture
 the reason the run gave. Without one, it is the script in
@@ -35,6 +35,7 @@ from tests.e2e.fake_immich import ALBUMS, TIMELINE_ASSETS  # noqa: E402
 from tests.e2e.fake_library import (  # noqa: E402
     BY_ID,
     CARRIERS,
+    CAST,
     LIBRARY,
     LIBRARY_DIR,
     MONTH,
@@ -413,6 +414,8 @@ def main() -> None:
             "  outcome: string;",
             "};",
             "",
+            "// The household, in the order the brief's people chips list them.",
+            f"export const CAST = {json.dumps(list(CAST))};",
             f"export const THESIS = {json.dumps(cut.thesis)};",
             f"export const SUMMARY_LINE = {json.dumps(cut.summary)};",
             f"export const POOL_LINE = {json.dumps(pool_line())};",

@@ -62,7 +62,7 @@ grandparents' visit from facts.
 Each memory type was also cut once for real: Full tier, a local model, a real Immich seeded with
 the library (`scripts/record_demo_runs.py`). Its decisions sit under
 `tests/e2e/fixtures/recordings/<memory type>/`: the plan, the decision trace, the render
-projection and the run's own story. Setting `IMMICH_MEMORIES_E2E_RECORDING=<memory type>` makes
+projection and the run's own story. Setting `IMMICH_E2E_RECORDING=<memory type>` makes
 the hermetic editor replay that cut instead of the scripted one, so docs and demos show what the
 product chose without running a model again. Record again only when the library or the editor
 changes on purpose.

@@ -53,6 +53,8 @@ def test_an_internal_knob_still_works_and_is_named_without_its_value(tmp_path, c
     assert config.photos.burst_hash_threshold == 11
     said = _warnings(caplog)
     assert "photos.burst_hash_threshold is no longer supported" in said
+    assert "your value still applies until 2.0" in said
+    assert "the default" in said
     assert "11" not in said
 
 

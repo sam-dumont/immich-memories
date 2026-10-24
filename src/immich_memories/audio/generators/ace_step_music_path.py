@@ -109,6 +109,16 @@ def _host_reason(host: HostMemory) -> str:
     )
 
 
+def local_check_profile(configured: str, host: HostMemory) -> tuple[MusicPath, str]:
+    """What a local music check generates with: a lib-mode film's decision on this host.
+
+    Returns that decision and the variant it loads: XL for ``auto``, else the configured one.
+    A check that passes on any other model proves nothing about the films.
+    """
+    path = decide_music_path(mode="lib", configured=configured, host=host, server_model=None)
+    return path, XL_VARIANT if is_auto(configured) else configured
+
+
 def server_model(api_url: str) -> str | None:
     """The DiT model the ACE-Step API server reports on ``/health``; None when it cannot say."""
     for attempt in range(_PROBE_ATTEMPTS):
@@ -159,4 +169,11 @@ def music_path_for(settings) -> MusicPath:
     return path
 
 
-__all__ = ["XL_VARIANT", "MusicPath", "decide_music_path", "music_path_for", "server_model"]
+__all__ = [
+    "XL_VARIANT",
+    "MusicPath",
+    "decide_music_path",
+    "local_check_profile",
+    "music_path_for",
+    "server_model",
+]

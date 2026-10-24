@@ -58,3 +58,23 @@ def test_the_settings_that_moved_to_the_file_are_listed():
         "editorial.preparation.marqo_onnx",
     ):
         assert f"`{key}`" in section, key
+
+
+@pytest.mark.feature("docs.upgrading-1-0")
+def test_every_key_that_left_the_config_says_what_its_value_does_until_2_0():
+    """The table once said "fixed" for knobs the code still reads; each row now matches its kind."""
+    from immich_memories.config.unsupported import IGNORED, INTERNAL, MERGED, MOVED, TIER_OWNED
+
+    section = PAGE.split("### Settings that left the config")[1].split("\n### ")[0]
+    until = {
+        row.split(" | ")[0].strip("| `"): row.split(" | ")[1]
+        for row in section.splitlines()
+        if row.startswith("| `")
+    }
+    expected = dict.fromkeys(TIER_OWNED, "ignored: `tier` sets it")
+    expected |= dict.fromkeys((*INTERNAL, *MERGED), "your value still applies")
+    expected |= {key: f"applied to `{new}`" for key, new in MOVED.items()}
+    expected |= dict.fromkeys(IGNORED, "ignored")
+
+    for key, start in expected.items():
+        assert until.get(key, "").startswith(start), key

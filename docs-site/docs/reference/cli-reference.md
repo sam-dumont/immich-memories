@@ -127,7 +127,7 @@ immich-memories auto test-notification [OPTIONS]
 
 ## `capabilities`
 
-Show what this setup supports, what is missing, and which music profiles work.
+Show what this setup supports, what is missing, and whether films can generate music.
 
 Connection and installation checks are labelled separately from real generation.
 Saved settings and running model servers are left alone. Use --test-music after
@@ -139,7 +139,7 @@ immich-memories capabilities [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--test-music` | boolean | false | Generate 15 seconds for each local ACE-Step profile that fits; may download models. |
+| `--test-music` | boolean | false | Generate 15 seconds with the ACE-Step model films load on this host; may download models. |
 | `--verify-local` | boolean | false | Verify configured owned reader and cached local audio with synthetic inputs; no full-film certification |
 | `--json` | boolean | false | Print the report as JSON |
 

@@ -61,13 +61,15 @@ DEFAULT_STAGE_SECONDS = 0.15
 
 # A real run of one memory type, recorded once by `scripts/record_demo_runs.py`. Naming one
 # replays its cut instead of the script: the docs and demos then show what the product chose,
-# and nothing has to run a model to show it again.
+# and nothing has to run a model to show it again. The name stays outside the app's
+# `IMMICH_MEMORIES_` config prefix, or the app would list it under Settings > Checks as an
+# unknown config key, and the screenshots would show that.
 RECORDINGS = Path(__file__).parent / "fixtures" / "recordings"
-RECORDING_ENV = "IMMICH_MEMORIES_E2E_RECORDING"
+RECORDING_ENV = "IMMICH_E2E_RECORDING"
 
 
 def recording() -> dict[str, Any] | None:
-    """The recording `IMMICH_MEMORIES_E2E_RECORDING` names, or None for the scripted cut."""
+    """The recording `IMMICH_E2E_RECORDING` names, or None for the scripted cut."""
     name = os.environ.get(RECORDING_ENV, "")
     if not name:
         return None

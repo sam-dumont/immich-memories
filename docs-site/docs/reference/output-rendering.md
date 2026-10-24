@@ -376,7 +376,8 @@ hip hop, electronic, downtempo, neo-soul, post-rock, funk and city pop; the othe
 nearest of those five (playful, inspiring and uplifting use happy; peaceful uses calm; exciting and
 dramatic use energetic; romantic uses tender; sad, melancholic and mysterious use nostalgic). A
 style is sampled with weight (kept + 1) / (rated + 2), and left out of a mood when it was kept in
-fewer than four takes out of ten. A reader's genre (piano, lo-fi, funk, post-rock, downtempo,
+fewer than four takes out of ten. Electronic sits below that floor in both tables that list it,
+so it never plays unless you ask for it. A reader's genre (piano, lo-fi, funk, post-rock, downtempo,
 neo-soul, city pop) is followed when the mood's list allows that style; any other genre is ignored
 and the table decides. Acoustic folk, jazz trio, indie rock, orchestral, ambient and metal are
 never picked automatically.

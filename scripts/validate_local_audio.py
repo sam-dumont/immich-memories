@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-"""Validate all-local music pipeline on Apple Silicon.
+"""Validate the all-local music pipeline with the model films use.
 
-Runs ACE-Step (lib mode) + Demucs (local) end-to-end with no API servers.
-Use this to prove the "fully local" claim actually works.
+Runs ACE-Step (lib mode) + Demucs (local) end-to-end with no API servers. ACE-Step runs
+with `model_variant: auto`, the films' default, so it loads the 4B XL model on a host that
+clears the XL bar. On a smaller host films play the bundled library and generate nothing;
+the check says so and fails instead of passing on the 2B model.
 
 Usage:
-    .venv/bin/python scripts/validate_local_audio.py
-    .venv/bin/python scripts/validate_local_audio.py --quality high  # XL-turbo + 4B LM
+    .venv/bin/python scripts/validate_local_audio.py                 # XL, no planner
+    .venv/bin/python scripts/validate_local_audio.py --quality high  # XL + 4B planner
 
 Requirements:
     make install-acestep
     make check-local-audio
 
 Model cache locations:
-    ACE-Step: ~/.cache/ace-step/checkpoints/  (~28GB for XL-turbo + 4B LM + shared assets)
+    ACE-Step: ~/.cache/ace-step/checkpoints/  (~20GB for XL-turbo + shared assets, ~28GB with 4B LM)
     Demucs:   ~/.cache/torch/hub/        (~80MB for htdemucs)
 """
 
@@ -31,28 +33,30 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from immich_memories.audio.generators.ace_step_backend import ACEStepConfig
+    from immich_memories.audio.generators.ace_step_model_choice import HostMemory
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("validate_local_audio")
 
 
 def build_acestep_config(quality: str) -> ACEStepConfig:
-    """Build the fast smoke or production XL validation profile."""
+    """The films' own model choice (`auto`), without a planner or with the 4B one."""
     from immich_memories.audio.generators.ace_step_backend import ACEStepConfig
 
-    if quality == "high":
-        return ACEStepConfig(
-            mode="lib",
-            model_variant="acestep-v15-xl-turbo",
-            lm_model_size="4B",
-            use_lm=True,
-        )
     return ACEStepConfig(
         mode="lib",
-        model_variant="turbo",
-        lm_model_size="0.6B",
-        use_lm=True,
+        model_variant="auto",
+        lm_model_size="4B",
+        use_lm=quality == "high",
     )
+
+
+def bundled_reason(host: HostMemory) -> str | None:
+    """Why films on this host play the bundled library; None when they generate with XL."""
+    from immich_memories.audio.generators.ace_step_music_path import local_check_profile
+
+    path, _variant = local_check_profile("auto", host)
+    return None if path.generate else path.reason
 
 
 def check_dependencies() -> dict[str, bool]:
@@ -179,7 +183,7 @@ async def main():
         "--quality",
         choices=["low", "high"],
         default="low",
-        help="low=2B turbo+0.6B LM (fast), high=XL-turbo+4B LM (production)",
+        help="low=XL without a planner (the films' default), high=XL with the 4B planner",
     )
     parser.add_argument(
         "--output-dir",
@@ -204,12 +208,21 @@ async def main():
         logger.warning(f"Missing packages: {missing}")
         logger.info("Install with: make install-acestep (ACE-Step runs in its own environment)")
 
-    # 2. ACE-Step generation
+    # 2. Films on a host below the XL bar never generate: nothing here would prove anything.
+    from immich_memories.audio.generators.ace_step_model_choice import measure_host
+
+    if reason := bundled_reason(measure_host()):
+        logger.info("")
+        logger.info("  NOT TESTED: films here play the bundled library, not generated music.")
+        logger.info(f"  {reason[0].upper()}{reason[1:]}.")
+        sys.exit(1)
+
+    # 3. ACE-Step generation
     logger.info("")
     logger.info("--- ACE-Step (lib mode) ---")
     audio_path = await run_acestep(output_dir, args.quality)
 
-    # 3. Demucs stem separation
+    # 4. Demucs stem separation
     if audio_path:
         logger.info("")
         logger.info("--- Demucs (local) ---")
@@ -218,7 +231,7 @@ async def main():
     else:
         success = False
 
-    # 4. Summary
+    # 5. Summary
     logger.info("")
     logger.info("=" * 60)
     if audio_path and success:

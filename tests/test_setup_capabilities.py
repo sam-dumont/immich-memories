@@ -6,11 +6,21 @@ import soundfile as sf
 
 from immich_memories.config import Config
 
+XL_HOST = "immich_memories.audio.generators.ace_step_model_choice.measure_host"
 
-def test_small_music_profile_is_offered_without_claiming_generation(monkeypatch, tmp_path):
+
+def _host(gib: float):
+    from immich_memories.audio.generators.ace_step_model_choice import HostMemory
+
+    return lambda: HostMemory(unified_gib=gib)
+
+
+def test_the_check_offers_only_the_model_films_load(monkeypatch, tmp_path):
     from immich_memories.setup_capabilities import music_capabilities
 
-    # WHY: available host memory and the separately installed audio runtime are external state.
+    # WHY: total and available host memory and the separately installed audio runtime are
+    # external state.
+    monkeypatch.setattr(XL_HOST, _host(128))
     monkeypatch.setattr(
         "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: 10 * 2**30
     )
@@ -18,17 +28,46 @@ def test_small_music_profile_is_offered_without_claiming_generation(monkeypatch,
         "immich_memories.audio.generators.ace_step_isolated.isolated_python",
         lambda: tmp_path / "python",
     )
-    config = Config(ace_step={"model_variant": "acestep-v15-xl-turbo", "use_lm": False})
+    config = Config(ace_step={"model_variant": "auto", "use_lm": False})
 
     rows = music_capabilities(config)
 
-    assert rows[0].status == "blocked"
-    assert "21.0 GiB" in rows[0].message
-    assert [(row.name, row.status) for row in rows[1:]] == [
-        ("ACE-Step turbo / no planner", "untested"),
-        ("ACE-Step turbo / 0.6B planner", "untested"),
+    assert [(row.name, row.status) for row in rows] == [
+        ("ACE-Step xl-turbo / no planner", "blocked")
     ]
-    assert all("--test-music" in row.message for row in rows[1:])
+    assert "21.0 GiB" in rows[0].message
+
+
+def test_a_host_below_the_xl_bar_says_films_play_the_bundled_library(monkeypatch, tmp_path):
+    from immich_memories.setup_capabilities import music_capabilities
+
+    generated = []
+
+    async def generate(backend, request):
+        generated.append(backend.config.model_variant)
+        raise AssertionError("a host below the XL bar must not generate")
+
+    # WHY: host memory, the installed audio runtime and ML generation are external state.
+    monkeypatch.setattr(XL_HOST, _host(32))
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: 24 * 2**30
+    )
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_isolated.isolated_python",
+        lambda: tmp_path / "python",
+    )
+    monkeypatch.setattr(
+        "immich_memories.audio.generators.ace_step_backend.ACEStepBackend.generate", generate
+    )
+
+    rows = music_capabilities(Config(), test_music=True)
+
+    assert generated == []
+    assert [(row.name, row.status) for row in rows] == [
+        ("ACE-Step xl-turbo / no planner", "bundled")
+    ]
+    assert "bundled library" in rows[0].message
+    assert "32 GB" in rows[0].message
 
 
 @pytest.mark.parametrize("audible", [True, False])
@@ -47,8 +86,9 @@ def test_music_probe_checks_real_audio_and_keeps_the_config(monkeypatch, tmp_pat
 
     # WHY: substitute host memory, installed audio Python and expensive ML generation only;
     # the CLI's audio validation reads and decodes a real WAV.
+    monkeypatch.setattr(XL_HOST, _host(64))
     monkeypatch.setattr(
-        "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: 8 * 2**30
+        "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: 32 * 2**30
     )
     monkeypatch.setattr(
         "immich_memories.audio.generators.ace_step_isolated.isolated_python",
@@ -57,14 +97,15 @@ def test_music_probe_checks_real_audio_and_keeps_the_config(monkeypatch, tmp_pat
     monkeypatch.setattr(
         "immich_memories.audio.generators.ace_step_backend.ACEStepBackend.generate", generate
     )
-    config = Config(ace_step={"model_variant": "acestep-v15-xl-turbo", "use_lm": False})
+    config = Config(ace_step={"model_variant": "auto", "use_lm": False})
     before = config.model_dump()
 
     rows = music_capabilities(config, test_music=True)
 
-    assert used == [("turbo", False)]
-    assert rows[1].status == ("verified" if audible else "failed")
-    assert ("15" if audible else "silent") in rows[1].message
+    assert used == [("xl-turbo", False)]
+    assert len(rows) == 1
+    assert rows[0].status == ("verified" if audible else "failed")
+    assert ("15" if audible else "silent") in rows[0].message
     assert config.model_dump() == before
 
 
@@ -78,6 +119,7 @@ def test_capabilities_command_explains_connection_evidence_and_small_profiles(
     # WHY: use the real CLI with this host's expensive FFmpeg/kernel probe and provider
     # connection group replaced by recorded external check results; no owner services called.
     monkeypatch.setattr("immich_memories.preflight.run_preflight_checks", lambda _config: [])
+    monkeypatch.setattr(XL_HOST, _host(64))
     monkeypatch.setattr(
         "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: 4 * 2**30
     )
@@ -130,7 +172,8 @@ def test_probe_rejects_truncated_tracks_and_api_fallback(monkeypatch, tmp_path, 
 def test_unknown_memory_does_not_trigger_automatic_model_load(monkeypatch, tmp_path):
     from immich_memories.setup_capabilities import music_capabilities
 
-    # WHY: simulate an unreadable host memory probe and an installed audio environment.
+    # WHY: simulate an XL host whose free memory cannot be read, with audio installed.
+    monkeypatch.setattr(XL_HOST, _host(64))
     monkeypatch.setattr(
         "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: None
     )
@@ -145,10 +188,11 @@ def test_unknown_memory_does_not_trigger_automatic_model_load(monkeypatch, tmp_p
     assert all("Cannot measure" in row.message for row in rows)
 
 
-def test_model_alias_is_tested_only_once(monkeypatch, tmp_path):
+def test_a_pinned_2b_variant_is_what_the_check_tests(monkeypatch, tmp_path):
     from immich_memories.setup_capabilities import music_capabilities
 
     # WHY: host memory and separate environment discovery must be stable across CI hosts.
+    monkeypatch.setattr(XL_HOST, _host(16))
     monkeypatch.setattr(
         "immich_memories.audio.generators.memory_budget.available_memory_bytes", lambda: 10 * 2**30
     )
@@ -161,7 +205,7 @@ def test_model_alias_is_tested_only_once(monkeypatch, tmp_path):
         Config(ace_step={"model_variant": "acestep-v15-turbo", "use_lm": False})
     )
 
-    assert len(rows) == 2
+    assert [(row.name, row.status) for row in rows] == [("ACE-Step turbo / no planner", "untested")]
 
 
 def test_json_report_preserves_failed_checks_and_missing_local_audio(monkeypatch):

@@ -312,3 +312,24 @@ def test_a_specific_style_caption_keeps_tempo_out_too():
 
     assert result.caption.startswith("1920s swing")
     assert "bpm" not in result.caption
+
+
+def test_the_config_reference_names_exactly_the_styles_the_app_picks():
+    """The hand-written reference drifted once (it listed electronic, which no mood keeps)."""
+    import re
+    from pathlib import Path
+
+    from immich_memories.audio.generators.ace_step_captions import (
+        MOOD_STYLE_TESTS,
+        styles_for_mood,
+    )
+
+    prose = {"piano": "solo piano", "lofi": "lo-fi", "neosoul": "neo-soul"}
+    prose |= {"postrock": "post-rock", "citypop": "city pop"}
+    picked = {style for mood in MOOD_STYLE_TESTS for style in styles_for_mood(mood)}
+    reference = Path(__file__).parents[1] / "docs-site/docs/reference/config-reference.md"
+    sentence = re.search(r"picks from the film's mood: ([^.]+)\.", reference.read_text())
+
+    assert sentence is not None
+    named = set(re.split(r", | or ", sentence.group(1)))
+    assert named == {prose.get(style, style) for style in picked}

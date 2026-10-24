@@ -1,4 +1,4 @@
-"""Describe the configured setup and optionally prove smaller local music profiles."""
+"""Describe the configured setup and optionally prove the local music model films load."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def register_capabilities_command(main: click.Group) -> None:
     @click.option(
         "--test-music",
         is_flag=True,
-        help="Generate 15 seconds for each local ACE-Step profile that fits; may download models.",
+        help="Generate 15 seconds with the ACE-Step model films load on this host; may download models.",
     )
     @click.option(
         "--verify-local",
@@ -30,7 +30,7 @@ def register_capabilities_command(main: click.Group) -> None:
     def capabilities(
         ctx: click.Context, test_music: bool, verify_local: bool, as_json: bool
     ) -> None:
-        """Show what this setup supports, what is missing, and which music profiles work.
+        """Show what this setup supports, what is missing, and whether films can generate music.
 
         Connection and installation checks are labelled separately from real generation.
         Saved settings and running model servers are left alone. Use --test-music after

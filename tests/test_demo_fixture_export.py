@@ -16,7 +16,7 @@ RECORDING = REPO / "tests" / "e2e" / "fixtures" / "recordings" / "monthly_highli
 @pytest.fixture
 def exporter(monkeypatch: pytest.MonkeyPatch):
     """scripts/export-demo-fixture.py, loaded by path: its name is not importable."""
-    monkeypatch.setenv("IMMICH_MEMORIES_E2E_RECORDING", "monthly_highlights")
+    monkeypatch.setenv("IMMICH_E2E_RECORDING", "monthly_highlights")
     spec = importlib.util.spec_from_file_location(
         "export_demo_fixture", REPO / "scripts" / "export-demo-fixture.py"
     )
@@ -69,3 +69,24 @@ def test_every_alternative_is_in_the_pool_with_what_the_run_did_with_it(exporter
     kept = {shot["picture"] for shot in shots}
     for picture, card in pool.items():
         assert card["outcome"].startswith("In the cut at " if picture in kept else "Left out at ")
+
+
+def test_the_recording_flag_is_not_a_config_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The screenshots run the app with this flag set; a name inside the config prefix showed
+    # up under Settings > Checks as an unknown key, in the published screenshot.
+    from immich_memories.config.loader import Config
+    from immich_memories.config.unknown import unknown_environment
+    from tests.e2e.fake_editorial import RECORDING_ENV
+
+    monkeypatch.setenv(RECORDING_ENV, "monthly_highlights")
+
+    assert RECORDING_ENV not in unknown_environment(Config)
+
+
+def test_the_brief_lists_the_whole_household() -> None:
+    # The demo's brief drew four people chips while the page lists everyone the library names.
+    from tests.e2e.fake_library import CAST
+
+    fixture = (REPO / "docs-site" / "remotion" / "src" / "fixture.ts").read_text()
+
+    assert f"export const CAST = {json.dumps(list(CAST))};" in fixture

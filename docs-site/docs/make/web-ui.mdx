@@ -89,6 +89,10 @@ Immich delivery. Missing `asset.delete` leaves the previous version in Immich an
 
 **Runs** lists cuts and renders newest first. Open a run to review the cut, render another version or play its film.
 
+The run's details, at the bottom of its page, give the film's path, whether it went to Immich and how long each phase took.
+
+<ThemedScreenshot name="run-details" alt="Run details: the film saved in its run folder under Videos/Memories, Immich delivery not requested, and the seconds clip extraction and assembly took" />
+
 Local films play on the page and have **Download film**. That button is highlighted when a
 requested upload could not complete, next to the run's reason. It downloads the finished file,
 not a diagnostic report.
@@ -111,6 +115,8 @@ A setting with a fixed list of values (the tier, the output codec and resolution
 **Checks** lists what loading your config warned about, so you don't need the server log to spot an old or misspelled key. **Run the preflight checks** there runs what `immich-memories preflight` runs.
 
 **Check for updates** asks GitHub once whether a newer release is out and, if so, links its notes and gives the upgrade command for your kind of install. Nothing goes out until you press it. With `updates.check_daily: true` the app checks once a day and shows a banner you can dismiss.
+
+<ThemedScreenshot name="settings-config" alt="Settings: the Immich connection, a link to People, Check for updates, an empty Checks list with Run the preflight checks, and the config file the values come from" />
 
 API keys stay masked. To save secrets from the UI, configure `IMMICH_MEMORIES_SECRET_KEY`; keys already supplied through `.env` or `config.yaml` do not need this for normal use. [Configuration and the secret key](../run/environment-variables.md#the-secret-key).
 

@@ -49,10 +49,11 @@ const CANDIDATES = [
 const CHECK = 72;
 const SETTLED = CHECK + 14;
 // The first card's "Check eligibility", before the attempt's own box pushes the cards down:
-// the heading block (64), the gap, then the card's padding, reason, meta and key lines.
+// the heading block (64), the refresh row the page wraps under it (12 + 32), the gap, then the
+// card's padding, reason, meta and key lines.
 const CHECK_XY = onScreen(
   MAIN_X + 87,
-  MAIN_Y + 64 + 24 + 16 + 28 + 8 + 20 + 8 + 16 + 8 + 18,
+  MAIN_Y + 64 + 12 + 32 + 24 + 16 + 28 + 8 + 20 + 8 + 16 + 8 + 18,
 );
 
 const Card: React.FC<{
@@ -136,6 +137,7 @@ export const SuggestionsScene: React.FC = () => {
             <div
               style={{
                 display: "flex",
+                flexWrap: "wrap",
                 alignItems: "flex-end",
                 justifyContent: "space-between",
                 gap: 12,
