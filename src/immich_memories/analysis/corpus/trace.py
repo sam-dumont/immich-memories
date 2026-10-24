@@ -528,8 +528,10 @@ def _described(item: object) -> str:
     bits = [
         str(getattr(asset, "original_file_name", "") or _asset_id(item)[:8]),
         when.isoformat(timespec="minutes") if when else "undated",
-        f"score={getattr(item, 'score', 0.0):.2f}",
     ]
+    # Story-first candidates carry no score; printing a default 0.00 read as a verdict.
+    if score := getattr(item, "score", None):
+        bits.append(f"score={score:.2f}")
     if getattr(asset, "is_favorite", False):
         bits.append("starred")
     for label, source, attr in (
