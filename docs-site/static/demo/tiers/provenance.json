@@ -1,11 +1,11 @@
 {
- "source_sha": "98a273663cd13200b19ae68ae07e6b544279bea3",
+ "source_sha": "439fa50bf60961ae80cac7a3ab4089c2f6e4f5bb",
  "software": {
-  "immich-memories": "1.0.0rc11.dev2+g98a273663",
-  "onnxruntime": "1.28.0",
-  "torch": "2.14.0",
-  "mlx": "0.32.3",
-  "laya-mlx": "0.4.0",
+  "immich-memories": "1.0.0rc11.dev161+g439fa50bf",
+  "onnxruntime": "1.31.0",
+  "torch": "2.14.1",
+  "mlx": "0.32.4",
+  "laya-mlx": "0.5.0",
   "immich-memories-music": "0.1.0"
  },
  "platform": "Darwin arm64",
@@ -27,7 +27,7 @@
  ],
  "services": {
   "captioner": "smolvlm2-500m-base-public (gpu, full)",
-  "reader": "gemma-4-e4b-it-6bit"
+  "reader": "the operator's own (full)"
  },
  "tiers": {
   "basic": {
@@ -48,15 +48,15 @@
     "north-0721-0339.jpg",
     "north-0731-1002.jpg"
    ],
-   "summary": "Kit's birthday, then Lou and Pat's visit, then The road north",
+   "summary": "",
    "pipeline_seconds": {
-    "total": 68.0,
-    "analysis": 45.9,
-    "generation": 22.1
+    "total": 52.0,
+    "analysis": 24.4,
+    "generation": 27.6
    },
-   "wall_seconds": 71,
+   "wall_seconds": 54,
    "source_film": {
-    "seconds": 60.0,
+    "seconds": 60.4,
     "streams": [
      [
       "video",
@@ -73,11 +73,11 @@
     ],
     "decode_exit": 0
    },
-   "frames_md5": "e479690c70dcf59bb7e1096e8c1d29c4",
+   "frames_md5": "feac45ffb5b1c2cfc70b88f9cafe475f",
    "film": {
     "path": "tiers/month.mp4",
-    "bytes": 8730339,
-    "seconds": 60.0,
+    "bytes": 8717928,
+    "seconds": 60.4,
     "streams": [
      [
       "video",
@@ -113,15 +113,15 @@
     "north-0721-0339.jpg",
     "north-0731-1002.jpg"
    ],
-   "summary": "Kit's birthday, then Lou and Pat's visit, then The road north",
+   "summary": "",
    "pipeline_seconds": {
-    "total": 96.0,
-    "analysis": 73.7,
-    "generation": 22.3
+    "total": 74.8,
+    "analysis": 56.3,
+    "generation": 18.5
    },
-   "wall_seconds": 99,
+   "wall_seconds": 76,
    "source_film": {
-    "seconds": 60.0,
+    "seconds": 60.4,
     "streams": [
      [
       "video",
@@ -138,11 +138,11 @@
     ],
     "decode_exit": 0
    },
-   "frames_md5": "e479690c70dcf59bb7e1096e8c1d29c4",
+   "frames_md5": "feac45ffb5b1c2cfc70b88f9cafe475f",
    "film": {
     "path": "tiers/month.mp4",
-    "bytes": 8730339,
-    "seconds": 60.0,
+    "bytes": 8717928,
+    "seconds": 60.4,
     "streams": [
      [
       "video",
@@ -178,15 +178,15 @@
     "north-0721-0339.jpg",
     "north-0731-1002.jpg"
    ],
-   "summary": "The period included ordinary days at home and several visits. Kit's birthday and Lou and Pat's visit were major events, while The road north was a major trip spanning from July 12th to July 31st.",
+   "summary": "",
    "pipeline_seconds": {
-    "total": 122.8,
-    "analysis": 99.7,
-    "generation": 23.2
+    "total": 93.1,
+    "analysis": 74.2,
+    "generation": 18.9
    },
-   "wall_seconds": 126,
+   "wall_seconds": 95,
    "source_film": {
-    "seconds": 60.0,
+    "seconds": 60.4,
     "streams": [
      [
       "video",
@@ -203,11 +203,11 @@
     ],
     "decode_exit": 0
    },
-   "frames_md5": "e479690c70dcf59bb7e1096e8c1d29c4",
+   "frames_md5": "feac45ffb5b1c2cfc70b88f9cafe475f",
    "film": {
     "path": "tiers/month.mp4",
-    "bytes": 8730339,
-    "seconds": 60.0,
+    "bytes": 8717928,
+    "seconds": 60.4,
     "streams": [
      [
       "video",

@@ -16,6 +16,6 @@ and Full tiers.
 | [Render on a GPU box](./gpu-render.md) | The encode and most per-frame work moved to an NVIDIA card | A trusted worker that holds your Immich key |
 | [Generated music](./music.md) | An original track for each film instead of a bundled one | ACE-Step XL: a Mac with 64 GB of unified memory or a 16 GB NVIDIA card, about 21 GB of memory and 20 GB of disk |
 
-On one demo month, Basic took 71 s, GPU 99 s and Full 126 s, and all three picked the same 15
+On one demo month, Basic took 54 s, GPU 76 s and Full 95 s, and all three picked the same 15
 shots: [one month, three tiers](./tier-example.md). [Measure your setup](./measured.md) has the
 rest of the numbers and the hardware behind them.
