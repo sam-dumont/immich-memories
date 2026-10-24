@@ -13,6 +13,12 @@ from PIL import Image
 PREVIEW_UNAVAILABLE = "preview unavailable at Immich (HTTP 404)"
 
 
+class PreviewUnavailable(FileNotFoundError):
+    """Immich answered that it has no preview: the fetcher read its 404 as no payload (#2880)."""
+
+    status_code = 404
+
+
 def preview_refused(exc: BaseException) -> bool:
     """Whether Immich answered about this source, rather than failing to answer at all.
 
@@ -56,11 +62,15 @@ def ensure_preview(path: Path, asset_id: str, fetch_preview, *, edited: bool = F
             with suppress(OSError):
                 os.utime(path)
             return 0
-    payload = fetch_preview(asset_id) if fetch_preview else None
-    if not payload:
+    if not fetch_preview:
         raise FileNotFoundError(
             "Immich preview missing or corrupt; provide fetch_preview or populate the configured thumbnail cache"
         )
+    payload = fetch_preview(asset_id)
+    if payload is None:
+        raise PreviewUnavailable(f"Immich has no preview for {asset_id}")
+    if not payload:
+        raise FileNotFoundError(f"Immich sent an empty preview for {asset_id}")
     with Image.open(io.BytesIO(payload)) as image:
         image.verify()
     path.parent.mkdir(parents=True, exist_ok=True)

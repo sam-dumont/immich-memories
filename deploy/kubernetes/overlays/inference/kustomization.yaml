@@ -26,4 +26,4 @@ resources:
 # page before you apply, and bump it when you upgrade.
 images:
   - name: ghcr.io/sam-dumont/immich-memories/inference
-    newTag: "1.0.0-rc.10"
+    newTag: "1.0.0-rc.11"
