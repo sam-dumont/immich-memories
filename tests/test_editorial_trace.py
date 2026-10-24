@@ -126,3 +126,22 @@ def test_editorial_report_marks_abbreviated_decisions_as_display_only() -> None:
         "asset_id": "reject-12",
         "reason": "reason 12",
     }
+
+
+def test_a_candidate_with_no_score_is_not_described_as_scoring_zero() -> None:
+    """Story-first candidates carry no score; the account must not invent a 0.00 for them."""
+    from datetime import UTC, datetime
+
+    from immich_memories.analysis.corpus.trace import _facts_of
+    from tests.conftest import make_asset
+
+    taken = datetime(2025, 7, 5, 7, 12, tzinfo=UTC)
+    unscored = make_asset("a1", original_file_name="IMG_2438.jpg", file_created_at=taken)
+
+    class Scored:
+        clip = unscored
+        score = 0.42
+
+    assert "score" not in _facts_of(unscored)
+    assert _facts_of(unscored).startswith("IMG_2438.jpg  2025-07-05")
+    assert "score=0.42" in _facts_of(Scored())
