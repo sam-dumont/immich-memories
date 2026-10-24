@@ -3,7 +3,7 @@
 # and PostgreSQL overrides, which already run the inference service, the
 # captioner and the store:
 #
-#   IMMICH_MEMORIES_VERSION=1.0.0-rc.10 docker compose -f docker-compose.yml \
+#   IMMICH_MEMORIES_VERSION=1.0.0-rc.11 docker compose -f docker-compose.yml \
 #     -f docker-compose.gpu.yml -f docker-compose.cuda.yml \
 #     -f docker-compose.postgres.yml -f docker-compose.maximalist.yml up -d
 #

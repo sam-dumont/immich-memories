@@ -53,7 +53,7 @@ manager, [use its platform guide](https://sam-dumont.github.io/immich-memories/d
 
    ```bash
    mkdir -p immich-memories && cd immich-memories
-   VERSION=1.0.0-rc.10
+   VERSION=1.0.0-rc.11
    curl -fLO "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/docker-compose.yml"
    curl -fLO "https://github.com/sam-dumont/immich-memories/releases/download/v${VERSION}/example.env"
    cp example.env .env

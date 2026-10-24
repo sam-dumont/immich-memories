@@ -19,4 +19,4 @@ patches:
 # inference overlay's tag on the same release.
 images:
   - name: ghcr.io/sam-dumont/immich-memories/inference
-    newTag: "1.0.0-rc.10-cuda"
+    newTag: "1.0.0-rc.11-cuda"
