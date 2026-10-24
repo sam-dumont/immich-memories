@@ -47,6 +47,22 @@ def test_a_namespace_shared_with_a_ci_package_stays_visible() -> None:
     assert ci_parity.blocked_modules(("app",), ("dev",), owners, requires) == set()
 
 
+def test_a_wheel_claiming_our_top_level_package_does_not_hide_it(monkeypatch) -> None:
+    # WHY: the mlx wheel lists `tests` in top_level.txt; fake that metadata instead of installing it.
+    real = ci_parity.metadata.packages_distributions()
+    monkeypatch.setattr(
+        ci_parity.metadata,
+        "packages_distributions",
+        lambda: {**real, "tests": ["mlx"], "scripts": ["mlx"], "immich_memories": ["mlx"]},
+    )
+    blocked = ci_parity.blocked_modules_for_environment()
+    assert {"tests", "scripts", "immich_memories"}.isdisjoint(blocked)
+
+
+def test_our_modules_are_the_packages_in_the_repository() -> None:
+    assert {"tests", "scripts", "immich_memories"} <= ci_parity.own_modules()
+
+
 def test_the_extras_match_what_ci_installs_for_the_unit_job() -> None:
     makefile = (REPO / "Makefile").read_text(encoding="utf-8")
     recipe = makefile.split("\ndev-test:\n", 1)[1].split("\n\n", 1)[0]
