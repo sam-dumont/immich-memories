@@ -9,7 +9,8 @@ one tier to the next, and the same bundled track, so the films differ only in wh
 
 GPU and Full read the caption server the Apple Silicon setup starts (`caption_base_url`); Full
 also reads the model the operator's own config names (`llm` in `~/.immich-memories/config.yaml`),
-copied into its home and never printed. Nothing else is read from the operator's home.
+copied into its home, never printed and never named in the provenance. Nothing else is read
+from the operator's home.
 
 It writes the web copy of the film and a contact sheet under `docs-site/static/demo/tiers/`:
 one `month.mp4` when every tier rendered the same frames, else one per tier. `provenance.json`
@@ -258,7 +259,8 @@ def main() -> None:
         request=[a if a != str(TRACK) else TRACK.name for a in REQUEST],
         services={
             "captioner": "smolvlm2-500m-base-public (gpu, full)",
-            "reader": _operator_llm().get("model") if "full" in (args.only or TIERS) else None,
+            # The operator's own model server: which one stays out of a public file.
+            "reader": "the operator's own (full)" if "full" in (args.only or TIERS) else None,
         },
     )
     tiers = provenance.setdefault("tiers", {})
