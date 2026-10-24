@@ -7,6 +7,7 @@ import sys
 import tarfile
 
 from immich_memories.config import Config
+from immich_memories.laya_checkpoints import LAYA_MLX_REQUIREMENT
 from immich_memories.preflight import CheckStatus, run_preflight_checks
 from immich_memories.preflight_laya import check_laya
 
@@ -41,7 +42,7 @@ def test_a_missing_laya_runtime_is_a_warning_naming_the_install(monkeypatch, tmp
     result = check_laya(config)
 
     assert result.status is CheckStatus.WARNING
-    assert "laya-mlx" in (result.details or "")
+    assert LAYA_MLX_REQUIREMENT in (result.details or "")
 
 
 def test_preflight_runs_the_laya_check(monkeypatch, tmp_path):

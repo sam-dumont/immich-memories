@@ -32,7 +32,7 @@ cd immich-memories
 git checkout YOUR_RELEASE_TAG
 make dev
 make dev-mac
-uv pip install --python .venv/bin/python laya-mlx
+uv pip install --python .venv/bin/python "laya-mlx>=0.2,<0.6"
 uv run --no-sync python -c "import pi_heif, laya_mlx"
 ```
 

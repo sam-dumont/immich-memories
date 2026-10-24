@@ -102,7 +102,7 @@ def test_builder_refuses_invalid_connection_fields(values):
 def test_mac_builder_uses_native_tools_and_keeps_reader_enabled_explicit():
     result = _build(platform="mac", tier="full")
     assert "immich-memories[all-mac]" in result["commands"]
-    assert "--with laya-mlx" in result["commands"]
+    assert '--with "laya-mlx>=' in result["commands"]
     assert "brew install" in result["commands"]
     assert "llama.cpp" in result["commands"]
     assert "models fetch" in result["commands"]

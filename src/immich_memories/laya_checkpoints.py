@@ -8,6 +8,10 @@ LAYA_ONNX_NAME = "laya-audience-onnx-90420ef3.tar.gz"
 _RELEASE = "https://github.com/sam-dumont/immich-memories/releases/download/models-v2/"
 LAYA_MLX_URL = _RELEASE + LAYA_MLX_NAME
 LAYA_ONNX_URL = _RELEASE + LAYA_ONNX_NAME
+# The MLX runtime is installed out of band. 0.186 was calibrated on laya-mlx 0.2.0; 0.2.0 to 0.5.0
+# give bit-identical scores on the public calibration and held-out captions (the reader takes the
+# raw logits, so laya-mlx's own temperature buckets never reach it). A new major is re-run first.
+LAYA_MLX_REQUIREMENT = "laya-mlx>=0.2,<0.6"
 
 
 def default_laya_name() -> str:

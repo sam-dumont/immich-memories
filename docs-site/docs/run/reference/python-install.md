@@ -83,10 +83,10 @@ A bare install lacks the ONNX runtime needed for picture classifiers and for the
 its loudness, but may start or end mid-sentence. The same model also detects a clip's own music or
 singing; without the ONNX runtime, the soundtrack never steps aside for it.
 
-The command above includes `--with laya-mlx` on Apple Silicon. Only GPU and Full use it: on Basic
-you can drop that part. For GPU or Full, keep it (or append `--with laya-mlx` to the versioned
+The command above includes `--with "laya-mlx>=0.2,<0.6"` on Apple Silicon. Only GPU and Full use it: on Basic
+you can drop that part. For GPU or Full, keep it (or append `--with "laya-mlx>=0.2,<0.6"` to the versioned
 `uv tool install` command). `all-mac` supplies the Metal bindings but does not include this audience-classifier
-runtime. With pip, install `laya-mlx` using the same virtual environment as the app. Downloading
+runtime. With pip, install `"laya-mlx>=0.2,<0.6"` using the same virtual environment as the app. Downloading
 its checkpoint with `models fetch` does not install the Python runtime. See the
 [Mac recipe](.././reference/mac-example.md#install-the-app) for checkout commands.
 

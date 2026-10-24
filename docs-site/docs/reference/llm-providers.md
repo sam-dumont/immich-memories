@@ -64,13 +64,13 @@ tiers turn it on, with no separate switch, and it works with both the rules read
 reader. `basic` has no captions, so it uses the picture classifiers and rules.
 
 ```bash
-uv tool install --python 3.12 "immich-memories[all-mac]" --with laya-mlx  # Apple Silicon uv-tool install
+uv tool install --python 3.12 "immich-memories[all-mac]" --with "laya-mlx>=0.2,<0.6"  # Apple Silicon uv-tool install
 immich-memories models fetch --laya          # platform-specific, digest-pinned
 ```
 
 No app extra includes `laya-mlx`. In a checkout, use
-`uv pip install --python .venv/bin/python laya-mlx`; with pip, run
-`python -m pip install laya-mlx` with the app's Python. A system-wide `pip install` doesn't reach
+`uv pip install --python .venv/bin/python "laya-mlx>=0.2,<0.6"`; with pip, run
+`python -m pip install "laya-mlx>=0.2,<0.6"` with the app's Python. A system-wide `pip install` doesn't reach
 a `uv tool` environment. Without the runtime, sharing says it is using the heads and rules alone.
 
 `models fetch` chooses the Apple archive on Apple silicon and the portable ONNX archive on
@@ -90,7 +90,14 @@ Laya only adds holds. The detector holds (the sensitive-content detector and the
 head) apply first and are never lifted, its findings go through the same support checks as the
 reader's, and a shot it doesn't answer stays held to the family. Sharing never asks the prose
 LLM, even when Laya is missing or a detector flags exposure. The MLX threshold, 0.186, kept
-every hold of its public calibration split. A travel or administrative document (a boarding
+every hold of its public calibration split.
+
+That threshold was set on laya-mlx 0.2.0. Versions 0.2.0 to 0.5.0 give the same scores, to the
+last bit, on the 2,880 calibration captions (15 holds) and the 3,143 held-out ones (23 holds),
+which is why every install line here says `>=0.2,<0.6`: the next major gets the same re-run
+before the range moves. Since 0.5.0, loading the checkpoint prints a warning about clamping the
+`choice:11+` temperature. Ignore it: the audience question has 10 options, and the app reads
+Laya's raw scores, so that temperature never touches a sharing decision. A travel or administrative document (a boarding
 pass, an invoice) can slip through, since few such captions were in its training data; the
 detectors stay the floor either way.
 
