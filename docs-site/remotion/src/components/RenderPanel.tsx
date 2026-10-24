@@ -1,6 +1,6 @@
 import React from "react";
 import { Img, OffthreadVideo, staticFile } from "remotion";
-import { mdiPlay, mdiUpload } from "@mdi/js";
+import { mdiDownload, mdiPlay, mdiUpload } from "@mdi/js";
 import { UI } from "../theme";
 import { Mdi } from "./Mdi";
 import { JobPanel } from "./JobPanel";
@@ -229,8 +229,22 @@ export const RenderPanel: React.FC<{ runId: string; state: RenderState }> = ({
     {state.job?.done && state.film && (
       <>
         <Film film={state.film} />
-        <div style={{ display: "flex", gap: 16, fontSize: 14, color: UI.primary }}>
-          <span>Download film</span><span>Open the film run</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 14, color: UI.primary }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              border: `1px solid ${UI.gray300}`,
+              borderRadius: 999,
+              padding: "8px 16px",
+              fontWeight: 500,
+            }}
+          >
+            <Mdi path={mdiDownload} size={16} />
+            Download film
+          </span>
+          <span>Open the film run</span>
         </div>
       </>
     )}

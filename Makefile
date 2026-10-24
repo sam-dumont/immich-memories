@@ -639,7 +639,7 @@ contact-sheets:  ## Render contact sheets for a sweep of memories (SPEC=path OUT
 DEMO_RECORDING ?= monthly_highlights
 
 screenshots: web-client-present  ## Capture UI screenshots in light + dark mode (coverage from server subprocess)
-	IMMICH_MEMORIES_E2E_RECORDING=$(DEMO_RECORDING) uv run pytest tests/e2e/test_screenshots.py -v -m visual --log-cli-level=INFO --tb=short \
+	IMMICH_E2E_RECORDING=$(DEMO_RECORDING) uv run pytest tests/e2e/test_screenshots.py -v -m visual --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
 
 test-cov:
@@ -1365,10 +1365,10 @@ demo-music:  ## Generate 12 ACE-Step candidate tracks for demo video
 	uv run python scripts/generate-demo-music.py
 
 demo-cli-run:  ## Run the CLI demo's real hermetic session in this terminal (no recording, for iteration)
-	IMMICH_MEMORIES_E2E_RECORDING=$(DEMO_RECORDING) uv run python scripts/demo-cli-hermetic.py
+	IMMICH_E2E_RECORDING=$(DEMO_RECORDING) uv run python scripts/demo-cli-hermetic.py
 
 demo-cli:  ## Record the CLI demo via VHS → docs-site/remotion/public/cli-demo.mp4 (the Remotion CliScene plays it)
-	IMMICH_MEMORIES_E2E_RECORDING=$(DEMO_RECORDING) vhs docs-site/scripts/demo-cli.tape
+	IMMICH_E2E_RECORDING=$(DEMO_RECORDING) vhs docs-site/scripts/demo-cli.tape
 	@# The docs homepage plays the same recording; the poster is a frame with a command and its output.
 	cp docs-site/remotion/public/cli-demo.mp4 docs-site/static/demo/cli-demo.mp4
 	@poster_second=$$(python3 -c "import re; s=open('docs-site/remotion/src/cli-timing.ts').read(); marks=[float(re.search(name+r': ([0-9.]+)',s).group(1)) for name in ('story','why')]; print(sum(marks)/2)"); \
@@ -1377,7 +1377,7 @@ demo-cli:  ## Record the CLI demo via VHS → docs-site/remotion/public/cli-demo
 	@python3 -c "import re,subprocess,sys; end=float(re.search(r'end: ([0-9.]+)',open('docs-site/remotion/src/cli-timing.ts').read()).group(1)); got=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0','docs-site/remotion/public/cli-demo.mp4'])); ok=abs(got-end)<=0.03*end+1; print(f'cli-demo.mp4: {got:.1f} s against the last mark {end:.1f} s'); sys.exit(0 if ok else 'the recording dropped frames: run make demo-cli again on an idle machine')"
 
 demo-output:  ## Cut the demo's output clip + poster on the hermetic launch
-	IMMICH_MEMORIES_E2E_RECORDING=$(DEMO_RECORDING) LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 uv run pytest tests/e2e/test_demo_assets.py::test_cut_the_demo_output_clip -v -m demo \
+	IMMICH_E2E_RECORDING=$(DEMO_RECORDING) LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 uv run pytest tests/e2e/test_demo_assets.py::test_cut_the_demo_output_clip -v -m demo \
 		--log-cli-level=INFO --tb=short
 
 # Needs the network: the fly-over's satellite tiles come from ArcGIS World Imagery
@@ -1416,7 +1416,7 @@ fixture-library:  ## Rebuild the demo library from Wikimedia Commons (tests/e2e/
 	uv run python scripts/build_fixture_library.py
 
 demo-fixture:  ## Export the hermetic fixture library into the Remotion demo (docs-site/remotion/src/fixture.ts)
-	IMMICH_MEMORIES_E2E_RECORDING=$(DEMO_RECORDING) uv run python scripts/export-demo-fixture.py
+	IMMICH_E2E_RECORDING=$(DEMO_RECORDING) uv run python scripts/export-demo-fixture.py
 
 .PHONY: demo-soundtrack
 demo-soundtrack:  ## Rebuild the demo's music from a bundled MIT-licensed acoustic track

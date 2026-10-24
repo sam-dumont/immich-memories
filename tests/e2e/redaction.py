@@ -26,11 +26,17 @@ _EXAMPLE_DOMAINS = (
     "@example.localhost",
 )
 
+# The demo month's film where the app puts it: `{people}_{memory-type}_{dates}` plus the recipe
+# hash, inside a run folder named after the file and the run id (generation-contract.md).
+_FILM_NAME = "all_monthly_highlights_20250701-20250731"
+_FILM_STEM = f"{_FILM_NAME}_3c9e1f0a"
+_FILM_PATH = f"/home/user/Videos/Memories/{_FILM_STEM}_20250801_101500_a7b3/{_FILM_STEM}.mp4"
+
 # Input fields to replace with fake values before screenshotting
 _INPUT_REDACTIONS = [
     ('input[aria-label="Immich Server URL"]', "https://photos.example.com"),
     ('input[aria-label="API Key"]', "your-api-key-here"),
-    ('input[aria-label="Output filename"]', "everyone_july_2025_memories.mp4"),
+    ('input[aria-label="Output filename"]', f"{_FILM_NAME}.mp4"),
     ('input[aria-label="Title"]', "Summer Adventures"),
     ('input[aria-label="Subtitle"]', "July 2025"),
 ]
@@ -44,16 +50,10 @@ _TEXT_REDACTIONS = [
     # Catch-all: any email address that slipped past the specific patterns above
     (r"[\w.+-]+@[\w-]+(\.[\w-]+)+", "user@example.com"),
     (r"http:\/\/\d+\.\d+\.\d+\.\d+:\d+", "https://photos.example.com"),
-    (
-        r"\/Users\/\w+\/Videos\/Memories\/.*",
-        "/home/user/Videos/Memories/everyone_july_2025_memories.mp4",
-    ),
+    (r"\/Users\/\w+\/Videos\/Memories\/.*", _FILM_PATH),
     (r"\/Users\/\w+\/\.immich-memories\/.*", "/home/user/.immich-memories/config.yaml"),
-    (
-        r"Will be saved to: .*",
-        "Will be saved to: /home/user/Videos/Memories/everyone_july_2025_memories.mp4",
-    ),
-    (r"Saved to: .*", "Saved to: /home/user/Videos/Memories/everyone_july_2025_memories.mp4"),
+    (r"Will be saved to: .*", f"Will be saved to: {_FILM_PATH}"),
+    (r"Saved to: .*", f"Saved to: {_FILM_PATH}"),
     (r"Config file: .*", "Config file: /home/user/.immich-memories/config.yaml"),
     (r"Using \w+'s birthday: .+", "Using Fake Person's birthday: June 15, 1995"),
     (r"\d+\.\d{4,},\s*-?\d+\.\d{4,}", "48.8566, 2.3522"),

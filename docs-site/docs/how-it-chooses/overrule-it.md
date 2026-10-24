@@ -22,6 +22,8 @@ Press **Save revision**, then select that revision under **What to render**. The
 
 Open **Pool** to see the pictures the cut considered. Tick a missing picture, untick one you do not want, then press **Preview with these choices**. This saves a revision in time order, with the length adjusted to your choices.
 
+<ThemedScreenshot name="memory-pool-outcomes" alt="The Pool of a July cut: every picture it saw in the order they were taken, each with a tick box, its date, why it stayed out and Never use" />
+
 A pool tick can include a picture held for family viewing: you have reviewed it yourself. An explicit tick also overrides **Never use** for this revision. The tile reminds you of that persistent decision; later automatic cuts still honour it.
 
 To steer a new cut with the CLI, use `generate --include ASSET_ID` or `--exclude ASSET_ID`. New-cut inclusions still pass the sharing checks. [Exact inclusion rules](../reference/generation-contract.md).
@@ -32,7 +34,9 @@ Favourite the pictures that matter before cutting. A favourite wins over other f
 
 ## Pick who it's for
 
-Set **Who may see it** in the brief:
+Set **Who may see it** in the brief, under **Length and pictures**:
+
+<ThemedScreenshot name="memory-brief-sharing" alt="Length and pictures open in the brief: the length in minutes, Who may see it set to Just us with what that allows, and the photo and Live Photo boxes" />
 
 | Audience | Use it for |
 |---|---|
@@ -46,9 +50,13 @@ Review the film before sending it. These checks can miss or misread a picture. [
 
 A held picture says why and offers **Clear hold**. Review the picture, then choose the audience allowed to see it. Clearing is per picture; the app does not clear holds on its own.
 
+<ThemedScreenshot name="pictures-pool-held" alt="A pool tile held for family viewing: why it stayed out, Held: a nudity detector flagged it, then Never use and Clear hold" />
+
 <ThemedScreenshot name="pictures-clear-dialog" alt="Clear this hold?: the held picture, why it was held, and which films may use it once you clear it" />
 
 **Never use** excludes a picture from future automatic cuts; an explicit pool tick can still include it in a saved revision. **Undo** forgets either decision. To remove a picture from just one film, edit that cut instead.
+
+<ThemedScreenshot name="pictures-pool-never-use" alt="A pool tile marked Never use: tick it to include it in this revision, or Undo" />
 
 These decisions last across sessions and are shared by the UI and CLI. A Live Photo decision covers its clip too. [Picture decisions on the CLI](../make/cli/pictures.md) and [exact hold rules](../reference/selection-internals/family-audience-duplicates.md#your-word-on-a-picture).
 

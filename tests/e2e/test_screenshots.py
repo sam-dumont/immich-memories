@@ -183,23 +183,21 @@ def test_capture_memory_walkthrough(
     # The brief as a first visit sees it: the type, the month, the command and Cut, no panel open.
     _blur(page)
     _save(page, d, _name("memory-brief", theme))
-    _save_padded(
-        page, page.get_by_role("main").locator("form").first, d, _name("first-film-brief", theme)
-    )
     page.get_by_text("Length and pictures").click()
     # The length the recorded run was cut at, so the review shows no "selected less" notice; the
     # scripted month holds 79 s of pictures and video, which 1.5 minutes fits with its titles.
     page.get_by_label("Length in minutes", exact=False).fill(str(active_minutes() or 1.5))
     page.get_by_label("Who may see it").select_option("just-us")
     _blur(page)
-    _save(page, d, _name("memory-brief-sharing", theme))
+    # The panel alone: the page around it is the brief the shot above already shows.
+    length = page.locator("details").filter(has_text="Length and pictures")
+    _save_padded(page, length, d, _name("memory-brief-sharing", theme))
     page.get_by_label("Who may see it").select_option("")
 
     page.get_by_role("button", name="Cut", exact=True).click()
     progress = page.get_by_role("region", name="Progress")
     expect(progress).to_be_visible(timeout=60_000)
     _hold_a_counted_stage(page)
-    _save(page, d, _name("memory-cutting", theme))
     _save_padded(page, progress, d, _name("first-film-progress", theme))
     page.evaluate("window.__holdJobs = false")
 
@@ -261,8 +259,6 @@ def test_capture_memory_walkthrough(
 
     panel = page.get_by_role("region", name="Render")
     panel.get_by_label("What to render").select_option(label="Revision 1")
-    _to_top(panel)
-    _save(page, d, _name("memory-options", theme))
     render(page, resolution="720p")
     expect(the_film(page)).to_be_visible(timeout=600_000)
     _show_the_film_at(page, 19.5, d)
@@ -366,7 +362,6 @@ def test_capture_the_pool_and_picture_decisions(
         _save_part(page, dialog, d, _name("pictures-clear-dialog", theme))
         dialog.get_by_role("button", name="Clear hold").click()
         expect(held.get_by_text(re.compile("^You cleared its hold"))).to_be_visible()
-        _save_part(page, held, d, _name("pictures-pool-cleared", theme))
 
         other = tiles.nth(order.index(ticked))
         other.get_by_role("button", name="Never use").click()
@@ -378,12 +373,9 @@ def test_capture_the_pool_and_picture_decisions(
         # The owner's last pass: tick the held picture in and preview it, nothing chosen again.
         held.get_by_role("checkbox", name="In the film").check()
         expect(page.get_by_text(re.compile(r"^Add: 1"))).to_be_visible()
-        _save(page, d, _name("memory-pool-choices", theme))
         page.get_by_role("button", name="Preview with these choices").click()
         added = page.get_by_role("list", name="Added from the pool")
         expect(added.get_by_role("img")).to_have_count(1, timeout=30_000)
-        added.scroll_into_view_if_needed()
-        _save(page, d, _name("memory-pool-revision", theme))
     finally:
         for asset_id in (_HELD, ticked):
             owner_decisions.forget(store, asset_id)
@@ -393,17 +385,11 @@ def test_capture_the_pool_and_picture_decisions(
 def test_capture_the_pages_around_the_film(
     page: Page, launch_app_url: str, screenshot_dir: Path, theme: str
 ) -> None:
-    """Runs, one run's details, suggestions, settings and people, as a first visit sees them."""
+    """One run's details, suggestions and settings, as a first visit sees them."""
     d = screenshot_dir
     _open(page, f"{launch_app_url}/app/runs", theme)
     cards = page.get_by_role("list", name="Runs").get_by_role("listitem")
     expect(cards.first).to_be_visible(timeout=30_000)
-    # Every pass adds runs, so the light and dark lists would differ; the last pass takes both.
-    if theme == _THEMES[-1]:
-        for shade in _THEMES:
-            set_theme(page, shade)
-            _save(page, d, _name("runs", shade))
-        set_theme(page, theme)
     # The details worth showing belong to a film: its output path, delivery and phase timings.
     # The newest card can be a cut or a preview, so open cards until one was rendered.
     links = [
@@ -426,20 +412,6 @@ def test_capture_the_pages_around_the_film(
     expect(page.get_by_role("heading", name="Immich Connection")).to_be_visible()
     page.wait_for_load_state("networkidle")
     _save(page, d, _name("settings-config", theme))
-
-    # The registry starts empty on a fresh host; the page is only worth a picture once it has
-    # read who is in the library, which is what the first thing anyone does there is.
-    page.goto(f"{launch_app_url}/app/settings/people")
-    page.wait_for_load_state("networkidle")
-    if page.get_by_text("Nobody yet.", exact=False).count():
-        page.get_by_role("button", name="Rescan the library").click()
-    roster = page.get_by_role("listitem").filter(has_text=re.compile(r"Pictures: \d+"))
-    expect(roster.first).to_be_visible(timeout=120_000)
-    # Opened again, as someone coming back to the page does: the roster, not the scan's panel.
-    page.reload()
-    expect(roster.first).to_be_visible(timeout=30_000)
-    page.wait_for_load_state("networkidle")
-    _save(page, d, _name("settings-people", theme))
 
 
 # What the owner confirms on the People page; the family tree suggests the rest on Kit's card:
@@ -578,11 +550,11 @@ def test_capture_a_second_account(
         ).click()
     expect(bound).to_be_visible(timeout=15_000)
     groups = page.get_by_role("region", name="Saved groups")
-    if not groups.get_by_text("Kids", exact=True).count():
-        groups.get_by_label("Label", exact=True).fill("Kids")
+    if not groups.get_by_text("Parents", exact=True).count():
+        groups.get_by_label("Label", exact=True).fill("Parents")
         groups.get_by_label("Pick the people", exact=True).select_option(label=["Robin", "Charlie"])
         groups.get_by_role("button", name="Save group", exact=True).click()
-    expect(groups.get_by_text("Kids", exact=True)).to_be_visible(timeout=15_000)
+    expect(groups.get_by_text("Parents", exact=True)).to_be_visible(timeout=15_000)
     # Opened again, so the link picker is closed, as someone returning to the page sees it.
     page.reload()
     expect(bound).to_be_visible(timeout=30_000)
@@ -594,9 +566,9 @@ def test_capture_a_second_account(
     page.goto(f"{accounts_app_url}/app/create", wait_until="domcontentloaded")
     page.get_by_text("Multi-Person", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
-    kids = page.get_by_role("button", name=re.compile(r"^Kids"))
+    parents = page.get_by_role("button", name=re.compile(r"^Parents"))
     with page.expect_response(lambda r: r.url.endswith("/api/v1/cuts/command")):
-        kids.click()
+        parents.click()
     for account in ("primary", "partner"):
         with page.expect_response(lambda r: r.url.endswith("/api/v1/cuts/command")):
             page.get_by_text(account, exact=True).click()

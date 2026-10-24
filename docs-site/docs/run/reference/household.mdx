@@ -37,13 +37,13 @@ another account, and `people show` lists it with that ID for a group to name.
 A label for a people condition you'll reuse, instead of retyping `--person` every time:
 
 ```bash
-immich-memories people group add "Kids" '"<alex-id>" OR "<robin-id>"'
+immich-memories people group add "Kids" '"<kit-id>" OR "<remy-id>"'
 immich-memories people group list
 immich-memories generate --group "Kids" --accounts primary,partner --memory-type multi_person --year 2026
 ```
 
 ```text
-✓ Saved group 'Kids': ("<alex-id>" OR "<robin-id>")
+✓ Saved group 'Kids': ("<kit-id>" OR "<remy-id>")
 ```
 
 The expression takes `OR`, `AND` and brackets, like `--people-expression`: `OR` keeps a moment with

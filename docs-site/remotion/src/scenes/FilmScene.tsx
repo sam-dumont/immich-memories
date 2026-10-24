@@ -12,7 +12,7 @@ import { AppShell, MAIN_X } from "../components/AppShell";
 import { AnimatedCursor } from "../components/AnimatedCursor";
 import { FloatingEditBar, RUN_ID, RunPage } from "../components/RunPage";
 import { EDITED } from "./EditScene";
-import { JOB_SCROLL } from "./RenderScene";
+import { JOB_SCROLL, RENDER_Y } from "./RenderScene";
 import { PLAYER_FROM, PLAYER_PLAY } from "../timeline";
 import { CUT_CONTENT_BUDGET } from "../fixture";
 
@@ -22,7 +22,7 @@ import { CUT_CONTENT_BUDGET } from "../fixture";
  */
 
 // The film element's top, from the top of the page, once the job panel above it has finished.
-const FILM_Y = 1416 + 32 + 124 + 16;
+const FILM_Y = RENDER_Y + 32 + 124 + 16;
 const FILM_SCROLL = FILM_Y - 200;
 const PLAY = PLAYER_PLAY;
 const FILM_FROM = PLAYER_FROM;
