@@ -22,6 +22,7 @@ from immich_memories.config.models.free_text import FreeTextConfig
 from immich_memories.config.models.llm import LLMConfig
 from immich_memories.config.models.soundtrack import AudioConfig
 from immich_memories.db import open_store
+from immich_memories.laya_checkpoints import LAYA_MLX_REQUIREMENT
 from tests.editorial_thin_fixtures import PRIVATE, CountingJudge
 
 FINDINGS = list(AUDIENCE_FINDINGS)
@@ -157,7 +158,9 @@ def test_a_missing_laya_runtime_degrades_naming_the_install(monkeypatch, tmp_pat
     assert (
         laya_reader_for(EditorialConfig(laya_audience=True, laya_checkpoint=str(archive))) is None
     )
-    assert 'uv tool install "immich-memories[all-mac]" --with laya-mlx' in caplog.text
+    assert (
+        f'uv tool install "immich-memories[all-mac]" --with "{LAYA_MLX_REQUIREMENT}"' in caplog.text
+    )
 
 
 def test_the_checkpoint_archive_is_unpacked_once(tmp_path):

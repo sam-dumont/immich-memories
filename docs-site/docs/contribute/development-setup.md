@@ -35,7 +35,7 @@ unsupported. When running `check` or `ci` in that prepared CUDA environment, set
 `ENSURE_DEV_COMMAND=true` so the CPU setup does not replace it.
 
 **GPU or Full on Apple Silicon also needs Laya.** After `make dev-mac`, run
-`uv pip install --python .venv/bin/python laya-mlx`. It is not part of `all-mac`.
+`uv pip install --python .venv/bin/python "laya-mlx>=0.2,<0.6"`. It is not part of `all-mac`.
 Use `uv run --no-sync immich-memories ...` to preserve that separately installed runtime;
 repeat its install after an explicit environment sync. The [Mac recipe](../run/reference/mac-example.md)
 also checks HEIC decoding and the effective FFmpeg build before generation.

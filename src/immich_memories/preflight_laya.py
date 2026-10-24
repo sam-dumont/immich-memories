@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from immich_memories.config import Config
+from immich_memories.laya_checkpoints import LAYA_MLX_REQUIREMENT
 from immich_memories.preflight import CheckResult, CheckStatus
 
 _NAME = "Laya"
@@ -47,5 +48,6 @@ def check_laya(config: Config) -> CheckResult:
         CheckStatus.WARNING,
         "Laya runtime missing",
         "The MLX checkpoint needs laya-mlx in the app environment; for uv tool: "
-        '`uv tool install "immich-memories[all-mac]" --with laya-mlx`. ' + _FALLBACK,
+        f'`uv tool install "immich-memories[all-mac]" --with "{LAYA_MLX_REQUIREMENT}"`. '
+        + _FALLBACK,
     )
