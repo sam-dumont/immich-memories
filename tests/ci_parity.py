@@ -21,6 +21,7 @@ import importlib.util
 import os
 import sys
 from collections.abc import Iterable, Mapping, Sequence
+from pathlib import Path
 
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
@@ -30,7 +31,27 @@ PROJECT = "immich-memories"
 # What `make dev-test` syncs for CI's unit shards.
 CI_UNIT_EXTRAS = ("dev",)
 
+REPO = Path(__file__).resolve().parents[1]
+
 _hidden: frozenset[str] = frozenset()
+
+
+def own_modules(repo: Path = REPO) -> set[str]:
+    """Top-level modules that live in this repository (root and `src/`), whatever wheels claim.
+
+    A third-party wheel can list our names in its `top_level.txt` (mlx lists `tests`), which
+    would make the closure check hide the project's own packages.
+    """
+    found: set[str] = set()
+    for base in (repo, repo / "src"):
+        for entry in base.iterdir():
+            if not entry.name.isidentifier():
+                continue
+            if entry.is_file() and entry.suffix == ".py":
+                found.add(entry.stem)
+            elif entry.is_dir() and ((entry / "__init__.py").exists() or any(entry.glob("*.py"))):
+                found.add(entry.name)
+    return found
 
 
 def blocked_modules(
@@ -77,7 +98,7 @@ def blocked_modules_for_environment() -> set[str]:
         for dist in metadata.distributions()
         if dist.metadata["Name"]
     }
-    return blocked_modules((PROJECT,), CI_UNIT_EXTRAS, owners, requires)
+    return blocked_modules((PROJECT,), CI_UNIT_EXTRAS, owners, requires) - own_modules()
 
 
 class _Hider(importlib.abc.MetaPathFinder):
