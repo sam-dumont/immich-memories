@@ -671,12 +671,12 @@ current package command for your platform:
 <InstallationFiles kind="native" />
 
 Keep any extras you added: on Apple Silicon with OIDC, change `[all-mac]` to `[all-mac,auth]` and
-retain `--with laya-mlx`. This updates the app environment and leaves its configuration and store
+retain `--with "laya-mlx>=0.2,<0.6"`. This updates the app environment and leaves its configuration and store
 in place. See [uv's version-constraint rule](https://docs.astral.sh/uv/guides/tools/#upgrading-tools).
 
 For pip, run `python -m pip install --upgrade` inside the app's virtual environment with the same
 quoted package and version specification shown above. Keep the same extras; Apple Silicon GPU/Full
-also needs `laya-mlx` in that environment.
+also needs `"laya-mlx>=0.2,<0.6"` in that environment.
 
 Then verify the new model pins and installation:
 

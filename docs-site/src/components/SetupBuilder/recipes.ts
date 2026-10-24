@@ -58,6 +58,10 @@ export function assetBase(version: string): string {
     : `${repository}/releases/latest/download`;
 }
 
+// Mirrors LAYA_MLX_REQUIREMENT in src/immich_memories/laya_checkpoints.py: the laya-mlx range
+// re-run against the MLX threshold's calibration captions.
+const LAYA_MLX_REQUIREMENT = 'laya-mlx>=0.2,<0.6';
+
 export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac'): string {
   const release = releaseVersion(version);
   if (!release) return '';
@@ -66,7 +70,7 @@ export function nativeInstallCommand(version: string, extras: 'all' | 'all-mac')
   // if-necessary-or-explicit: allow a prerelease only for this explicitly pinned package
   // (an rc wheel). `allow` would let the whole resolve pick a prerelease anywhere in the
   // dependency tree, e.g. httpx's 1.0 dev line.
-  return `uv tool install --python 3.12 --prerelease if-necessary-or-explicit "${spec}"${extras === 'all-mac' ? ' --with laya-mlx' : ''}`;
+  return `uv tool install --python 3.12 --prerelease if-necessary-or-explicit "${spec}"${extras === 'all-mac' ? ` --with "${LAYA_MLX_REQUIREMENT}"` : ''}`;
 }
 
 // A cluster service name, a bare container name or the Docker host alias: addresses the app can

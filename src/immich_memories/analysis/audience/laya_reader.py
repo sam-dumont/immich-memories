@@ -23,6 +23,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Protocol
 
+from immich_memories.laya_checkpoints import LAYA_MLX_REQUIREMENT
+
 # The question texts are part of the trained weights: change one and the weights no longer
 # answer the question they were trained on.
 AUDIENCE_FINDINGS = {
@@ -276,7 +278,8 @@ def _new_reader(checkpoint: Path, threshold: float) -> LayaReader | None:
         logger.warning(
             "Laya is on but laya-mlx is not installed, so the heads and rules decide sharing "
             "alone. Install laya-mlx in the app environment; for uv tool: "
-            '`uv tool install "immich-memories[all-mac]" --with laya-mlx` (Apple silicon)'
+            '`uv tool install "immich-memories[all-mac]" --with "%s"` (Apple silicon)',
+            LAYA_MLX_REQUIREMENT,
         )
         return None
     return LayaReader(

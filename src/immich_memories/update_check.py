@@ -30,6 +30,7 @@ from immich_memories import __version__
 from immich_memories.config.models.updates import RELEASES_HOST
 from immich_memories.db import now_db, open_store, upsert
 from immich_memories.db.tables.store_meta import store_meta
+from immich_memories.laya_checkpoints import LAYA_MLX_REQUIREMENT
 from immich_memories.preflight_output import running_in_container
 
 if TYPE_CHECKING:
@@ -169,7 +170,8 @@ def update_command(method: str, tag: str, *, platform: str = sys.platform) -> st
     if method == "kubernetes":
         return f"Set the image to {IMAGE}:{version} and apply it"
     if method == "pip":
-        extras, more = ("all-mac", " --with laya-mlx") if platform == "darwin" else ("all", "")
+        mac = ("all-mac", f' --with "{LAYA_MLX_REQUIREMENT}"')
+        extras, more = mac if platform == "darwin" else ("all", "")
         python = version.replace("-rc.", "rc")
         return (
             "uv tool install --python 3.12 --prerelease if-necessary-or-explicit "
