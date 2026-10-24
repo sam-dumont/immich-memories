@@ -19,7 +19,7 @@ variable "image_repository" {
 variable "image_tag" {
   description = "Container image tag. Published tags carry no `v` prefix: `vX.Y.Z` ships as `X.Y.Z`, plus `latest`"
   type        = string
-  default     = "1.0.0-rc.11"
+  default     = "1.0.0-rc.12"
 }
 
 variable "replicas" {
