@@ -1204,6 +1204,7 @@ src/immich_memories/
 │   ├── run_tracker.py          # Pipeline run tracking
 │   ├── run_id.py               # Run ID generation
 │   ├── models.py               # Run/phase data models
+│   ├── otlp_export.py          # A finished run as one OTLP/HTTP trace, when OTEL_EXPORTER_OTLP_ENDPOINT is set
 │   └── system_info.py          # System info collection
 │
 ├── db/                         # The store (#871): one versioned database on SQLite or PostgreSQL
@@ -1798,6 +1799,9 @@ before discovery through failure or completion. `span_store.py` persists spans a
 through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes to the database.
 `peak_memory.py` gives each span of a measured run its peak RSS, own and with child processes: the
 `ru_maxrss` lifetime high at both ends, plus one sampler thread (libproc on macOS, /proc on Linux).
+`otlp_export.py` posts the same buffer, once the run's outcome is saved, as one OTLP/HTTP JSON
+trace (run → trace, spans → spans, LLM spend as run attributes) when the standard
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set; the trace id derives from the run id, so JSON log lines name it.
 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
 assigns per-report salted IDs. `report_logs.py` shortens the pasted log (one line per progress stage, repeats counted); the bundle's log stays whole. `report_service.py` assembles the same report for `report` and the HTTP

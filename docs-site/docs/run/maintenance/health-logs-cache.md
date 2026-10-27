@@ -100,6 +100,35 @@ Log lines go to stderr. Stdout only carries what a command prints, so `runs stor
 `jq`, whatever the log level. `docker logs` shows both streams.
 
 
+## Traces
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` to your OpenTelemetry collector's HTTP port and every run is
+sent there as one trace once it ends: the `run` span at the root, preparation, discovery and render
+stages nested under it, the same spans `report` shows. Unset, nothing is sent.
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+OTEL_SERVICE_NAME=immich-memories   # the default
+```
+
+- The run span carries `run.id`, `run.status`, `run.source` and the run's LLM spend
+  (`llm.prompt_tokens`, `llm.stage.<stage>.completion_tokens`, ...). Model names stay out: they
+  are settings.
+- A failed stage is an error span with its exception; logged warnings are span events.
+- Export is OTLP over HTTP, JSON-encoded, which a collector's HTTP receiver takes on the same
+  port as protobuf. `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` is refused with a warning: point the
+  endpoint at port 4318 instead.
+- The standard variables apply: `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (used as-is),
+  `OTEL_EXPORTER_OTLP_HEADERS` for a token, `OTEL_EXPORTER_OTLP_TIMEOUT`,
+  `OTEL_RESOURCE_ATTRIBUTES`, and `OTEL_SDK_DISABLED=true` to switch it off.
+- A collector that's down costs the run one warning. The run itself is never failed by it.
+
+With `IMMICH_MEMORIES_LOG_FORMAT=json`, every line of a run also carries the `trace_id` it is
+exported under, so a log backend can link the line to its trace. Scheduled runs start as child
+processes of the server and inherit its environment, so setting the variables on the server
+container covers them.
+
+
 ## Model files
 
 ```bash

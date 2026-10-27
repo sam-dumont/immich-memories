@@ -18,7 +18,7 @@ from immich_memories.db import Store, open_store
 from immich_memories.logging_config import set_current_run_id
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.storage_errors import storage_failure_message
-from immich_memories.tracking import timing
+from immich_memories.tracking import otlp_export, timing
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
 from immich_memories.tracking.span_store import SpanStore
@@ -158,19 +158,25 @@ def _save_observations(
         run_id, saved.status, warnings=list(dict.fromkeys([*saved.warnings, *warnings]))
     )
     database.record_llm_metrics(run_id, counters.as_metrics())
+    llm = {
+        **{key.removeprefix("llm_"): value for key, value in counters.as_metrics().items()},
+        "by_model": {name: asdict(spend) for name, spend in counters.by_model.items()},
+        "by_stage": {name: asdict(spend) for name, spend in counters.by_stage.items()},
+    }
     SpanStore(database.store).save(
         run_id,
         collected,
         **collected.diagnostics,
         private_terms=sorted(collected.private_terms),
         private_ids=sorted(collected.private_ids),
-        llm={
-            **{key.removeprefix("llm_"): value for key, value in counters.as_metrics().items()},
-            "by_model": {name: asdict(spend) for name, spend in counters.by_model.items()},
-            "by_stage": {name: asdict(spend) for name, spend in counters.by_stage.items()},
-        },
+        llm=llm,
     )
     _export_timings(database.store, run_id, collected)
+    # Read back: the outcome above is the one saved, so the trace and `runs show` agree.
+    final = database.get_run(run_id) or saved
+    otlp_export.export_run(
+        collected, run_id=run_id, status=final.status, source=final.source, llm=llm
+    )
 
 
 def _export_timings(store: Store, run_id: str, collected: timing.Collector) -> None:

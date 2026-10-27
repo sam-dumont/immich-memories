@@ -133,6 +133,11 @@ class JsonFormatter(logging.Formatter):
         run_id = getattr(record, "run_id", "-")
         if run_id != "-":
             log_entry["run_id"] = run_id
+            from immich_memories.tracking import otlp_export
+
+            # The trace this run will be exported as, so a log backend can link the two.
+            if otlp_export.traces_endpoint() is not None:
+                log_entry["trace_id"] = otlp_export.run_trace_id(run_id)
 
         if record.exc_info and record.exc_info[1] is not None:
             # WHY: exc_text carries SecretRedactionFilter's already-cleaned

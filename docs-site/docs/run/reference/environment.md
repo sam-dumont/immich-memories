@@ -52,6 +52,7 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | `IMMICH_MEMORIES_LOG_FORMAT` | `text` (default) or `json` |
 | `IMMICH_MEMORIES_LOG_LEVEL` | `INFO` (default), `DEBUG`, `WARNING` or `ERROR`. The CLI's `-v` and `--log-level` win for one run |
 | `IMMICH_MEMORIES_LOG_FILE` | Also write logs to this file |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Send each run as a trace to this OpenTelemetry collector (HTTP, e.g. `http://collector:4318`). The other standard `OTEL_*` exporter variables apply; see [Traces](../maintenance/health-logs-cache.md#traces) |
 | `IMMICH_FORCE_CPU` | `1`, `true` or `yes` puts the GPU kernels (titles and photo moves) on the CPU even with a GPU. FFmpeg's decode and encode are untouched |
 | `IMMICH_MEMORIES_FONTS_DIR` | Where `titles fonts --install` puts the Noto fonts for other alphabets and where titles look for them (default `~/.immich-memories/fonts/noto`; the image sets its own) |
 | `IMMICH_MEMORIES_MUSIC_DIR` | Where `models fetch` unpacks the bundled `music-v3` library and where films look for it (default `~/.immich-memories/models/music-v3`; the image sets its own) |
