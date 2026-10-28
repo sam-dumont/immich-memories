@@ -48,6 +48,7 @@ from immich_memories.analysis.captions.wire import (
 )
 from immich_memories.analysis.captions.worker_wait import CaptionServerBusy, wait_while_busy
 from immich_memories.analysis.judgments.strict_json import final_json_object
+from immich_memories.analysis.llm import genai_trace
 from immich_memories.analysis.llm.async_bridge import run_sync
 from immich_memories.analysis.llm.metrics import record_reply, recording_stage
 from immich_memories.analysis.llm.providers import resolved_llm_config
@@ -159,6 +160,35 @@ def _model_inventory(base_url: str, *, timeout: float, api_key: str) -> list[dic
 
 def _ask_one(
     base_url: str, image: bytes, *, timeout: float, api_key: str, stage: str = "caption"
+) -> CallOutcome:
+    with genai_trace.inference(
+        provider="openai",
+        model=API_MODEL,
+        base_url=base_url,
+        prompt=PROMPT,
+        stage=stage,
+        images=1,
+        json_output=True,
+    ) as call:
+        outcome = _ask_caption_worker(
+            base_url, image, timeout=timeout, api_key=api_key, stage=stage
+        )
+        call.attempt(
+            number=1,
+            outcome="error" if outcome.error else "ok",
+            status_code=None,
+            finish_reason=outcome.finish_reason,
+        )
+        if outcome.error is not None:
+            # The kind of failure, never its text: a URL error names the worker.
+            call.failed(outcome.error.split(":", 1)[0].split(";", 1)[0])
+        elif outcome.raw_content is not None:
+            call.answered(outcome.raw_content)
+    return outcome
+
+
+def _ask_caption_worker(
+    base_url: str, image: bytes, *, timeout: float, api_key: str, stage: str
 ) -> CallOutcome:
     wire = json.dumps(_request_payload(image, api_model=API_MODEL)).encode()
     request = urllib.request.Request(  # noqa: S310

@@ -32,6 +32,7 @@ from typing import Protocol
 
 import httpx
 
+from immich_memories.analysis.llm import genai_trace
 from immich_memories.analysis.llm import metrics as llm_metrics
 from immich_memories.analysis.llm.providers import batch_route_for, resolved_llm_config
 from immich_memories.analysis.llm.query import build_llm_timeout
@@ -43,10 +44,13 @@ from immich_memories.analysis.llm.wire import (
     learn_reasoning,
     openai_headers,
     read_batch_answer,
+    response_id,
+    served_model,
 )
 from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cancellation import check_cancelled
 from immich_memories.operations.cut_progress import StageUpdate, announce_stage
+from immich_memories.tracking import otel
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +180,22 @@ class BatchCoordinator:
         return route
 
     async def _fill(self, route: str, prompts: Sequence[BatchPrompt]) -> dict[str, LLMReply]:
+        # Submit, wait, collect: the whole round trip, with each answered line under it.
+        traced = otel.start(
+            "llm.batch", {"llm.batch.route": route, "llm.batch.prompts": len(prompts)}
+        )
+        try:
+            with otel.current(traced):
+                answers = await self._fill_traced(route, prompts)
+            traced.set_attribute("llm.batch.answers", len(answers))
+            return answers
+        except BaseException as error:
+            otel.mark_failed(traced, type(error).__name__, "the batch round trip failed")
+            raise
+        finally:
+            otel.end(traced)
+
+    async def _fill_traced(self, route: str, prompts: Sequence[BatchPrompt]) -> dict[str, LLMReply]:
         adapter = _ADAPTERS[route]
         headers = adapter.headers(self._config)
         async with self._client_factory(headers) as client:
@@ -422,6 +442,25 @@ def _read_results(
         body = reader(row)
         if body is None:
             continue
+        reply = _read_line(config, resolved, row, body)
+        if reply is None:
+            continue
+        answers[row["custom_id"]] = reply
+        if resolved.provider == "openai-compatible":
+            learn_reasoning(endpoint, reply)
+    return answers
+
+
+def _read_line(config: LLMConfig, resolved: LLMConfig, row: dict, body: dict) -> LLMReply | None:
+    """One answered batch line: billed, traced as its own call, and decoded if it can be."""
+    with genai_trace.inference(
+        provider=resolved.provider,
+        model=resolved.model,
+        base_url=resolved.base_url,
+        prompt=None,
+        stage=llm_metrics.current_stage(),
+        batch=True,
+    ) as call:
         # WHY: the provider billed this completion whether or not its answer
         # parses, so the bill is read before the answer is.
         usage = _batch_usage(body)
@@ -432,15 +471,24 @@ def _read_results(
             reasoning_tokens=usage.reasoning_tokens,
             usage_known=usage.known,
         )
+        call.billed(
+            input_tokens=usage.prompt_tokens,
+            output_tokens=usage.completion_tokens,
+            cache_read_tokens=usage.cached_prompt_tokens,
+            reasoning_tokens=usage.reasoning_tokens,
+            model=served_model(body),
+            response_id=response_id(body),
+        )
         try:
             reply = _batch_reply(config, body, usage)
-            answers[row["custom_id"]] = reply
         except (KeyError, TypeError, ValueError) as exc:
             logger.info("Batch line %s was unreadable (%s)", row.get("custom_id"), exc)
-            continue
-        if resolved.provider == "openai-compatible":
-            learn_reasoning(endpoint, reply)
-    return answers
+            call.failed(type(exc).__name__)
+            return None
+        call.attempt(number=1, outcome="ok", status_code=None, finish_reason=reply.finish_reason)
+        if reply.content is not None:
+            call.answered(reply.content)
+        return reply
 
 
 def _openai_result(row: dict) -> dict | None:

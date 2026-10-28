@@ -22,7 +22,7 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Any
 
 from opentelemetry import context, propagate, trace
-from opentelemetry.trace import Span, Status, StatusCode
+from opentelemetry.trace import Span, SpanKind, Status, StatusCode
 
 if TYPE_CHECKING:
     from opentelemetry.sdk.trace import TracerProvider
@@ -160,11 +160,16 @@ def current(span: Span) -> Iterator[Span]:
 
 
 def start(
-    name: str, attributes: Mapping[str, Any] | None = None, *, at: float | None = None
+    name: str,
+    attributes: Mapping[str, Any] | None = None,
+    *,
+    at: float | None = None,
+    kind: SpanKind = SpanKind.INTERNAL,
 ) -> Span:
     """Open a span under the current one; `at` is a wall-clock start in seconds (default: now)."""
     return tracer().start_span(
         name,
+        kind=kind,
         attributes=_clean(attributes or {}),
         start_time=_nanos(wall(time.perf_counter()) if at is None else at),
     )

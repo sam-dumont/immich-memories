@@ -6,60 +6,11 @@ import json
 import logging
 import sys
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
-from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
 
 from immich_memories.tracking import otel, timing
-
-
-class _Receiver(BaseHTTPRequestHandler):
-    received: list[tuple[str, dict[str, str], bytes]] = []
-
-    def do_POST(self) -> None:
-        body = self.rfile.read(int(self.headers["Content-Length"]))
-        self.received.append((self.path, dict(self.headers), body))
-        self.send_response(200)
-        self.send_header("Content-Type", "application/x-protobuf")
-        self.end_headers()
-
-    def log_message(self, *args) -> None:
-        pass
-
-
-def _attributes(pairs) -> dict:
-    return {pair.key: getattr(pair.value, pair.value.WhichOneof("value")) for pair in pairs}
-
-
-def _decode(body: bytes) -> list[dict]:
-    request = ExportTraceServiceRequest.FromString(body)
-    return [
-        {
-            "name": span.name,
-            "trace_id": span.trace_id.hex(),
-            "span_id": span.span_id.hex(),
-            "parent": span.parent_span_id.hex() or None,
-            "attributes": _attributes(span.attributes),
-            "status": span.status.code,
-            "events": [(event.name, _attributes(event.attributes)) for event in span.events],
-            "start": span.start_time_unix_nano,
-            "end": span.end_time_unix_nano,
-            "resource": _attributes(spans.resource.attributes),
-        }
-        for spans in request.resource_spans
-        for scope in spans.scope_spans
-        for span in scope.spans
-    ]
-
-
-class _Collected:
-    def spans(self) -> list[dict]:
-        otel.flush()
-        return [span for _, _, body in _Receiver.received for span in _decode(body)]
-
-    def named(self) -> dict[str, dict]:
-        return {span["name"]: span for span in self.spans()}
+from tests.otel_receiver import receiving
 
 
 @pytest.fixture(autouse=True)
@@ -71,16 +22,8 @@ def _tracing_off_after():
 @pytest.fixture
 def collector(monkeypatch):
     """A real HTTP receiver on localhost, the app pointed at it through the standard variables."""
-    _Receiver.received = []
-    server = HTTPServer(("127.0.0.1", 0), _Receiver)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", f"http://127.0.0.1:{server.server_port}")
-    monkeypatch.delenv("TRACEPARENT", raising=False)
-    yield _Collected()
-    otel.shutdown()
-    server.shutdown()
-    server.server_close()
+    with receiving(monkeypatch) as received:
+        yield received
 
 
 def _observed(work):
@@ -126,8 +69,8 @@ def test_a_run_arrives_as_one_trace_with_its_stages_nested(collector, monkeypatc
     tracker = _observed(work)
 
     spans = collector.named()
-    assert {path for path, _, _ in _Receiver.received} == {"/v1/traces"}
-    assert {headers["authorization"] for _, headers, _ in _Receiver.received} == {
+    assert {path for path, _, _ in collector.requests} == {"/v1/traces"}
+    assert {headers["authorization"] for _, headers, _ in collector.requests} == {
         "Bearer lab-token"
     }
     run = spans["run"]

@@ -957,6 +957,7 @@ src/immich_memories/
 │       ├── async_bridge.py     # Resolve editorial async work from synchronous CLI and UI callers.
 │       ├── batch.py            # A stage's independent prompts as one provider batch (half price, async): the two wire dialects and their transports
 │       ├── failures.py         # Separate "the model could not answer" from a bug in the calling code
+│       ├── genai_trace.py      # Each LLM call as a GenAI `chat {model}` trace span: tokens, finish reasons, opt-in prompt text
 │       ├── metrics.py          # What a run spent on the LLM, counted where the answers arrive.
 │       ├── provider_failure.py # What a 4xx/5xx means: refused, come back later, down, or a bad credential
 │       ├── provider_health.py  # ProviderHealth: what a provider's answer says about its availability (preflight)
@@ -1804,6 +1805,10 @@ when the standard `OTEL_EXPORTER_OTLP_ENDPOINT` is set (the API's no-op tracer o
 root span opens at process start and closes after its outcome is saved, carrying status and LLM
 spend. Parents put their current span in a child's `TRACEPARENT` (web jobs, scheduled generation),
 so a run joins the trace that started it; `RunIdFilter` stamps `trace_id`/`span_id` on log lines.
+`analysis/llm/genai_trace.py` wraps each logical LLM call (reader, caption worker, each batch line)
+in a `chat {model}` CLIENT span with the GenAI semantic-convention attributes; `record_reply` adds
+the billed tokens to the call in flight, the transport observer its attempts and finish reasons.
+Prompt and reply text go in only with `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`.
 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
 assigns per-report salted IDs. `report_logs.py` shortens the pasted log (one line per progress stage, repeats counted); the bundle's log stays whole. `report_service.py` assembles the same report for `report` and the HTTP

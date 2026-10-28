@@ -9,6 +9,7 @@ __all__ = [
     "async_bridge",
     "batch",
     "failures",
+    "genai_trace",
     "metrics",
     "provider_failure",
     "provider_health",
