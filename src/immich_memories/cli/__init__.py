@@ -158,6 +158,10 @@ def main(
     level = "DEBUG" if verbose else (log_level.upper() if log_level else None)
     configure_logging(level=level)
     ctx.obj["log_level"] = level
+    from immich_memories.tracking import otel
+
+    # Before any work, so the first span already joins the trace that started this process.
+    otel.setup()
     _quiet_request_logs(level)
     if ctx.meta.get("help_requested"):
         return

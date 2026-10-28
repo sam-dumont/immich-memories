@@ -44,10 +44,17 @@ def set_current_run_id(run_id: str | None) -> None:
 
 
 class RunIdFilter(logging.Filter):
-    """Inject run_id from contextvars into every log record."""
+    """Inject run_id and the current span from contextvars into every log record.
+
+    Read here, where the line is logged, so a handler that formats on another thread
+    still names the span the line came from.
+    """
 
     def filter(self, record: logging.LogRecord) -> bool:
+        from immich_memories.tracking.otel import log_fields
+
         record.run_id = _current_run_id.get() or "-"
+        record.trace_fields = log_fields()
         return True
 
 
@@ -133,11 +140,8 @@ class JsonFormatter(logging.Formatter):
         run_id = getattr(record, "run_id", "-")
         if run_id != "-":
             log_entry["run_id"] = run_id
-            from immich_memories.tracking import otlp_export
-
-            # The trace this run will be exported as, so a log backend can link the two.
-            if otlp_export.traces_endpoint() is not None:
-                log_entry["trace_id"] = otlp_export.run_trace_id(run_id)
+        # The span the line was written in, so a log backend can link the two.
+        log_entry |= getattr(record, "trace_fields", {})
 
         if record.exc_info and record.exc_info[1] is not None:
             # WHY: exc_text carries SecretRedactionFilter's already-cleaned

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -53,6 +52,7 @@ from immich_memories.db.leases import Lease, LeaseHeldError
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM, retain_output
 from immich_memories.operations.bounded_process import run_bounded_process
 from immich_memories.security import configured_secret_values, sanitize_error_message
+from immich_memories.tracking import otel
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 
@@ -196,7 +196,8 @@ def _execute_generate(cmd: list[str]) -> ProcessResult:
         # WHY: a scheduled run's environment is whatever launchd/systemd handed this
         # process, not the shell's. Passing it explicitly makes what the child sees a
         # stated fact and gives `auto install`'s captured tuning a path through (#573).
-        env=os.environ.copy(),
+        # It also carries the current span, so the child's run joins this trace.
+        env=otel.child_environment(),
     )
     return ProcessResult(
         returncode=result.returncode,
@@ -745,11 +746,25 @@ class AutoRunner:
 
             logger.info("Generating: %s (score=%.3f)", candidate.reason, candidate.score)
             logger.info("Running: %s", " ".join(cmd))
+            generation = otel.start(
+                "automation.generate",
+                {
+                    "automation.attempt.id": attempt.id,
+                    "memory.type": candidate.memory_type,
+                    "memory.category": str(candidate.category),
+                    "memory.assets": candidate.asset_count,
+                    "memory.score": candidate.score,
+                },
+            )
             try:
-                with log_phase_progress(
-                    lambda after: self.state.phase_events_after(attempt.id, after)
+                with (
+                    otel.current(generation),
+                    log_phase_progress(
+                        lambda after: self.state.phase_events_after(attempt.id, after)
+                    ),
                 ):
                     process = self.execute(cmd)
+                generation.set_attribute("process.exit.code", process.returncode)
             except subprocess.TimeoutExpired as exc:
                 self._retain_child_output(attempt.id, exc.stdout, exc.stderr)
                 details = self._process_details(exc.stdout, exc.stderr)
@@ -757,6 +772,7 @@ class AutoRunner:
                     f"{_GENERATION_TIMEOUT_REASON}\n{details.text}"
                 )
                 logger.error(_GENERATION_TIMEOUT_REASON)
+                otel.mark_failed(generation, "TimeoutExpired", _GENERATION_TIMEOUT_REASON)
                 return self._fail_candidate(
                     attempt,
                     _GENERATION_TIMEOUT_REASON,
@@ -767,13 +783,15 @@ class AutoRunner:
                 launch_error = _safe_tail(exc, self._secrets()) or "generation process failed"
                 reason = "generation process could not be executed"
                 logger.error("%s: %s", reason, launch_error)
+                otel.mark_failed(generation, type(exc).__name__, reason)
                 return self._fail_candidate(
                     attempt,
                     reason,
                     candidate=candidate,
                     error=launch_error,
                 )
-
+            finally:
+                otel.end(generation)
             return self._settle_process(attempt, candidate, process)
         except Exception as exc:
             reason = "automation failed"

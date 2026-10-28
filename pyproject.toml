@@ -75,6 +75,11 @@ dependencies = [
     # WordNet through nltk: which words of a request typed as a sentence are things, places or
     # names. The corpus is a model file `models fetch` downloads; nothing fetches it at run time.
     "nltk>=3.9.1",
+    # Traces (#656): the SDK and its OTLP/HTTP exporter load only when OTEL_EXPORTER_OTLP_ENDPOINT
+    # is set; without it the API's no-op tracer is all that runs.
+    "opentelemetry-api>=1.45.1",
+    "opentelemetry-sdk>=1.45.1",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1",
 ]
 
 [project.optional-dependencies]
@@ -564,6 +569,8 @@ DEP002 = [
     "oidc-provider-mock",                               # auth: the OIDC tests' provider (tests/ is excluded)
     "psycopg",                                          # loaded by SQLAlchemy's postgresql+psycopg dialect
     "onnxruntime-gpu",                                  # editorial-cuda: the CUDA variant of the ONNX seats
+    "opentelemetry-api", "opentelemetry-sdk",           # imported as the `opentelemetry` namespace
+    "opentelemetry-exporter-otlp-proto-http",           # likewise
 ]
 DEP001 = [
     "cv2",                                              # alt-name import
@@ -576,6 +583,7 @@ DEP001 = [
     "laya_mlx",                                         # Optional: Laya audience pre-screen, out of band
     "PIL", "freetype", "streamlit",                     # Alt package names (Pillow→PIL)
     "starlette",                                        # Transitive via fastapi→starlette
+    "opentelemetry",                                    # namespace of the opentelemetry-* packages
 ]
 DEP003 = ["starlette"]  # Known transitive import
 

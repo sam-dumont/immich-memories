@@ -6,15 +6,17 @@ import logging
 import time
 import traceback
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass, field
 from itertools import count
 from typing import Any
 
+from opentelemetry import trace
+
 from immich_memories.logging_config import SecretRedactionFilter, redact_secrets
 from immich_memories.process_start import Startup
-from immich_memories.tracking import peak_memory
+from immich_memories.tracking import otel, peak_memory
 from immich_memories.tracking.phase_forecast import PhaseForecast
 
 # The lines a run keeps for its report; the report shows the tail, the counts cover all.
@@ -57,7 +59,8 @@ class Collector:
     _ids: Any = field(default_factory=lambda: count(1), repr=False)
 
     def interval(self, name: str, start: float, duration: float, items: int | None) -> None:
-        """Fold an existing progress clock into the same span buffer."""
+        """Fold an existing progress clock into the same span buffer, and the trace."""
+        otel.interval(name, otel.wall(start), otel.wall(start + duration), {"items": items})
         parent = _parent.get()
         self.spans.append(
             Span(
@@ -90,6 +93,21 @@ class _RunLogHandler(logging.Handler):
         current = _parent.get()
         if record.levelno >= logging.WARNING and current is not None:
             current.warnings.append(message)
+            if len(current.warnings) <= otel.EVENTS_PER_SPAN:
+                trace.get_current_span().add_event("warning", {"message": message})
+
+
+def describe_error(error: BaseException) -> dict[str, Any]:
+    """An error as runs keep it: type, redacted message, and this package's frames only."""
+    return {
+        "type": type(error).__name__,
+        "message": redact_secrets(str(error)),
+        "frames": [
+            f"{frame.filename.split('immich_memories/')[-1]}:{frame.lineno}:{frame.name}"
+            for frame in traceback.extract_tb(error.__traceback__)
+            if "immich_memories/" in frame.filename
+        ],
+    }
 
 
 def clean_exit(error: BaseException) -> bool:
@@ -153,21 +171,30 @@ def open_at(root: Span, startup: Startup | None) -> None:
         next(collector._ids), "startup", root.span_id, startup.started, opened - startup.started
     )
     collector.spans.append(whole)
+    traced = otel.start("startup", at=otel.wall(startup.started))
     token = _parent.set(whole)
     try:
-        begin = startup.started
-        for phase, ended in startup.marks:
-            if begin <= ended <= opened:
-                collector.interval(f"startup.{phase}", begin, ended - begin, None)
-                begin = ended
-        collector.interval("startup.run_record", begin, opened - begin, None)
+        with otel.current(traced):
+            begin = startup.started
+            for phase, ended in startup.marks:
+                if begin <= ended <= opened:
+                    collector.interval(f"startup.{phase}", begin, ended - begin, None)
+                    begin = ended
+            collector.interval("startup.run_record", begin, opened - begin, None)
     finally:
         _parent.reset(token)
+        otel.end(traced, at=otel.wall(opened))
 
 
 @contextmanager
-def span(name: str, *, items: int | None = None, **attributes: float) -> Iterator[Span]:
-    """Measure one operation, retaining its exception and application frames on failure."""
+def span(
+    name: str, *, items: int | None = None, traced: bool = True, **attributes: float
+) -> Iterator[Span]:
+    """Measure one operation, retaining its exception and application frames on failure.
+
+    The measurement is also a trace span, sent when it closes; `traced=False` leaves that to
+    a caller holding a span of its own (a run's root, whose outcome is known only later).
+    """
     collector = active()
     now = collector.now if collector else time.perf_counter
     parent = _parent.get()
@@ -179,22 +206,14 @@ def span(name: str, *, items: int | None = None, **attributes: float) -> Iterato
         items=items,
         attributes=attributes,
     )
+    sent = otel.start(name, {"items": items} | attributes) if traced else None
     token = _parent.set(measured)
     watch = peak_memory.watch_open() if collector else None
     try:
-        yield measured
+        with otel.current(sent) if sent is not None else nullcontext():
+            yield measured
     except BaseException as error:
-        if clean_exit(error):
-            raise
-        measured.error = {
-            "type": type(error).__name__,
-            "message": redact_secrets(str(error)),
-            "frames": [
-                f"{frame.filename.split('immich_memories/')[-1]}:{frame.lineno}:{frame.name}"
-                for frame in traceback.extract_tb(error.__traceback__)
-                if "immich_memories/" in frame.filename
-            ],
-        }
+        _failed(measured, sent, error)
         raise
     finally:
         measured.duration = max(0.0, now() - measured.start)
@@ -204,3 +223,28 @@ def span(name: str, *, items: int | None = None, **attributes: float) -> Iterato
         _parent.reset(token)
         if collector is not None:
             collector.spans.append(measured)
+        if sent is not None:
+            _end(sent, measured)
+
+
+def _failed(measured: Span, sent: trace.Span | None, error: BaseException) -> None:
+    if clean_exit(error):
+        return
+    measured.error = describe_error(error)
+    if sent is not None:
+        otel.record_error(sent, measured.error)
+
+
+def _end(sent: trace.Span, measured: Span) -> None:
+    sent.set_attributes(
+        {
+            key: value
+            for key, value in {
+                "process.peak_rss_bytes": measured.peak_rss,
+                "process.peak_tree_rss_bytes": measured.peak_tree_rss,
+                "warnings": len(measured.warnings) or None,
+            }.items()
+            if value is not None
+        }
+    )
+    otel.end(sent)

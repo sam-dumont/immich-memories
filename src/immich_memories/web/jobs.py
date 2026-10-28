@@ -28,6 +28,7 @@ from immich_memories.security import (
     write_secret_file,
 )
 from immich_memories.storage_errors import storage_failure_message
+from immich_memories.tracking import otel
 from immich_memories.web.process_identity import process_started
 from immich_memories.web.schemas import Job, JobKind, JobStatus
 
@@ -214,15 +215,27 @@ class JobRunner:
             self.prune()
             job_id = job_id or uuid4().hex
             create_private_directory(self._dir)
-            with os.fdopen(os.open(self._log(job_id), os.O_WRONLY | os.O_CREAT, 0o600), "w") as log:
-                process = subprocess.Popen(  # noqa: S603 - argv from typed requests, never a shell
-                    argv,
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
-                    stdin=subprocess.DEVNULL,
-                    env=env,
-                    start_new_session=True,
-                )
+            # Lives as long as the child; the child's own run joins it through its environment.
+            traced = otel.start(f"job.{kind}", {"job.id": job_id, "job.kind": kind})
+            try:
+                with (
+                    os.fdopen(
+                        os.open(self._log(job_id), os.O_WRONLY | os.O_CREAT, 0o600), "w"
+                    ) as log,
+                    otel.current(traced),
+                ):
+                    process = subprocess.Popen(  # noqa: S603 - argv from typed requests, no shell
+                        argv,
+                        stdout=log,
+                        stderr=subprocess.STDOUT,
+                        stdin=subprocess.DEVNULL,
+                        env=otel.child_environment(env),
+                        start_new_session=True,
+                    )
+            except BaseException as error:
+                otel.mark_failed(traced, type(error).__name__, "the job could not start")
+                otel.end(traced)
+                raise
             job = Job(
                 id=job_id,
                 kind=kind,
@@ -236,6 +249,8 @@ class JobRunner:
             try:
                 self._save(job)
             except OSError:
+                otel.mark_failed(traced, "OSError", "the job record could not be saved")
+                otel.end(traced)
                 # Without a durable record the page cannot follow or cancel this child.
                 self._processes.pop(job_id, None)
                 with suppress(ProcessLookupError, PermissionError):
@@ -248,14 +263,22 @@ class JobRunner:
                     process.wait()
                 raise
         threading.Thread(
-            target=self._follow, args=(job_id, process, on_finish), daemon=True
+            target=self._follow, args=(job_id, process, on_finish, traced), daemon=True
         ).start()
         return job
 
     def _follow(
-        self, job_id: str, process: subprocess.Popen, on_finish: Callable[[Job], Job] | None
+        self,
+        job_id: str,
+        process: subprocess.Popen,
+        on_finish: Callable[[Job], Job] | None,
+        traced: otel.Span,
     ) -> None:
         code = process.wait()
+        traced.set_attribute("process.exit.code", code)
+        if code != 0:
+            otel.mark_failed(traced, "ExitCode", f"the job exited with status {code}")
+        otel.end(traced)
         try:
             job = self.get(job_id)
             if job is None:

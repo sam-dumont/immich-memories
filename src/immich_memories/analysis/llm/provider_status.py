@@ -35,14 +35,17 @@ def watch_provider(role: str, config: LLMConfig) -> Callable[[LLMTransportAttemp
             announce_stage(
                 StageUpdate(
                     f"Gave up on the {role} at {endpoint} after {TRANSPORT_RETRIES} dropped "
-                    "connections: check that server"
+                    "connections: check that server",
+                    # The key names the stage in history and traces; the server stays out of it.
+                    key=f"Gave up on the {role}",
                 )
             )
             return
         announce_stage(
             StageUpdate(
                 f"Waiting for the {role} at {endpoint}: connection dropped, "
-                f"retry {attempt.attempt} of {TRANSPORT_RETRIES}"
+                f"retry {attempt.attempt} of {TRANSPORT_RETRIES}",
+                key=f"Waiting for the {role}",
             )
         )
 
