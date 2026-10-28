@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
+from immich_memories.analysis.llm import genai_trace
 from immich_memories.analysis.llm import metrics as llm_metrics
 from immich_memories.analysis.llm.adaptations import (
     adaptation_for,
@@ -61,6 +62,7 @@ from immich_memories.analysis.llm.wire import (
     record_invalid_response,
     remember_reasoning,
     response_body,
+    response_id,
     served_model,
     shape_for_provider,
     transient_404,
@@ -245,6 +247,13 @@ async def query_llm(
     def watch(attempt: LLMTransportAttempt) -> None:
         nonlocal attempt_number
         attempt_number += 1
+        if (call := genai_trace.current()) is not None:
+            call.attempt(
+                number=attempt_number,
+                outcome=attempt.outcome,
+                status_code=attempt.status_code,
+                finish_reason=attempt.finish_reason,
+            )
         if transport_observer is not None:
             transport_observer(replace(attempt, attempt=attempt_number))
 
@@ -253,7 +262,21 @@ async def query_llm(
     if effective_thinking:
         total_timeout = max(total_timeout, float(THINKING_MIN_TIMEOUT_SECONDS))
     try:
-        with span("reader.call") as measured:
+        with (
+            span("reader.call") as measured,
+            genai_trace.inference(
+                provider=llm_config.provider,
+                model=llm_config.model,
+                base_url=llm_config.base_url,
+                prompt=prompt,
+                stage=llm_metrics.current_stage(),
+                images=len(images),
+                temperature=temperature,
+                max_tokens=max_tokens,
+                json_output=response_format is not None,
+                thinking=effective_thinking,
+            ) as call,
+        ):
             async with asyncio.timeout(total_timeout):
                 answer = await _dispatch(
                     prompt,
@@ -268,6 +291,7 @@ async def query_llm(
                     require_complete,
                     response_format,
                 )
+            call.answered(answer)
     except (httpx.TransportError, TimeoutError) as exc:
         warn_once_unreachable(llm_config, exc)
         raise
@@ -606,6 +630,7 @@ async def _query_anthropic(
             # never breaks them out, so there is no reasoning subset to report.
             completion_tokens=usage.get("output_tokens", 0) or 0,
             model=served_model(body),
+            response_id=response_id(body),
             usage_known=llm_metrics.token_counts_reported(
                 usage.get("input_tokens"), usage.get("output_tokens")
             ),

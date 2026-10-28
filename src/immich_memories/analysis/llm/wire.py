@@ -671,6 +671,7 @@ def interpret_openai_response(
         usage_known=llm_metrics.token_counts_reported(
             usage.get("prompt_tokens"), usage.get("completion_tokens")
         ),
+        response_id=response_id(body),
     )
     try:
         return _openai_completion(
@@ -711,6 +712,12 @@ def response_body(response: httpx.Response) -> dict:
     if not isinstance(body, dict):
         raise TypeError("LLM response body is not an object")
     return body
+
+
+def response_id(body: dict) -> str | None:
+    """The id the server gave its reply, which its own logs can be searched for."""
+    reply_id = body.get("id")
+    return reply_id if isinstance(reply_id, str) and reply_id else None
 
 
 def served_model(body: dict) -> str | None:

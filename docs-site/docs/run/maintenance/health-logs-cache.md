@@ -118,6 +118,16 @@ OTEL_SERVICE_NAME=immich-memories   # the default
   child process, which inherits the trace through `TRACEPARENT`.
 - The run span carries `run.id`, `run.status`, `run.source` and the run's LLM spend
   (`llm.prompt_tokens`, `llm.stage.<stage>.completion_tokens`, ...).
+- **Every LLM call is a `chat <model>` span** that follows the OpenTelemetry GenAI conventions:
+  provider, the model asked for and the one that answered, temperature, `max_tokens`, JSON
+  output, the tokens in and out (cached and reasoning included), finish reasons, the reply's id and
+  the server's address. Retries stay inside one span, one `gen_ai.attempt` event each, and the
+  caption worker's calls and each answered batch line get a span too. Some backends have a
+  GenAI view of their own (token cost per model, slow calls), and these spans feed it.
+- **Prompts and replies stay out unless you ask for them.** They carry people's names and
+  captions. Set `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true` to record them as
+  `gen_ai.input.messages` and `gen_ai.output.messages`. Pictures are never recorded, only how many
+  went in.
 - A failed stage is an error span with its exception (redacted, the app's own frames only).
   Logged warnings are span events, the first 20 per span.
 - Export is OTLP over HTTP (protobuf). `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` is refused with a

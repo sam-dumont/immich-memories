@@ -26,6 +26,8 @@ from functools import wraps
 from threading import Lock
 from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
+from immich_memories.analysis.llm import genai_trace
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Iterator
 
@@ -187,6 +189,7 @@ def record_reply(
     model: str | None = None,
     stage: str | None = None,
     usage_known: bool = True,
+    response_id: str | None = None,
 ) -> None:
     """Account for one completion attempt. Retries count separately, as they cost.
 
@@ -195,6 +198,16 @@ def record_reply(
     served.
     """
     stage = stage or _stage.get()
+    genai_trace.billed(
+        {
+            "input_tokens": prompt_tokens,
+            "output_tokens": completion_tokens,
+            "cache_read_tokens": cached_prompt_tokens,
+            "reasoning_tokens": reasoning_tokens,
+            "model": model,
+            "response_id": response_id,
+        }
+    )
     if model:
         _model.set(model)
     for counters in _active.get():
@@ -313,6 +326,11 @@ def active() -> LLMCounters | None:
     """
     stack = _active.get()
     return stack[0] if stack else None
+
+
+def current_stage() -> str:
+    """The stage the next reply is billed to."""
+    return _stage.get()
 
 
 @contextmanager
