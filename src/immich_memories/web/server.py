@@ -35,6 +35,7 @@ from immich_memories.config import get_config, init_config_dir
 from immich_memories.config.loader import Config, config_state_dir, get_config_path
 from immich_memories.security import write_secret_file
 from immich_memories.startup_checks import StartupRefused, check_startup
+from immich_memories.tracking import otel
 from immich_memories.web import mount_web
 from immich_memories.web.auth import (
     clear_session,
@@ -403,6 +404,7 @@ def create_app() -> FastAPI:
     # Outermost of all: a request for a foreign host or a cross-site write is answered
     # before a session is decoded or a route runs. The config is read per request.
     app.add_middleware(RequestChecks, config=get_config)
+    otel.instrument_app(app)
     return app
 
 

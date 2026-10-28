@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import create_engine, event
+import sqlalchemy as sa
+from sqlalchemy import event
 from sqlalchemy.engine import Connection, Engine
 
 from immich_memories.db.bootstrap import StoreLocation
@@ -32,7 +33,8 @@ def create_store_engine(location: StoreLocation) -> Engine:
     translate = {"schema_translate_map": {SCHEMA: effective_schema(location)}}
     if location.dialect_name == "sqlite":
         return _sqlite_engine(location, translate)
-    return create_engine(
+    # Through the module, so a tracing wrapper installed after this import still sees the call.
+    return sa.create_engine(
         location.sa_url,
         pool_size=5,
         pool_pre_ping=True,
@@ -44,7 +46,7 @@ def _sqlite_engine(location: StoreLocation, execution_options: dict[str, Any]) -
     path = location.sqlite_path
     if path is not None:
         prepare_sqlite_file(path, private=True)
-    engine = create_engine(
+    engine = sa.create_engine(
         location.sa_url,
         # isolation_level=None: autocommit at the driver; `_on_sqlite_begin` emits every BEGIN.
         connect_args={"timeout": BUSY_TIMEOUT_MS / 1000, "isolation_level": None},

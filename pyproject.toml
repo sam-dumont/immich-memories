@@ -80,6 +80,10 @@ dependencies = [
     "opentelemetry-api>=1.45.1",
     "opentelemetry-sdk>=1.45.1",
     "opentelemetry-exporter-otlp-proto-http>=1.45.1",
+    # The hops a run makes, as client and server spans: web routes, HTTP calls, store queries.
+    "opentelemetry-instrumentation-fastapi>=0.66b1",
+    "opentelemetry-instrumentation-httpx>=0.66b1",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b1",
 ]
 
 [project.optional-dependencies]
@@ -571,6 +575,9 @@ DEP002 = [
     "onnxruntime-gpu",                                  # editorial-cuda: the CUDA variant of the ONNX seats
     "opentelemetry-api", "opentelemetry-sdk",           # imported as the `opentelemetry` namespace
     "opentelemetry-exporter-otlp-proto-http",           # likewise
+    "opentelemetry-instrumentation-fastapi",            # likewise
+    "opentelemetry-instrumentation-httpx",              # likewise
+    "opentelemetry-instrumentation-sqlalchemy",         # likewise
 ]
 DEP001 = [
     "cv2",                                              # alt-name import

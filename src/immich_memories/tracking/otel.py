@@ -63,6 +63,12 @@ def setup() -> None:
     global _provider, _inherited
     if _provider is not None or traces_endpoint() is None:
         return
+    # The stable HTTP and database conventions (url.full, db.query.text), not the old names.
+    os.environ.setdefault("OTEL_SEMCONV_STABILITY_OPT_IN", "http,database")
+    # A run makes tens of thousands of store queries; the SDK's 2048-span queue would drop
+    # most of them while a batch is in flight.
+    os.environ.setdefault("OTEL_BSP_MAX_QUEUE_SIZE", "65536")
+    os.environ.setdefault("OTEL_BSP_MAX_EXPORT_BATCH_SIZE", "2048")
     protocol = _setting("PROTOCOL", "http/protobuf").lower()
     if protocol != "http/protobuf":
         logger.warning(
@@ -80,6 +86,9 @@ def setup() -> None:
     if str(resource.attributes.get("service.name", "")).startswith("unknown_service"):
         resource = resource.merge(Resource({"service.name": SERVICE_NAME}))
     _provider = TracerProvider(resource=resource)
+    from immich_memories.tracking import otel_hops
+
+    otel_hops.instrument(_provider)
     exporter = OTLPSpanExporter(timeout=_timeout_seconds())
     _provider.add_span_processor(BatchSpanProcessor(_quiet(exporter)))
     # The exporter logs each failed batch with the collector's reply; one line of ours is enough.
@@ -88,6 +97,15 @@ def setup() -> None:
         {key: value for key, name in _CARRIER.items() if (value := os.environ.get(name))}
     )
     _inherited = context.attach(inherited)
+
+
+def instrument_app(app: Any) -> None:
+    """Trace each request to a FastAPI `app`, under the caller's trace when it sent one."""
+    if _provider is None:
+        return
+    from immich_memories.tracking import otel_hops
+
+    otel_hops.instrument_app(app, _provider)
 
 
 def flush() -> None:
@@ -101,6 +119,9 @@ def shutdown() -> None:
     global _provider, _inherited, _warned
     if _provider is None:
         return
+    from immich_memories.tracking import otel_hops
+
+    otel_hops.uninstrument()
     _provider.shutdown()
     _provider = None
     if _inherited is not None:
@@ -269,8 +290,10 @@ def _quiet(exporter: SpanExporter) -> SpanExporter:
     class Quiet(SpanExporter):
         def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
             global _warned
+            from immich_memories.tracking import otel_hops
+
             try:
-                result = exporter.export(spans)
+                result = exporter.export([otel_hops.without_paths(span) for span in spans])
             except Exception:  # noqa: BLE001 - telemetry must never fail the work it describes
                 result = SpanExportResult.FAILURE
             if result is SpanExportResult.FAILURE and not _warned:

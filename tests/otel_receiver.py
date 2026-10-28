@@ -22,6 +22,14 @@ class Received:
         otel.flush()
         return [span for _, _, body in self.requests for span in decode(body)]
 
+    def own(self) -> list[dict]:
+        """The app's own spans: not the HTTP, store and program hops around them."""
+        return [
+            span
+            for span in self.spans()
+            if span["kind"] in (0, 1) and not span["name"].startswith("exec ")
+        ]
+
     def named(self) -> dict[str, dict]:
         return {span["name"]: span for span in self.spans()}
 

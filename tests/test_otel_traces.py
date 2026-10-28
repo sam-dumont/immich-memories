@@ -42,7 +42,7 @@ def test_a_finished_stage_reaches_the_collector_while_the_run_is_still_going(col
     def work():
         with timing.span("preparation.scan", items=12):
             pass
-        seen_during_run.extend(span["name"] for span in collector.spans())
+        seen_during_run.extend(span["name"] for span in collector.own())
 
     _observed(work)
 
@@ -68,7 +68,7 @@ def test_a_run_arrives_as_one_trace_with_its_stages_nested(collector, monkeypatc
 
     tracker = _observed(work)
 
-    spans = collector.named()
+    spans = {span["name"]: span for span in collector.own()}
     assert {path for path, _, _ in collector.requests} == {"/v1/traces"}
     assert {headers["authorization"] for _, headers, _ in collector.requests} == {
         "Bearer lab-token"
