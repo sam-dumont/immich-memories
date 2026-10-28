@@ -137,6 +137,15 @@ OTEL_SERVICE_NAME=immich-memories   # the default
   with its exit code and its arguments, paths cut to the file name. The render worker and the
   inference service trace their own side when the same variables are set on them, so a remote
   render shows up inside the run that asked for it.
+- **Every selection decision is a span.** Each stage that narrows the pool is a
+  `select <stage>` span with how many clips went in, how many came out, how many favourites
+  survived, the stage's own reasons, and one `clip.dropped` event per clip it let go (the first
+  50): its Immich asset id, the reason the stage gave, and what the clip is (file name, when it
+  was taken, its score). An editorial pass adds the model that judged and whether the answer
+  came from the cache. "Why isn't that clip in the film" is a search for its asset id.
+- **The run span carries the film.** Memory type, how many days it covers, the target and real
+  length, file size, clips analysed and selected, where the title came from, and whether it
+  reached Immich. Names, album names and asset ids of the film stay in the store.
 - **Every LLM call is a `chat <model>` span** that follows the OpenTelemetry GenAI conventions:
   provider, the model asked for and the one that answered, temperature, `max_tokens`, JSON
   output, the tokens in and out (cached and reasoning included), finish reasons, the reply's id and

@@ -913,6 +913,7 @@ src/immich_memories/
 │   │   ├── admission.py        # Acquire and admit the source-eligible corpus every editorial pass reads.
 │   │   ├── asset_merit.py      # How much an asset is worth showing, on one scale for photographs and video.
 │   │   ├── collages.py         # A collage page (gutters or an even grid of tiles) is out when its day holds its frames, and never opens a film
+│   │   ├── decision_spans.py   # Each selection stage and editorial pass as a `select <name>` trace span
 │   │   ├── duplicate_hashing.py # Perceptual hashing for duplicates
 │   │   ├── exact_copies.py     # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
 │   │   ├── favourite_law.py    # Within a moment, the favourite wins. Always.
@@ -1815,6 +1816,9 @@ span and each page change a `route` span, and parents the requests made meanwhil
 server, the inference service, the GPU and render workers), httpx client spans named by method and
 id-free path, SQLAlchemy query spans, and a `Popen` hook timing each child program. The exporter
 cuts absolute paths in span names and attributes to file names before anything leaves.
+`analysis/corpus/decision_spans.py` turns each selection stage and editorial pass the corpus
+trace records into a `select <name>` span with counts and a `clip.dropped` event per clip, and
+`run_observations._film` puts the finished film on the run's root span.
 `analysis/llm/genai_trace.py` wraps each logical LLM call (reader, caption worker, each batch line)
 in a `chat {model}` CLIENT span with the GenAI semantic-convention attributes; `record_reply` adds
 the billed tokens to the call in flight, the transport observer its attempts and finish reasons.

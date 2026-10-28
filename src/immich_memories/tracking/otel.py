@@ -285,11 +285,17 @@ def mark_failed(span: Span, error_type: str, reason: str) -> None:
 
 
 def finish_run(
-    span: Span, *, run_id: str, status: str, source: str, llm: Mapping[str, Any]
+    span: Span,
+    *,
+    run_id: str,
+    status: str,
+    source: str,
+    llm: Mapping[str, Any],
+    film: Mapping[str, Any] | None = None,
 ) -> None:
-    """The run's outcome and LLM spend, set on its root span once both are saved."""
+    """The run's outcome, LLM spend and the film it made, set on its root once all are saved."""
     outcome = {"run.id": run_id, "run.status": status, "run.source": source}
-    span.set_attributes(outcome | _llm_attributes(llm))
+    span.set_attributes(outcome | _llm_attributes(llm) | _clean(film or {}))
     if status == "failed":
         span.set_status(Status(StatusCode.ERROR, "run failed"))
 

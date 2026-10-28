@@ -19,6 +19,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from immich_memories.analysis.corpus import decision_spans
 from immich_memories.analysis.corpus.records import (
     ConservationCheck,
     DecisionProvenance,
@@ -104,6 +105,7 @@ class Trace:
         conservation = _check_conservation(pass_trace)
         recorded = replace(pass_trace, conservation=conservation)
         self.editorial_passes.append(recorded)
+        decision_spans.editorial_pass(recorded)
         if not conservation.valid:
             # `!!` belongs where the failure is known, not added in bulk by a
             # later reader: a reader that prefixes everything cannot tell a
@@ -126,20 +128,20 @@ class Trace:
         lost = [item for item in before_list if _asset_id(item) not in after_id_set]
         self._remember(before_list)
         self._remember(after_list)
-        self.stages.append(
-            Stage(
-                name=name,
-                kept=len(after_list),
-                dropped=len(lost),
-                favorites_in=sum(_is_favorite(i) for i in before_list),
-                favorites_out=sum(_is_favorite(i) for i in after_list),
-                reasons=reasons or [],
-                notes=dict(notes or {}),
-                kept_ids=kept_ids,
-                lost_ids=tuple(_asset_id(i) for i in lost),
-                gained_ids=tuple(asset_id for asset_id in kept_ids if asset_id not in before_ids),
-            )
+        stage = Stage(
+            name=name,
+            kept=len(after_list),
+            dropped=len(lost),
+            favorites_in=sum(_is_favorite(i) for i in before_list),
+            favorites_out=sum(_is_favorite(i) for i in after_list),
+            reasons=reasons or [],
+            notes=dict(notes or {}),
+            kept_ids=kept_ids,
+            lost_ids=tuple(_asset_id(i) for i in lost),
+            gained_ids=tuple(asset_id for asset_id in kept_ids if asset_id not in before_ids),
         )
+        self.stages.append(stage)
+        decision_spans.stage(stage, self.clips)
 
     def _remember(self, items: list) -> None:
         """Keep what each clip is, so the account can name it.
