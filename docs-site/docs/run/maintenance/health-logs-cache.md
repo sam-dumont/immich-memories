@@ -113,11 +113,22 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
 OTEL_SERVICE_NAME=immich-memories   # the default
 ```
 
+- **Each command is one trace.** `immich-memories generate` (or any other command) opens a
+  `cli <command>` span first, so startup, the run and what follows sit under it. The web server
+  is the exception: each request is its own trace. Store queries and programs that belong to no
+  work (startup reads, housekeeping) are not traced, so they don't bury the runs in a search.
 - **One trace from what started the run.** A film started from the web page sits under its
   `job.<kind>` span; a scheduled one sits under `automation.generate`. The run itself runs in a
   child process, which inherits the trace through `TRACEPARENT`.
 - The run span carries `run.id`, `run.status`, `run.source` and the run's LLM spend
   (`llm.prompt_tokens`, `llm.stage.<stage>.completion_tokens`, ...).
+- **The trace starts in your browser.** With tracing on, the web page loads the OpenTelemetry web
+  SDK (about 21 KB gzipped, fetched only then) and records the page load, each page change
+  (`route /runs/[run_id]`, with the requests it makes under it), each action that sends something
+  (`ui POST /cuts`) and every API call. The page sends its spans to the app server, which forwards
+  them to your collector with its own address and token, after taking out query strings, ids and
+  paths. The collector never has to be reachable from the browser. Browser spans carry the service
+  name `immich-memories-web`.
 - **Every hop is a span too.** Each web request is a server span named by its route
   (`GET /api/v1/films/{film_id}`), and joins the caller's trace when the caller sent one. Each
   HTTP call (Immich, the reader, the render worker, the music service) is a client span named by

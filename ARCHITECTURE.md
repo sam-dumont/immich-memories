@@ -1186,6 +1186,7 @@ src/immich_memories/
 │   ├── library.py              # GET /people, /albums, /trips, /special-days for the brief's pickers
 │   ├── connection.py           # /connection: the Immich URL + key saved to the database; never follows a new URL
 │   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
+│   ├── telemetry.py            # /api/v1/telemetry: is tracing on; the client's spans forwarded to the collector, scrubbed
 │   ├── updates.py              # /api/v1/updates (the button) and /updates/daily (the banner)
 │   ├── roster.py               # /roster: the store's people registry (roles, relationships, alias link/unlink) for People
 │   ├── people_accounts.py      # /roster/owners (who owns each account) and /accounts/{name}/people (pick a person to link)
@@ -1806,6 +1807,10 @@ when the standard `OTEL_EXPORTER_OTLP_ENDPOINT` is set (the API's no-op tracer o
 root span opens at process start and closes after its outcome is saved, carrying status and LLM
 spend. Parents put their current span in a child's `TRACEPARENT` (web jobs, scheduled generation),
 so a run joins the trace that started it; `RunIdFilter` stamps `trace_id`/`span_id` on log lines.
+`web/telemetry.py` tells the client whether tracing is on and forwards its OTLP/JSON batches to
+the collector with the server's settings, scrubbed by `otel_hops.scrub`; the client loads its
+tracer (`web/src/lib/tracing-sdk.ts`) as a lazy chunk only then, makes each `post()` a `ui` action
+span and each page change a `route` span, and parents the requests made meanwhile to them.
 `otel_hops.py` adds the hops while exporting: FastAPI server spans (the served app of the web
 server, the inference service, the GPU and render workers), httpx client spans named by method and
 id-free path, SQLAlchemy query spans, and a `Popen` hook timing each child program. The exporter

@@ -120,6 +120,7 @@ def test_a_web_route_is_a_server_span_under_the_caller_trace(collector):
             f"/api/v1/films/{_ASSET}", headers={"traceparent": f"00-{parent}-00f067aa0ba902b7-01"}
         )
         client.get("/health/live")
+        client.get("/app/_app/immutable/chunks/abc123.js")
 
     spans = collector.spans()
     route = next(span for span in spans if span["kind"] == _SERVER)
@@ -127,7 +128,7 @@ def test_a_web_route_is_a_server_span_under_the_caller_trace(collector):
     assert route["trace_id"] == parent
     assert next(span for span in spans if span["name"] == "film.read")["trace_id"] == parent
     assert _ASSET not in repr(route)
-    assert not [span for span in spans if "health" in span["name"]]
+    assert not [span for span in spans if "health" in span["name"] or "_app" in repr(span)]
 
 
 def test_without_tracing_nothing_is_patched(monkeypatch):
@@ -137,3 +138,15 @@ def test_without_tracing_nothing_is_patched(monkeypatch):
     assert subprocess.Popen.__init__ is original
     otel.shutdown()
     assert subprocess.Popen.__init__ is original
+
+
+def test_a_store_query_or_program_outside_any_span_is_not_its_own_trace(collector, tmp_path):
+    from immich_memories.db.bootstrap import StoreLocation
+    from immich_memories.db.engine import create_store_engine
+
+    engine = create_store_engine(StoreLocation(url=f"sqlite:///{tmp_path / 'store.db'}"))
+    with engine.connect() as connection:
+        connection.execute(sa.text("SELECT 1"))
+    subprocess.run([sys.executable, "-c", "pass"], check=True)
+
+    assert collector.spans() == []

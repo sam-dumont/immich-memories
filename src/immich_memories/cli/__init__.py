@@ -162,6 +162,9 @@ def main(
 
     # Before any work, so the first span already joins the trace that started this process.
     otel.setup()
+    if ctx.invoked_subcommand:
+        # Closed by click once the command returns: startup, the run and what follows nest here.
+        ctx.with_resource(otel.command(ctx.invoked_subcommand, started=process_start.started()))
     _quiet_request_logs(level)
     if ctx.meta.get("help_requested"):
         return

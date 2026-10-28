@@ -27,6 +27,7 @@ from immich_memories.web import (
     session,
     settings,
     suggestions,
+    telemetry,
     updates,
 )
 from immich_memories.web.request_validation import validate_json_request
@@ -82,6 +83,7 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     app.include_router(session.router)
     app.include_router(media.router)
     app.include_router(i18n.router)
+    app.include_router(telemetry.router)
     app.add_exception_handler(ImmichAPIError, _immich_refused)
     app.add_exception_handler(OSError, _storage_refused)
     root = client_dir.resolve()
