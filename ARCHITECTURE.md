@@ -1206,6 +1206,7 @@ src/immich_memories/
 │   ├── run_id.py               # Run ID generation
 │   ├── models.py               # Run/phase data models
 │   ├── otel.py                 # OpenTelemetry traces: live spans, TRACEPARENT into children, when OTEL_EXPORTER_OTLP_ENDPOINT is set
+│   ├── otel_hops.py            # Routes, HTTP calls, store queries and child programs as spans; paths and ids scrubbed
 │   └── system_info.py          # System info collection
 │
 ├── db/                         # The store (#871): one versioned database on SQLite or PostgreSQL
@@ -1805,6 +1806,10 @@ when the standard `OTEL_EXPORTER_OTLP_ENDPOINT` is set (the API's no-op tracer o
 root span opens at process start and closes after its outcome is saved, carrying status and LLM
 spend. Parents put their current span in a child's `TRACEPARENT` (web jobs, scheduled generation),
 so a run joins the trace that started it; `RunIdFilter` stamps `trace_id`/`span_id` on log lines.
+`otel_hops.py` adds the hops while exporting: FastAPI server spans (the served app of the web
+server, the inference service, the GPU and render workers), httpx client spans named by method and
+id-free path, SQLAlchemy query spans, and a `Popen` hook timing each child program. The exporter
+cuts absolute paths in span names and attributes to file names before anything leaves.
 `analysis/llm/genai_trace.py` wraps each logical LLM call (reader, caption worker, each batch line)
 in a `chat {model}` CLIENT span with the GenAI semantic-convention attributes; `record_reply` adds
 the billed tokens to the call in flight, the transport observer its attempts and finish reasons.

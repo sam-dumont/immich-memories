@@ -118,6 +118,14 @@ OTEL_SERVICE_NAME=immich-memories   # the default
   child process, which inherits the trace through `TRACEPARENT`.
 - The run span carries `run.id`, `run.status`, `run.source` and the run's LLM spend
   (`llm.prompt_tokens`, `llm.stage.<stage>.completion_tokens`, ...).
+- **Every hop is a span too.** Each web request is a server span named by its route
+  (`GET /api/v1/films/{film_id}`), and joins the caller's trace when the caller sent one. Each
+  HTTP call (Immich, the reader, the render worker, the music service) is a client span named by
+  method and path, with ids replaced by `{id}` and no query string. Each store query is a span with
+  its statement, never its values. Each program the app starts (ffmpeg, ffprobe, ...) is a span
+  with its exit code and its arguments, paths cut to the file name. The render worker and the
+  inference service trace their own side when the same variables are set on them, so a remote
+  render shows up inside the run that asked for it.
 - **Every LLM call is a `chat <model>` span** that follows the OpenTelemetry GenAI conventions:
   provider, the model asked for and the one that answered, temperature, `max_tokens`, JSON
   output, the tokens in and out (cached and reasoning included), finish reasons, the reply's id and
@@ -135,6 +143,9 @@ OTEL_SERVICE_NAME=immich-memories   # the default
 - The standard variables apply: `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (used as-is),
   `OTEL_EXPORTER_OTLP_HEADERS` for a token, `OTEL_EXPORTER_OTLP_TIMEOUT` (milliseconds, as the
   spec says), `OTEL_RESOURCE_ATTRIBUTES`, and `OTEL_SDK_DISABLED=true` to switch it off.
+- A run sends a lot of spans: tens of thousands of store queries for a year film. The export queue
+  holds 65,536 by default (`OTEL_BSP_MAX_QUEUE_SIZE` changes it); a collector that can't keep up
+  makes the SDK drop the overflow, never slows the run.
 - A collector that's down costs one warning. The run itself is never failed by it, but a process
   waits up to the timeout (10 seconds by default) for the last spans before it exits.
 

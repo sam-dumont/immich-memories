@@ -11,14 +11,19 @@ import logging
 
 import uvicorn
 
+from immich_memories.tracking import otel
 from immich_memories_inference.app import create_app
 from immich_memories_inference.settings import InferenceSettings
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    # Requests from a traced run carry its trace; this service's spans join it.
+    otel.setup()
     settings = InferenceSettings()
-    uvicorn.run(create_app(settings), host=settings.host, port=settings.port, workers=1)
+    app = create_app(settings)
+    otel.instrument_app(app)
+    uvicorn.run(app, host=settings.host, port=settings.port, workers=1)
 
 
 if __name__ == "__main__":

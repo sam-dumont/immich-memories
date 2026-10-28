@@ -15,6 +15,7 @@ from immich_memories_render_worker.settings import WorkerSettings
 
 from immich_memories.audio.generators.base import StemSeparator
 from immich_memories.logging_config import configure_logging
+from immich_memories.tracking import otel
 from immich_memories_inference.app import create_app as inference_app
 from immich_memories_inference.app import default_loaders
 from immich_memories_inference.caption_proxy import register_captions
@@ -102,9 +103,14 @@ def main() -> None:
     # WHY (#2785): a render job's log (underruns, CPU fallbacks) went only to the run's
     # in-memory collector; the pod log carried native stderr and nothing else.
     configure_logging()
+    # Requests from a traced run carry its trace; the render and model spans join it.
+    otel.setup()
     settings = InferenceSettings()
+    app = create_app(settings, WorkerSettings())
+    # The outer app only: the mounted render and inference apps sit inside its spans.
+    otel.instrument_app(app)
     uvicorn.run(
-        create_app(settings, WorkerSettings()),
+        app,
         host=settings.host,
         port=settings.port,
         workers=1,
