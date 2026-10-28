@@ -9,6 +9,7 @@ from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict
 from functools import wraps
+from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -19,6 +20,7 @@ from immich_memories.logging_config import set_current_run_id
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.storage_errors import storage_failure_message
 from immich_memories.tracking import otel, timing
+from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
 from immich_memories.tracking.span_store import SpanStore
@@ -212,7 +214,37 @@ def _save_observations(
     if run_span is not None:
         # Read back: the outcome above is the one saved, so the trace and `runs show` agree.
         final = database.get_run(run_id) or saved
-        otel.finish_run(run_span, run_id=run_id, status=final.status, source=final.source, llm=llm)
+        otel.finish_run(
+            run_span,
+            run_id=run_id,
+            status=final.status,
+            source=final.source,
+            llm=llm,
+            film=_film(final),
+        )
+
+
+def _film(run: RunMetadata) -> dict[str, Any]:
+    """What the run made, for its trace. Names, albums and asset ids stay in the store."""
+    span_days = (
+        (run.date_range_end - run.date_range_start).days + 1
+        if run.date_range_start and run.date_range_end
+        else None
+    )
+    return {
+        "memory.type": run.memory_type,
+        "memory.category": run.memory_category,
+        "memory.span_days": span_days,
+        "film.target_seconds": run.target_duration_seconds,
+        "film.duration_seconds": run.output_duration_seconds or None,
+        "film.size_bytes": run.output_size_bytes or None,
+        "film.clips.analyzed": run.clips_analyzed,
+        "film.clips.selected": run.clips_selected,
+        "film.title_source": run.title_source,
+        "film.delivery": str(run.delivery_status),
+        "film.delivery.attempts": run.delivery_attempts or None,
+        "run.errors": run.errors_count or None,
+    }
 
 
 def _export_timings(store: Store, run_id: str, collected: timing.Collector) -> None:
