@@ -1337,6 +1337,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/telemetry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Status
+         * @description Whether the server exports traces, and so whether the client should load its tracer.
+         */
+        get: operations["status_api_v1_telemetry_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/telemetry/traces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Traces
+         * @description Forward the client's OTLP/JSON batch to the collector, scrubbed.
+         */
+        post: operations["traces_api_v1_telemetry_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/trips": {
         parameters: {
             query?: never;
@@ -2866,6 +2906,14 @@ export interface components {
             refreshing: boolean;
             /** Skipped */
             skipped: components["schemas"]["Skipped"][];
+        };
+        /**
+         * TelemetryStatus
+         * @description Whether the server exports traces, and so whether the client loads its tracer.
+         */
+        TelemetryStatus: {
+            /** Traces */
+            traces: boolean;
         };
         /** TraceBlock */
         TraceBlock: {
@@ -5071,6 +5119,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_api_v1_telemetry_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TelemetryStatus"];
+                };
+            };
+        };
+    };
+    traces_api_v1_telemetry_traces_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

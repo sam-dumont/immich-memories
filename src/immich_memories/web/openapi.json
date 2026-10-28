@@ -4097,6 +4097,20 @@
         "title": "Suggestions",
         "type": "object"
       },
+      "TelemetryStatus": {
+        "description": "Whether the server exports traces, and so whether the client loads its tracer.",
+        "properties": {
+          "traces": {
+            "title": "Traces",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "traces"
+        ],
+        "title": "TelemetryStatus",
+        "type": "object"
+      },
       "TraceBlock": {
         "properties": {
           "head": {
@@ -7274,6 +7288,48 @@
         "summary": "Run Suggestion",
         "tags": [
           "suggestions"
+        ]
+      }
+    },
+    "/api/v1/telemetry": {
+      "get": {
+        "description": "Whether the server exports traces, and so whether the client should load its tracer.",
+        "operationId": "status_api_v1_telemetry_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemetryStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Status",
+        "tags": [
+          "telemetry"
+        ]
+      }
+    },
+    "/api/v1/telemetry/traces": {
+      "post": {
+        "description": "Forward the client's OTLP/JSON batch to the collector, scrubbed.",
+        "operationId": "traces_api_v1_telemetry_traces_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Traces",
+        "tags": [
+          "telemetry"
         ]
       }
     },

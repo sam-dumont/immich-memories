@@ -551,3 +551,9 @@ class AccountPerson(BaseModel):
     suggested: bool
     # The registry person this one is already linked to, if any.
     linked_to: str | None
+
+
+class TelemetryStatus(BaseModel):
+    """Whether the server exports traces, and so whether the client loads its tracer."""
+
+    traces: bool

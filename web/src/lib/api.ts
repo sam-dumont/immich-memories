@@ -1,5 +1,6 @@
 import { goto } from '$app/navigation';
 import type { components } from './api-types';
+import { action, template } from './tracing';
 
 export type RunSummary = components['schemas']['RunSummary'];
 export type RunPage = components['schemas']['RunPage'];
@@ -47,14 +48,17 @@ export const thumbnail = (assetId: string, size: 'thumbnail' | 'preview' = 'thum
 export const video = (assetId: string) => `/api/v1/assets/${encodeURIComponent(assetId)}/video`;
 
 /** POST JSON; a 409 hands back the job already running so the page can join it. */
-export async function post<T>(path: string, body: unknown): Promise<{ status: number; body: T & { detail?: string; job?: JobView } }> {
-  const response = await fetch(`/api/v1${path}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify(body),
+// Every POST is something the person asked for, so each one is a user action in the trace.
+export function post<T>(path: string, body: unknown): Promise<{ status: number; body: T & { detail?: string; job?: JobView } }> {
+  return action(`POST ${template(path)}`, async () => {
+    const response = await fetch(`/api/v1${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (response.status === 401) await goto('/app/login', { replaceState: true });
+    // A proxy's error page or a crashed handler is not JSON; the caller still gets a status and a line.
+    const answer = await response.json().catch(() => ({ detail: `${response.status} ${response.statusText}` }));
+    return { status: response.status, body: answer };
   });
-  if (response.status === 401) await goto('/app/login', { replaceState: true });
-  // A proxy's error page or a crashed handler is not JSON; the caller still gets a status and a line.
-  const answer = await response.json().catch(() => ({ detail: `${response.status} ${response.statusText}` }));
-  return { status: response.status, body: answer };
 }

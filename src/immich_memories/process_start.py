@@ -27,6 +27,11 @@ def mark(phase: str) -> None:
         _process.marks.append((phase, time.perf_counter()))
 
 
+def started() -> float:
+    """When this process began, on the `perf_counter` clock."""
+    return _process.started
+
+
 def claim() -> Startup | None:
     """The process start, handed to the first run that owns this process and to no later one."""
     return _unclaimed.pop() if _unclaimed else None

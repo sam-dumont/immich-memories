@@ -1,6 +1,9 @@
 <script lang="ts">
   import '../app.css';
   import { page } from '$app/state';
+  import { afterNavigate, beforeNavigate } from '$app/navigation';
+  import { onMount } from 'svelte';
+  import { navigating, startTracing } from '$lib/tracing';
   import { AppShell, AppShellHeader, AppShellSidebar, NavbarItem, ThemeSwitcher, TooltipProvider } from '@immich/ui';
   import { mdiAccountMultipleOutline, mdiCogOutline, mdiHistory, mdiLightbulbOutline, mdiMovieOpenStarOutline } from '@mdi/js';
   import { chooseLanguage, chosenLanguage, languages, t } from '$lib/i18n.svelte';
@@ -9,6 +12,15 @@
   import { mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js';
 
   let { children, data } = $props();
+
+  // Loads the tracer only when the server exports traces; otherwise this is one small request.
+  onMount(() => void startTracing());
+  let navigated: (() => void) | undefined;
+  beforeNavigate(({ from, to }) => (navigated = navigating(from?.route.id ?? null, to?.route.id ?? null)));
+  afterNavigate(() => {
+    navigated?.();
+    navigated = undefined;
+  });
   const bare = $derived(page.url.pathname.startsWith('/app/login'));
 
   // WHY an effect: a class directive on <svelte:body> is not applied in Svelte 5.

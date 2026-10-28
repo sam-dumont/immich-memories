@@ -280,3 +280,16 @@ def test_a_reader_retry_stage_is_named_without_its_server():
         "Gave up on the reader",
     ]
     assert "10.9.8.7" in heard[0].label
+
+
+def test_a_cli_command_is_the_root_of_everything_it_does(collector, monkeypatch):
+    from click.testing import CliRunner
+
+    from immich_memories.cli import main
+
+    result = CliRunner().invoke(main, ["version"])
+
+    assert result.exit_code == 0, result.output
+    command = collector.named()["cli version"]
+    assert command["parent"] is None
+    assert command["attributes"]["cli.command"] == "version"

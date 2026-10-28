@@ -20,7 +20,13 @@ class Received:
 
     def spans(self) -> list[dict]:
         otel.flush()
-        return [span for _, _, body in self.requests for span in decode(body)]
+        # Forwarded browser batches arrive as OTLP JSON; the SDK's own exports are protobuf.
+        return [
+            span
+            for _, headers, body in self.requests
+            if "json" not in headers.get("Content-Type", "")
+            for span in decode(body)
+        ]
 
     def own(self) -> list[dict]:
         """The app's own spans: not the HTTP, store and program hops around them."""

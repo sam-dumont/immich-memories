@@ -17,6 +17,7 @@ import subprocess
 from collections.abc import Callable, Sequence
 from pathlib import PurePath
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit, urlunsplit
 
 from opentelemetry.trace import Span
 
@@ -32,7 +33,9 @@ _IDS = re.compile(
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     r"|\b[0-9a-fA-F]{16,}\b|\b\d{6,}\b"
 )
-_HEALTH = "/health,/health/live,/health/ready"
+# Health probes, the route the web client sends its own spans through, and static files: the
+# client's bundle is thirty requests a page load that say nothing the page's own spans do not.
+_UNTRACED = "/health,/health/live,/health/ready,/api/v1/telemetry,/app/_app/,/static/,/favicon.ico"
 # An absolute path of two or more parts outside a URL: `/home/x/store.db`, not `/api/v1`.
 _PATHS = re.compile(
     r"(?<![\w:/.])(?:/(?:Users|home|var|private|tmp|data|mnt|srv|opt|root|Volumes)\b)(?:/[^\s/'\"]+)+"
@@ -78,8 +81,10 @@ def instrument_app(app: FastAPI, provider: TracerProvider) -> None:
     FastAPIInstrumentor.instrument_app(
         app,
         tracer_provider=provider,
-        excluded_urls=_HEALTH,
+        excluded_urls=_UNTRACED,
         server_request_hook=_named_route,
+        # The ASGI message spans (three per request) say nothing the route span does not.
+        exclude_spans=["receive", "send"],
     )
 
 
@@ -125,6 +130,14 @@ def without_paths(span: ReadableSpan) -> ReadableSpan:
 
 def _cut_paths(text: str) -> str:
     return _PATHS.sub(lambda match: PurePath(match.group(0)).name, text)
+
+
+def scrub(text: str) -> str:
+    """Text from outside the app (a browser span) without query strings, ids or paths."""
+    if text.startswith(("http://", "https://", "/")):
+        parts = urlsplit(text)
+        text = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    return _IDS.sub("{id}", _cut_paths(text))
 
 
 def template(path: str) -> str:

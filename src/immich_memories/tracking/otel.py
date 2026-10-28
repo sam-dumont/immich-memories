@@ -25,7 +25,7 @@ from opentelemetry import context, propagate, trace
 from opentelemetry.trace import Span, SpanKind, Status, StatusCode
 
 if TYPE_CHECKING:
-    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
     from opentelemetry.sdk.trace.export import SpanExporter
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,10 @@ _CARRIER = {"traceparent": "TRACEPARENT", "tracestate": "TRACESTATE"}
 # Every span's times come from one monotonic clock anchored to the wall once, so spans measured
 # live and intervals folded in from `perf_counter` readings nest exactly, to the nanosecond.
 _ANCHOR = time.time() - time.perf_counter()
+
+# Commands that serve until stopped: one span over them would parent every request and job
+# they handle for days. Their requests and jobs are roots of their own instead.
+LONG_RUNNING_COMMANDS = frozenset({"ui"})
 
 _provider: TracerProvider | None = None
 _inherited: object | None = None
@@ -99,6 +103,39 @@ def setup() -> None:
     _inherited = context.attach(inherited)
 
 
+def tracing() -> bool:
+    """Whether this process is exporting traces."""
+    return _provider is not None
+
+
+def forward(body: Mapping[str, Any]) -> bool:
+    """Send an OTLP/JSON batch made elsewhere (the web client) to the collector, untraced.
+
+    Sent with this process's own endpoint, headers and timeout, so the browser never needs
+    them. Says whether the collector took it.
+    """
+    import httpx
+    from opentelemetry.instrumentation.utils import suppress_instrumentation
+    from opentelemetry.util.re import parse_env_headers
+
+    endpoint = traces_endpoint()
+    if endpoint is None or _provider is None:
+        return False
+    headers = parse_env_headers(_setting("HEADERS"), liberal=True)
+    try:
+        # Not a hop of the request it answers: tracing the forward would trace the traces.
+        with suppress_instrumentation():
+            response = httpx.post(
+                endpoint,
+                json=body,
+                headers=dict(headers) | {"Content-Type": "application/json"},
+                timeout=_timeout_seconds(),
+            )
+        return response.is_success
+    except httpx.HTTPError:
+        return False
+
+
 def instrument_app(app: Any) -> None:
     """Trace each request to a FastAPI `app`, under the caller's trace when it sent one."""
     if _provider is None:
@@ -106,6 +143,20 @@ def instrument_app(app: Any) -> None:
     from immich_memories.tracking import otel_hops
 
     otel_hops.instrument_app(app, _provider)
+
+
+@contextmanager
+def command(name: str, *, started: float) -> Iterator[None]:
+    """One CLI command as the root of everything it does, from when the process began."""
+    if name in LONG_RUNNING_COMMANDS:
+        yield
+        return
+    span = start(f"cli {name}", {"cli.command": name}, at=wall(started))
+    try:
+        with current(span):
+            yield
+    finally:
+        end(span)
 
 
 def flush() -> None:
@@ -282,9 +333,23 @@ def _version() -> str:
         return "unknown"
 
 
+def _orphan_hop(span: ReadableSpan) -> bool:
+    """A store query or program run that belongs to no work: startup reads, housekeeping.
+
+    As one-span traces they would bury the runs in a trace search, so they are not sent.
+    """
+    if span.parent is not None:
+        return False
+    if span.name.startswith("exec "):
+        return True
+    attributes = span.attributes or {}
+    return span.kind == trace.SpanKind.CLIENT and not any(
+        key.startswith(("http.", "gen_ai.", "url.")) for key in attributes
+    )
+
+
 def _quiet(exporter: SpanExporter) -> SpanExporter:
     """Wrap the OTLP exporter: a collector that is down costs one warning, not one per batch."""
-    from opentelemetry.sdk.trace import ReadableSpan
     from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
     class Quiet(SpanExporter):
@@ -293,7 +358,8 @@ def _quiet(exporter: SpanExporter) -> SpanExporter:
             from immich_memories.tracking import otel_hops
 
             try:
-                result = exporter.export([otel_hops.without_paths(span) for span in spans])
+                kept = [otel_hops.without_paths(span) for span in spans if not _orphan_hop(span)]
+                result = exporter.export(kept) if kept else SpanExportResult.SUCCESS
             except Exception:  # noqa: BLE001 - telemetry must never fail the work it describes
                 result = SpanExportResult.FAILURE
             if result is SpanExportResult.FAILURE and not _warned:
