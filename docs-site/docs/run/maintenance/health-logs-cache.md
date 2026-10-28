@@ -103,30 +103,35 @@ Log lines go to stderr. Stdout only carries what a command prints, so `runs stor
 ## Traces
 
 Set `OTEL_EXPORTER_OTLP_ENDPOINT` to your OpenTelemetry collector's HTTP port and every run is
-sent there as one trace once it ends: the `run` span at the root, preparation, discovery and render
-stages nested under it, the same spans `report` shows. Unset, nothing is sent.
+traced there: the `run` span at the root, with preparation, discovery, selection and render under
+it, the same spans `report` shows. Spans leave as they close, so a render that takes an hour shows
+up while it runs, and a run that gets killed keeps what it had already sent. Unset, nothing is sent
+and nothing extra is loaded.
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
 OTEL_SERVICE_NAME=immich-memories   # the default
 ```
 
+- **One trace from what started the run.** A film started from the web page sits under its
+  `job.<kind>` span; a scheduled one sits under `automation.generate`. The run itself runs in a
+  child process, which inherits the trace through `TRACEPARENT`.
 - The run span carries `run.id`, `run.status`, `run.source` and the run's LLM spend
-  (`llm.prompt_tokens`, `llm.stage.<stage>.completion_tokens`, ...). Model names stay out: they
-  are settings.
-- A failed stage is an error span with its exception; logged warnings are span events.
-- Export is OTLP over HTTP, JSON-encoded, which a collector's HTTP receiver takes on the same
-  port as protobuf. `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` is refused with a warning: point the
-  endpoint at port 4318 instead.
+  (`llm.prompt_tokens`, `llm.stage.<stage>.completion_tokens`, ...).
+- A failed stage is an error span with its exception (redacted, the app's own frames only).
+  Logged warnings are span events, the first 20 per span.
+- Export is OTLP over HTTP (protobuf). `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` is refused with a
+  warning: point the endpoint at port 4318 instead.
 - The standard variables apply: `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (used as-is),
-  `OTEL_EXPORTER_OTLP_HEADERS` for a token, `OTEL_EXPORTER_OTLP_TIMEOUT`,
-  `OTEL_RESOURCE_ATTRIBUTES`, and `OTEL_SDK_DISABLED=true` to switch it off.
-- A collector that's down costs the run one warning. The run itself is never failed by it.
+  `OTEL_EXPORTER_OTLP_HEADERS` for a token, `OTEL_EXPORTER_OTLP_TIMEOUT` (milliseconds, as the
+  spec says), `OTEL_RESOURCE_ATTRIBUTES`, and `OTEL_SDK_DISABLED=true` to switch it off.
+- A collector that's down costs one warning. The run itself is never failed by it, but a process
+  waits up to the timeout (10 seconds by default) for the last spans before it exits.
 
-With `IMMICH_MEMORIES_LOG_FORMAT=json`, every line of a run also carries the `trace_id` it is
-exported under, so a log backend can link the line to its trace. Scheduled runs start as child
-processes of the server and inherit its environment, so setting the variables on the server
-container covers them.
+With `IMMICH_MEMORIES_LOG_FORMAT=json`, every line written inside a span carries its `trace_id` and
+`span_id`, so a log backend can jump from the line to the trace. That includes the server's
+progress lines for a scheduled run. Scheduled runs start as child processes of the server and
+inherit its environment, so setting the variables on the server container covers them.
 
 
 ## Model files

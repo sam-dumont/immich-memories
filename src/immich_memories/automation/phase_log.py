@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextvars
 import logging
 import threading
 from collections.abc import Callable, Iterator
@@ -47,7 +48,9 @@ def log_phase_progress(
         while not stop.wait(interval_seconds):
             drain()
 
-    thread = threading.Thread(target=poll, name="phase-log", daemon=True)
+    # In this block's context, so each relayed line names the span of the work that relays it.
+    relayed = contextvars.copy_context()
+    thread = threading.Thread(target=relayed.run, args=(poll,), name="phase-log", daemon=True)
     thread.start()
     try:
         yield
