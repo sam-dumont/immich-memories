@@ -163,3 +163,9 @@ A new check goes into the Makefile first; CI and the hook call the target.
 - Pipeline: `src/immich_memories/analysis/runtime/smart_pipeline.py` → `SmartPipeline.run()`
 - Assembly: `src/immich_memories/processing/video_assembler.py` → `VideoAssembler.assemble()`
 - Web: `src/immich_memories/web/server.py` → `create_app()` (FastAPI); the client is `web/` (SvelteKit)
+
+## Project notes
+
+If a `notes` MCP server is connected, read its index and this project's page before starting
+(status, where the last session stopped, settled decisions), and record what you decide there
+before you finish. This file wins where they differ.
