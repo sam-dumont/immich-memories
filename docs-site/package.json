@@ -22,7 +22,7 @@
     "@docusaurus/plugin-client-redirects": "3.10.2",
     "@docusaurus/preset-classic": "3.10.2",
     "@docusaurus/theme-mermaid": "3.10.2",
-    "@immich/ui": "0.91.0",
+    "@immich/ui": "0.91.1",
     "@mdx-js/react": "^3.0.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.3.1",
