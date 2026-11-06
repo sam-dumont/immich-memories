@@ -373,7 +373,7 @@ should know.
 immich-memories through the runtime extras (never the dev tools). Regenerate
 with `make notices`; `make notices-check` fails when this list is stale.
 
-alembic 1.20.0
+alembic 1.20.1
   License: MIT
   URL: https://alembic.sqlalchemy.org
 
@@ -393,7 +393,7 @@ anyio 4.14.2
   License: MIT
   URL: https://github.com/agronholm/anyio
 
-apprise 2.0.1
+apprise 2.1.0
   License: BSD-2-Clause
   URL: https://appriseit.com
 
@@ -401,7 +401,7 @@ asgiref 3.13.0
   License: BSD-3-Clause
   URL: https://github.com/django/asgiref/
 
-authlib 1.9.1
+authlib 1.9.2
   License: BSD
   URL: https://github.com/authlib/authlib
 
@@ -469,7 +469,7 @@ einops 0.8.2
   License: MIT
   URL: https://github.com/arogozhnikov/einops
 
-fastapi 0.150.0
+fastapi 0.162.0
   License: MIT
   URL: https://github.com/fastapi/fastapi
 
@@ -509,7 +509,7 @@ hf-xet 1.6.0
   License: Apache-2.0
   URL: https://github.com/huggingface/xet-core
 
-holidays 0.107
+holidays 0.108
   License: MIT
   URL: https://github.com/vacanza/holidays/
 
@@ -553,7 +553,7 @@ julius 0.2.7
   License: MIT
   URL: https://github.com/adefossez/julius
 
-kaldi-native-fbank 1.22.3
+kaldi-native-fbank 1.22.5
   License: Apache-2.0
   URL: https://github.com/csukuangfj/kaldi-native-fbank
 
@@ -665,7 +665,7 @@ omegaconf 2.3.0
   License: BSD
   URL: https://github.com/omry/omegaconf
 
-onnxruntime 1.31.0
+onnxruntime 1.31.1
   License: MIT
   URL: https://onnxruntime.ai
 
@@ -677,59 +677,59 @@ opencv-python 5.0.0.93
   License: Apache-2.0
   URL: https://github.com/opencv/opencv-python
 
-opentelemetry-api 1.45.1
+opentelemetry-api 1.45.2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api
 
-opentelemetry-exporter-http-transport 0.66b1
+opentelemetry-exporter-http-transport 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-http-transport
 
-opentelemetry-exporter-otlp-common 0.66b1
+opentelemetry-exporter-otlp-common 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-common
 
-opentelemetry-exporter-otlp-proto-common 1.45.1
+opentelemetry-exporter-otlp-proto-common 1.45.2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-proto-common
 
-opentelemetry-exporter-otlp-proto-http 1.45.1
+opentelemetry-exporter-otlp-proto-http 1.45.2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-proto-http
 
-opentelemetry-instrumentation 0.66b1
+opentelemetry-instrumentation 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/opentelemetry-instrumentation
 
-opentelemetry-instrumentation-asgi 0.66b1
+opentelemetry-instrumentation-asgi 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-asgi
 
-opentelemetry-instrumentation-fastapi 0.66b1
+opentelemetry-instrumentation-fastapi 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-fastapi
 
-opentelemetry-instrumentation-httpx 0.66b1
+opentelemetry-instrumentation-httpx 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-httpx
 
-opentelemetry-instrumentation-sqlalchemy 0.66b1
+opentelemetry-instrumentation-sqlalchemy 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-sqlalchemy
 
-opentelemetry-proto 1.45.1
+opentelemetry-proto 1.45.2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-proto
 
-opentelemetry-sdk 1.45.1
+opentelemetry-sdk 1.45.2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-sdk
 
-opentelemetry-semantic-conventions 0.66b1
+opentelemetry-semantic-conventions 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-semantic-conventions
 
-opentelemetry-util-http 0.66b1
+opentelemetry-util-http 0.66b2
   License: Apache-2.0
   URL: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/util/opentelemetry-util-http
 
@@ -765,15 +765,15 @@ pycparser 3.0
   License: BSD-3-Clause
   URL: https://github.com/eliben/pycparser
 
-pydantic 2.14.1
+pydantic 2.14.2
   License: MIT
   URL: https://github.com/pydantic/pydantic
 
-pydantic-core 2.50.1
+pydantic-core 2.50.2
   License: MIT
   URL: https://github.com/pydantic
 
-pydantic-settings 2.16.0
+pydantic-settings 2.16.2
   License: MIT
   URL: https://github.com/pydantic/pydantic-settings
 
@@ -801,7 +801,7 @@ python-dotenv 1.2.2
   License: BSD-3-Clause
   URL: https://github.com/theskumar/python-dotenv
 
-python-multipart 0.0.32
+python-multipart 0.0.33
   License: Apache-2.0
   URL: https://github.com/Kludex/python-multipart
 
@@ -845,7 +845,7 @@ soundfile 0.14.0
   License: BSD
   URL: https://github.com/bastibe/python-soundfile
 
-sqlalchemy 2.1.5
+sqlalchemy 2.1.6
   License: MIT
   URL: https://www.sqlalchemy.org
 
