@@ -657,7 +657,7 @@ nvidia-nvtx 13.0.85
   License: Other/Proprietary License
   URL: https://developer.nvidia.com/cuda-zone
 
-oauthlib 4.0.0
+oauthlib 4.0.1
   License: BSD-3-Clause
   URL: https://github.com/oauthlib/oauthlib
 
