@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { type AccountChoice } from '$lib/api';
-  import { t } from '$lib/i18n.svelte';
+  import { type AccountChoice } from '#lib/api.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import AccountLinks from './AccountLinks.svelte';
   import RelationshipRows from './RelationshipRows.svelte';
   import { savePerson } from './rosterApi';

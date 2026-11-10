@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from '@immich/ui';
   import { mdiCheck, mdiClose } from '@mdi/js';
-  import { t } from '$lib/i18n.svelte';
+  import { t } from '#lib/i18n.svelte.ts';
   import { personPath, savePerson, sendPerson } from './rosterApi';
   import type { Link, Person, Roster } from './types';
 

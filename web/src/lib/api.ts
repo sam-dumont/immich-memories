@@ -36,7 +36,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, fetcher: typeof fetch = fetch): Promise<T> {
   const response = await fetcher(`/api/v1${path}`, { headers: { accept: 'application/json' } });
   if (response.status === 401) {
-    await goto('/app/login', { replaceState: true });
+    await goto('/app/login', { replace: true });
   }
   if (!response.ok) throw new ApiError(response.status);
   return (await response.json()) as T;
@@ -56,7 +56,7 @@ export function post<T>(path: string, body: unknown): Promise<{ status: number; 
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(body),
     });
-    if (response.status === 401) await goto('/app/login', { replaceState: true });
+    if (response.status === 401) await goto('/app/login', { replace: true });
     // A proxy's error page or a crashed handler is not JSON; the caller still gets a status and a line.
     const answer = await response.json().catch(() => ({ detail: `${response.status} ${response.statusText}` }));
     return { status: response.status, body: answer };

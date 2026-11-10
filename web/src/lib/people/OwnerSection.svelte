@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Heading, Text } from '@immich/ui';
-  import { api } from '$lib/api';
-  import { t } from '$lib/i18n.svelte';
+  import { api } from '#lib/api.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import type { AccountOwner } from './types';
 
   // The sentinel for "Nobody in this library"; a person id is never this.

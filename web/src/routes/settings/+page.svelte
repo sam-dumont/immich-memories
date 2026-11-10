@@ -2,14 +2,14 @@
   import { Button, Heading, Text } from '@immich/ui';
   import { mdiAccountGroupOutline, mdiCheckCircleOutline, mdiContentSaveOutline, mdiDeleteOutline, mdiWifi } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post } from '$lib/api';
-  import type { components } from '$lib/api-types';
-  import { fileSize } from '$lib/format';
-  import { N_, t } from '$lib/i18n.svelte';
-  import ModelSetup from '$lib/ModelSetup.svelte';
-  import SettingsChecks from '$lib/SettingsChecks.svelte';
-  import SettingsEditor from '$lib/SettingsEditor.svelte';
-  import UpdateCheck from '$lib/UpdateCheck.svelte';
+  import { api, post } from '#lib/api.ts';
+  import type { components } from '#lib/api-types.ts';
+  import { fileSize } from '#lib/format.ts';
+  import { N_, t } from '#lib/i18n.svelte.ts';
+  import ModelSetup from '#lib/ModelSetup.svelte';
+  import SettingsChecks from '#lib/SettingsChecks.svelte';
+  import SettingsEditor from '#lib/SettingsEditor.svelte';
+  import UpdateCheck from '#lib/UpdateCheck.svelte';
 
   type CacheStats = components['schemas']['CacheStats'];
   type Connection = components['schemas']['Connection'];

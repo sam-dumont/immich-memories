@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Badge, Button, Heading, LoadingSpinner, Text, type Color } from '@immich/ui';
   import { mdiImageOffOutline } from '@mdi/js';
-  import { api, thumbnail, type RunPage, type RunSummary } from '$lib/api';
-  import { locale, t } from '$lib/i18n.svelte';
-  import { memoryTypeLabel, RUN_STATUSES, sourceLabel, statusLabel, type RunStatus } from '$lib/labels';
+  import { api, thumbnail, type RunPage, type RunSummary } from '#lib/api.ts';
+  import { locale, t } from '#lib/i18n.svelte.ts';
+  import { memoryTypeLabel, RUN_STATUSES, sourceLabel, statusLabel, type RunStatus } from '#lib/labels.ts';
 
   const PAGE = 24;
   const STATUS_COLOR: Record<string, Color> = {

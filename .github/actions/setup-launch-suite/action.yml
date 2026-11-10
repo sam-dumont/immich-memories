@@ -28,7 +28,7 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    # The built client depends on web/ alone (svelte.config.js writes it into the
+    # The built client depends on web/ alone (vite.config.ts writes it into the
     # package), so one build per change to web/ serves every job and every run after.
     - name: Restore the built web client
       id: web-client

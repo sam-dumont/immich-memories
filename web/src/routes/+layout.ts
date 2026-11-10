@@ -1,4 +1,4 @@
-import { loadMessages } from '$lib/i18n.svelte';
+import { loadMessages } from '#lib/i18n.svelte.ts';
 
 // A client-only app: the Python server hands out index.html and the JSON API.
 export const ssr = false;

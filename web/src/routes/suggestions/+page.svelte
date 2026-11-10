@@ -2,11 +2,11 @@
   import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
   import { mdiPlayOutline, mdiRefresh } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post } from '$lib/api';
-  import type { components } from '$lib/api-types';
-  import { t } from '$lib/i18n.svelte';
-  import { updatedAgo } from '$lib/ago';
-  import { memoryTypeLabel, ruleLabel, statusLabel } from '$lib/labels';
+  import { api, post } from '#lib/api.ts';
+  import type { components } from '#lib/api-types.ts';
+  import { t } from '#lib/i18n.svelte.ts';
+  import { updatedAgo } from '#lib/ago.ts';
+  import { memoryTypeLabel, ruleLabel, statusLabel } from '#lib/labels.ts';
 
   type Suggestions = components['schemas']['Suggestions'];
   type Attempt = components['schemas']['AttemptView'];

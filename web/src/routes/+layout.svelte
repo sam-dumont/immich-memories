@@ -3,12 +3,12 @@
   import { page } from '$app/state';
   import { afterNavigate, beforeNavigate } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { navigating, startTracing } from '$lib/tracing';
+  import { navigating, startTracing } from '#lib/tracing.ts';
   import { AppShell, AppShellHeader, AppShellSidebar, NavbarItem, ThemeSwitcher, TooltipProvider } from '@immich/ui';
   import { mdiAccountMultipleOutline, mdiCogOutline, mdiHistory, mdiLightbulbOutline, mdiMovieOpenStarOutline } from '@mdi/js';
-  import { chooseLanguage, chosenLanguage, languages, t } from '$lib/i18n.svelte';
-  import { demoMode } from '$lib/demo-mode.svelte';
-  import UpdateBanner from '$lib/UpdateBanner.svelte';
+  import { chooseLanguage, chosenLanguage, languages, t } from '#lib/i18n.svelte.ts';
+  import { demoMode } from '#lib/demo-mode.svelte.ts';
+  import UpdateBanner from '#lib/UpdateBanner.svelte';
   import { mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js';
 
   let { children, data } = $props();

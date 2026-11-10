@@ -19,8 +19,8 @@
     "@opentelemetry/instrumentation-fetch": "0.300.0",
     "@opentelemetry/resources": "3.0.0",
     "@opentelemetry/sdk-trace": "3.0.0",
-    "@sveltejs/adapter-static": "3.0.11",
-    "@sveltejs/kit": "2.70.4",
+    "@sveltejs/adapter-static": "4.0.1",
+    "@sveltejs/kit": "3.1.1",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@tailwindcss/vite": "4.3.5",
     "openapi-typescript": "7.13.0",
@@ -34,6 +34,9 @@
     "openapi-typescript": {
       "typescript": "$typescript"
     },
-    "cookie": "0.7.2"
+    "runed": "0.38.0"
+  },
+  "imports": {
+    "#lib/*": "./src/lib/*"
   }
 }

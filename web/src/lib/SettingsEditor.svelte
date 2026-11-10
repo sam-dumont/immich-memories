@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Alert, Button, Heading, LoadingSpinner } from '@immich/ui';
   import { mdiContentSaveOutline, mdiRefresh } from '@mdi/js';
-  import { api, post } from '$lib/api';
-  import type { components } from '$lib/api-types';
-  import { t } from '$lib/i18n.svelte';
+  import { api, post } from '#lib/api.ts';
+  import type { components } from '#lib/api-types.ts';
+  import { t } from '#lib/i18n.svelte.ts';
 
   type SettingsView = components['schemas']['SettingsView'];
   type SettingRow = components['schemas']['SettingRow'];
