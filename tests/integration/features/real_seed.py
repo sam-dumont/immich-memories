@@ -53,6 +53,7 @@ from tests.integration.immich_gate.seed import (
 from tests.integration.native_sharing.seed import _user
 
 _UPLOAD_WORKERS = 8
+_DIMENSIONS_TIMEOUT = 120.0
 _SUBSEC_TIME_ORIGINAL = 0x9291
 _SOI = b"\xff\xd8"
 
@@ -149,6 +150,26 @@ def _box(item: Upload, slot: int, width: int, height: int) -> dict[str, int]:
     }
 
 
+def wait_for_dimensions(
+    seeder: Seeder, asset_id: str, name: str, timeout: float = _DIMENSIONS_TIMEOUT
+) -> None:
+    """Return once Immich has the asset's width and height, which its editor needs.
+
+    Immich's queues can report empty while one asset still has no dimensions (#2883).
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        asset = seeder.call("GET", f"/assets/{asset_id}")
+        if asset.get("width") and asset.get("height"):
+            return
+        if time.monotonic() >= deadline:
+            raise SeedError(
+                f"Immich had no width and height for {name} after {timeout:.0f}s; "
+                "its editor refuses an edit without them"
+            )
+        time.sleep(1)
+
+
 def build_uploads(root: Path) -> list[Upload]:
     """Generate the fake's media under ``root/media`` and stamp each file as a phone would."""
     videos, photos = generate_media(root / "media")
@@ -215,6 +236,7 @@ class _Library:
                     "PUT", f"/assets/{self.ids[item.still_id]}", json={"livePhotoVideoId": asset_id}
                 )
             if item.picture.edited and item.still_id is None:
+                wait_for_dimensions(seeder, asset_id, item.path.name)
                 seeder.call("PUT", f"/assets/{asset_id}/edits", json={"edits": [IMMICH_EDIT]})
 
     def people(self, uploads: list[Upload]) -> dict[str, str]:

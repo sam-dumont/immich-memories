@@ -35,8 +35,16 @@ updates:
       docusaurus:
         patterns:
           - "@docusaurus/*"
+      # `core`, `resources` and `sdk-trace` peer-pin `api` to one minor, so any of them
+      # bumped alone fails `npm ci` on a peer conflict. They move together, majors included.
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
+      # The order of the groups alone did not keep them apart (#2917), so say it outright.
       npm-minor-patch:
         update-types: [minor, patch]
+        exclude-patterns:
+          - "@opentelemetry/*"
     ignore:
       - dependency-name: "@sveltejs/kit"
         update-types: ["version-update:semver-major"]
