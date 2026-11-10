@@ -118,6 +118,10 @@ class Lexicon(Protocol):
         """
         ...
 
+    def derived_adjectives(self, noun: str) -> frozenset[str]:
+        """The adjectives WordNet forms from the noun or points back to it ("snow": "snowy")."""
+        ...
+
 
 class _EnglishWordNet(WordNetCorpusReader):
     # nltk maps every synset onto WordNet 3.0's own ids for the multilingual data, and to do
@@ -255,6 +259,27 @@ class WordNetLexicon:
                 if formed.synset().pos() == NOUN
             }
         return frozenset(found)
+
+    def derived_adjectives(self, noun: str) -> frozenset[str]:
+        base = self.noun_base(noun) or noun.strip().lower()
+        found: set[str] = set()
+        for synset in self._reader.synsets(base, pos=NOUN):
+            for lemma in synset.lemmas():
+                if lemma.name().lower() != base:
+                    continue
+                found |= {
+                    formed.name().lower()
+                    for formed in lemma.derivationally_related_forms()
+                    if formed.synset().pos() in (ADJ, "s")
+                }
+        # Pertainyms point from the adjective to the noun, so the adjective side is read too.
+        found |= {
+            lemma.name().lower()
+            for synset in self._reader.synsets(base, pos=ADJ)
+            for lemma in synset.lemmas()
+            if any(pertained.name().lower() == base for pertained in lemma.pertainyms())
+        }
+        return frozenset(name for name in found if "_" not in name)
 
     def _kinds(self, word: str) -> set[str]:
         base = self.noun_base(word) or word.strip().lower()

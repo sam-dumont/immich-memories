@@ -329,25 +329,31 @@ def test_sans_personne_does_not_cancel_back_to_required(lexicon: Lexicon) -> Non
 
 
 @pytest.mark.parametrize(
-    "request_text",
+    ("request_text", "kind"),
     [
-        "без публики",  # ru: without the audience ("публика" nominative, never declined)
-        "без толпы",  # ru: without the crowd ("толпа" declines to the genitive "толпы")
-        "без зрителей",  # ru: without the spectators (genitive plural of "зрители")
-        "bez tlumu",  # pl: without the crowd (genitive of "tlum")
-        "bez publicznosci",  # pl: without the audience (genitive of "publicznosc")
-        "bez tłumu",  # pl: the same, written with the real ł (#2118): ł has no decomposition
-        "bez publiczności",  # pl: and with ś
+        ("без публики", "audience"),  # ru: without the audience ("публика" is never declined)
+        ("без толпы", "audience"),  # ru: without the crowd ("толпа" declines to "толпы")
+        ("без зрителей", "audience"),  # ru: without the spectators (genitive plural)
+        ("bez tlumu", "audience"),  # pl: without the crowd (genitive of "tlum")
+        ("bez publicznosci", "audience"),  # pl: without the audience (genitive)
+        ("bez tłumu", "audience"),  # pl: the same, with the real ł (#2118): no decomposition
+        ("bez publiczności", "audience"),  # pl: and with ś
+        ("без детей", "children"),  # ru: without the children (genitive plural of "дети")
+        ("без подростков", "teens"),  # ru: without the teens (genitive plural)
+        ("bez nastolatków", "teens"),  # pl: without the teens (genitive plural)
+        ("без музыкантов", "performers"),  # ru: without the musicians (genitive plural)
+        ("bez muzyków", "performers"),  # pl: without the musicians (genitive plural)
+        ("bez tancerzy", "performers"),  # pl: without the dancers (genitive plural)
     ],
 )
 def test_ru_and_pl_case_forms_of_an_exclusion_noun_are_read(
-    request_text: str, lexicon: Lexicon
+    request_text: str, kind: str, lexicon: Lexicon
 ) -> None:
     """#2072: "без публики" did nothing -- the genitive (and other case) forms Russian and
     Polish put a noun in after a negation word were missing from the exclusion tables."""
     who = link_who(request_text, (), STRANGERS, lexicon, _unasked())
 
-    assert who.absent_company == "audience"
+    assert who.absent_company == kind
 
 
 _HELD_OUT = {
@@ -401,18 +407,27 @@ def test_cjk_held_out_requests_generalise(lexicon: Lexicon) -> None:
     assert (ko_only.company, ko_only.company_only) == ("children", True)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "#2061 round 3, known gap: 'grandpa' and 'everyone' both fold to the same generic "
-        "'people' kind, so a required and an absent slot collide on one word instead of "
-        "reading as 'everyone, but not grandpa'. Needs a finer kind than this table has."
-    ),
-    strict=True,
-)
-def test_everyone_except_a_specific_person_is_a_known_gap(lexicon: Lexicon) -> None:
-    who = link_who("everyone except grandpa", (), STRANGERS, lexicon, _unasked())
+def test_everyone_except_a_person_nobody_matches_drops_the_exclusion(lexicon: Lexicon) -> None:
+    """#2072 (d): "grandpa" and "everyone" both fold to the generic people kind; with no
+    grandfather in the people file the exclusion is dropped, never read as "no people"."""
+    who = link_who(
+        "everyone except grandpa", ("everyone except grandpa",), STRANGERS, lexicon, _unasked()
+    )
+
+    assert (who.company, who.absent_company, who.absent_present) == ("people", None, ())
+    assert any("grandpa" in reason.said and "no one" in reason.outcome for reason in who.reasons)
+
+
+def test_everyone_except_a_relation_excludes_that_person(lexicon: Lexicon) -> None:
+    grandpa = LibraryPerson("p-grandpa", "Ed Example", "grandfather", None)
+    household = Household({**PEOPLE, grandpa.person_id: grandpa})
+
+    who = link_who(
+        "everyone except grandpa", ("everyone except grandpa",), household, lexicon, _unasked()
+    )
 
     assert (who.company, who.absent_company) == ("people", None)
+    assert who.absent_present == ("p-grandpa",)
 
 
 def test_cjk_negation_reads_an_inflected_natural_phrase(lexicon: Lexicon) -> None:
