@@ -50,7 +50,7 @@ def _warn_about_unauthenticated_external_bind(config: Config, host: str) -> None
 def _quiet_request_logs(level: str | None) -> None:
     """One line per request buries every command's own output; -v shows them again."""
     if level != "DEBUG":
-        for name in ("httpx", "httpcore"):
+        for name in ("httpx", "httpcore", "httpx2", "httpcore2"):
             logging.getLogger(name).setLevel(logging.WARNING)
 
 
