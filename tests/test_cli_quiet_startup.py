@@ -22,7 +22,9 @@ def isolated(tmp_path: Path, monkeypatch) -> Iterator[None]:
     monkeypatch.setenv("IMMICH_MEMORIES_TIER", "auto")
     # Each command runs in a fresh process, where the request loggers start unset. An earlier
     # in-process command without -v leaves them at WARNING, so start from a fresh process's state.
-    request_loggers = [logging.getLogger(name) for name in ("httpx", "httpcore")]
+    request_loggers = [
+        logging.getLogger(name) for name in ("httpx", "httpcore", "httpx2", "httpcore2")
+    ]
     levels = [request_logger.level for request_logger in request_loggers]
     for request_logger in request_loggers:
         request_logger.setLevel(logging.NOTSET)
@@ -33,11 +35,12 @@ def isolated(tmp_path: Path, monkeypatch) -> Iterator[None]:
         request_logger.setLevel(level)
 
 
-@pytest.fixture
-def chatty(monkeypatch) -> str:
+@pytest.fixture(params=["httpx", "httpx2"])
+def chatty(monkeypatch, request) -> str:
+    # huggingface-hub 2 sends its requests through httpx2, which logs under its own name.
     @click.command("chatty-probe")
     def chatty_probe() -> None:
-        logging.getLogger("httpx").info("HTTP Request: GET http://x/api/y")
+        logging.getLogger(request.param).info("HTTP Request: GET http://x/api/y")
 
     monkeypatch.setitem(main.commands, "chatty-probe", chatty_probe)
     return "chatty-probe"
