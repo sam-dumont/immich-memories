@@ -68,8 +68,6 @@ def test_presets_preserve_group_ast_and_derive_all_names(memory_type, parameters
     assert preset.person_filter.person_names == list(EXPRESSION.leaf_values)
     assert preset.person_filter.mode == "expression"
     assert not preset.person_filter.require_co_occurrence
-    if memory_type == MemoryType.MULTI_PERSON:
-        assert EXPRESSION.display_label in preset.name
 
 
 def test_preset_rejects_names_that_disagree_with_grouped_condition():

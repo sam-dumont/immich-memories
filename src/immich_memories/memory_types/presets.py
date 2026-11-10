@@ -58,8 +58,6 @@ class MemoryPreset:
     """Full preset configuration for a memory type."""
 
     memory_type: MemoryType
-    name: str
-    description: str
     date_ranges: list[DateRange]
     person_filter: PersonFilter
     default_duration_seconds: float | None = None

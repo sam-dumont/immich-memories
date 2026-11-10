@@ -18,8 +18,6 @@ from click.testing import CliRunner
 from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.automation.catalogue import SCOPE_FROM_RUN, save_catalogue
 from immich_memories.cli.generate_resolution import name_from_catalogue, resolve_special_day
-from immich_memories.memory_types.factory import create_preset
-from immich_memories.memory_types.registry import MemoryType
 
 # An invented day, in the style the docs already use. Nothing real belongs here.
 DAY_ISO = "2016-06-12"
@@ -319,8 +317,7 @@ class TestTheTitleNeverTravelsOnTheCommandLine:
 
         # Everything a runner logs, and everything `ps` shows, is in argv.
         assert TITLE not in " ".join(argv)
-        preset = create_preset(MemoryType.SPECIAL_DAY, **resolve_special_day(DAY, "special_day"))
-        assert preset.name == TITLE
+        assert name_from_catalogue(resolve_special_day(DAY, "special_day"), None, None)[0] == TITLE
 
     def test_a_typed_title_still_outranks_the_catalogues(self, catalogue_at) -> None:
         catalogue_at(ENTRY)
