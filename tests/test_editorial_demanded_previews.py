@@ -1,6 +1,7 @@
 """The runtime fetches only the previews a cut demands, and never sends one to a model."""
 
 import dataclasses
+import inspect
 import io
 import tracemalloc
 
@@ -35,14 +36,22 @@ def test_reading_a_large_cached_pool_does_not_keep_every_jpeg_in_memory(tmp_path
         pytest.fail(f"Cached preview unexpectedly fetched: {asset_id}")
 
     reader = DemandedPreviewReader(cache, fetch, allowed_ids=ids)
-    tracemalloc.start()
+    # Count only what was allocated with the reader on the stack. tracemalloc sees every
+    # thread, and on CI something else in the process once added a steady 7.7 MB to the
+    # whole-process total while this loop ran.
+    under_the_reader = tracemalloc.Filter(
+        True, inspect.getfile(DemandedPreviewReader), all_frames=True
+    )
+    tracemalloc.start(25)
     try:
         for _ in range(2):
             for asset_id in ids:
                 assert reader(asset_id) == payload
-        retained, _ = tracemalloc.get_traced_memory()
+        snapshot = tracemalloc.take_snapshot()
     finally:
         tracemalloc.stop()
+    traces = snapshot.filter_traces([under_the_reader]).statistics("filename")
+    retained = sum(stat.size for stat in traces)
     assert retained < 2 * 1024 * 1024
     assert reader.metrics()["cache_hits"] == len(ids)
     assert reader.metrics()["fetch_attempts"] == 0
