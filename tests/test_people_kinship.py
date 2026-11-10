@@ -5,7 +5,7 @@ Every person here is invented.
 
 from __future__ import annotations
 
-from immich_memories.people.kinship import Fact, Hop, suggest_relationships
+from immich_memories.people.kinship import Fact, Hop, facts_from_document, suggest_relationships
 
 
 def _kinds(facts, declined=()):
@@ -249,3 +249,46 @@ class TestWhatIsNeverSuggested:
 
     def test_no_facts_no_suggestions(self):
         assert suggest_relationships(()) == []
+
+
+def _entry(person_id, *links):
+    """A people-document entry as the registry stores it."""
+    return {"ids": [person_id], "confirmed": {"links": list(links)}}
+
+
+class TestFactsFromDocument:
+    """The one reader behind the prompts and the People page (#2825)."""
+
+    def test_a_link_to_an_id_the_document_does_not_know_is_dropped(self):
+        entries = [_entry("alex", {"with": "nobody", "kind": "parent-of"})]
+
+        assert facts_from_document(entries) == ([], [])
+
+    def test_a_link_to_oneself_is_skipped(self):
+        entries = [_entry("alex", {"with": "alex", "kind": "sibling-of"})]
+
+        assert facts_from_document(entries) == ([], [])
+
+    def test_an_entry_with_no_ids_is_skipped(self):
+        entries = [
+            {"confirmed": {"links": [{"with": "alex", "kind": "parent-of"}]}},
+            _entry("alex"),
+        ]
+
+        assert facts_from_document(entries) == ([], [])
+
+    def test_a_missing_or_empty_decision_reads_as_confirmed(self):
+        entries = [
+            _entry(
+                "alex",
+                {"with": "bob", "kind": "parent-of"},
+                {"with": "bob", "kind": "sibling-of", "decision": ""},
+                {"with": "bob", "kind": "friend-of", "decision": "rejected"},
+            ),
+            _entry("bob"),
+        ]
+
+        facts, declined = facts_from_document(entries)
+
+        assert facts == [Fact("alex", "parent-of", "bob"), Fact("alex", "sibling-of", "bob")]
+        assert declined == [Fact("alex", "friend-of", "bob")]

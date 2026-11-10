@@ -20,7 +20,9 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from typing import Any
 
+from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.relationships import DETECTED_KINDS, reciprocal_kind
 
 _PARENT = frozenset({"parent-of", "mother-of", "father-of"})
@@ -191,6 +193,41 @@ class _Tree:
     def _declined(self, a: str, relation: str, b: str) -> bool:
         said_no = self.declined.get((a, b), set())
         return bool(said_no & (_RELATION_KINDS[relation] | DETECTED_KINDS))
+
+
+def facts_from_document(entries: Iterable[dict[str, Any]]) -> tuple[list[Fact], list[Fact]]:
+    """The confirmed links of the people document as facts, and every "no" as a declined one.
+
+    The one reader behind the prompts and the People page. A person is the first id of
+    their entry; every id they answer to resolves to it. An entry with no ids, a link to
+    an id the document does not know and a link to oneself are skipped. A missing or
+    empty decision is a confirmed one.
+    """
+    entries = list(entries)
+    canonical = {pid: ids[0] for entry in entries if (ids := entry_ids(entry)) for pid in ids}
+    facts: list[Fact] = []
+    declined: list[Fact] = []
+    for entry in entries:
+        ids = entry_ids(entry)
+        for link in _links(entry) if ids else []:
+            other = canonical.get(str(link["with"]))
+            if other is None or other == ids[0]:
+                continue
+            fact = Fact(ids[0], str(link.get("kind") or "link"), other)
+            if str(link.get("decision") or "confirmed") == "rejected":
+                declined.append(fact)
+            elif fact.kind not in DETECTED_KINDS:
+                facts.append(fact)
+    return facts, declined
+
+
+def _links(entry: dict[str, Any]) -> list[dict[str, Any]]:
+    """The entry's recorded links that name somebody."""
+    confirmed = entry.get("confirmed")
+    links = confirmed.get("links") if isinstance(confirmed, dict) else None
+    if not isinstance(links, list):
+        return []
+    return [link for link in links if isinstance(link, dict) and link.get("with")]
 
 
 def suggest_relationships(facts: Iterable[Fact], declined: Iterable[Fact] = ()) -> list[Suggestion]:

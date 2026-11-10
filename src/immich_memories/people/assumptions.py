@@ -14,10 +14,13 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
-from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import people_entries
-from immich_memories.people.kinship import Fact, Hop, Suggestion, suggest_relationships
-from immich_memories.people.relationships import DETECTED_KINDS
+from immich_memories.people.kinship import (
+    Hop,
+    Suggestion,
+    facts_from_document,
+    suggest_relationships,
+)
 
 # The side of a pair a proposal is told from: the elder generation, else the lower id.
 _ELDER_KINDS = frozenset({"parent-of", "grandparent-of", "aunt-or-uncle-of", "parent-in-law-of"})
@@ -45,7 +48,7 @@ class RelationshipAssumption:
 
 def family_assumptions(document: dict[str, Any]) -> tuple[RelationshipAssumption, ...]:
     """Derive conventional kinship proposals from confirmed facts only, one per pair."""
-    facts, declined = _answers(document)
+    facts, declined = facts_from_document(people_entries(document))
     confirmed_pairs = {frozenset((fact.source, fact.target)) for fact in facts}
     readings: dict[frozenset[str], dict[tuple[str, str], RelationshipAssumption]] = defaultdict(
         dict
@@ -69,35 +72,6 @@ def family_assumptions(document: dict[str, Any]) -> tuple[RelationshipAssumption
     # is evidence that the normative closure does not fit this family.
     unambiguous = [next(iter(found.values())) for found in readings.values() if len(found) == 1]
     return tuple(sorted(unambiguous, key=_assumption_key))
-
-
-def _answers(document: dict[str, Any]) -> tuple[list[Fact], list[Fact]]:
-    """The confirmed links as facts, and every answered "no" as a declined one."""
-    entries = people_entries(document)
-    canonical = {pid: entry_ids(entry)[0] for entry in entries for pid in entry_ids(entry)}
-    facts: list[Fact] = []
-    declined: list[Fact] = []
-    for entry in entries:
-        ids = entry_ids(entry)
-        if not ids:
-            continue
-        for link in _links(entry):
-            other = canonical.get(str(link["with"]), str(link["with"]))
-            fact = Fact(ids[0], str(link.get("kind") or "link"), other)
-            if link.get("decision", "confirmed") == "rejected":
-                declined.append(fact)
-            elif fact.kind not in DETECTED_KINDS:
-                facts.append(fact)
-    return facts, declined
-
-
-def _links(entry: dict[str, Any]) -> list[dict[str, Any]]:
-    """The entry's recorded links that name somebody."""
-    confirmed = entry.get("confirmed")
-    links = confirmed.get("links") if isinstance(confirmed, dict) else None
-    if not isinstance(links, list):
-        return []
-    return [link for link in links if isinstance(link, dict) and link.get("with")]
 
 
 def _told_from_this_side(suggestion: Suggestion) -> bool:
