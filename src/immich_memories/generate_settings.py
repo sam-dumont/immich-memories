@@ -15,6 +15,7 @@ from immich_memories.generate_privacy import (
     generate_trip_title_text,
 )
 from immich_memories.i18n import resolve_film_locale
+from immich_memories.operational_warnings import render_warning
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
     AssemblySettings,
@@ -603,5 +604,5 @@ def upload_to_immich(
     if result.get("asset_id"):
         logger.info("Uploaded to Immich: asset=%s, album=%s", result["asset_id"], album_name)
     for warning in result.get("warnings", []):
-        logger.warning("%s", warning)
+        logger.warning("%s", render_warning(str(warning)))
     return result
