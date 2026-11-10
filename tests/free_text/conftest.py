@@ -54,6 +54,8 @@ VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
     "female_offspring": (Sense("noun.person", kind_of="child.n.02"),),
     "son": (Sense("noun.person", kind_of="male_offspring.n.01"),),
     "daughter": (Sense("noun.person", kind_of="female_offspring.n.01"),),
+    "grandfather": (Sense("noun.person", kind_of="person.n.01", also=("grandpa",)),),
+    "grandpa": (Sense("noun.person", kind_of="grandfather.n.01"),),
     "friend": (Sense("noun.person", kind_of="person.n.01"),),
     "spouse": (Sense("noun.person", kind_of="person.n.01", also=("partner",)),),
     "wife": (Sense("noun.person", kind_of="spouse.n.01"),),

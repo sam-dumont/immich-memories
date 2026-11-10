@@ -678,3 +678,28 @@ def test_snowy_days_selects_snow_instead_of_every_caption_about_a_day(lexicon):
     )
     assert subject.main == ("snow",)
     assert _ids(pool) == {f"snow-{n}" for n in range(14)}
+
+
+def test_the_snow_selects_a_caption_that_says_snowy(lexicon):
+    """#2140: the request says the noun, the caption says its adjective form."""
+    from immich_memories.free_text.subject import build_subject
+
+    reading = Reading(request="the snow", what=("the snow",))
+    view = _view(
+        *[_picture(f"snowy-{n}", caption="A snowy street at dusk") for n in range(14)],
+        _picture("beach", caption="A sunny day at the beach"),
+    )
+    # WHY: the model picks the main subject among the words WordNet offers.
+    asker = BankedAsker(*[{"reason": "snow is the subject", "choices": ["snow"]}] * 3)
+    subject = build_subject(reading, NOBODY, [p.caption for p in view.pictures], lexicon, asker)
+    # WHY: the pool asks the model about occasions and possible subject synonyms.
+    pool = build_pool(
+        _asked(reading.request, reading=reading, subject=subject),
+        view,
+        NOBODY,
+        lexicon,
+        BankedAsker(*_many(), *[{"reason": "no other subject", "choices": []}] * 3),
+    )
+
+    assert "snowy" in subject.extent
+    assert _ids(pool) == {f"snowy-{n}" for n in range(14)}
