@@ -104,9 +104,14 @@ def _api_key(url: str) -> str:
 class Seeder:
     """Everything after the API key, over one keep-alive client."""
 
-    def __init__(self, url: str, api_key: str) -> None:
+    def __init__(
+        self, url: str, api_key: str, transport: httpx.BaseTransport | None = None
+    ) -> None:
         self.http = httpx.Client(
-            base_url=f"{url}/api", headers={"x-api-key": api_key}, timeout=120.0
+            base_url=f"{url}/api",
+            headers={"x-api-key": api_key},
+            timeout=120.0,
+            transport=transport,
         )
         self.major = int(_checked(self.http.get("/server/version"))["major"])
 
