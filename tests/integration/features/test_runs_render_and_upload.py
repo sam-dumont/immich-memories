@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -187,6 +188,57 @@ def test_runs_upload_sends_the_film_on_disk_into_the_album_and_frees_it(
     # Immich confirmed it, so the local copy is gone, and the command said so.
     assert not film.film.exists()
     assert re.search(r"remov|delet", uploaded.output, re.I), uploaded.explain()
+
+
+def _immich(server: FakeImmichServer, method: str, path: str, body: dict | None = None):
+    """One request to the fake Immich, as the owner's key would make it."""
+    request = urllib.request.Request(  # noqa: S310 -- the test's own loopback server
+        server.base_url + path,
+        method=method,
+        data=json.dumps(body).encode() if body is not None else None,
+        headers={"x-api-key": server.api_key, "content-type": "application/json"},
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:  # noqa: S310
+        return json.loads(response.read() or "null")
+
+
+@pytest.mark.feature("runs.label")
+@pytest.mark.fake_immich_only(
+    "reads the delivered film's tags from a fake Immich that holds no other test's upload"
+)
+def test_runs_label_rewrites_a_delivered_film_and_drops_only_the_apps_stale_tags(
+    tmp_path: Path, delivery_immich: FakeImmichServer, outbound_trap: OutboundTrap
+):
+    home = UserHome(tmp_path / "home", extra_env=tuple(outbound_trap.env().items()))
+    home.write_config(basic_config(delivery_immich.base_url, delivery_immich.api_key, home))
+    film = render(home, *day_args(QUIET_DAY))
+    assert home.run("runs", "upload", film.run_id).returncode == 0
+    asset = "uploaded-1"
+    # What an earlier release left behind, and a tag the owner made.
+    stale, mine = "immich-memories/year/1999", "Family"
+    held = _immich(delivery_immich, "PUT", "/api/tags", {"tags": [stale, mine]})
+    _immich(
+        delivery_immich,
+        "PUT",
+        "/api/tags/assets",
+        {"tagIds": [t["id"] for t in held], "assetIds": [asset]},
+    )
+    _immich(delivery_immich, "PUT", f"/api/assets/{asset}", {"description": "an old title"})
+
+    relabelled = home.run("runs", "label", film.run_id)
+    again = home.run("runs", "label", film.run_id)
+
+    assert relabelled.returncode == 0, relabelled.explain()
+    assert "written" in relabelled.output and stale in relabelled.output, relabelled.explain()
+    after = _immich(delivery_immich, "GET", f"/api/assets/{asset}")
+    values = {t["value"] for t in after["tags"]}
+    assert stale not in values
+    assert mine in values
+    assert "immich-memories/generated" in values
+    assert after["exifInfo"]["description"] != "an old title"
+    # Nothing left to change: nothing is sent.
+    assert again.returncode == 0, again.explain()
+    assert "unchanged" in again.output, again.explain()
 
 
 # ── privacy mode: the names the film shows ───────────────────────────────────

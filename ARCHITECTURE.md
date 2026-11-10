@@ -640,6 +640,7 @@ src/immich_memories/
 │   ├── asset_service.py        # AssetService: asset/video download
 │   ├── person_service.py       # PersonService: person/face operations
 │   ├── album_service.py        # AlbumService: album operations
+│   ├── film_relabel.py         # FilmRelabeler: re-write a delivered film's label, drop stale app tags
 │   ├── permissions.py          # API-key read/upload capabilities; missing read rights stop a cut
 │   ├── sync_client.py          # Sync wrapper for async client
 │   ├── accounts.py             # open_accounts: one /users/me-verified client per selected account (#1500)
@@ -1171,6 +1172,7 @@ src/immich_memories/
 │   ├── request_checks.py       # Host allow-list, cross-site writes, body caps and CSP with built-client hashes
 │   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
 │   ├── run_upload.py           # POST /api/v1/runs/{id}/upload: a finished film to Immich, capability-checked
+│   ├── run_label.py            # POST /api/v1/runs/{id}/label: re-label a delivered film in Immich
 │   ├── cut.py                  # /runs/{id}/cut (storyboard + trace + polish + siblings), /story, /revisions
 │   ├── pool.py                 # /runs/{id}/pool and /pictures/{id}/decision (Never use, Clear hold)
 │   ├── media.py                # /assets/{id}/thumbnail (shared cache), /video (Range-streamed), /people/{id}/face

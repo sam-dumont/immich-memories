@@ -237,7 +237,7 @@ def _album_ref(album: dict) -> AlbumRef:
     )
 
 
-def _tag_rights_missing(allows: Callable[[str], bool]) -> list[str]:
+def tag_rights_missing(allows: Callable[[str], bool]) -> list[str]:
     """The tag rights this key lacks to file a film under a tag."""
     return [permission for permission in ("tag.create", "tag.asset") if not allows(permission)]
 
@@ -505,7 +505,7 @@ class AlbumService:
             return False
         for _ in range(_TAG_ATTEMPTS):
             await self.tag_as_generated(asset_id)
-            await self._settled(asset_id, waits.quiet_polls)
+            await self.settled(asset_id, waits.quiet_polls)
             if await self._carries_generated_tag(asset_id):
                 return True
         logger.warning("The provenance tag did not stay on the uploaded film")
@@ -519,6 +519,7 @@ class AlbumService:
         description: bool = True,
         tags: bool = True,
         waits: UploadWaits = UploadWaits(),
+        already_read: bool = False,
     ) -> list[str]:
         """Give a fresh upload its description and tags once Immich has read it (#2505).
 
@@ -526,6 +527,8 @@ class AlbumService:
         overwrites both. Reads them back and applies them again if they did not stick;
         returns what still did not stay, as "description" and "tags". Written before
         Immich's read, both are returned as not kept: the read can still take them back.
+        `already_read` is for a film Immich read long ago (a re-label, #2627): there is no first
+        read to wait for, so nothing is held back as unverified.
         """
         wanted = {
             "description": description and bool(label.description),
@@ -533,7 +536,7 @@ class AlbumService:
         }
         if not any(wanted.values()):
             return []
-        read = await self._read_by_immich(asset_id, waits.read_polls)
+        read = already_read or await self._read_by_immich(asset_id, waits.read_polls)
         if not read:
             logger.warning("Immich had not read the uploaded film yet; describing it anyway")
         missing = [name for name, needed in wanted.items() if needed]
@@ -542,12 +545,12 @@ class AlbumService:
             # write, and two rewrites that overlap lose one of them.
             if wanted["tags"]:
                 await self._put_tags(asset_id, label.tags)
-                await self._settled(asset_id, waits.quiet_polls)
+                await self.settled(asset_id, waits.quiet_polls)
             if wanted["description"]:
                 await self._request(
                     "PUT", f"/assets/{asset_id}", json={"description": label.description}
                 )
-                await self._settled(asset_id, waits.quiet_polls)
+                await self.settled(asset_id, waits.quiet_polls)
             missing = await self._label_not_kept(asset_id, label, wanted)
             if not read:
                 return [name for name, needed in wanted.items() if needed]
@@ -563,7 +566,7 @@ class AlbumService:
             # the rewrites collided (#2505 on a real server: the story tag was lost).
             await self._request("PUT", "/tags/assets", json={"tagIds": ids, "assetIds": [asset_id]})
 
-    async def _settled(self, asset_id: str, quiet_polls: int) -> None:
+    async def settled(self, asset_id: str, quiet_polls: int) -> None:
         """Wait until Immich has stopped rewriting the asset: `quiet_polls` reads unchanged,
         within a minute or three quiet windows, whichever is longer.
 
@@ -706,7 +709,7 @@ class AlbumService:
         write makes Immich rewrite the film's sidecar, and each is waited out on its own
         (#2711). Otherwise it goes on alone.
         """
-        carried = bool(label and label.tags) and not _tag_rights_missing(allows)
+        carried = bool(label and label.tags) and not tag_rights_missing(allows)
         if not carried:
             await self._tag_delivery(asset_id, allows, reports[1], waits)
         if label:
@@ -719,7 +722,7 @@ class AlbumService:
         warnings: list[str],
         waits: UploadWaits,
     ) -> None:
-        if tag_missing := _tag_rights_missing(allows):
+        if tag_missing := tag_rights_missing(allows):
             warnings.append("uploaded without provenance: the key lacks " + ", ".join(tag_missing))
             return
         try:
@@ -742,7 +745,7 @@ class AlbumService:
         note, a label that did not stay is a warning that leaves the delivery pending.
         `provenance` writes the provenance tag with the label's tags, in the same write."""
         notes, warnings = reports
-        tag_missing = _tag_rights_missing(allows)
+        tag_missing = tag_rights_missing(allows)
         if label.tags and tag_missing:
             notes.append("uploaded without story tags: the key lacks " + ", ".join(tag_missing))
         if label.description and not allows(DESCRIBE):
