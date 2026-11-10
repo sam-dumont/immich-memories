@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-22 10:00+0200\n"
+"POT-Creation-Date: 2026-11-10 22:01+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -103,8 +103,8 @@ msgstr "Aggiungi: {include} · Togli: {exclude}"
 msgid "Added for a moment the catalogue records as notable."
 msgstr "Aggiunta per un momento che il catalogo registra come notevole."
 
-#: web/routes/runs/[run_id]/+page.svelte:287 web/routes/runs/[run_id]/+page.svelte:289
-#: web/routes/runs/[run_id]/+page.svelte:292
+#: web/routes/runs/[run_id]/+page.svelte:289 web/routes/runs/[run_id]/+page.svelte:291
+#: web/routes/runs/[run_id]/+page.svelte:294
 msgid "Added from the pool"
 msgstr "Aggiunta dai contenuti disponibili"
 
@@ -137,7 +137,7 @@ msgstr "Tutte"
 msgid "All of them"
 msgstr "Tutte queste persone"
 
-#: web/routes/runs/[run_id]/+page.svelte:122
+#: web/routes/runs/[run_id]/+page.svelte:123
 msgid "All pictures"
 msgstr "Tutte le immagini"
 
@@ -205,7 +205,7 @@ msgstr "Automatica"
 msgid "Automatic (as configured)"
 msgstr "Automatica (come configurato)"
 
-#: web/routes/+layout.svelte:48
+#: web/routes/+layout.svelte:60
 msgid "Automatic (browser)"
 msgstr "Automatico (browser)"
 
@@ -217,11 +217,11 @@ msgstr "L’automazione è già in esecuzione. Apri Esecuzioni per seguirla."
 msgid "Autumn"
 msgstr "Autunno"
 
-#: web/routes/runs/[run_id]/+page.svelte:279
+#: web/routes/runs/[run_id]/+page.svelte:281
 msgid "Back to pictures"
 msgstr "Torna alle immagini"
 
-#: web/routes/runs/[run_id]/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:135
 msgid "Back to runs"
 msgstr "Torna alle esecuzioni"
 
@@ -277,7 +277,7 @@ msgstr "Le descrizioni sono state lette; le regole hanno scelto questo montaggio
 msgid "Catalogued days"
 msgstr "Giorni catalogati"
 
-#: web/routes/runs/[run_id]/+page.svelte:303
+#: web/routes/runs/[run_id]/+page.svelte:305
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "Modifiche: {count}"
@@ -397,7 +397,7 @@ msgstr "Connesso come: {name}"
 msgid "Considered by the model"
 msgstr "Considerata dal modello"
 
-#: web/routes/runs/[run_id]/+page.svelte:117
+#: web/routes/runs/[run_id]/+page.svelte:118
 msgid "Contact sheet"
 msgstr "Provino a contatto"
 
@@ -442,7 +442,7 @@ msgstr "Periodo personalizzato"
 msgid "Cut"
 msgstr "Monta"
 
-#: web/routes/runs/[run_id]/+page.svelte:240
+#: web/routes/runs/[run_id]/+page.svelte:242
 msgid "Cut contact sheet"
 msgstr "Provino a contatto del montaggio"
 
@@ -462,11 +462,11 @@ msgstr "Deciso durante il montaggio"
 msgid "Default"
 msgstr "Predefinito"
 
-#: web/routes/runs/[run_id]/+page.svelte:156
+#: web/routes/runs/[run_id]/+page.svelte:157
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "Consegnato a Immich. Il file locale è stato rimosso per risparmiare spazio su disco."
 
-#: web/routes/+layout.svelte:52 web/routes/+layout.svelte:53
+#: web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
 msgid "Demo mode"
 msgstr "Modalità demo"
 
@@ -490,7 +490,7 @@ msgstr "Descrizioni non richieste"
 msgid "Detecting trips from GPS data..."
 msgstr "Rilevamento dei viaggi dai dati GPS…"
 
-#: web/routes/runs/[run_id]/+page.svelte:312
+#: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Discard changes"
 msgstr "Annulla le modifiche"
 
@@ -507,11 +507,11 @@ msgstr "Chiudi"
 msgid "Done."
 msgstr "Fatto."
 
-#: web/routes/runs/[run_id]/+page.svelte:357
+#: web/routes/runs/[run_id]/+page.svelte:359
 msgid "Download child output"
 msgstr "Scarica il registro di elaborazione"
 
-#: web/lib/RenderPanel.svelte:162 web/routes/runs/[run_id]/+page.svelte:170
+#: web/lib/RenderPanel.svelte:162 web/routes/runs/[run_id]/+page.svelte:171
 msgid "Download film"
 msgstr "Scarica il film"
 
@@ -737,7 +737,7 @@ msgstr "URL del server Immich"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Account Immich da leggere (solo il principale se nessuno è scelto)"
 
-#: web/routes/runs/[run_id]/+page.svelte:347
+#: web/routes/runs/[run_id]/+page.svelte:349
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Invio a Immich: {value}"
@@ -780,7 +780,7 @@ msgstr "Includi le didascalie delle foto segnalate"
 msgid "Include photos"
 msgstr "Includi foto"
 
-#: web/routes/+layout.svelte:46
+#: web/routes/+layout.svelte:58
 msgid "Interface language"
 msgstr "Lingua dell’interfaccia"
 
@@ -880,7 +880,7 @@ msgstr "Sembra collegata a"
 msgid "Low"
 msgstr "Bassa"
 
-#: web/routes/+layout.svelte:70 web/routes/+layout.svelte:82
+#: web/routes/+layout.svelte:82 web/routes/+layout.svelte:94
 msgid "Main navigation"
 msgstr "Navigazione principale"
 
@@ -928,7 +928,7 @@ msgstr "Analisi delle caratteristiche delle immagini"
 msgid "Medium"
 msgstr "Media"
 
-#: web/lib/labels.ts:21 web/routes/+layout.svelte:22
+#: web/lib/labels.ts:21 web/routes/+layout.svelte:34
 msgid "Memory"
 msgstr "Ricordo"
 
@@ -1010,7 +1010,7 @@ msgstr ""
 "Non ci sono ancora giorni catalogati. Esegui immich-memories discover-days per trovarli, "
 "oppure scegli una data per creare un film."
 
-#: web/routes/runs/[run_id]/+page.svelte:359
+#: web/routes/runs/[run_id]/+page.svelte:361
 msgid "No child output was retained for this run."
 msgstr "Non è stato conservato un registro di elaborazione per questa esecuzione."
 
@@ -1049,7 +1049,7 @@ msgstr "Nessun nuovo avanzamento da {amount}. Il lavoro è ancora in corso."
 msgid "No outcome recorded."
 msgstr "Nessun esito registrato."
 
-#: web/routes/runs/[run_id]/+page.svelte:270
+#: web/routes/runs/[run_id]/+page.svelte:272
 msgid "No pictures match this filter."
 msgstr "Nessuna immagine corrisponde a questo filtro."
 
@@ -1065,7 +1065,7 @@ msgstr "Nessuna delle regole verificate nell’anteprima scarterebbe un’immagi
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Nessuna esecuzione corrisponde a questa vista. Crea un ricordo da Ricordo o Suggerimenti."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:339
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:341
 msgid "No saved cut is available for this run."
 msgstr "Nessun montaggio salvato per questa esecuzione."
 
@@ -1165,7 +1165,7 @@ msgstr "Solo i compleanni, per questi anni indietro (vuoto: l'anno intero)"
 msgid "Only with (optional)"
 msgstr "Solo con (opzionale)"
 
-#: web/routes/runs/[run_id]/+page.svelte:330
+#: web/routes/runs/[run_id]/+page.svelte:332
 msgid "Open"
 msgstr "Apri"
 
@@ -1190,7 +1190,7 @@ msgstr "Apri {name} in Immich"
 msgid "Opening and closing fade"
 msgstr "Dissolvenza iniziale e finale"
 
-#: web/routes/runs/[run_id]/+page.svelte:205
+#: web/routes/runs/[run_id]/+page.svelte:207
 msgid "Order and timecodes from the saved cut."
 msgstr "Ordine e codici temporali del montaggio salvato."
 
@@ -1228,7 +1228,7 @@ msgstr "Password"
 msgid "Pending"
 msgstr "In attesa"
 
-#: web/routes/+layout.svelte:25 web/routes/create/+page.svelte:431
+#: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
 #: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
 #: web/routes/settings/people/+page.svelte:121
 msgid "People"
@@ -1288,7 +1288,7 @@ msgid "Pictures with"
 msgstr "Immagini con"
 
 #: web/lib/people/AccountLinks.svelte:63 web/lib/people/PersonCard.svelte:23
-#: web/routes/runs/[run_id]/+page.svelte:144 web/routes/runs/[run_id]/+page.svelte:219
+#: web/routes/runs/[run_id]/+page.svelte:145 web/routes/runs/[run_id]/+page.svelte:221
 #: web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
@@ -1302,7 +1302,7 @@ msgstr "Vivace e luminoso"
 msgid "Please enter both URL and API key"
 msgstr "Inserisci sia l'URL che la chiave API"
 
-#: web/routes/runs/[run_id]/+page.svelte:206 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:208 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "Contenuti disponibili"
@@ -1431,7 +1431,7 @@ msgstr "Togli da questo montaggio"
 msgid "Remove this relationship"
 msgstr "Rimuovi questa relazione"
 
-#: web/routes/runs/[run_id]/+page.svelte:253
+#: web/routes/runs/[run_id]/+page.svelte:255
 msgid "Removed"
 msgstr "Tolta"
 
@@ -1475,12 +1475,12 @@ msgstr "Riutilizzo delle verifiche delle immagini salvate"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "Controlla il report, poi copialo. Nulla viene inviato automaticamente."
 
-#: web/lib/RenderPanel.svelte:174 web/routes/runs/[run_id]/+page.svelte:327
+#: web/lib/RenderPanel.svelte:174 web/routes/runs/[run_id]/+page.svelte:329
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Revisione {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:323
+#: web/routes/runs/[run_id]/+page.svelte:325
 msgid "Revisions"
 msgstr "Revisioni"
 
@@ -1488,7 +1488,7 @@ msgstr "Revisioni"
 msgid "Role (suggestions; type your own)"
 msgstr "Ruolo (suggerimenti o testo libero)"
 
-#: web/routes/runs/[run_id]/+page.svelte:345
+#: web/routes/runs/[run_id]/+page.svelte:347
 msgid "Run details"
 msgstr "Dettagli dell'esecuzione"
 
@@ -1521,8 +1521,8 @@ msgstr "In esecuzione sul server: {phase}. Continua anche se lasci questa pagina
 msgid "Running the preflight checks..."
 msgstr "Controlli preliminari in corso..."
 
-#: web/routes/+layout.svelte:24 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
+#: web/routes/+layout.svelte:36 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:129
 msgid "Runs"
 msgstr "Esecuzioni"
 
@@ -1551,7 +1551,7 @@ msgstr "Salva configurazione"
 msgid "Save group"
 msgstr "Salva gruppo"
 
-#: web/routes/runs/[run_id]/+page.svelte:314
+#: web/routes/runs/[run_id]/+page.svelte:316
 msgid "Save revision"
 msgstr "Salva revisione"
 
@@ -1559,7 +1559,7 @@ msgstr "Salva revisione"
 msgid "Saved - type a new key to replace it"
 msgstr "Salvata: digita una nuova chiave per sostituirla"
 
-#: web/routes/runs/[run_id]/+page.svelte:317
+#: web/routes/runs/[run_id]/+page.svelte:319
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Salvata come revisione {number}."
@@ -1582,7 +1582,7 @@ msgstr "Salvato qui, ma {name} non riesce a decifrarlo: è in uso il valore pred
 msgid "Saved to the database"
 msgstr "Salvato nel database"
 
-#: web/routes/runs/[run_id]/+page.svelte:346
+#: web/routes/runs/[run_id]/+page.svelte:348
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Salvato in: {output_path}"
@@ -1626,7 +1626,7 @@ msgstr "Impostato da {name} (ambiente)"
 msgid "Set in config.yaml as {key}"
 msgstr "Impostato in config.yaml come {key}"
 
-#: web/routes/+layout.svelte:26 web/routes/settings/+page.svelte:79
+#: web/routes/+layout.svelte:38 web/routes/settings/+page.svelte:79
 #: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
 msgid "Settings"
 msgstr "Impostazioni"
@@ -1635,7 +1635,7 @@ msgstr "Impostazioni"
 msgid "Shareable"
 msgstr "Condivisibile"
 
-#: web/routes/runs/[run_id]/+page.svelte:195
+#: web/routes/runs/[run_id]/+page.svelte:197
 msgid "Show"
 msgstr "Mostra"
 
@@ -1652,7 +1652,7 @@ msgstr "Accedi"
 msgid "Sign in through the proxy in front of this server."
 msgstr "Accedi tramite il proxy davanti a questo server."
 
-#: web/routes/+layout.svelte:61
+#: web/routes/+layout.svelte:73
 msgid "Sign out"
 msgstr "Esci"
 
@@ -1722,11 +1722,11 @@ msgstr "Stato"
 msgid "Still"
 msgstr "Immagine fissa"
 
-#: web/routes/runs/[run_id]/+page.svelte:124
+#: web/routes/runs/[run_id]/+page.svelte:125
 msgid "Stills"
 msgstr "Foto"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:337
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:339
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr ""
 "Fermato prima di salvare un film. Il montaggio da cui deriva è in Esecuzioni, nella sua "
@@ -1736,7 +1736,7 @@ msgstr ""
 msgid "Stopped."
 msgstr "Interrotto."
 
-#: web/routes/runs/[run_id]/+page.svelte:118 web/routes/runs/[run_id]/+page.svelte:212
+#: web/routes/runs/[run_id]/+page.svelte:119 web/routes/runs/[run_id]/+page.svelte:214
 msgid "Stories"
 msgstr "Storie"
 
@@ -1748,7 +1748,7 @@ msgstr "Sottotitolo"
 msgid "Suggested"
 msgstr "Suggerito"
 
-#: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
+#: web/routes/+layout.svelte:35 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
 msgid "Suggestions"
 msgstr "Suggerimenti"
@@ -1765,11 +1765,11 @@ msgstr "Estate"
 msgid "Supporting"
 msgstr "Secondaria"
 
-#: web/routes/runs/[run_id]/+page.svelte:255
+#: web/routes/runs/[run_id]/+page.svelte:257
 msgid "Swapped"
 msgstr "Sostituita"
 
-#: web/routes/runs/[run_id]/+page.svelte:293
+#: web/routes/runs/[run_id]/+page.svelte:295
 msgid "Take out"
 msgstr "Togli"
 
@@ -1805,6 +1805,14 @@ msgstr ""
 "Il nome dell’account della chiave API non è stato associato a una persona con un nome. Scegli"
 " il proprietario oppure assegna i nomi alle persone in Immich e ripeti la scansione."
 
+#: web/lib/RelabelFilm.svelte:33
+msgid "The Immich label was already up to date."
+msgstr "L'etichetta di Immich era già aggiornata."
+
+#: web/lib/RelabelFilm.svelte:33
+msgid "The Immich label was updated."
+msgstr "L'etichetta di Immich è stata aggiornata."
+
 #: web/lib/SettingsChecks.svelte:70
 msgid "The checks could not be run."
 msgstr "Non è stato possibile eseguire i controlli."
@@ -1839,7 +1847,7 @@ msgstr ""
 "indicato dalla sua etichetta."
 
 #: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:157
-#: web/routes/runs/[run_id]/+page.svelte:152
+#: web/routes/runs/[run_id]/+page.svelte:153
 msgid "The film"
 msgstr "Il film"
 
@@ -1860,6 +1868,10 @@ msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr ""
 "Le persone di casa. Sono inclusi anche i momenti privati citati da una descrizione, come un "
 "bagno."
+
+#: web/lib/RelabelFilm.svelte:22
+msgid "The label could not be updated."
+msgstr "Non è stato possibile aggiornare l'etichetta."
 
 #: web/lib/UploadFilm.svelte:58
 msgid "The local film was removed: Immich holds it now."
@@ -1926,7 +1938,7 @@ msgstr "Impossibile avviare il rendering."
 msgid "The report could not be loaded."
 msgstr "Impossibile caricare il report."
 
-#: web/routes/runs/[run_id]/+page.svelte:72 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/routes/runs/[run_id]/+page.svelte:73 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "Impossibile salvare la revisione."
 
@@ -1954,7 +1966,7 @@ msgstr "Le parole sono cambiate da questa anteprima: rifai l’anteprima prima d
 msgid "These people appear in the last two people memories."
 msgstr "Queste persone compaiono negli ultimi due ricordi di persone."
 
-#: web/routes/runs/[run_id]/+page.svelte:288
+#: web/routes/runs/[run_id]/+page.svelte:290
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr ""
 "Vengono riprodotte nell'ordine in cui sono state scattate, preparate come il resto del "
@@ -2035,13 +2047,17 @@ msgstr "Viaggi"
 msgid "Try again"
 msgstr "Riprova"
 
-#: web/routes/runs/[run_id]/+page.svelte:311 web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:313 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "Annulla decisione"
 
 #: web/lib/people/AccountLinks.svelte:54
 msgid "Unlink"
 msgstr "Scollega"
+
+#: web/lib/RelabelFilm.svelte:30
+msgid "Update the Immich label"
+msgstr "Aggiorna l'etichetta di Immich"
 
 #: web/lib/UpdateCheck.svelte:43
 msgid "Update with:"
@@ -2111,8 +2127,8 @@ msgstr "Nome utente"
 msgid "Verdict"
 msgstr "Verdetto"
 
-#: web/lib/ShotInspector.svelte:86 web/routes/runs/[run_id]/+page.svelte:229
-#: web/routes/runs/[run_id]/+page.svelte:259 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:86 web/routes/runs/[run_id]/+page.svelte:231
+#: web/routes/runs/[run_id]/+page.svelte:261 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "Video"
 
@@ -2120,20 +2136,20 @@ msgstr "Video"
 msgid "Video cache"
 msgstr "Cache video"
 
-#: web/routes/runs/[run_id]/+page.svelte:123
+#: web/routes/runs/[run_id]/+page.svelte:124
 msgid "Videos"
 msgstr "Video"
 
-#: web/routes/runs/[run_id]/+page.svelte:145
+#: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "Video: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:187
+#: web/routes/runs/[run_id]/+page.svelte:189
 msgid "View"
 msgstr "Visualizza"
 
-#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:158
+#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:159
 msgid "View in Immich"
 msgstr "Visualizza in Immich"
 
@@ -2281,7 +2297,7 @@ msgstr "La sessione è scaduta. Accedi di nuovo per vedere lo stato del lavoro."
 msgid "a guess: the longest span and the most pictures"
 msgstr "una stima: l'intervallo più lungo e più immagini"
 
-#: web/routes/runs/[run_id]/+page.svelte:147
+#: web/routes/runs/[run_id]/+page.svelte:148
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "circa {film} di film"
@@ -2335,12 +2351,12 @@ msgstr "l'hai indicato all'analisi"
 msgid "{amount} elapsed"
 msgstr "{amount} trascorsi"
 
-#: web/routes/runs/[run_id]/+page.svelte:146
+#: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "{content} di immagini e video"
 
-#: web/routes/runs/[run_id]/+page.svelte:306
+#: web/routes/runs/[run_id]/+page.svelte:308
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}: il film supererà la durata prevista di {budget} per includere tutto"

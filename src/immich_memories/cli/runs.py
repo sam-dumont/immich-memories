@@ -12,6 +12,7 @@ from rich.table import Table
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.cli._runs_reading import register_reading_commands
+from immich_memories.cli.runs_label import register_label_command
 from immich_memories.cli.runs_render import register_render_command
 from immich_memories.cli.runs_upload import register_upload_command
 from immich_memories.config.models.resources import ImmichConfig
@@ -414,6 +415,7 @@ def register_runs_commands(main: click.Group) -> None:
     register_reading_commands(runs)
     register_render_command(runs)
     register_upload_command(runs)
+    register_label_command(runs)
 
     @runs.command("stats")
     def runs_stats() -> None:

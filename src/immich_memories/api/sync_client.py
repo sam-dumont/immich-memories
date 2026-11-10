@@ -9,9 +9,10 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from immich_memories.api.album_service import AlbumRef, FilmScope
+from immich_memories.api.album_service import AlbumRef, FilmScope, UploadWaits
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.film_label import FilmLabel
+from immich_memories.api.film_relabel import RelabelOutcome
 from immich_memories.api.models import (
     Asset,
     AssetFace,
@@ -421,3 +422,8 @@ class SyncImmichClient:
                 video_path, album_name, captured_at=captured_at, label=label
             )
         )
+
+    def relabel_film(
+        self, asset_id: str, label: FilmLabel, *, waits: UploadWaits = UploadWaits()
+    ) -> RelabelOutcome:
+        return self._run(self._async_client.relabel_film(asset_id, label, waits=waits))
