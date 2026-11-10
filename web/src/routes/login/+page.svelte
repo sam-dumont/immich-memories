@@ -3,9 +3,9 @@
   import { Button, Heading, Text } from '@immich/ui';
   import { mdiMovieOpenStarOutline } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api } from '$lib/api';
-  import type { components } from '$lib/api-types';
-  import { t } from '$lib/i18n.svelte';
+  import { api } from '#lib/api.ts';
+  import type { components } from '#lib/api-types.ts';
+  import { t } from '#lib/i18n.svelte.ts';
 
   type Session = components['schemas']['SessionView'];
 
@@ -20,7 +20,7 @@
       problem = t('Sign-in expired. Try again.');
     }
     session = await api<Session>('/session');
-    if (session.signed_in) await goto('/app/create', { replaceState: true });
+    if (session.signed_in) await goto('/app/create', { replace: true });
     else if (session.auto_launch && !problem) window.location.assign('/auth/authorize');
   });
 
@@ -35,7 +35,7 @@
     busy = false;
     if (response.ok) {
       // The layout read the session before sign-in; it must read it again to show who is in.
-      await goto('/app/create', { replaceState: true, invalidateAll: true });
+      await goto('/app/create', { replace: true, refreshAll: true });
       return;
     }
     const body = await response.json().catch(() => ({}));

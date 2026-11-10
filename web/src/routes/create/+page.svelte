@@ -3,14 +3,14 @@
   import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
   import { mdiMovieOpenPlayOutline } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post, type AccountChoice, type AlbumChoice, type CutBrief, type JobView, type NamedPerson, type SavedGroup, type SpecialDay, type TripChoice, type Trips } from '$lib/api';
-  import { locale, N_, t } from '$lib/i18n.svelte';
-  import { followJob } from '$lib/job.svelte';
-  import ModelSetup from '$lib/ModelSetup.svelte';
-  import JobPanel from '$lib/JobPanel.svelte';
-  import AskPanel from '$lib/AskPanel.svelte';
-  import { updatedAgo } from '$lib/ago';
-  import { memoryTypeLabel } from '$lib/labels';
+  import { api, post, type AccountChoice, type AlbumChoice, type CutBrief, type JobView, type NamedPerson, type SavedGroup, type SpecialDay, type TripChoice, type Trips } from '#lib/api.ts';
+  import { locale, N_, t } from '#lib/i18n.svelte.ts';
+  import { followJob } from '#lib/job.svelte.ts';
+  import ModelSetup from '#lib/ModelSetup.svelte';
+  import JobPanel from '#lib/JobPanel.svelte';
+  import AskPanel from '#lib/AskPanel.svelte';
+  import { updatedAgo } from '#lib/ago.ts';
+  import { memoryTypeLabel } from '#lib/labels.ts';
 
   // Which of generate's scope flags each memory type reads, in the order the form asks them.
   // Every date-range memory can be narrowed to people; a trip, an album and a spotlight cannot take a

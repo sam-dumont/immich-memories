@@ -2,9 +2,9 @@
   import { Button } from '@immich/ui';
   import { mdiCloudUploadOutline } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post } from '$lib/api';
-  import type { components } from '$lib/api-types';
-  import { t } from '$lib/i18n.svelte';
+  import { api, post } from '#lib/api.ts';
+  import type { components } from '#lib/api-types.ts';
+  import { t } from '#lib/i18n.svelte.ts';
 
   type RenderCapabilities = components['schemas']['RenderCapabilities'];
   type Uploaded = components['schemas']['UploadedFilm'];

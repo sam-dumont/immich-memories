@@ -1,4 +1,4 @@
-import type { components } from '$lib/api-types';
+import type { components } from '#lib/api-types.ts';
 
 export type Roster = components['schemas']['Roster'];
 export type Person = components['schemas']['RosterPerson'];

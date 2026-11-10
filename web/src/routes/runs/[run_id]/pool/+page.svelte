@@ -3,9 +3,9 @@
   import { page } from '$app/state';
   import { Button, Heading, LoadingSpinner, Modal, ModalBody, ModalFooter, Text } from '@immich/ui';
   import { mdiArrowLeft, mdiEyeOutline, mdiShieldCheckOutline } from '@mdi/js';
-  import { api, ApiError, post, thumbnail } from '$lib/api';
-  import type { components } from '$lib/api-types';
-  import { N_, t } from '$lib/i18n.svelte';
+  import { api, ApiError, post, thumbnail } from '#lib/api.ts';
+  import type { components } from '#lib/api-types.ts';
+  import { N_, t } from '#lib/i18n.svelte.ts';
 
   type Pool = components['schemas']['Pool'];
   type Item = components['schemas']['PoolItem'];

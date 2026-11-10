@@ -238,7 +238,6 @@ include = [
     "/web/src",
     "/web/package.json",
     "/web/package-lock.json",
-    "/web/svelte.config.js",
     "/web/tsconfig.json",
     "/web/vite.config.ts",
 ]

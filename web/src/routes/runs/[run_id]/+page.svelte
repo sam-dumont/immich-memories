@@ -1,16 +1,16 @@
 <script lang="ts">
   import { Alert, Badge, Button, Heading, Text } from '@immich/ui';
   import { mdiArrowLeft, mdiContentSaveOutline, mdiDownload, mdiPlay, mdiUndo } from '@mdi/js';
-  import { api, ApiError, thumbnail, type CutShot } from '$lib/api';
-  import RenderPanel from '$lib/RenderPanel.svelte';
-  import UploadFilm from '$lib/UploadFilm.svelte';
-  import RunReport from '$lib/RunReport.svelte';
-  import type { components } from '$lib/api-types';
-  import { CutEditor } from '$lib/cut-edits.svelte';
-  import { monthOf, seconds } from '$lib/format';
-  import { locale, N_, t } from '$lib/i18n.svelte';
-  import { clock, memoryTypeLabel, sourceLabel, statusLabel, weightLabel } from '$lib/labels';
-  import ShotInspector from '$lib/ShotInspector.svelte';
+  import { api, ApiError, thumbnail, type CutShot } from '#lib/api.ts';
+  import RenderPanel from '#lib/RenderPanel.svelte';
+  import UploadFilm from '#lib/UploadFilm.svelte';
+  import RunReport from '#lib/RunReport.svelte';
+  import type { components } from '#lib/api-types.ts';
+  import { CutEditor } from '#lib/cut-edits.svelte.ts';
+  import { monthOf, seconds } from '#lib/format.ts';
+  import { locale, N_, t } from '#lib/i18n.svelte.ts';
+  import { clock, memoryTypeLabel, sourceLabel, statusLabel, weightLabel } from '#lib/labels.ts';
+  import ShotInspector from '#lib/ShotInspector.svelte';
 
   let { data } = $props();
   const run = $derived(data.run);

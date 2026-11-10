@@ -2,14 +2,14 @@
   import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
   import { mdiAccountPlusOutline, mdiRefresh } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post, type AccountChoice, type JobView } from '$lib/api';
-  import { t } from '$lib/i18n.svelte';
-  import { followJob } from '$lib/job.svelte';
-  import JobPanel from '$lib/JobPanel.svelte';
-  import GroupsSection from '$lib/people/GroupsSection.svelte';
-  import OwnerSection from '$lib/people/OwnerSection.svelte';
-  import PersonCard from '$lib/people/PersonCard.svelte';
-  import type { AccountPerson, Flag, Person, Roster } from '$lib/people/types';
+  import { api, post, type AccountChoice, type JobView } from '#lib/api.ts';
+  import { t } from '#lib/i18n.svelte.ts';
+  import { followJob } from '#lib/job.svelte.ts';
+  import JobPanel from '#lib/JobPanel.svelte';
+  import GroupsSection from '#lib/people/GroupsSection.svelte';
+  import OwnerSection from '#lib/people/OwnerSection.svelte';
+  import PersonCard from '#lib/people/PersonCard.svelte';
+  import type { AccountPerson, Flag, Person, Roster } from '#lib/people/types.ts';
 
   const PAGE = 30;
   let roster = $state<Roster | null>(null);

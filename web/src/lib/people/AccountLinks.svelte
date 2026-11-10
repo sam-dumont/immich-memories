@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from '@immich/ui';
-  import { api, type AccountChoice } from '$lib/api';
-  import { t } from '$lib/i18n.svelte';
+  import { api, type AccountChoice } from '#lib/api.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import { personPath, sendPerson } from './rosterApi';
   import type { AccountPerson, Person } from './types';
 

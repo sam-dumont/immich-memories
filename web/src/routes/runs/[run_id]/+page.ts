@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { api, ApiError, type Cut, type RunDetail, type Story } from '$lib/api';
-import { t } from '$lib/i18n.svelte';
+import { api, ApiError, type Cut, type RunDetail, type Story } from '#lib/api.ts';
+import { t } from '#lib/i18n.svelte.ts';
 
 export const load = async ({ params, fetch, parent }) => {
   const id = encodeURIComponent(params.run_id);

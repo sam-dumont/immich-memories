@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button, Heading, Text } from '@immich/ui';
-  import { api, post, type SavedGroup } from '$lib/api';
-  import { t } from '$lib/i18n.svelte';
+  import { api, post, type SavedGroup } from '#lib/api.ts';
+  import { t } from '#lib/i18n.svelte.ts';
   import { onMount } from 'svelte';
   import type { Person } from './types';
 
