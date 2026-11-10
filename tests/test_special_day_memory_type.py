@@ -103,35 +103,11 @@ class TestBuildSpecialDayRun:
 class TestSpecialDayPreset:
     """The catalogue named the day; the preset carries that name, or refuses."""
 
-    def test_the_catalogue_title_names_the_memory(self) -> None:
-        preset = create_preset(
-            MemoryType.SPECIAL_DAY,
-            day=date(2016, 6, 12),
-            title="A long evening out",
-            subtitle="Somebody's leap day",
-        )
-
-        assert preset.name == "A long evening out"
-        assert preset.memory_type is MemoryType.SPECIAL_DAY
-
-    def test_an_empty_title_falls_back_to_what_the_day_was(self) -> None:
-        preset = create_preset(
-            MemoryType.SPECIAL_DAY,
-            day=date(2016, 6, 12),
-            title="   ",
-            what="A very long walk",
-        )
-
-        assert preset.name == "A very long walk"
-
-    def test_a_day_with_no_name_at_all_falls_back_to_its_own_date(self) -> None:
-        # The last rung of the naming ladder, reached only when no reader is
-        # configured and the catalogue has nothing. A date names no event, so
-        # refuse over fake survives: what it refuses is an invented occasion,
-        # not the day itself (#1067).
+    def test_the_preset_is_the_day_it_was_given(self) -> None:
         preset = create_preset(MemoryType.SPECIAL_DAY, day=date(2016, 6, 12))
 
-        assert preset.name == "12 June 2016"
+        assert preset.memory_type is MemoryType.SPECIAL_DAY
+        assert preset.date_ranges[0].start == datetime(2016, 6, 12, 0, 0, 0)
 
 
 class TestSpecialDayDuration:

@@ -20,6 +20,7 @@ import httpx
 
 from immich_memories.analysis.llm.query import query_llm
 from immich_memories.analysis.reading.prose_shapes import MAP_MODES, TRIP_TYPES, title_shape
+from immich_memories.i18n import LANGUAGE_NAMES
 from immich_memories.people.context import PersonPromptContext, load_people_prompt_context
 from immich_memories.titles.relationship_guard import refusing_unfounded_relationships
 from immich_memories.titles.title_guards import (
@@ -56,28 +57,6 @@ _VALID_TRIP_TYPES: set[str] = set(TRIP_TYPES)
 _VALID_MAP_MODES: set[str] = set(MAP_MODES)
 _MAX_TITLE_LEN = 80
 _MAX_SUBTITLE_LEN = 120
-
-_LOCALE_NAMES: dict[str, str] = {
-    "en": "English",
-    "fr": "French",
-    "de": "German",
-    "es": "Spanish",
-    "it": "Italian",
-    "nl": "Dutch",
-    "pt": "Portuguese",
-    "pt-BR": "Brazilian Portuguese",
-    "pt-PT": "European Portuguese",
-    "ja": "Japanese",
-    "ko": "Korean",
-    "zh": "Chinese",
-    "zh-Hans": "Simplified Chinese",
-    "ru": "Russian",
-    "pl": "Polish",
-    "sv": "Swedish",
-    "da": "Danish",
-    "nb": "Norwegian",
-    "fi": "Finnish",
-}
 
 
 @dataclass(frozen=True)
@@ -488,7 +467,7 @@ def build_title_prompt(
     facts: MemoryTitleFacts | None = None,
 ) -> TitlePrompt:
     """Build the prompt this memory is named from: an occasion, or a trip."""
-    lang = _LOCALE_NAMES.get(locale, locale.capitalize())
+    lang = LANGUAGE_NAMES.get(locale, locale)
     known = facts or MemoryTitleFacts()
     names = list(person_names or ())
     start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
