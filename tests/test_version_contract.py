@@ -152,7 +152,10 @@ def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
     assert launch_job["timeout-minutes"] == 30
     assert '["sqlite","postgresql"]' in launch_job["strategy"]["matrix"]["database"]
     assert any(step.get("uses") == "./.github/actions/install-ffmpeg" for step in steps)
-    assert "playwright install --with-deps chromium" in commands
+    # Chromium's system libraries install first, under apt retries, then the browser.
+    deps = commands.find("playwright install-deps chromium")
+    assert 0 <= deps < commands.find("playwright install chromium")
+    assert 'Acquire::Retries "5"' in commands
     assert setup["with"]["browser"] == "true"
     # Exact target: "make launch-check" is a substring of "make launch-check-ci",
     # so a loose check would pass whichever one CI pointed at.

@@ -55,7 +55,27 @@ runs:
         make "$TARGET"
         make web-client-present
 
+    # `--with-deps` runs apt itself, without the retries install-ffmpeg uses, so one
+    # stalled Ubuntu mirror failed whole launch-check shards with apt exit 100. The system
+    # libraries go first, under apt's own retries and a bounded retry of the whole install;
+    # the browser download after them never touches apt.
+    - name: Install Chromium's system libraries
+      if: inputs.browser == 'true' && runner.os == 'Linux'
+      shell: bash
+      run: |
+        printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nDPkg::Lock::Timeout "60";\n' \
+          | sudo tee /etc/apt/apt.conf.d/80-ci-retries >/dev/null
+        for attempt in 1 2 3; do
+          # Three bounded attempts stay well inside the launch job's 30-minute timeout.
+          if timeout 240 uv run playwright install-deps chromium; then
+            exit 0
+          fi
+          echo "::warning::Chromium's system libraries did not install (attempt $attempt of 3)"
+          sleep 15
+        done
+        exit 1
+
     - name: Install Chromium
       if: inputs.browser == 'true'
       shell: bash
-      run: uv run playwright install --with-deps chromium
+      run: uv run playwright install chromium
