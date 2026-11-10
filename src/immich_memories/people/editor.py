@@ -29,7 +29,12 @@ from immich_memories.people.companion import (
 from immich_memories.people.companion import bind_alias as _bind_alias
 from immich_memories.people.companion import decline_alias as _decline_alias
 from immich_memories.people.companion import unbind_alias as _unbind_alias
-from immich_memories.people.kinship import Fact, Hop, Suggestion, suggest_relationships
+from immich_memories.people.kinship import (
+    Hop,
+    Suggestion,
+    facts_from_document,
+    suggest_relationships,
+)
 from immich_memories.people.relationships import DETECTED_KINDS, RELATIONSHIP_CHOICES
 from immich_memories.people.signatures import Tier, pair_key
 
@@ -176,21 +181,7 @@ def accept_suggestions(store: Store, person_id: str) -> PersonView | None:
 
 def _tree_suggestions(entries: list[dict[str, Any]]) -> list[Suggestion]:
     """What the confirmed relationships imply, with every answered "no" kept out."""
-    canonical = {pid: entry_ids(entry)[0] for entry in entries for pid in entry_ids(entry)}
-    facts: list[Fact] = []
-    declined: list[Fact] = []
-    for entry in entries:
-        own = entry_ids(entry)[0]
-        for link in _mappings(_mapping(entry.get(CONFIRMED)).get("links")):
-            other = canonical.get(str(link.get("with")))
-            if other is None or other == own:
-                continue
-            fact = Fact(own, str(link.get("kind") or "link"), other)
-            if str(link.get("decision") or CONFIRMED) == REJECTED:
-                declined.append(fact)
-            elif fact.kind not in DETECTED_KINDS:
-                facts.append(fact)
-    return suggest_relationships(facts, declined)
+    return suggest_relationships(*facts_from_document(entries))
 
 
 def _suggested_link(suggestion: Suggestion, names: dict[str, str]) -> LinkView:
