@@ -545,7 +545,7 @@ joblib 1.6.0
   License: BSD-3-Clause
   URL: https://joblib.readthedocs.io
 
-joserfc 1.7.4
+joserfc 1.7.6
   License: BSD
   URL: https://github.com/authlib/joserfc
 
@@ -657,7 +657,7 @@ nvidia-nvtx 13.0.85
   License: Other/Proprietary License
   URL: https://developer.nvidia.com/cuda-zone
 
-oauthlib 4.0.0
+oauthlib 4.0.1
   License: BSD-3-Clause
   URL: https://github.com/oauthlib/oauthlib
 
