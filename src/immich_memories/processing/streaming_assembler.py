@@ -50,6 +50,7 @@ from immich_memories.processing.streaming_frame_decoder import (
     HardwareDecodeFailed,
     make_decoder,
 )
+from immich_memories.progress_text import Stage, coded
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -565,7 +566,7 @@ def streaming_assemble_full(
     audio_work_dir.mkdir(exist_ok=True)
 
     try:
-        _notify_assembly_stage(progress_callback, 0.07, "Streaming video assembly...")
+        _notify_assembly_stage(progress_callback, 0.07, coded(Stage.RENDER_ASSEMBLY))
 
         # WHY: Scale frame-level progress into [0.07, 0.85) range so the caller
         # sees continuous updates during the heavy encode phase.
@@ -579,7 +580,12 @@ def streaming_assemble_full(
                 time_total = f"{int(total_secs // 60)}:{int(total_secs % 60):02d}"
                 progress_callback(
                     scaled,
-                    f"Encoding ({time_done} / {time_total}) — {frac * 100:.0f}%",
+                    coded(
+                        Stage.RENDER_ENCODING_CLOCK,
+                        done=time_done,
+                        total=time_total,
+                        percent=f"{frac * 100:.0f}",
+                    ),
                 )
 
         # WHY: Extract audio in the same FFmpeg pass as video decoding.
@@ -608,7 +614,7 @@ def streaming_assemble_full(
             probe_cache=probe_cache,
         )
 
-        _notify_assembly_stage(progress_callback, 0.85, "Mixing audio...")
+        _notify_assembly_stage(progress_callback, 0.85, coded(Stage.RENDER_AUDIO_MIX))
 
         # WHY: Probe actual video duration so the audio filter graph can
         # clamp its output to match. This avoids re-encoding audio in the
@@ -629,7 +635,7 @@ def streaming_assemble_full(
             probe_cache=probe_cache,
         )
 
-        _notify_assembly_stage(progress_callback, 0.95, "Muxing final output...")
+        _notify_assembly_stage(progress_callback, 0.95, coded(Stage.RENDER_MUX))
 
         mux_video_audio(video_only, audio_only, output_path, captured_at)
 

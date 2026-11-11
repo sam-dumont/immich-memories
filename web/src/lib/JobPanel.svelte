@@ -4,7 +4,8 @@
   import { thumbnail, type JobView } from './api';
   import { elapsed as elapsedText, roughDuration as clockText } from './format';
   import { t } from './i18n.svelte';
-  import { progressCount, stageLabel } from './labels';
+  import { progressCount } from './labels';
+  import { stageHeading, stageLabel } from './stages';
   import { jobConnection } from './job.svelte';
   import PhaseTimeline from './PhaseTimeline.svelte';
 
@@ -40,10 +41,11 @@
     ? t('{percent}% of this stage', { percent: Math.round(fraction * 100) })
     : t('About {percent}% overall', { percent: Math.round(fraction * 100) }));
   const stale = $derived(job.progress.updated_at != null && now / 1000 - job.progress.updated_at > 30);
+  // Worded here from the stage key; only a stage an older version recorded has its English label.
   const heading = $derived(
-    job.progress.stage_name && stageLabel(job.progress.stage_name) !== job.progress.stage_name
-      ? stageLabel(job.progress.stage_name)
-      : job.progress.label,
+    job.progress.key
+      ? stageHeading(job.progress.key, job.progress.params)
+      : stageLabel(job.progress.stage_name ?? '', job.progress.label),
   );
   // The whole job's estimate when a finished run measured it; a first cut only has its stage's.
   // Rounded on purpose, as the terminal rounds it: an estimate, not a countdown.
@@ -115,7 +117,7 @@
       <summary class="cursor-pointer">{t('Previous stages')}</summary>
       <ol class="mt-2 list-inside list-decimal space-y-1">
         {#each job.progress.history as stage}
-          <li>{stageLabel(stage.label)}{#if stage.total != null}: {progressCount(stage.unit, stage.done ?? 0, stage.total)}{/if}
+          <li>{stage.key ? stageHeading(stage.key, stage.params) : stageLabel(stage.label)}{#if stage.total != null}: {progressCount(stage.unit, stage.done ?? 0, stage.total)}{/if}
             {#if stage.state === 'processed'} · {t('Processed')}{:else if stage.state === 'reused'} · {t('Reused')}{/if}
           </li>
         {/each}

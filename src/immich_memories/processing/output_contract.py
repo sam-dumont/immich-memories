@@ -17,6 +17,7 @@ from pathlib import Path
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 from immich_memories.processing.ffmpeg_threads import with_cpu_threads
+from immich_memories.progress_text import Stage, coded, stage_text
 from immich_memories.tracking.timed import timed
 
 logger = logging.getLogger(__name__)
@@ -284,8 +285,8 @@ def _progress_values(progress_file: Path) -> dict[str, str]:
 def _report_decode_progress(progress_file: Path, duration: float, check: DecodeCheck) -> None:
     raw = _progress_values(progress_file).get("out_time_us", "")
     decoded = int(raw) / 1_000_000 if raw.isdecimal() else 0.0
-    message = f"Checking the finished film: {_clock(decoded)} of {_clock(duration)} decoded"
-    logger.info(message)
+    message = coded(Stage.RENDER_CHECK_DECODED, done=_clock(decoded), total=_clock(duration))
+    logger.info(stage_text(message))
     if check.progress is not None:
         check.progress(message)
 

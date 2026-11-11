@@ -38,6 +38,7 @@ from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
+from immich_memories.progress_text import stage_text
 from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.timed import timed
 from immich_memories.update_check import log_daily_update_notice
@@ -601,6 +602,7 @@ def run_pipeline_and_generate(
     progress.reset(task, total=None)
 
     def gen_progress(phase: str, frac: float, msg: str) -> None:
+        msg = stage_text(msg)
         phases.heartbeat.activity(msg)
         from immich_memories.tracking.timing import active
 

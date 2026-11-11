@@ -25,6 +25,7 @@ from immich_memories.free_text.preparation import (
     warning_line,
     window_of,
 )
+from immich_memories.progress_text import heading
 from immich_memories.tracking.run_tracker import RunTracker
 from immich_memories.tracking.span_store import SpanStore
 
@@ -349,4 +350,5 @@ def test_the_terminal_gets_a_few_lines_per_stage_not_one_per_picture(
     assert counted[0] == "Preparing captions: 1/20 pictures"
     assert counted[-1] == "Preparing captions: 20/20 pictures"
     assert len(counted) <= 5
-    assert sum(message.startswith("Preparing captions:") for message in reports) == 20
+    # The watcher hears every count, as the pass's key, for the page to word.
+    assert sum(heading(message)[0] == "captions" for message in reports) == 20

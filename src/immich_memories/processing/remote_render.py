@@ -33,6 +33,7 @@ from immich_memories.processing.remote_render_budget import (
     render_budget_seconds,
 )
 from immich_memories.processing.remote_render_plan import build_render_request
+from immich_memories.progress_text import Stage, coded
 
 if TYPE_CHECKING:
     from immich_memories.config.models.render import RenderWorkerConfig
@@ -120,7 +121,7 @@ class RemoteRenderClient:
         # A received film that is returned, or that fails its check, stays on disk.
         keep_staged = False
         try:
-            progress("worker_connect", 0.0, "Checking the render worker")
+            progress("worker_connect", 0.0, coded(Stage.RENDER_WORKER_CHECK))
             self.health()
             request = build_render_request(params)
             deadline = time.monotonic() + _wait_budget(request, self.settings.timeout_seconds)
@@ -133,7 +134,7 @@ class RemoteRenderClient:
             windows = status.get("music_mute_windows")
             output_path.parent.mkdir(parents=True, exist_ok=True)
             digest, expected_digest = self._download(status["job_id"], staged, deadline, progress)
-            progress("worker_check", 0.0, "Checking the downloaded film")
+            progress("worker_check", 0.0, coded(Stage.RENDER_WORKER_FILM_CHECK))
             if expected_digest and expected_digest != digest:
                 raise GenerationError("Render worker output does not match its digest")
             try:
@@ -199,7 +200,7 @@ class RemoteRenderClient:
             phase if phase in {"download", "extract", "assembly", "check", "done"} else "assembly"
         )
         if status["state"] == "queued":
-            progress("worker_queue", 0.0, "Waiting for the render worker")
+            progress("worker_queue", 0.0, coded(Stage.RENDER_WORKER_QUEUE))
         else:
             progress(f"worker_{phase}", max(0, min(1, float(status.get("progress", 0)))), message)
         return phase, status.get("progress"), message
@@ -211,7 +212,7 @@ class RemoteRenderClient:
 
         Returns the SHA-256 of what was written and the one the worker sent with it.
         """
-        progress("worker_download", 0.0, "Downloading the finished film")
+        progress("worker_download", 0.0, coded(Stage.RENDER_WORKER_DOWNLOAD))
         digest = hashlib.sha256()
         with self._http.stream(
             "GET",
@@ -233,8 +234,9 @@ class RemoteRenderClient:
                     progress(
                         "worker_download" if total > 0 else "worker_transfer",
                         min(1.0, received / total) if total > 0 else 0.0,
-                        f"Downloading the finished film: {received}"
-                        + (f"/{total} bytes" if total > 0 else " bytes received"),
+                        coded(Stage.RENDER_WORKER_BYTES, done=received, total=total)
+                        if total > 0
+                        else coded(Stage.RENDER_WORKER_BYTES_OPEN, done=received),
                     )
         return digest.hexdigest(), announced
 

@@ -1457,6 +1457,11 @@
             "title": "History",
             "type": "array"
           },
+          "key": {
+            "default": "",
+            "title": "Key",
+            "type": "string"
+          },
           "label": {
             "default": "",
             "title": "Label",
@@ -1472,6 +1477,21 @@
               }
             ],
             "title": "Last Completed At"
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "default": {},
+            "title": "Params",
+            "type": "object"
           },
           "pass_id": {
             "default": 0,
@@ -1578,9 +1598,29 @@
             ],
             "title": "Done"
           },
+          "key": {
+            "default": "",
+            "title": "Key",
+            "type": "string"
+          },
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "default": {},
+            "title": "Params",
+            "type": "object"
           },
           "pass_id": {
             "default": 0,

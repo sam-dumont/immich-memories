@@ -1484,8 +1484,10 @@ def test_cleanup_leaves_a_clip_outside_the_scratch_dir_alone(tmp_path):
     assert outside.exists()
 
 
-def test_music_progress_names_the_candidate_without_applying_a_render_offset(tmp_path, monkeypatch):
+def test_music_progress_reads_as_music_without_applying_a_render_offset(tmp_path, monkeypatch):
+    """A backend's own status ("Generating") is not translatable: the stage says what it is."""
     from immich_memories.generate_music import auto_generate_music
+    from immich_memories.progress_text import stage_text
 
     seen = []
 
@@ -1500,7 +1502,9 @@ def test_music_progress_names_the_candidate_without_applying_a_render_offset(tmp
         Config(), [], tmp_path, None, lambda *event: seen.append(event), transition_overlap=0.0
     )
 
-    assert ("music", 0.4, "Music candidate 2: Generating") in seen
+    assert [(phase, share, stage_text(text)) for phase, share, text in seen] == [
+        ("music", 0.4, "Generating music")
+    ]
 
 
 def test_playback_check_is_announced_and_timed_before_the_film_is_ready(tmp_path):
@@ -1508,6 +1512,7 @@ def test_playback_check_is_announced_and_timed_before_the_film_is_ready(tmp_path
 
     from immich_memories.generate import PreparedGeneration
     from immich_memories.processing.output_contract import DecodeCheck
+    from immich_memories.progress_text import stage_text
     from immich_memories.tracking.timing import collecting
     from tests.test_output_contract import _h264_plan
 
@@ -1547,7 +1552,7 @@ def test_playback_check_is_announced_and_timed_before_the_film_is_ready(tmp_path
 
     with collecting() as collected:
         probe = prepared.publish(DecodeCheck(progress=report))
-    assert events[0] == "Checking the finished film"
+    assert stage_text(events[0]) == "Checking the finished film"
     assert probe.decoded_frames > 0 and final.exists()
     assert collected.spans[-1].name == "render.playback_check"
     assert collected.spans[-1].duration > 0

@@ -113,6 +113,7 @@ from immich_memories.analysis.structure.unvouched_filler import (
 from immich_memories.config.tiers import nas_draft_config
 from immich_memories.photos.burst_dedup import BurstDeduplicator
 from immich_memories.processing.editorial_timing import bind_editorial_timeline
+from immich_memories.progress_text import Stage
 from immich_memories.security import write_secret_file
 from immich_memories.tracking.timed import timed
 
@@ -440,7 +441,7 @@ def _select(
         "after_funded_acquisition": len(run.carriers),
         "before_shareability": len(run.carriers),
     }
-    announce_count(len(run.carriers), "going into the family-viewing check")
+    announce_count(len(run.carriers), Stage.CUT_COUNT_FAMILY_CHECK)
     share_log = apply_audience_gate(
         run,
         gate,
@@ -495,7 +496,7 @@ def _select(
         requested_seconds=source.case.target_seconds,
     )
     run.selection_stages["after_final_duplicate_review"] = len(run.carriers)
-    announce_count(len(run.carriers), "after the duplicate review")
+    announce_count(len(run.carriers), Stage.CUT_COUNT_DUPLICATES)
     demote_edited_exports(
         run,
         ports,

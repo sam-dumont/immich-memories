@@ -32,6 +32,7 @@ from immich_memories.operations.cut_progress import (
     recent_pictures_of,
 )
 from immich_memories.operations.run_index import attempt_dir_for_run, run_id_for_attempt
+from immich_memories.progress_text import Stage, heading, words
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.phase_forecast import forecast_at
 from immich_memories.web.brief import CutBrief
@@ -168,6 +169,10 @@ def _preparing_progress(job: Job) -> JobProgress | None:
         return None
     return JobProgress(
         label=str(message),
+        **_record_heading(record),
+        done=record.get("items_done"),
+        total=record.get("items_total"),
+        unit="pictures" if record.get("items_total") else "",
         phase=str(record.get("phase") or ""),
         fraction=record.get("fraction"),
         remaining_seconds=record.get("remaining_seconds"),
@@ -184,7 +189,7 @@ def _preparing_progress(job: Job) -> JobProgress | None:
 def _cut_progress(config: Config, job: Job, lease_ttl: float = 0.0) -> JobProgress:
     record = read_latest_attempt(_cut_root(config, job.id), lease_ttl=lease_ttl)
     if record is None:
-        return _preparing_progress(job) or JobProgress(label="Preparing the pool")
+        return _preparing_progress(job) or _fallback(Stage.JOB_POOL)
     live = live_progress_of(record) or StageUpdate.from_record(record.get("progress"))
     if live is None:
         return JobProgress(
@@ -195,6 +200,8 @@ def _cut_progress(config: Config, job: Job, lease_ttl: float = 0.0) -> JobProgre
     forecast = forecast_at(live.forecast)
     return JobProgress(
         label=str(record.get("stage") or ""),
+        key=live.catalogue_key,
+        params=dict(live.params),
         stage_name=live.label,
         history=record.get("stage_history", []),
         forecast=forecast,
@@ -219,9 +226,12 @@ def _cut_progress(config: Config, job: Job, lease_ttl: float = 0.0) -> JobProgre
 
 def _render_progress(job: Job) -> JobProgress:
     record = _progress_file_record(job)
+    if not record.get("message"):
+        return _fallback(Stage.JOB_RENDER)
     forecast = forecast_at(record.get("forecast"))
     return JobProgress(
-        label=str(record.get("message") or "Preparing the render"),
+        label=str(record["message"]),
+        **_record_heading(record),
         history=record.get("stage_history", []),
         forecast=forecast,
         phase=str(record.get("phase") or ""),
@@ -237,6 +247,27 @@ def _render_progress(job: Job) -> JobProgress:
         updated_at=record.get("updated_at"),
         last_completed_at=record.get("last_completed_at"),
     )
+
+
+def _fallback(stage: Stage) -> JobProgress:
+    """What a job shows before its command has said anything."""
+    return JobProgress(label=words(stage), key=stage.value)
+
+
+def _record_heading(record: dict[str, Any]) -> dict[str, Any]:
+    """A progress file's heading: the key and params it kept, else the ones its message codes."""
+    key = str(record.get("key") or "")
+    params = record.get("params")
+    if not key:
+        key, params = heading(str(record.get("message") or ""))
+    return {"key": key, "params": params if isinstance(params, dict) else {}}
+
+
+def _model_heading(label: str) -> dict[str, Any]:
+    """The models command prints each download's own name; its detectors under an English one."""
+    if label == "detector snapshots":
+        return {"key": Stage.JOB_DETECTORS.value}
+    return {"key": Stage.JOB_MODEL.value, "params": {"name": label}}
 
 
 def job_view(config: Config, job: Job, *, lease_ttl: float = 0.0) -> JobView:
@@ -255,6 +286,7 @@ def job_view(config: Config, job: Job, *, lease_ttl: float = 0.0) -> JobView:
             done = int(index) - 1
             progress = JobProgress(
                 label=label,
+                **_model_heading(label),
                 done=done,
                 total=int(total),
                 fraction=done / int(total),
@@ -262,11 +294,11 @@ def job_view(config: Config, job: Job, *, lease_ttl: float = 0.0) -> JobView:
                 stage_fraction=done / int(total),
             )
         else:
-            progress = JobProgress(label="Downloading pinned models")
+            progress = _fallback(Stage.JOB_MODELS)
     elif job.kind == "ask":
-        progress = JobProgress(label="Reading your sentence")
+        progress = _fallback(Stage.JOB_SENTENCE)
     else:
-        progress = JobProgress(label="Reading the library")
+        progress = _fallback(Stage.JOB_LIBRARY)
     shown = str(job.meta.get("shown") or shlex.join(job.argv))
     return JobView(**job.model_dump(), command=shown, progress=progress)
 
