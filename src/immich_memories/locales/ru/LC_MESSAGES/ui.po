@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-10 22:01+0100\n"
+"POT-Creation-Date: 2026-11-11 01:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -91,7 +91,7 @@ msgstr "Добавить связь"
 msgid "Add date overlay"
 msgstr "Показывать дату"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "Добавить человека, которого нет в Immich"
 
@@ -389,6 +389,11 @@ msgstr "Предупреждения конфигурации"
 msgid "Configuration"
 msgstr "Конфигурация"
 
+#: web/lib/people/FamilyTree.svelte:106
+#, python-brace-format
+msgid "Confirm that {name} is {relationship} {other}"
+msgstr "Подтвердить: {name} — {relationship} {other}"
+
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
 msgid "Connected as: {name}"
@@ -423,7 +428,11 @@ msgstr "Не удалось проверить обновления."
 msgid "Could not check for updates: {reason}"
 msgstr "Не удалось проверить обновления: {reason}"
 
-#: web/routes/settings/people/+page.svelte:131
+#: web/lib/people/FamilyTree.svelte:65
+msgid "Could not draw the family tree."
+msgstr "Не удалось нарисовать семейное древо."
+
+#: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "Не удалось загрузить людей."
 
@@ -431,7 +440,7 @@ msgstr "Не удалось загрузить людей."
 msgid "Crossfade"
 msgstr "Наплыв"
 
-#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
+#: web/routes/settings/people/+page.svelte:155 web/routes/settings/people/+page.svelte:156
 msgid "Curation"
 msgstr "Проверьте записи людей"
 
@@ -528,7 +537,19 @@ msgstr "Скачать модели"
 msgid "Download report"
 msgstr "Скачать отчёт"
 
-#: web/routes/settings/people/+page.svelte:158
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Draw the family tree"
+msgstr "Нарисовать семейное древо"
+
+#: web/lib/people/FamilyTree.svelte:71
+msgid ""
+"Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
+"it. Click someone to open their card."
+msgstr ""
+"Нарисовано по подтверждённым вами связям. Пунктирная линия — это предложение: галочка его "
+"подтверждает. Нажмите на человека, чтобы открыть его карточку."
+
+#: web/routes/settings/people/+page.svelte:175
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -617,7 +638,7 @@ msgstr "Экспериментально"
 msgid "Expression"
 msgstr "Выражение"
 
-#: web/routes/settings/people/+page.svelte:76
+#: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -636,6 +657,11 @@ msgstr "Ошибка"
 msgid "Family"
 msgstr "Семья"
 
+#: web/lib/people/FamilyTree.svelte:58 web/lib/people/FamilyTree.svelte:60
+#: web/lib/people/FamilyTree.svelte:74
+msgid "Family tree"
+msgstr "Семейное древо"
+
 #: web/lib/labels.ts:99
 msgid "Fetching Live Photo clip previews"
 msgstr "Получение превью клипов Live Photo"
@@ -652,7 +678,7 @@ msgstr "Подходит меньше 12 изображений: фильм бу
 msgid "Films that may use it"
 msgstr "Фильмы, которые могут его использовать"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:181
 msgid "Find a name"
 msgstr "Найти имя"
 
@@ -672,7 +698,7 @@ msgstr "Формат"
 msgid "From"
 msgstr "С"
 
-#: web/routes/settings/people/+page.svelte:166
+#: web/routes/settings/people/+page.svelte:183
 msgid "Full name"
 msgstr "Полное имя"
 
@@ -696,6 +722,10 @@ msgstr "Ограничено: {reasons}."
 #: web/routes/create/+page.svelte:334
 msgid "Hemisphere"
 msgstr "Полушарие"
+
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Hide the family tree"
+msgstr "Скрыть семейное древо"
 
 #: web/lib/RenderPanel.svelte:229
 msgid "High"
@@ -742,7 +772,7 @@ msgstr "Аккаунты Immich для чтения (только основно
 msgid "Immich delivery: {value}"
 msgstr "Передача в Immich: {value}"
 
-#: web/routes/settings/people/+page.svelte:80
+#: web/routes/settings/people/+page.svelte:94
 msgid ""
 "Immich no longer has the face this person was linked to, and more than one person, or nobody,"
 " carries the name there now. Give exactly one person this name in Immich: this page follows "
@@ -801,7 +831,7 @@ msgstr "Обработка не завершилась."
 msgid "Just us"
 msgstr "Только мы"
 
-#: web/routes/settings/people/+page.svelte:149
+#: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "Оставить раздельно"
 
@@ -1016,6 +1046,14 @@ msgstr ""
 msgid "No child output was retained for this run."
 msgstr "Для этого запуска не сохранён журнал обработки."
 
+#: web/lib/people/FamilyTree.svelte:69
+msgid ""
+"No family links confirmed yet. Give someone a parent, a partner or a sibling below and the "
+"tree draws itself."
+msgstr ""
+"Подтверждённых семейных связей пока нет. Укажите ниже для кого-нибудь родителя, партнёра или "
+"брата или сестру, и древо нарисуется само."
+
 #: web/lib/AskPanel.svelte:175
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
@@ -1092,7 +1130,7 @@ msgstr "Нет, это не так"
 msgid "Nobody in this library"
 msgstr "В этой библиотеке никого нет"
 
-#: web/routes/settings/people/+page.svelte:173
+#: web/routes/settings/people/+page.svelte:190
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1151,7 +1189,7 @@ msgstr "В этот день"
 msgid "On a date"
 msgstr "В определённую дату"
 
-#: web/routes/settings/people/+page.svelte:78
+#: web/routes/settings/people/+page.svelte:92
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -1171,7 +1209,7 @@ msgstr "Только с (необязательно)"
 msgid "Open"
 msgstr "Открыть"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:161
 msgid "Open in Immich"
 msgstr "Открыть в Immich"
 
@@ -1183,7 +1221,7 @@ msgstr "Открыть запуск"
 msgid "Open the film run"
 msgstr "Открыть запуск фильма"
 
-#: web/routes/settings/people/+page.svelte:146
+#: web/routes/settings/people/+page.svelte:161
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "Открыть {name} в Immich"
@@ -1231,8 +1269,8 @@ msgid "Pending"
 msgstr "Ожидание"
 
 #: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
-#: web/routes/settings/people/+page.svelte:121
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:130
+#: web/routes/settings/people/+page.svelte:136
 msgid "People"
 msgstr "Люди"
 
@@ -1453,11 +1491,11 @@ msgstr "Заменило изображение, в котором модель 
 msgid "Report preview"
 msgstr "Предпросмотр отчёта"
 
-#: web/routes/settings/people/+page.svelte:174
+#: web/routes/settings/people/+page.svelte:191
 msgid "Rescan now"
 msgstr "Просканировать сейчас"
 
-#: web/routes/settings/people/+page.svelte:124
+#: web/routes/settings/people/+page.svelte:139
 msgid "Rescan the library"
 msgstr "Просканировать библиотеку снова"
 
@@ -1549,6 +1587,14 @@ msgstr "Сохранить"
 msgid "Save Config"
 msgstr "Сохранить конфигурацию"
 
+#: web/lib/people/FamilyTree.svelte:118
+msgid "Save as PNG"
+msgstr "Сохранить как PNG"
+
+#: web/lib/people/FamilyTree.svelte:117
+msgid "Save as SVG"
+msgstr "Сохранить как SVG"
+
 #: web/lib/people/GroupsSection.svelte:80
 msgid "Save group"
 msgstr "Сохранить группу"
@@ -1629,7 +1675,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "Задано в config.yaml как {key}"
 
 #: web/routes/+layout.svelte:38 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:135
 msgid "Settings"
 msgstr "Настройки"
 
@@ -1641,7 +1687,7 @@ msgstr "Для публикации"
 msgid "Show"
 msgstr "Показать"
 
-#: web/routes/settings/people/+page.svelte:183
+#: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
 msgstr "Показать ещё"
 
@@ -1848,6 +1894,10 @@ msgstr ""
 "умолчанию. Настройка, заданная любым из первых двух, показана серым: измените её там, где "
 "указано в подписи."
 
+#: web/lib/people/FamilyTree.svelte:120
+msgid "The files are made in this browser. Nothing is uploaded."
+msgstr "Файлы создаются в этом браузере. Ничего не загружается."
+
 #: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:157
 #: web/routes/runs/[run_id]/+page.svelte:153
 msgid "The film"
@@ -1894,7 +1944,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "Модель, если она настроена"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "Реестр людей: кто близок, какие у них роли и как они связаны."
 
@@ -2042,7 +2092,7 @@ msgstr "Не удалось определить поездки."
 msgid "Trips"
 msgstr "Поездки"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
 msgstr "Повторить"
 
@@ -2307,6 +2357,10 @@ msgstr "все вместе"
 msgid "any of them"
 msgstr "любой из них"
 
+#: web/lib/people/FamilyTree.svelte:100
+msgid "birth year?"
+msgstr "год рождения?"
+
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "совпадает с именем аккаунта Immich"
@@ -2327,11 +2381,11 @@ msgstr "связь без названия"
 msgid "starting"
 msgstr "запуск"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
 msgstr "выгружает его в YAML."
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes the guesses; your answers stay across scans."
 msgstr "записывает предположения; ваши ответы сохраняются между сканированиями."
 
@@ -2392,6 +2446,14 @@ msgstr "{done} из {total} клипов"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{done} из {total} снимков"
+
+#: web/lib/people/FamilyTree.svelte:72
+#, python-brace-format
+msgid "{n} person with no family link is left out."
+msgid_plural "{n} people with no family link are left out."
+msgstr[0] "{n} человек без семейной связи не показан."
+msgstr[1] "{n} человека без семейной связи не показаны."
+msgstr[2] "{n} человек без семейной связи не показаны."
 
 #: web/lib/AskPanel.svelte:162
 #, python-brace-format

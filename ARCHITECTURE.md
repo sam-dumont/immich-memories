@@ -1191,7 +1191,8 @@ src/immich_memories/
 │   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
 │   ├── telemetry.py            # /api/v1/telemetry: is tracing on; the client's spans forwarded to the collector, scrubbed
 │   ├── updates.py              # /api/v1/updates (the button) and /updates/daily (the banner)
-│   ├── roster.py               # /roster: the store's people registry (roles, relationships, alias link/unlink) for People
+│   ├── roster.py               # /roster: the store's people registry (roles, relationships, alias link/unlink) for People;
+│   │                           #   /roster/tree, the family tree the page draws in the browser
 │   ├── people_accounts.py      # /roster/owners (who owns each account) and /accounts/{name}/people (pick a person to link)
 │   ├── settings.py             # /settings: every setting + its source, saved to the database; /caches
 │   ├── setting_inputs.py       # What each setting accepts (choices, bounds, secret) read from the config schema
@@ -1323,6 +1324,10 @@ src/immich_memories/
 │   ├── kinship.py              # suggest_relationships(): what the confirmed tree implies (grandparents,
 │   │                           # aunts/uncles, cousins, in-laws, shared-parent siblings), with the chain;
 │   │                           # pure, never stored until somebody accepts one (#2795)
+│   ├── family_tree.py          # family_tree(): the People page's tree from the confirmed close ties
+│   │                           # (rows, couples, families, parentless sibling groups, dotted suggestions,
+│   │                           # the count left out); pure, deterministic (#2797)
+│   ├── family_tree_layout.py   # place(): x along each row by down/up sweeps and pooled adjacent violators
 │   └── editor.py               # The companion editor's model: the registry as rows, and back; one row per
 │                               # pair (a detected link hides once the pair has a real relationship), plus
 │                               # kinship's suggestions, computed at read time so the page refreshes them live

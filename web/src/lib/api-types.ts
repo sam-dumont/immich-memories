@@ -802,6 +802,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roster/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tree
+         * @description The family tree the confirmed relationships draw, laid out row by row.
+         *
+         *     Parents, children, partners and siblings draw it; everyone else is counted in `left_out`.
+         *     The page draws it from this, in the browser; nothing about it leaves the app's server.
+         */
+        get: operations["tree_api_v1_roster_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roster/{person_id}": {
         parameters: {
             query?: never;
@@ -1862,6 +1885,22 @@ export interface components {
              * @enum {string}
              */
             level: "anyone" | "family" | "just-us";
+        };
+        /** FamilyTree */
+        FamilyTree: {
+            /** Couples */
+            couples: [
+                string,
+                string
+            ][];
+            /** Families */
+            families: components["schemas"]["TreeFamily"][];
+            /** Left Out */
+            left_out: number;
+            /** People */
+            people: components["schemas"]["TreePerson"][];
+            /** Suggestions */
+            suggestions: components["schemas"]["TreeSuggestion"][];
         };
         /** FlagAnswer */
         FlagAnswer: {
@@ -2959,6 +2998,44 @@ export interface components {
             head: string;
             /** Lines */
             lines: string[];
+        };
+        /** TreeChild */
+        TreeChild: {
+            /** Person Id */
+            person_id: string;
+            /** Through Sibling */
+            through_sibling: boolean;
+        };
+        /** TreeFamily */
+        TreeFamily: {
+            /** Children */
+            children: components["schemas"]["TreeChild"][];
+            /** Parents */
+            parents: string[];
+        };
+        /** TreePerson */
+        TreePerson: {
+            /** Birth Year */
+            birth_year: number | null;
+            /** Generation */
+            generation: number;
+            /** Name */
+            name: string;
+            /** Owner */
+            owner: boolean;
+            /** Person Id */
+            person_id: string;
+            /** X */
+            x: number;
+        };
+        /** TreeSuggestion */
+        TreeSuggestion: {
+            /** Kind */
+            kind: string;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
         };
         /** TripChoice */
         TripChoice: {
@@ -4233,6 +4310,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    tree_api_v1_roster_tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyTree"];
+                };
             };
         };
     };

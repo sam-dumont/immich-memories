@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-10 22:01+0100\n"
+"POT-Creation-Date: 2026-11-11 01:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -88,7 +88,7 @@ msgstr "関係を追加"
 msgid "Add date overlay"
 msgstr "日付を表示"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "Immich にいない人物を追加"
 
@@ -380,6 +380,11 @@ msgstr "設定の警告"
 msgid "Configuration"
 msgstr "設定"
 
+#: web/lib/people/FamilyTree.svelte:106
+#, python-brace-format
+msgid "Confirm that {name} is {relationship} {other}"
+msgstr "{name} は {other} の {relationship} であることを確認"
+
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
 msgid "Connected as: {name}"
@@ -414,7 +419,11 @@ msgstr "アップデートを確認できませんでした。"
 msgid "Could not check for updates: {reason}"
 msgstr "アップデートを確認できませんでした: {reason}"
 
-#: web/routes/settings/people/+page.svelte:131
+#: web/lib/people/FamilyTree.svelte:65
+msgid "Could not draw the family tree."
+msgstr "家系図を描けませんでした。"
+
+#: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "人物を読み込めませんでした。"
 
@@ -422,7 +431,7 @@ msgstr "人物を読み込めませんでした。"
 msgid "Crossfade"
 msgstr "クロスフェード"
 
-#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
+#: web/routes/settings/people/+page.svelte:155 web/routes/settings/people/+page.svelte:156
 msgid "Curation"
 msgstr "人物情報の確認"
 
@@ -519,7 +528,17 @@ msgstr "モデルをダウンロード"
 msgid "Download report"
 msgstr "レポートをダウンロード"
 
-#: web/routes/settings/people/+page.svelte:158
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Draw the family tree"
+msgstr "家系図を描く"
+
+#: web/lib/people/FamilyTree.svelte:71
+msgid ""
+"Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
+"it. Click someone to open their card."
+msgstr "確認した関係から描かれています。点線は提案です。チェックで確認できます。人物をクリックするとカードが開きます。"
+
+#: web/routes/settings/people/+page.svelte:175
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -597,7 +616,7 @@ msgstr "実験的"
 msgid "Expression"
 msgstr "式"
 
-#: web/routes/settings/people/+page.svelte:76
+#: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -612,6 +631,11 @@ msgstr "失敗"
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "家族"
+
+#: web/lib/people/FamilyTree.svelte:58 web/lib/people/FamilyTree.svelte:60
+#: web/lib/people/FamilyTree.svelte:74
+msgid "Family tree"
+msgstr "家系図"
 
 #: web/lib/labels.ts:99
 msgid "Fetching Live Photo clip previews"
@@ -629,7 +653,7 @@ msgstr "条件に合う素材が12件未満のため、短いムービーにな�
 msgid "Films that may use it"
 msgstr "この素材を使えるムービー"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:181
 msgid "Find a name"
 msgstr "名前を検索"
 
@@ -649,7 +673,7 @@ msgstr "形式"
 msgid "From"
 msgstr "開始日"
 
-#: web/routes/settings/people/+page.svelte:166
+#: web/routes/settings/people/+page.svelte:183
 msgid "Full name"
 msgstr "氏名"
 
@@ -673,6 +697,10 @@ msgstr "制限あり：{reasons}。"
 #: web/routes/create/+page.svelte:334
 msgid "Hemisphere"
 msgstr "半球"
+
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Hide the family tree"
+msgstr "家系図を隠す"
 
 #: web/lib/RenderPanel.svelte:229
 msgid "High"
@@ -719,7 +747,7 @@ msgstr "読み込むImmichアカウント(選択がなければプライマリ�
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
 
-#: web/routes/settings/people/+page.svelte:80
+#: web/routes/settings/people/+page.svelte:94
 msgid ""
 "Immich no longer has the face this person was linked to, and more than one person, or nobody,"
 " carries the name there now. Give exactly one person this name in Immich: this page follows "
@@ -777,7 +805,7 @@ msgstr "完了しませんでした。"
 msgid "Just us"
 msgstr "私たちだけ"
 
-#: web/routes/settings/people/+page.svelte:149
+#: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "別々のままにする"
 
@@ -986,6 +1014,12 @@ msgstr "まだ記録済みの日がありません。immich-memories discover-da
 msgid "No child output was retained for this run."
 msgstr "この実行の処理ログは保存されていません。"
 
+#: web/lib/people/FamilyTree.svelte:69
+msgid ""
+"No family links confirmed yet. Give someone a parent, a partner or a sibling below and the "
+"tree draws itself."
+msgstr "確認済みの家族関係はまだありません。下で誰かに親、パートナー、きょうだいを設定すると、家系図が自動で描かれます。"
+
 #: web/lib/AskPanel.svelte:175
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
@@ -1058,7 +1092,7 @@ msgstr "いいえ、違います"
 msgid "Nobody in this library"
 msgstr "このライブラリには誰もいません"
 
-#: web/routes/settings/people/+page.svelte:173
+#: web/routes/settings/people/+page.svelte:190
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1116,7 +1150,7 @@ msgstr "この日"
 msgid "On a date"
 msgstr "特定の日"
 
-#: web/routes/settings/people/+page.svelte:78
+#: web/routes/settings/people/+page.svelte:92
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -1134,7 +1168,7 @@ msgstr "対象を限定（任意）"
 msgid "Open"
 msgstr "開く"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:161
 msgid "Open in Immich"
 msgstr "Immichで開く"
 
@@ -1146,7 +1180,7 @@ msgstr "実行を開く"
 msgid "Open the film run"
 msgstr "ムービーの実行履歴を開く"
 
-#: web/routes/settings/people/+page.svelte:146
+#: web/routes/settings/people/+page.svelte:161
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "{name}をImmichで開く"
@@ -1194,8 +1228,8 @@ msgid "Pending"
 msgstr "待機中"
 
 #: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
-#: web/routes/settings/people/+page.svelte:121
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:130
+#: web/routes/settings/people/+page.svelte:136
 msgid "People"
 msgstr "人物"
 
@@ -1416,11 +1450,11 @@ msgstr "モデルが疑問を持った素材を置き換えました。"
 msgid "Report preview"
 msgstr "レポートのプレビュー"
 
-#: web/routes/settings/people/+page.svelte:174
+#: web/routes/settings/people/+page.svelte:191
 msgid "Rescan now"
 msgstr "今すぐ再スキャン"
 
-#: web/routes/settings/people/+page.svelte:124
+#: web/routes/settings/people/+page.svelte:139
 msgid "Rescan the library"
 msgstr "ライブラリを再スキャン"
 
@@ -1512,6 +1546,14 @@ msgstr "保存"
 msgid "Save Config"
 msgstr "設定を保存"
 
+#: web/lib/people/FamilyTree.svelte:118
+msgid "Save as PNG"
+msgstr "PNG で保存"
+
+#: web/lib/people/FamilyTree.svelte:117
+msgid "Save as SVG"
+msgstr "SVG で保存"
+
 #: web/lib/people/GroupsSection.svelte:80
 msgid "Save group"
 msgstr "グループを保存"
@@ -1590,7 +1632,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "config.yaml の {key} で設定"
 
 #: web/routes/+layout.svelte:38 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:135
 msgid "Settings"
 msgstr "設定"
 
@@ -1602,7 +1644,7 @@ msgstr "共有可能"
 msgid "Show"
 msgstr "表示"
 
-#: web/routes/settings/people/+page.svelte:183
+#: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
 msgstr "もっと見る"
 
@@ -1802,6 +1844,10 @@ msgstr ""
 "環境変数が最優先され、次に "
 "config.yaml、次にここでの保存内容、最後に既定値が使われます。先の2つのいずれかで設定されている項目はグレー表示になります。ラベルに示された場所で変更してください。"
 
+#: web/lib/people/FamilyTree.svelte:120
+msgid "The files are made in this browser. Nothing is uploaded."
+msgstr "ファイルはこのブラウザ内で作成されます。何もアップロードされません。"
+
 #: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:157
 #: web/routes/runs/[run_id]/+page.svelte:153
 msgid "The film"
@@ -1845,7 +1891,7 @@ msgstr "モデルが、準備済みのライブラリをもとにリクエスト
 msgid "The model, when one is configured"
 msgstr "設定されている場合はモデル"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "人物レジストリ: 誰が身近か、その役割、互いの関係。"
 
@@ -1989,7 +2035,7 @@ msgstr "旅行の検出に失敗しました。"
 msgid "Trips"
 msgstr "旅行"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
 msgstr "再試行"
 
@@ -2248,6 +2294,10 @@ msgstr "全員一緒"
 msgid "any of them"
 msgstr "いずれか"
 
+#: web/lib/people/FamilyTree.svelte:100
+msgid "birth year?"
+msgstr "生年不明"
+
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "Immichのアカウント名と一致"
@@ -2268,11 +2318,11 @@ msgstr "関係の名前なし"
 msgid "starting"
 msgstr "開始中"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
 msgstr "がYAMLとして書き出します。"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes the guesses; your answers stay across scans."
 msgstr "が推測を書き込みます。あなたの回答はスキャンをまたいで残ります。"
 
@@ -2333,6 +2383,12 @@ msgstr "{total}クリップ中{done}クリップ"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{total}枚中{done}枚"
+
+#: web/lib/people/FamilyTree.svelte:72
+#, python-brace-format
+msgid "{n} person with no family link is left out."
+msgid_plural "{n} people with no family link are left out."
+msgstr[0] "家族関係のない {n} 人は含まれていません。"
 
 #: web/lib/AskPanel.svelte:162
 #, python-brace-format

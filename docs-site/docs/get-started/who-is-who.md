@@ -59,6 +59,18 @@ The scan reads metadata, not pictures. Your confirmations survive a rescan. Its 
 
 A named person the scan leaves out has fewer pictures than its floor: a tenth of your most-pictured person's count, between 5 and 25. [How the floor works](../make/cli/people.md#scan-and-inspect).
 
+## The family tree
+
+Press **Draw the family tree** on the People page and it draws the household from the relationships you confirmed: one row per generation, partners side by side, children under their parents. Siblings whose parents aren't in the registry hang from a dashed knot. Your own circle is ringed. Friends, godparents and anyone else with no parent, child, partner or sibling confirmed are left out, and the tree says how many ("2 people with no family link are left out").
+
+It's also a quick check of the people graph. Someone floating with no line above them has no parent recorded, a missing birth year reads **birth year?**, and a face Immich can't find shows initials.
+
+A dotted line is a suggestion, the same ones the cards offer. Its tick records it on both people; nothing on the tree counts until you do. Click anyone to jump to their card.
+
+**Save as SVG** and **Save as PNG** make the file in your browser, with the confirmed relationships and the faces inside it. Nothing is uploaded anywhere.
+
+<ThemedScreenshot name="people-family-tree" alt="The family tree: two grandparents, their two children in the middle row with a partner and that partner's sibling under a dashed knot, three grandchildren, a dotted suggestion with a tick, and a count of two people left out" />
+
 ## What changes
 
 Close family gets a place in the film when the period holds enough pictures of them. Their presence can make a busy day a bigger story, and an ordinary week worth keeping. A person film also uses the relationships you confirmed.

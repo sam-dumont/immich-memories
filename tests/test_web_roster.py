@@ -252,3 +252,44 @@ def test_the_roster_suggests_what_the_tree_implies_and_accepts_them_all(tmp_path
         "named"
     ]
     assert client.post("/api/v1/roster/nobody/suggestions/accept").status_code == 404
+
+
+def test_the_family_tree_is_drawn_from_the_relationships_the_page_confirmed(tmp_path):
+    client = api_client(config_in(tmp_path))
+    ids = {
+        name: client.post("/api/v1/roster", json={"name": name}).json()["person_id"]
+        for name in ("Ana", "Luc", "Eli", "Zoe", "Max")
+    }
+    for who, kind, whom in (
+        ("Ana", "partner-of", "Luc"),
+        ("Ana", "parent-of", "Eli"),
+        ("Luc", "parent-of", "Eli"),
+        ("Ana", "parent-of", "Zoe"),
+        ("Max", "friend-of", "Eli"),
+    ):
+        client.post(
+            f"/api/v1/roster/{ids[who]}/relationships", json={"kind": kind, "target_id": ids[whom]}
+        )
+
+    tree = client.get("/api/v1/roster/tree").json()
+
+    rows = {person["name"]: person["generation"] for person in tree["people"]}
+    assert rows == {"Ana": 0, "Luc": 0, "Eli": 1, "Zoe": 1}
+    assert tree["left_out"] == 1, "a friend is no family link"
+    assert [sorted(couple) for couple in tree["couples"]] == [sorted([ids["Ana"], ids["Luc"]])]
+    assert {
+        (tuple(f["parents"]), c["person_id"]) for f in tree["families"] for c in f["children"]
+    } == {
+        (tuple(sorted([ids["Ana"], ids["Luc"]])), ids["Eli"]),
+        ((ids["Ana"],), ids["Zoe"]),
+    }
+    # Zoe's other parent is only implied: a dotted line to confirm, never part of the tree.
+    assert tree["suggestions"] == [
+        {"source": ids["Luc"], "kind": "parent-of", "target": ids["Zoe"]}
+    ]
+
+
+def test_an_empty_registry_draws_an_empty_family_tree(tmp_path):
+    tree = api_client(config_in(tmp_path)).get("/api/v1/roster/tree").json()
+
+    assert tree == {"people": [], "couples": [], "families": [], "suggestions": [], "left_out": 0}
