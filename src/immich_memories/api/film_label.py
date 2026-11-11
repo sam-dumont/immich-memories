@@ -24,10 +24,12 @@ _NAMED_OCCASIONS = frozenset({"birthday", "visit", "trip", "leg"})
 
 @dataclass(frozen=True)
 class FilmLabel:
-    """A film's Immich description and its tags beyond the provenance tag."""
+    """A film's Immich description and its tags beyond the provenance tag, and the file name
+    Immich shows for it when that is not the name on disk (the film's language, #1965)."""
 
     description: str | None = None
     tags: tuple[str, ...] = ()
+    file_name: str | None = None
 
 
 def _name(value: Any) -> str:

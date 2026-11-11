@@ -215,7 +215,9 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   draft's Basic line so the model writes the summary. A list of places the model repeats is
   said once (`one_place_once`), and the plan records the summary's language as
   `story.thesis_locale`: the Immich label (`operations/film_labelling.py`) uses the summary
-  only when the render is in that language.
+  only when the render is in that language. The file keeps its English name on disk; the
+  name Immich and a web download show is built in the film's language
+  (`operations/shown_film_name.py`).
 - **Notable record**: a picture an episode reading named as a moment worth a place of its own,
   with the reason (`banked_notable_records` in `runtime/period_accounts.py`). Only a story holding one
   can earn an N seat.
