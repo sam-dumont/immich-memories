@@ -552,6 +552,44 @@ class RosterPerson(BaseModel):
     declined: dict[str, list[str]] = {}
 
 
+class TreePerson(BaseModel):
+    person_id: str
+    name: str
+    birth_year: int | None
+    # Rows from the top, and the place along the row in person widths (partners stand 1 apart).
+    generation: int
+    x: float
+    owner: bool
+
+
+class TreeChild(BaseModel):
+    person_id: str
+    # In the family through a sibling, not a recorded parent: the line is drawn dashed.
+    through_sibling: bool
+
+
+class TreeFamily(BaseModel):
+    # Empty for siblings whose parents aren't in the tree.
+    parents: list[str]
+    children: list[TreeChild]
+
+
+class TreeSuggestion(BaseModel):
+    source: str
+    kind: str
+    target: str
+
+
+class FamilyTree(BaseModel):
+    people: list[TreePerson]
+    couples: list[tuple[str, str]]
+    families: list[TreeFamily]
+    # Close ties the tree implies and nobody confirmed, drawn dotted: `source` is `kind` `target`.
+    suggestions: list[TreeSuggestion]
+    # People with no confirmed parent, child, partner or sibling, so not drawn.
+    left_out: int
+
+
 class AccountPerson(BaseModel):
     id: str
     name: str

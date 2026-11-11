@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-10 22:01+0100\n"
+"POT-Creation-Date: 2026-11-11 01:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_PT\n"
@@ -90,7 +90,7 @@ msgstr "Adicionar uma relação"
 msgid "Add date overlay"
 msgstr "Mostrar a data"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "Adicionar alguém que não está no Immich"
 
@@ -388,6 +388,11 @@ msgstr "Avisos da configuração"
 msgid "Configuration"
 msgstr "Configuração"
 
+#: web/lib/people/FamilyTree.svelte:106
+#, python-brace-format
+msgid "Confirm that {name} is {relationship} {other}"
+msgstr "Confirmar que {name} é {relationship} {other}"
+
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
 msgid "Connected as: {name}"
@@ -422,7 +427,11 @@ msgstr "Não foi possível procurar atualizações."
 msgid "Could not check for updates: {reason}"
 msgstr "Não foi possível procurar atualizações: {reason}"
 
-#: web/routes/settings/people/+page.svelte:131
+#: web/lib/people/FamilyTree.svelte:65
+msgid "Could not draw the family tree."
+msgstr "Não foi possível desenhar a árvore genealógica."
+
+#: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "Não foi possível carregar as pessoas."
 
@@ -430,7 +439,7 @@ msgstr "Não foi possível carregar as pessoas."
 msgid "Crossfade"
 msgstr "Fusão"
 
-#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
+#: web/routes/settings/people/+page.svelte:155 web/routes/settings/people/+page.svelte:156
 msgid "Curation"
 msgstr "Pessoas a rever"
 
@@ -527,7 +536,19 @@ msgstr "Transferir modelos"
 msgid "Download report"
 msgstr "Transferir relatório"
 
-#: web/routes/settings/people/+page.svelte:158
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Draw the family tree"
+msgstr "Desenhar a árvore genealógica"
+
+#: web/lib/people/FamilyTree.svelte:71
+msgid ""
+"Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
+"it. Click someone to open their card."
+msgstr ""
+"Desenhada a partir das relações que confirmou. Uma linha pontilhada é uma sugestão: o seu "
+"visto confirma-a. Clique em alguém para abrir o respetivo cartão."
+
+#: web/routes/settings/people/+page.svelte:175
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -617,7 +638,7 @@ msgstr "Experimental"
 msgid "Expression"
 msgstr "Expressão"
 
-#: web/routes/settings/people/+page.svelte:76
+#: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -636,6 +657,11 @@ msgstr "Falhou"
 msgid "Family"
 msgstr "Família"
 
+#: web/lib/people/FamilyTree.svelte:58 web/lib/people/FamilyTree.svelte:60
+#: web/lib/people/FamilyTree.svelte:74
+msgid "Family tree"
+msgstr "Árvore genealógica"
+
 #: web/lib/labels.ts:99
 msgid "Fetching Live Photo clip previews"
 msgstr "A obter pré-visualizações dos clips de Live Photo"
@@ -652,7 +678,7 @@ msgstr "Encaixam menos de 12 imagens: o filme vai ser curto."
 msgid "Films that may use it"
 msgstr "Filmes que podem usá-la"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:181
 msgid "Find a name"
 msgstr "Procurar um nome"
 
@@ -672,7 +698,7 @@ msgstr "Formato"
 msgid "From"
 msgstr "De"
 
-#: web/routes/settings/people/+page.svelte:166
+#: web/routes/settings/people/+page.svelte:183
 msgid "Full name"
 msgstr "Nome completo"
 
@@ -696,6 +722,10 @@ msgstr "Restrita: {reasons}."
 #: web/routes/create/+page.svelte:334
 msgid "Hemisphere"
 msgstr "Hemisfério"
+
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Hide the family tree"
+msgstr "Ocultar a árvore genealógica"
 
 #: web/lib/RenderPanel.svelte:229
 msgid "High"
@@ -742,7 +772,7 @@ msgstr "Contas Immich a ler (apenas a principal quando nenhuma for escolhida)"
 msgid "Immich delivery: {value}"
 msgstr "Envio para o Immich: {value}"
 
-#: web/routes/settings/people/+page.svelte:80
+#: web/routes/settings/people/+page.svelte:94
 msgid ""
 "Immich no longer has the face this person was linked to, and more than one person, or nobody,"
 " carries the name there now. Give exactly one person this name in Immich: this page follows "
@@ -801,7 +831,7 @@ msgstr "Não terminou."
 msgid "Just us"
 msgstr "Só nós"
 
-#: web/routes/settings/people/+page.svelte:149
+#: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "Manter separados"
 
@@ -1016,6 +1046,14 @@ msgstr ""
 msgid "No child output was retained for this run."
 msgstr "Não foi guardado um registo de processamento para esta execução."
 
+#: web/lib/people/FamilyTree.svelte:69
+msgid ""
+"No family links confirmed yet. Give someone a parent, a partner or a sibling below and the "
+"tree draws itself."
+msgstr ""
+"Ainda não há laços familiares confirmados. Atribua abaixo a alguém um pai ou mãe, um "
+"companheiro ou um irmão e a árvore desenha-se sozinha."
+
 #: web/lib/AskPanel.svelte:175
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
@@ -1090,7 +1128,7 @@ msgstr "Não, não são"
 msgid "Nobody in this library"
 msgstr "Ninguém nesta biblioteca"
 
-#: web/routes/settings/people/+page.svelte:173
+#: web/routes/settings/people/+page.svelte:190
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1149,7 +1187,7 @@ msgstr "Neste dia"
 msgid "On a date"
 msgstr "Numa data"
 
-#: web/routes/settings/people/+page.svelte:78
+#: web/routes/settings/people/+page.svelte:92
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -1169,7 +1207,7 @@ msgstr "Apenas com (opcional)"
 msgid "Open"
 msgstr "Abrir"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:161
 msgid "Open in Immich"
 msgstr "Abrir no Immich"
 
@@ -1181,7 +1219,7 @@ msgstr "Abrir execução"
 msgid "Open the film run"
 msgstr "Abrir a execução do filme"
 
-#: web/routes/settings/people/+page.svelte:146
+#: web/routes/settings/people/+page.svelte:161
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "Abrir {name} no Immich"
@@ -1229,8 +1267,8 @@ msgid "Pending"
 msgstr "Pendente"
 
 #: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
-#: web/routes/settings/people/+page.svelte:121
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:130
+#: web/routes/settings/people/+page.svelte:136
 msgid "People"
 msgstr "Pessoas"
 
@@ -1451,11 +1489,11 @@ msgstr "Substituiu uma imagem de que o modelo duvidava."
 msgid "Report preview"
 msgstr "Pré-visualização do relatório"
 
-#: web/routes/settings/people/+page.svelte:174
+#: web/routes/settings/people/+page.svelte:191
 msgid "Rescan now"
 msgstr "Analisar de novo agora"
 
-#: web/routes/settings/people/+page.svelte:124
+#: web/routes/settings/people/+page.svelte:139
 msgid "Rescan the library"
 msgstr "Analisar novamente a biblioteca"
 
@@ -1547,6 +1585,14 @@ msgstr "Guardar"
 msgid "Save Config"
 msgstr "Guardar configuração"
 
+#: web/lib/people/FamilyTree.svelte:118
+msgid "Save as PNG"
+msgstr "Guardar como PNG"
+
+#: web/lib/people/FamilyTree.svelte:117
+msgid "Save as SVG"
+msgstr "Guardar como SVG"
+
 #: web/lib/people/GroupsSection.svelte:80
 msgid "Save group"
 msgstr "Guardar grupo"
@@ -1627,7 +1673,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "Definido em config.yaml como {key}"
 
 #: web/routes/+layout.svelte:38 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:135
 msgid "Settings"
 msgstr "Definições"
 
@@ -1639,7 +1685,7 @@ msgstr "Partilhável"
 msgid "Show"
 msgstr "Mostrar"
 
-#: web/routes/settings/people/+page.svelte:183
+#: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
 msgstr "Mostrar mais"
 
@@ -1846,6 +1892,10 @@ msgstr ""
 "predefinição. Uma definição fixada por uma das duas primeiras aparece esbatida: altera-a onde"
 " a etiqueta o indicar."
 
+#: web/lib/people/FamilyTree.svelte:120
+msgid "The files are made in this browser. Nothing is uploaded."
+msgstr "Os ficheiros são criados neste navegador. Nada é enviado."
+
 #: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:157
 #: web/routes/runs/[run_id]/+page.svelte:153
 msgid "The film"
@@ -1892,7 +1942,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "O modelo, quando houver um configurado"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "O registo de pessoas: quem é próximo, os seus papéis e como se relacionam."
 
@@ -2039,7 +2089,7 @@ msgstr "A deteção de viagens falhou."
 msgid "Trips"
 msgstr "Viagens"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
 msgstr "Tentar novamente"
 
@@ -2306,6 +2356,10 @@ msgstr "todos juntos"
 msgid "any of them"
 msgstr "qualquer um deles"
 
+#: web/lib/people/FamilyTree.svelte:100
+msgid "birth year?"
+msgstr "ano de nascimento?"
+
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "corresponde ao nome da conta do Immich"
@@ -2326,11 +2380,11 @@ msgstr "relação sem nome"
 msgid "starting"
 msgstr "a iniciar"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
 msgstr "exporta-o em YAML."
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes the guesses; your answers stay across scans."
 msgstr "grava os palpites; as tuas respostas ficam entre análises."
 
@@ -2391,6 +2445,13 @@ msgstr "{done} de {total} clips"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{done} de {total} imagens"
+
+#: web/lib/people/FamilyTree.svelte:72
+#, python-brace-format
+msgid "{n} person with no family link is left out."
+msgid_plural "{n} people with no family link are left out."
+msgstr[0] "{n} pessoa sem laço familiar ficou de fora."
+msgstr[1] "{n} pessoas sem laço familiar ficaram de fora."
 
 #: web/lib/AskPanel.svelte:162
 #, python-brace-format

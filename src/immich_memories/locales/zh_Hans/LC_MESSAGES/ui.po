@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-10 22:01+0100\n"
+"POT-Creation-Date: 2026-11-11 01:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -86,7 +86,7 @@ msgstr "添加关系"
 msgid "Add date overlay"
 msgstr "显示日期"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "添加 Immich 中没有的人物"
 
@@ -378,6 +378,11 @@ msgstr "配置警告"
 msgid "Configuration"
 msgstr "配置"
 
+#: web/lib/people/FamilyTree.svelte:106
+#, python-brace-format
+msgid "Confirm that {name} is {relationship} {other}"
+msgstr "确认 {name} 是 {other} 的 {relationship}"
+
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
 msgid "Connected as: {name}"
@@ -412,7 +417,11 @@ msgstr "无法检查更新。"
 msgid "Could not check for updates: {reason}"
 msgstr "无法检查更新：{reason}"
 
-#: web/routes/settings/people/+page.svelte:131
+#: web/lib/people/FamilyTree.svelte:65
+msgid "Could not draw the family tree."
+msgstr "无法绘制家谱。"
+
+#: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "无法加载人物。"
 
@@ -420,7 +429,7 @@ msgstr "无法加载人物。"
 msgid "Crossfade"
 msgstr "交叉淡化"
 
-#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
+#: web/routes/settings/people/+page.svelte:155 web/routes/settings/people/+page.svelte:156
 msgid "Curation"
 msgstr "待核对的人物"
 
@@ -517,7 +526,17 @@ msgstr "下载模型"
 msgid "Download report"
 msgstr "下载报告"
 
-#: web/routes/settings/people/+page.svelte:158
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Draw the family tree"
+msgstr "绘制家谱"
+
+#: web/lib/people/FamilyTree.svelte:71
+msgid ""
+"Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
+"it. Click someone to open their card."
+msgstr "根据你确认的关系绘制。虚线是建议：点击其勾号即可确认。点击某人可打开其卡片。"
+
+#: web/routes/settings/people/+page.svelte:175
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -595,7 +614,7 @@ msgstr "实验性"
 msgid "Expression"
 msgstr "表达式"
 
-#: web/routes/settings/people/+page.svelte:76
+#: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -610,6 +629,11 @@ msgstr "失败"
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "家人"
+
+#: web/lib/people/FamilyTree.svelte:58 web/lib/people/FamilyTree.svelte:60
+#: web/lib/people/FamilyTree.svelte:74
+msgid "Family tree"
+msgstr "家谱"
 
 #: web/lib/labels.ts:99
 msgid "Fetching Live Photo clip previews"
@@ -627,7 +651,7 @@ msgstr "符合条件的素材不足 12 个，影片会比较短。"
 msgid "Films that may use it"
 msgstr "可以使用它的影片"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:181
 msgid "Find a name"
 msgstr "搜索姓名"
 
@@ -647,7 +671,7 @@ msgstr "格式"
 msgid "From"
 msgstr "起始"
 
-#: web/routes/settings/people/+page.svelte:166
+#: web/routes/settings/people/+page.svelte:183
 msgid "Full name"
 msgstr "全名"
 
@@ -671,6 +695,10 @@ msgstr "已限制：{reasons}。"
 #: web/routes/create/+page.svelte:334
 msgid "Hemisphere"
 msgstr "半球"
+
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Hide the family tree"
+msgstr "隐藏家谱"
 
 #: web/lib/RenderPanel.svelte:229
 msgid "High"
@@ -717,7 +745,7 @@ msgstr "要读取的 Immich 账户(未选择时仅主账户)"
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
 
-#: web/routes/settings/people/+page.svelte:80
+#: web/routes/settings/people/+page.svelte:94
 msgid ""
 "Immich no longer has the face this person was linked to, and more than one person, or nobody,"
 " carries the name there now. Give exactly one person this name in Immich: this page follows "
@@ -773,7 +801,7 @@ msgstr "未能完成。"
 msgid "Just us"
 msgstr "仅自己家"
 
-#: web/routes/settings/people/+page.svelte:149
+#: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "保持分开"
 
@@ -982,6 +1010,12 @@ msgstr "还没有已收录的日期。运行 immich-memories discover-days 来�
 msgid "No child output was retained for this run."
 msgstr "此任务未保留处理日志。"
 
+#: web/lib/people/FamilyTree.svelte:69
+msgid ""
+"No family links confirmed yet. Give someone a parent, a partner or a sibling below and the "
+"tree draws itself."
+msgstr "尚未确认任何家庭关系。在下方为某人设置父母、伴侣或兄弟姐妹，家谱就会自动绘出。"
+
 #: web/lib/AskPanel.svelte:175
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
@@ -1054,7 +1088,7 @@ msgstr "不，不是"
 msgid "Nobody in this library"
 msgstr "此媒体库中没有人"
 
-#: web/routes/settings/people/+page.svelte:173
+#: web/routes/settings/people/+page.svelte:190
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1110,7 +1144,7 @@ msgstr "历史上的今天"
 msgid "On a date"
 msgstr "指定日期"
 
-#: web/routes/settings/people/+page.svelte:78
+#: web/routes/settings/people/+page.svelte:92
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -1128,7 +1162,7 @@ msgstr "仅包含（可选）"
 msgid "Open"
 msgstr "打开"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:161
 msgid "Open in Immich"
 msgstr "在 Immich 中打开"
 
@@ -1140,7 +1174,7 @@ msgstr "打开任务"
 msgid "Open the film run"
 msgstr "打开影片任务"
 
-#: web/routes/settings/people/+page.svelte:146
+#: web/routes/settings/people/+page.svelte:161
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "在 Immich 中打开 {name}"
@@ -1188,8 +1222,8 @@ msgid "Pending"
 msgstr "等待中"
 
 #: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
-#: web/routes/settings/people/+page.svelte:121
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:130
+#: web/routes/settings/people/+page.svelte:136
 msgid "People"
 msgstr "人物"
 
@@ -1410,11 +1444,11 @@ msgstr "替换了模型认为不太合适的素材。"
 msgid "Report preview"
 msgstr "报告预览"
 
-#: web/routes/settings/people/+page.svelte:174
+#: web/routes/settings/people/+page.svelte:191
 msgid "Rescan now"
 msgstr "立即重新扫描"
 
-#: web/routes/settings/people/+page.svelte:124
+#: web/routes/settings/people/+page.svelte:139
 msgid "Rescan the library"
 msgstr "重新扫描媒体库"
 
@@ -1506,6 +1540,14 @@ msgstr "保存"
 msgid "Save Config"
 msgstr "保存配置"
 
+#: web/lib/people/FamilyTree.svelte:118
+msgid "Save as PNG"
+msgstr "保存为 PNG"
+
+#: web/lib/people/FamilyTree.svelte:117
+msgid "Save as SVG"
+msgstr "保存为 SVG"
+
 #: web/lib/people/GroupsSection.svelte:80
 msgid "Save group"
 msgstr "保存分组"
@@ -1584,7 +1626,7 @@ msgid "Set in config.yaml as {key}"
 msgstr "在 config.yaml 中设为 {key}"
 
 #: web/routes/+layout.svelte:38 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:135
 msgid "Settings"
 msgstr "设置"
 
@@ -1596,7 +1638,7 @@ msgstr "可分享"
 msgid "Show"
 msgstr "显示"
 
-#: web/routes/settings/people/+page.svelte:183
+#: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
 msgstr "显示更多"
 
@@ -1794,6 +1836,10 @@ msgid ""
 "either of the first two sets is greyed out: change it where its label says."
 msgstr "环境变量优先，其次是 config.yaml，然后是此处保存的值，最后是默认值。由前两者之一设定的选项会显示为灰色：请在其标签所指示的位置修改。"
 
+#: web/lib/people/FamilyTree.svelte:120
+msgid "The files are made in this browser. Nothing is uploaded."
+msgstr "文件在此浏览器中生成，不会上传任何内容。"
+
 #: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:157
 #: web/routes/runs/[run_id]/+page.svelte:153
 msgid "The film"
@@ -1837,7 +1883,7 @@ msgstr "模型会根据媒体库中已准备好的素材理解你的描述。先
 msgid "The model, when one is configured"
 msgstr "已配置模型时使用模型"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "人物登记：谁比较亲近、他们的角色，以及彼此的关系。"
 
@@ -1979,7 +2025,7 @@ msgstr "旅行检测失败。"
 msgid "Trips"
 msgstr "旅行"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
 msgstr "重试"
 
@@ -2238,6 +2284,10 @@ msgstr "所有人同时出现"
 msgid "any of them"
 msgstr "其中任意一人"
 
+#: web/lib/people/FamilyTree.svelte:100
+msgid "birth year?"
+msgstr "出生年份？"
+
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "与 Immich 账户名一致"
@@ -2258,11 +2308,11 @@ msgstr "关系未命名"
 msgid "starting"
 msgstr "正在启动"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
 msgstr "会把它导出为 YAML。"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes the guesses; your answers stay across scans."
 msgstr "会写入推测；你的回答在多次扫描之间保留。"
 
@@ -2323,6 +2373,12 @@ msgstr "{done} / {total} 个片段"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{done} / {total} 张图片"
+
+#: web/lib/people/FamilyTree.svelte:72
+#, python-brace-format
+msgid "{n} person with no family link is left out."
+msgid_plural "{n} people with no family link are left out."
+msgstr[0] "{n} 位没有家庭关系的人未列入。"
 
 #: web/lib/AskPanel.svelte:162
 #, python-brace-format

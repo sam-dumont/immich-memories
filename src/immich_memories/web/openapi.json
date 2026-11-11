@@ -1174,6 +1174,61 @@
         "title": "Decision",
         "type": "object"
       },
+      "FamilyTree": {
+        "properties": {
+          "couples": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Couples",
+            "type": "array"
+          },
+          "families": {
+            "items": {
+              "$ref": "#/components/schemas/TreeFamily"
+            },
+            "title": "Families",
+            "type": "array"
+          },
+          "left_out": {
+            "title": "Left Out",
+            "type": "integer"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/TreePerson"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/TreeSuggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "people",
+          "couples",
+          "families",
+          "suggestions",
+          "left_out"
+        ],
+        "title": "FamilyTree",
+        "type": "object"
+      },
       "FlagAnswer": {
         "properties": {
           "kind": {
@@ -4174,6 +4229,116 @@
         "title": "TraceBlock",
         "type": "object"
       },
+      "TreeChild": {
+        "properties": {
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "through_sibling": {
+            "title": "Through Sibling",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "person_id",
+          "through_sibling"
+        ],
+        "title": "TreeChild",
+        "type": "object"
+      },
+      "TreeFamily": {
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/TreeChild"
+            },
+            "title": "Children",
+            "type": "array"
+          },
+          "parents": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parents",
+            "type": "array"
+          }
+        },
+        "required": [
+          "parents",
+          "children"
+        ],
+        "title": "TreeFamily",
+        "type": "object"
+      },
+      "TreePerson": {
+        "properties": {
+          "birth_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Year"
+          },
+          "generation": {
+            "title": "Generation",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner": {
+            "title": "Owner",
+            "type": "boolean"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "birth_year",
+          "generation",
+          "x",
+          "owner"
+        ],
+        "title": "TreePerson",
+        "type": "object"
+      },
+      "TreeSuggestion": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "kind",
+          "target"
+        ],
+        "title": "TreeSuggestion",
+        "type": "object"
+      },
       "TripChoice": {
         "properties": {
           "days": {
@@ -6008,6 +6173,28 @@
         "summary": "Scan People",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/api/v1/roster/tree": {
+      "get": {
+        "description": "The family tree the confirmed relationships draw, laid out row by row.\n\nParents, children, partners and siblings draw it; everyone else is counted in `left_out`.\nThe page draws it from this, in the browser; nothing about it leaves the app's server.",
+        "operationId": "tree_api_v1_roster_tree_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyTree"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Tree",
+        "tags": [
+          "people"
         ]
       }
     },
