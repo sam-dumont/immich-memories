@@ -147,8 +147,11 @@ def build_upload_fields(
     file_path: Path,
     modified_at: datetime,
     captured_at: datetime | None = None,
+    shown_name: str | None = None,
 ) -> dict[str, str]:
     """Build deterministic request fields without opening or reading file contents.
+
+    ``shown_name`` is the file name Immich should show; the file on disk keeps its own.
 
     ``captured_at`` is when the content itself happened, offset included; it is
     what files the asset in the Immich timeline. Without one the file's own
@@ -160,14 +163,16 @@ def build_upload_fields(
         "fileModifiedAt": modified_at.isoformat(),
     }
     if version is ResolvedApiVersion.V3:
-        return {"filename": file_path.name} | common_fields
+        return {"filename": shown_name or file_path.name} | common_fields
 
     file_hash = hashlib.sha256(file_path.name.encode() + str(file_path.stat().st_size).encode())
     identity_fields = {
         "deviceAssetId": f"{_UPLOAD_DEVICE_ID}-{file_hash.hexdigest()[:16]}",
         "deviceId": _UPLOAD_DEVICE_ID,
     }
-    return identity_fields | common_fields
+    # Both releases take `filename` and show it as the original file name.
+    named = {"filename": shown_name} if shown_name else {}
+    return identity_fields | named | common_fields
 
 
 def _file_sha1(file_path: Path) -> str:
@@ -256,11 +261,18 @@ class AlbumService:
         self._get_api_version = api_version_fn
         self._get_key_capabilities = key_capabilities_fn
 
-    async def upload_asset(self, file_path: Path, *, captured_at: datetime | None = None) -> str:
+    async def upload_asset(
+        self,
+        file_path: Path,
+        *,
+        captured_at: datetime | None = None,
+        shown_name: str | None = None,
+    ) -> str:
         """Upload a file to Immich. Returns the asset ID.
 
         ``captured_at`` files the asset on the day its content happened; without
-        one it lands on the day the file was written.
+        one it lands on the day the file was written. ``shown_name`` is the file
+        name Immich shows (the film's language); the local file is not renamed.
         """
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -269,7 +281,7 @@ class AlbumService:
         version = await self._get_api_version()
         stat = file_path.stat()
         modified_at = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
-        fields = build_upload_fields(version, file_path, modified_at, captured_at)
+        fields = build_upload_fields(version, file_path, modified_at, captured_at, shown_name)
 
         checksum = _file_sha1(file_path)
 
@@ -278,7 +290,7 @@ class AlbumService:
                 "POST",
                 "/assets",
                 data=fields,
-                files={"assetData": (file_path.name, f, content_type)},
+                files={"assetData": (shown_name or file_path.name, f, content_type)},
                 # WHY: Immich answers "duplicate" instead of storing a second copy
                 # of a file whose SHA-1 it already holds for this user.
                 headers={"x-immich-checksum": checksum},
@@ -660,7 +672,10 @@ class AlbumService:
                 "missing_permissions": missing + label_missing,
                 "warnings": [coded("not_uploaded", permissions=", ".join(missing + label_missing))],
             }
-        asset_id = await self.upload_asset(video_path, captured_at=captured_at)
+        shown_name = label.file_name if label else None
+        asset_id = await self.upload_asset(
+            video_path, captured_at=captured_at, shown_name=shown_name
+        )
         waits = upload_waits(video_path.stat().st_size)
         warnings: list[str] = []
         if missing:
@@ -682,7 +697,11 @@ class AlbumService:
         else:
             try:
                 await supersede_previous_renders(
-                    self, album_id=album_id, filename=video_path.name, keep_asset_id=asset_id
+                    self,
+                    album_id=album_id,
+                    filename=video_path.name,
+                    keep_asset_id=asset_id,
+                    shown_name=shown_name,
                 )
             except (OSError, RuntimeError, ValueError, KeyError) as exc:
                 warnings.append(coded("previous_kept_error", detail=exc))
@@ -713,7 +732,7 @@ class AlbumService:
         carried = bool(label and label.tags) and not tag_rights_missing(allows)
         if not carried:
             await self._tag_delivery(asset_id, allows, reports[1], waits)
-        if label:
+        if label and (label.description or label.tags):
             await self._label_delivery(asset_id, label, allows, reports, waits, provenance=carried)
 
     async def _tag_delivery(
@@ -816,6 +835,7 @@ async def supersede_previous_renders(
     album_id: str | None,
     filename: str,
     keep_asset_id: str,
+    shown_name: str | None = None,
 ) -> list[str]:
     """Trash earlier uploads of the same recipe, keeping the one just uploaded.
 
@@ -833,15 +853,19 @@ async def supersede_previous_renders(
     identity or the provenance tag; v3 keeps no device identity, so there the
     tag alone decides, and a v3 render uploaded before tagging is kept. Immich's
     trash is recoverable, so this is reversible by the user.
+
+    A film uploaded under its shown name (`shown_name`) or under its disk name, as
+    earlier releases sent it, is the same recipe.
     """
     if not album_id:
         return []
 
     assets = await client.list_album_assets(album_id)
+    names = {filename, shown_name} - {None}
     same_recipe = [
         asset
         for asset in assets
-        if asset.get("originalFileName") == filename and asset.get("id") != keep_asset_id
+        if asset.get("originalFileName") in names and asset.get("id") != keep_asset_id
     ]
     tagged = (
         await _tagged_ids(client)

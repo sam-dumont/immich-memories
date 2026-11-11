@@ -317,10 +317,44 @@ def title_for_run(config: Config, run: RunMetadata, *, store: Store) -> str | No
         return None
 
 
-def label_for_params(params: Any) -> FilmLabel | None:
-    """The label for the film a `generate` run just made, from its parameters."""
+def _shown_as(
+    label: FilmLabel | None,
+    config: Config,
+    film: str | Path | None,
+    *,
+    memory_type: str | None,
+    person_name: str | None,
+    preset_params: Mapping[str, Any] | None,
+) -> FilmLabel | None:
+    """The label with the file name Immich shows for the film, in the film's language."""
+    if not film:
+        return label
+    from immich_memories.operations.shown_film_name import shown_film_name_for
+
     try:
-        return label_for_cut(
+        disk_name = Path(film).name
+        shown = shown_film_name_for(
+            config,
+            disk_name,
+            memory_type=memory_type,
+            person_name=person_name,
+            preset_params=preset_params,
+        )
+    except Exception as exc:  # WHY: the film keeps its own name when a better one cannot be built
+        logger.warning("Uploading under the file's own name: %s", type(exc).__name__)
+        return label
+    if shown == disk_name:
+        return label
+    return replace(label or FilmLabel(), file_name=shown)
+
+
+def label_for_params(params: Any, film_path: Path | None = None) -> FilmLabel | None:
+    """The label for the film a `generate` run just made, from its parameters.
+
+    `film_path` is the file being uploaded: Immich shows its name in the film's language.
+    """
+    try:
+        label = label_for_cut(
             params.config,
             memory_type=params.memory_type,
             date_start=params.date_start,
@@ -335,7 +369,19 @@ def label_for_params(params: Any) -> FilmLabel | None:
         )
     except Exception as exc:  # WHY: a label we cannot build must not fail a finished film
         logger.warning("Uploading without a description and tags: %s", type(exc).__name__)
-        return None
+        label = None
+    try:
+        return _shown_as(
+            label,
+            params.config,
+            film_path,
+            memory_type=params.memory_type,
+            person_name=params.person_name,
+            preset_params=params.memory_preset_params,
+        )
+    except Exception as exc:  # WHY: the film keeps its own name when its parameters cannot say
+        logger.warning("Uploading under the file's own name: %s", type(exc).__name__)
+        return label
 
 
 def label_for_run(config: Config, run: RunMetadata, *, store: Store) -> FilmLabel | None:
@@ -346,7 +392,7 @@ def label_for_run(config: Config, run: RunMetadata, *, store: Store) -> FilmLabe
         attempt_dir = attempt_dir_for_run(run.run_id, store=store)
     except Exception:  # WHY: a store that cannot say still leaves a label from the run's dates
         attempt_dir = None
-    return label_for_cut(
+    label = label_for_cut(
         config,
         memory_type=run.memory_type,
         date_start=run.date_range_start,
@@ -357,4 +403,12 @@ def label_for_run(config: Config, run: RunMetadata, *, store: Store) -> FilmLabe
         # old run still says what made it. The server's local day, as its clock read it.
         made_with=run.app_version,
         made_on=(run.completed_at or run.created_at).astimezone().date(),
+    )
+    return _shown_as(
+        label,
+        config,
+        run.output_path,
+        memory_type=run.memory_type,
+        person_name=run.person_name,
+        preset_params=None,
     )
