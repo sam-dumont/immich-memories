@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-11 01:23+0100\n"
+"POT-Creation-Date: 2026-11-11 02:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -29,9 +29,26 @@ msgstr "为这组人物筛选条件命名，方便在“新建回忆”页面或
 msgid "A monthly review already finished this month."
 msgstr "本月已经制作过一部月度回顾影片。"
 
+#: web/lib/settingLabels.ts:22
+msgid "ACE-Step music"
+msgstr "ACE-Step 音乐"
+
 #: web/routes/settings/+page.svelte:93
 msgid "API Key"
 msgstr "API 密钥"
+
+#: web/lib/settingLabels.ts:128
+msgid "API URL"
+msgstr "API URL"
+
+#: web/lib/settingLabels.ts:49 web/lib/settingLabels.ts:104 web/lib/settingLabels.ts:124
+#: web/lib/settingLabels.ts:129
+msgid "API key"
+msgstr "API 密钥"
+
+#: web/lib/settingLabels.ts:50
+msgid "API version"
+msgstr "API 版本"
 
 #: web/lib/JobPanel.svelte:52
 #, python-brace-format
@@ -58,7 +75,7 @@ msgstr "影片完成还需约 {amount}"
 msgid "About {percent}% overall"
 msgstr "总体约 {percent}%"
 
-#: web/lib/people/RelationshipRows.svelte:81
+#: web/lib/people/RelationshipRows.svelte:82
 msgid "Accept all suggestions"
 msgstr "全部接受建议"
 
@@ -70,15 +87,15 @@ msgstr "接受转发和下载的媒体"
 msgid "Account owner"
 msgstr "账户所有者"
 
-#: web/lib/people/AccountLinks.svelte:46
+#: web/lib/people/AccountLinks.svelte:46 web/lib/settingLabels.ts:52 web/lib/settingLabels.ts:184
 msgid "Accounts"
 msgstr "账户"
 
-#: web/lib/people/RelationshipRows.svelte:91
+#: web/lib/people/RelationshipRows.svelte:92
 msgid "Add"
 msgstr "添加"
 
-#: web/lib/people/RelationshipRows.svelte:84
+#: web/lib/people/RelationshipRows.svelte:85
 msgid "Add a relationship"
 msgstr "添加关系"
 
@@ -89,6 +106,14 @@ msgstr "显示日期"
 #: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "添加 Immich 中没有的人物"
+
+#: web/lib/settingLabels.ts:58
+msgid "Add the date to titles"
+msgstr "在标题中加入日期"
+
+#: web/lib/settingLabels.ts:59
+msgid "Add the place to titles"
+msgstr "在标题中加入地点"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
@@ -121,7 +146,7 @@ msgstr "一段时间之后"
 msgid "Album"
 msgstr "相册"
 
-#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46
+#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "相册名称"
 
@@ -137,6 +162,26 @@ msgstr "所有选中的人物"
 msgid "All pictures"
 msgstr "全部素材"
 
+#: web/lib/settingLabels.ts:213
+msgid "Allow model downloads"
+msgstr "允许下载模型"
+
+#: web/lib/settingLabels.ts:80
+msgid "Allow plain HTTP"
+msgstr "允许明文 HTTP"
+
+#: web/lib/settingLabels.ts:170
+msgid "Allowed domains"
+msgstr "允许的域名"
+
+#: web/lib/settingLabels.ts:169
+msgid "Allowed email addresses"
+msgstr "允许的电子邮件地址"
+
+#: web/lib/settingLabels.ts:46
+msgid "Allowed hosts"
+msgstr "允许的主机"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
 msgid "Also show the {count} pictures outside this memory"
@@ -146,11 +191,27 @@ msgstr "同时显示此回忆之外的 {count} 个素材"
 msgid "Alternatives considered"
 msgstr "已考虑的备选项"
 
+#: web/lib/settingLabels.ts:114
+msgid "Always reasons"
+msgstr "始终推理"
+
+#: web/lib/settingLabels.ts:12
+msgid "Analysis"
+msgstr "分析"
+
+#: web/lib/settingLabels.ts:139
+msgid "Animated background"
+msgstr "动态背景"
+
 #: web/routes/create/+page.svelte:377
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr "先显示纪念日，其余随后。定时任务只会在纪念日当天提议这一天；在这里你可以选择目录中的任意一天。"
+
+#: web/lib/settingLabels.ts:216
+msgid "Annotation database"
+msgstr "标注数据库"
 
 #: web/routes/create/+page.svelte:356
 msgid "Another day (MM-DD)"
@@ -185,6 +246,14 @@ msgid ""
 "about this install goes with the request."
 msgstr "向 GitHub 请求公开的发布列表。点击之前不会发送任何内容，请求中也不包含关于此安装的任何信息。"
 
+#: web/lib/settingLabels.ts:197
+msgid "Attach a thumbnail"
+msgstr "附上缩略图"
+
+#: web/lib/settingLabels.ts:20
+msgid "Audio"
+msgstr "音频"
+
 #: web/lib/RenderPanel.svelte:186
 msgid "Auto (match the mood)"
 msgstr "自动（配合影片氛围）"
@@ -200,6 +269,10 @@ msgstr "自动（按配置）"
 #: web/routes/+layout.svelte:60
 msgid "Automatic (browser)"
 msgstr "自动（浏览器）"
+
+#: web/lib/settingLabels.ts:30
+msgid "Automation"
+msgstr "自动化"
 
 #: web/routes/suggestions/+page.svelte:60
 msgid "Automation is already running. Open Runs to follow it."
@@ -221,6 +294,26 @@ msgstr "返回任务列表"
 msgid "Back to the cut"
 msgstr "返回剪辑"
 
+#: web/lib/settingLabels.ts:94
+msgid "Backend"
+msgstr "后端"
+
+#: web/lib/settingLabels.ts:99 web/lib/settingLabels.ts:123
+msgid "Base URL"
+msgstr "基础 URL"
+
+#: web/lib/settingLabels.ts:119
+msgid "Batch maximum wait (minutes)"
+msgstr "批处理最长等待时间（分钟）"
+
+#: web/lib/settingLabels.ts:118
+msgid "Batch minimum requests"
+msgstr "批处理最少请求数"
+
+#: web/lib/settingLabels.ts:117
+msgid "Batch mode"
+msgstr "批处理模式"
+
 #: web/routes/create/+page.svelte:339
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "生日 (MM-DD；留空则使用 Immich 中的出生日期)"
@@ -241,6 +334,14 @@ msgstr "模糊背景"
 msgid "Browse the whole pool"
 msgstr "浏览全部候选素材"
 
+#: web/lib/settingLabels.ts:168
+msgid "Button text"
+msgstr "按钮文字"
+
+#: web/lib/settingLabels.ts:16
+msgid "Cache"
+msgstr "缓存"
+
 #: web/routes/settings/+page.svelte:117 web/routes/settings/+page.svelte:118
 msgid "Caches"
 msgstr "缓存"
@@ -257,9 +358,33 @@ msgstr "已取消"
 msgid "Candidate key"
 msgstr "候选项标识"
 
+#: web/lib/settingLabels.ts:205
+msgid "Caption API key"
+msgstr "字幕描述 API 密钥"
+
+#: web/lib/settingLabels.ts:203
+msgid "Caption base URL"
+msgstr "字幕描述基础 URL"
+
 #: web/lib/RenderPanel.svelte:240
 msgid "Caption clips with their place"
 msgstr "在片段上显示地点"
+
+#: web/lib/settingLabels.ts:207
+msgid "Caption concurrency"
+msgstr "字幕描述并发数"
+
+#: web/lib/settingLabels.ts:204
+msgid "Caption model"
+msgstr "字幕描述模型"
+
+#: web/lib/settingLabels.ts:202
+msgid "Caption provider"
+msgstr "字幕描述提供方"
+
+#: web/lib/settingLabels.ts:206
+msgid "Caption timeout (seconds)"
+msgstr "字幕描述超时（秒）"
 
 #: web/lib/ShotInspector.svelte:152
 msgid "Captions were read; the rules chose this cut."
@@ -281,6 +406,10 @@ msgstr "检查是否符合条件"
 #: web/lib/UpdateCheck.svelte:29
 msgid "Check for updates"
 msgstr "检查更新"
+
+#: web/lib/settingLabels.ts:156
+msgid "Check for updates daily"
+msgstr "每天检查更新"
 
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Check playback"
@@ -353,9 +482,25 @@ msgstr "解除此限制？"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "已从 {cache} 中清除 {count} 条记录。"
 
+#: web/lib/settingLabels.ts:164
+msgid "Client ID"
+msgstr "客户端 ID"
+
+#: web/lib/settingLabels.ts:165
+msgid "Client secret"
+msgstr "客户端密钥"
+
 #: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "剪贴板不可用。请选中下方报告并复制。"
+
+#: web/lib/settingLabels.ts:72
+msgid "Codec"
+msgstr "编解码器"
+
+#: web/lib/settingLabels.ts:73
+msgid "Codec policy"
+msgstr "编解码器策略"
 
 #: web/routes/create/+page.svelte:507
 msgid "Command"
@@ -365,7 +510,7 @@ msgstr "命令"
 msgid "Completed"
 msgstr "已完成"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:73
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "配置文件：{config_path}"
@@ -374,7 +519,7 @@ msgstr "配置文件：{config_path}"
 msgid "Config warnings"
 msgstr "配置警告"
 
-#: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
+#: web/lib/SettingsEditor.svelte:65 web/lib/SettingsEditor.svelte:67
 msgid "Configuration"
 msgstr "配置"
 
@@ -382,6 +527,11 @@ msgstr "配置"
 #, python-brace-format
 msgid "Confirm that {name} is {relationship} {other}"
 msgstr "确认 {name} 是 {other} 的 {relationship}"
+
+#: web/lib/people/RelationshipRows.svelte:54
+#, python-brace-format
+msgid "Confirm: {statement}"
+msgstr "确认：{statement}"
 
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
@@ -392,9 +542,17 @@ msgstr "已以 {name} 身份连接"
 msgid "Considered by the model"
 msgstr "模型曾考虑"
 
+#: web/lib/settingLabels.ts:77
+msgid "Constant rate factor"
+msgstr "恒定速率因子（CRF）"
+
 #: web/routes/runs/[run_id]/+page.svelte:118
 msgid "Contact sheet"
 msgstr "缩略图总览"
+
+#: web/lib/settingLabels.ts:176 web/lib/settingLabels.ts:198
+msgid "Cooldown (hours)"
+msgstr "冷却时间（小时）"
 
 #: web/lib/JobPanel.svelte:136 web/lib/RunReport.svelte:76
 msgid "Copied"
@@ -445,6 +603,22 @@ msgstr "剪辑"
 msgid "Cut contact sheet"
 msgstr "剪辑缩略图总览"
 
+#: web/lib/settingLabels.ts:175
+msgid "Daily at"
+msgstr "每天运行时间"
+
+#: web/lib/settingLabels.ts:17
+msgid "Database"
+msgstr "数据库"
+
+#: web/lib/settingLabels.ts:90
+msgid "Database URL"
+msgstr "数据库 URL"
+
+#: web/lib/settingLabels.ts:84
+msgid "Database file"
+msgstr "数据库文件"
+
 #: web/routes/create/+page.svelte:336
 msgid "Day"
 msgstr "日期"
@@ -457,7 +631,11 @@ msgstr "日期 (MM-DD)"
 msgid "Decided while cutting"
 msgstr "剪辑时决定"
 
-#: web/lib/SettingsEditor.svelte:41
+#: web/lib/settingLabels.ts:96
+msgid "Decode on the GPU"
+msgstr "使用 GPU 解码"
+
+#: web/lib/SettingsEditor.svelte:42
 msgid "Default"
 msgstr "默认"
 
@@ -465,7 +643,7 @@ msgstr "默认"
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "已交付到 Immich。为节省磁盘空间，本地文件已删除。"
 
-#: web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
+#: web/lib/settingLabels.ts:43 web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
 msgid "Demo mode"
 msgstr "演示模式"
 
@@ -485,9 +663,57 @@ msgstr "正在为素材生成描述"
 msgid "Descriptions not requested"
 msgstr "未请求描述"
 
+#: web/lib/settingLabels.ts:189
+msgid "Detect a person's month"
+msgstr "检测人物月"
+
+#: web/lib/settingLabels.ts:188
+msgid "Detect albums"
+msgstr "检测相册"
+
+#: web/lib/settingLabels.ts:182
+msgid "Detect bursts of activity"
+msgstr "检测活动高峰"
+
+#: web/lib/settingLabels.ts:185
+msgid "Detect groups"
+msgstr "检测群组"
+
+#: web/lib/settingLabels.ts:187
+msgid "Detect holidays"
+msgstr "检测节假日"
+
+#: web/lib/settingLabels.ts:178
+msgid "Detect months"
+msgstr "检测月份"
+
+#: web/lib/settingLabels.ts:181
+msgid "Detect person spotlights"
+msgstr "检测人物聚焦"
+
+#: web/lib/settingLabels.ts:186
+msgid "Detect seasons"
+msgstr "检测季节"
+
+#: web/lib/settingLabels.ts:180
+msgid "Detect trips"
+msgstr "检测旅行"
+
+#: web/lib/settingLabels.ts:179
+msgid "Detect years"
+msgstr "检测年份"
+
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
 msgstr "正在根据 GPS 数据检测旅行…"
+
+#: web/lib/settingLabels.ts:209
+msgid "Detector Python"
+msgstr "检测器 Python"
+
+#: web/lib/settingLabels.ts:210
+msgid "Detector cache folder"
+msgstr "检测器缓存文件夹"
 
 #: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Discard changes"
@@ -526,6 +752,10 @@ msgstr "下载模型"
 msgid "Download report"
 msgstr "下载报告"
 
+#: web/lib/settingLabels.ts:60
+msgid "Download workers"
+msgstr "下载线程数"
+
 #: web/lib/people/FamilyTree.svelte:61
 msgid "Draw the family tree"
 msgstr "绘制家谱"
@@ -535,6 +765,10 @@ msgid ""
 "Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
 "it. Click someone to open their card."
 msgstr "根据你确认的关系绘制。虚线是建议：点击其勾号即可确认。点击某人可打开其卡片。"
+
+#: web/lib/settingLabels.ts:147
+msgid "Duration per photo"
+msgstr "每张照片时长"
 
 #: web/routes/settings/people/+page.svelte:175
 msgid ""
@@ -556,6 +790,14 @@ msgstr "此剪辑仅依据元数据完成，未对素材内容进行分类或分
 msgid "Edited without descriptions — picture content was classified, not read."
 msgstr "此剪辑未使用素材描述：素材内容经过了分类，但没有进行详细分析。"
 
+#: web/lib/settingLabels.ts:33
+msgid "Editorial"
+msgstr "编辑"
+
+#: web/lib/settingLabels.ts:89
+msgid "Editorial runs size (GB)"
+msgstr "编辑运行数据大小（GB）"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Elegant minimal"
 msgstr "简约雅致"
@@ -567,6 +809,29 @@ msgstr "选择这个镜头时，这些素材也符合条件。打开一个来比
 #: web/routes/suggestions/+page.svelte:65
 msgid "Eligible. No video was generated."
 msgstr "符合条件。未生成视频。"
+
+#: web/lib/settingLabels.ts:172
+msgid "Email header"
+msgstr "电子邮件标头"
+
+#: web/lib/settingLabels.ts:68 web/lib/settingLabels.ts:93 web/lib/settingLabels.ts:97
+#: web/lib/settingLabels.ts:122 web/lib/settingLabels.ts:126 web/lib/settingLabels.ts:135
+#: web/lib/settingLabels.ts:143 web/lib/settingLabels.ts:146 web/lib/settingLabels.ts:157
+#: web/lib/settingLabels.ts:174 web/lib/settingLabels.ts:193
+msgid "Enabled"
+msgstr "已启用"
+
+#: web/lib/settingLabels.ts:199
+msgid "Encoder"
+msgstr "编码器"
+
+#: web/lib/settingLabels.ts:200
+msgid "Encoder URL"
+msgstr "编码器 URL"
+
+#: web/lib/settingLabels.ts:95
+msgid "Encoder preset"
+msgstr "编码器预设"
 
 #: web/lib/ShotInspector.svelte:68
 msgid "End here"
@@ -606,6 +871,10 @@ msgstr "每个设置及其取值来源。你在此保存的内容会写入数据
 msgid "Every trip of the year"
 msgstr "这一年的所有旅行"
 
+#: web/lib/settingLabels.ts:63
+msgid "Excluded file name patterns"
+msgstr "排除的文件名模式"
+
 #: web/lib/AskPanel.svelte:125
 msgid "Experimental"
 msgstr "实验性"
@@ -614,6 +883,14 @@ msgstr "实验性"
 msgid "Expression"
 msgstr "表达式"
 
+#: web/lib/settingLabels.ts:191
+msgid "Extra holidays"
+msgstr "额外节假日"
+
+#: web/lib/settingLabels.ts:111
+msgid "Extra parameters"
+msgstr "额外参数"
+
 #: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
@@ -621,9 +898,25 @@ msgid ""
 "Immich or keep them apart."
 msgstr "人脸识别会合并相同的脸，所以这两条记录里一条几乎有全部照片，另一条几乎没有。单看哪个数字都没有意义。请在 Immich 中合并，或保持分开。"
 
+#: web/lib/settingLabels.ts:219
+msgid "Facts base URL"
+msgstr "事实基础 URL"
+
+#: web/lib/settingLabels.ts:221
+msgid "Facts concurrency"
+msgstr "事实并发数"
+
+#: web/lib/settingLabels.ts:137
+msgid "Fade color"
+msgstr "淡入淡出颜色"
+
 #: web/lib/labels.ts:31
 msgid "Failed"
 msgstr "失败"
+
+#: web/lib/settingLabels.ts:82 web/lib/settingLabels.ts:223
+msgid "Fall back to this machine"
+msgstr "回退到本机"
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
@@ -647,6 +940,18 @@ msgstr "正在获取素材预览"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "符合条件的素材不足 12 个，影片会比较短。"
 
+#: web/lib/settingLabels.ts:11
+msgid "Film defaults"
+msgstr "影片默认设置"
+
+#: web/lib/settingLabels.ts:136
+msgid "Film language"
+msgstr "影片语言"
+
+#: web/lib/settingLabels.ts:145
+msgid "Film tags"
+msgstr "影片标签"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "可以使用它的影片"
@@ -659,13 +964,29 @@ msgstr "搜索姓名"
 msgid "Finding faces"
 msgstr "正在查找人脸"
 
+#: web/lib/settingLabels.ts:141
+msgid "First names only"
+msgstr "仅用名字"
+
 #: web/lib/RenderPanel.svelte:235
 msgid "Fit with bars"
 msgstr "加黑边适配"
 
-#: web/lib/RenderPanel.svelte:221
+#: web/lib/settingLabels.ts:69 web/lib/settingLabels.ts:83
+msgid "Folder"
+msgstr "文件夹"
+
+#: web/lib/RenderPanel.svelte:221 web/lib/settingLabels.ts:70
 msgid "Format"
 msgstr "格式"
+
+#: web/lib/settingLabels.ts:65
+msgid "Forwarded copies when short"
+msgstr "素材不足时的转发副本"
+
+#: web/lib/settingLabels.ts:35
+msgid "Free text"
+msgstr "自由文本"
 
 #: web/routes/create/+page.svelte:344
 msgid "From"
@@ -683,9 +1004,21 @@ msgstr "祖父母、兄弟姐妹、群聊。排除私密时刻。"
 msgid "Grouped condition"
 msgstr "分组条件"
 
+#: web/lib/settingLabels.ts:74
+msgid "HDR mode"
+msgstr "HDR 模式"
+
 #: web/lib/RenderPanel.svelte:180
 msgid "Hard cut"
 msgstr "硬切"
+
+#: web/lib/settingLabels.ts:18
+msgid "Hardware"
+msgstr "硬件"
+
+#: web/lib/settingLabels.ts:208
+msgid "Head bundle"
+msgstr "头部捆绑包"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
@@ -708,6 +1041,18 @@ msgstr "高"
 msgid "Holiday"
 msgstr "节日"
 
+#: web/lib/settingLabels.ts:148
+msgid "Home latitude"
+msgstr "家的纬度"
+
+#: web/lib/settingLabels.ts:149
+msgid "Home longitude"
+msgstr "家的经度"
+
+#: web/lib/settingLabels.ts:41
+msgid "Host"
+msgstr "主机"
+
 #: web/lib/AskPanel.svelte:20
 msgid "How it read your words"
 msgstr "你的话是如何被理解的"
@@ -727,6 +1072,10 @@ msgstr "如何更新"
 #: web/lib/UpdateCheck.svelte:46
 msgid "How to update this install"
 msgstr "如何更新此安装"
+
+#: web/lib/settingLabels.ts:10
+msgid "Immich"
+msgstr "Immich"
 
 #: web/routes/settings/+page.svelte:87 web/routes/settings/+page.svelte:88
 msgid "Immich Connection"
@@ -756,6 +1105,10 @@ msgstr "Immich 中已没有此人原先关联的面孔，现在有多人或没�
 msgid "Immich unreachable"
 msgstr "无法连接 Immich"
 
+#: web/lib/settingLabels.ts:92
+msgid "Import from"
+msgstr "导入自"
+
 #: web/lib/labels.ts:72
 msgid "Important"
 msgstr "重要"
@@ -768,7 +1121,7 @@ msgstr "在剪辑中"
 msgid "In the film"
 msgstr "在影片中"
 
-#: web/routes/create/+page.svelte:500
+#: web/lib/settingLabels.ts:66 web/routes/create/+page.svelte:500
 msgid "Include Live Photos"
 msgstr "包含 Live Photos"
 
@@ -779,6 +1132,14 @@ msgstr "包含已标记照片的描述"
 #: web/routes/create/+page.svelte:499
 msgid "Include photos"
 msgstr "包含照片"
+
+#: web/lib/settingLabels.ts:192
+msgid "Include shared albums"
+msgstr "包含共享相册"
+
+#: web/lib/settingLabels.ts:34
+msgid "Inference"
+msgstr "推理"
 
 #: web/routes/+layout.svelte:58
 msgid "Interface language"
@@ -792,6 +1153,10 @@ msgstr "已中断"
 msgid "Invalid username or password"
 msgstr "用户名或密码无效"
 
+#: web/lib/settingLabels.ts:163
+msgid "Issuer URL"
+msgstr "签发者 URL"
+
 #: web/lib/JobPanel.svelte:71
 msgid "It did not finish."
 msgstr "未能完成。"
@@ -804,6 +1169,10 @@ msgstr "仅自己家"
 #: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "保持分开"
+
+#: web/lib/settingLabels.ts:85
+msgid "Keep downloaded videos"
+msgstr "保留已下载的视频"
 
 #: web/lib/RenderPanel.svelte:251
 msgid "Keep original audio"
@@ -830,10 +1199,26 @@ msgstr "标签"
 msgid "Landscape"
 msgstr "横屏"
 
+#: web/lib/settingLabels.ts:19
+msgid "Language model"
+msgstr "语言模型"
+
+#: web/lib/settingLabels.ts:131
+msgid "Language model size"
+msgstr "语言模型大小"
+
 #: web/lib/JobPanel.svelte:100
 #, python-brace-format
 msgid "Last measured progress: {amount} ago."
 msgstr "上次测得进度：{amount}前。"
+
+#: web/lib/settingLabels.ts:217
+msgid "Laya checkpoint"
+msgstr "Laya 检查点"
+
+#: web/lib/settingLabels.ts:218
+msgid "Laya checkpoint URL"
+msgstr "Laya 检查点 URL"
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -852,7 +1237,7 @@ msgstr "关联"
 msgid "Link a person from {account}"
 msgstr "关联 {account} 中的人物"
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Linked to"
 msgstr "已关联到"
 
@@ -868,11 +1253,31 @@ msgstr "实时更新已断开。正在检查已保存的任务状态。"
 msgid "Loading your config warned about these keys:"
 msgstr "加载配置时，以下键出现警告："
 
+#: web/lib/settingLabels.ts:103
+msgid "Local context size"
+msgstr "本地上下文大小"
+
+#: web/lib/settingLabels.ts:121
+msgid "Local music folder"
+msgstr "本地音乐文件夹"
+
+#: web/lib/settingLabels.ts:101
+msgid "Local server"
+msgstr "本地服务器"
+
+#: web/lib/settingLabels.ts:102
+msgid "Local vision projector"
+msgstr "本地视觉投影器"
+
+#: web/lib/settingLabels.ts:67
+msgid "Longest source video (seconds)"
+msgstr "源视频最长时长（秒）"
+
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
 msgstr "正在浏览媒体库以推荐回忆..."
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Looks linked to"
 msgstr "看起来已关联到"
 
@@ -904,13 +1309,37 @@ msgstr "手动"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "手动和自动任务，包括失败任务。打开任务可查看剪辑和耗时。"
 
+#: web/lib/settingLabels.ts:155
+msgid "Map tiles"
+msgstr "地图图块"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:91
 msgid "Marked Never use. Tick it to include it in this revision."
 msgstr "已标记为“永不使用”。勾选可将其加入此修订版本。"
 
+#: web/lib/settingLabels.ts:212
+msgid "Marqo ONNX URL"
+msgstr "Marqo ONNX URL"
+
+#: web/lib/settingLabels.ts:211
+msgid "Marqo ONNX model"
+msgstr "Marqo ONNX 模型"
+
 #: web/lib/RenderPanel.svelte:217
 msgid "Match the sources"
 msgstr "与源一致"
+
+#: web/lib/settingLabels.ts:177
+msgid "Maximum delivery attempts"
+msgstr "最大投递尝试次数"
+
+#: web/lib/settingLabels.ts:152
+msgid "Maximum gap (days)"
+msgstr "最大间隔（天）"
+
+#: web/lib/settingLabels.ts:109
+msgid "Maximum tokens parameter"
+msgstr "最大 token 数参数"
 
 #: web/lib/labels.ts:106
 msgid "Measuring motion in the videos"
@@ -936,9 +1365,29 @@ msgstr "回忆"
 msgid "Memory type"
 msgstr "回忆类型"
 
+#: web/lib/settingLabels.ts:150
+msgid "Minimum distance (km)"
+msgstr "最小距离（公里）"
+
+#: web/lib/settingLabels.ts:151
+msgid "Minimum duration (days)"
+msgstr "最短持续时间（天）"
+
+#: web/lib/settingLabels.ts:76
+msgid "Minimum free space (GB)"
+msgstr "最小可用空间（GB）"
+
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "遗漏的月份"
+
+#: web/lib/settingLabels.ts:127
+msgid "Mode"
+msgstr "模式"
+
+#: web/lib/settingLabels.ts:100
+msgid "Model"
+msgstr "模型"
 
 #: web/lib/labels.ts:96
 msgid "Model checks not requested"
@@ -960,6 +1409,10 @@ msgstr "无法检查模型状态。"
 msgid "Model suggestion"
 msgstr "模型建议"
 
+#: web/lib/settingLabels.ts:130
+msgid "Model variant"
+msgstr "模型变体"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Modern warm"
 msgstr "现代温暖"
@@ -972,6 +1425,10 @@ msgstr "月份"
 msgid "Monthly Highlights"
 msgstr "月度精选"
 
+#: web/lib/settingLabels.ts:190
+msgid "Months to backfill"
+msgstr "回填月数"
+
 #: web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "多人"
@@ -980,13 +1437,29 @@ msgstr "多人"
 msgid "Music"
 msgstr "音乐"
 
+#: web/lib/settingLabels.ts:21
+msgid "Music generation"
+msgstr "音乐生成"
+
+#: web/lib/settingLabels.ts:47
+msgid "Music upload quota (MB)"
+msgstr "音乐上传配额（MB）"
+
 #: web/lib/RenderPanel.svelte:275
 msgid "Music volume:"
 msgstr "音乐音量："
 
+#: web/lib/settingLabels.ts:51
+msgid "Native sharing"
+msgstr "原生分享"
+
 #: web/lib/AskPanel.svelte:34
 msgid "Needs preparation"
 msgstr "需要准备"
+
+#: web/lib/settingLabels.ts:27
+msgid "Network"
+msgstr "网络"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
@@ -1026,7 +1499,7 @@ msgstr "媒体库中没有足够的匹配素材来制作这部影片。试着换
 msgid "No model read this cut: the rules chose every picture."
 msgstr "此剪辑完全由筛选规则生成，没有经过模型分析。"
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:255 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "无音乐"
 
@@ -1079,8 +1552,8 @@ msgstr "暂无建议。"
 msgid "No trips detected for this year."
 msgstr "这一年没有检测到旅行。"
 
-#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
-#: web/lib/people/RelationshipRows.svelte:74
+#: web/lib/people/RelationshipRows.svelte:55 web/lib/people/RelationshipRows.svelte:59
+#: web/lib/people/RelationshipRows.svelte:75
 msgid "No, they are not"
 msgstr "不，不是"
 
@@ -1111,7 +1584,7 @@ msgstr "不适用于你要求的影片"
 msgid "Not possible"
 msgstr "不可能"
 
-#: web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:58
 msgid "Not related to"
 msgstr "与其无关"
 
@@ -1119,22 +1592,37 @@ msgstr "与其无关"
 msgid "Not the same person"
 msgstr "不是同一个人"
 
-#: web/lib/people/RelationshipRows.svelte:57
-#, python-brace-format
-msgid "Not {relationship}"
-msgstr "不是{relationship}"
-
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "备注"
 
-#: web/lib/people/RelationshipRows.svelte:79
+#: web/lib/people/RelationshipRows.svelte:80
 msgid "Nothing recorded yet."
 msgstr "尚无记录。"
+
+#: web/lib/settingLabels.ts:194
+msgid "Notification URLs"
+msgstr "通知 URL"
+
+#: web/lib/settingLabels.ts:31
+msgid "Notifications"
+msgstr "通知"
+
+#: web/lib/settingLabels.ts:196
+msgid "Notify on failure"
+msgstr "失败时通知"
+
+#: web/lib/settingLabels.ts:195
+msgid "Notify on success"
+msgstr "成功时通知"
 
 #: web/lib/SettingsChecks.svelte:19
 msgid "OK"
 msgstr "正常"
+
+#: web/lib/settingLabels.ts:133
+msgid "Offload to the CPU"
+msgstr "卸载到 CPU"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1199,6 +1687,10 @@ msgstr "这一时刻的其他素材"
 msgid "Other pictures of this moment"
 msgstr "这一时刻的其他素材"
 
+#: web/lib/settingLabels.ts:14
+msgid "Output"
+msgstr "输出"
+
 #: web/lib/JobPanel.svelte:90 web/lib/PhaseTimeline.svelte:26
 msgid "Overall time remaining is not known yet."
 msgstr "总剩余时间尚不清楚。"
@@ -1208,12 +1700,20 @@ msgstr "总剩余时间尚不清楚。"
 msgid "Owner of {account}"
 msgstr "{account} 的所有者"
 
+#: web/lib/settingLabels.ts:110
+msgid "Parameters to drop"
+msgstr "要丢弃的参数"
+
+#: web/lib/settingLabels.ts:108
+msgid "Parameters without thinking"
+msgstr "不思考时的参数"
+
 #: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "通过了{stages}"
 
-#: web/routes/login/+page.svelte:69
+#: web/lib/settingLabels.ts:161 web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "密码"
 
@@ -1256,6 +1756,10 @@ msgstr "阶段"
 msgid "Photo duration (seconds)"
 msgstr "照片时长（秒）"
 
+#: web/lib/settingLabels.ts:25
+msgid "Photos"
+msgstr "照片"
+
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "选择人物"
@@ -1287,6 +1791,14 @@ msgstr "包含以下人物的素材"
 msgid "Pictures: {count}"
 msgstr "素材：{count}"
 
+#: web/lib/settingLabels.ts:153
+msgid "Place lookup"
+msgstr "地点查询"
+
+#: web/lib/settingLabels.ts:154
+msgid "Place lookup URL"
+msgstr "地点查询 URL"
+
 #: web/lib/RenderPanel.svelte:188
 msgid "Playful bright"
 msgstr "明快活泼"
@@ -1299,6 +1811,10 @@ msgstr "请同时填写地址和 API 密钥"
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "候选素材"
+
+#: web/lib/settingLabels.ts:42
+msgid "Port"
+msgstr "端口"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Portrait"
@@ -1320,9 +1836,17 @@ msgstr "准备图片"
 msgid "Prepare selected clips"
 msgstr "准备选中的片段"
 
+#: web/lib/settingLabels.ts:62
+msgid "Prepared source cache size (GB)"
+msgstr "预处理素材缓存大小（GB）"
+
 #: web/routes/settings/+page.svelte:33
 msgid "Prepared-source cache"
 msgstr "已准备素材缓存"
+
+#: web/lib/settingLabels.ts:7 web/lib/settingLabels.ts:39
+msgid "Preset"
+msgstr "预设"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1348,21 +1872,37 @@ msgstr "隐私模式：模糊所有素材并打乱姓名"
 msgid "Processed"
 msgstr "已处理"
 
+#: web/lib/settingLabels.ts:222
+msgid "Producers"
+msgstr "制作者"
+
 #: web/lib/JobPanel.svelte:65 web/lib/JobPanel.svelte:79
 msgid "Progress"
 msgstr "进度"
+
+#: web/lib/settingLabels.ts:98 web/lib/settingLabels.ts:158 web/lib/settingLabels.ts:201
+msgid "Provider"
+msgstr "提供方"
+
+#: web/lib/settingLabels.ts:53 web/lib/settingLabels.ts:162
+msgid "Public URL"
+msgstr "公开 URL"
 
 #: web/lib/ShotInspector.svelte:60
 msgid "Put it back"
 msgstr "放回"
 
-#: web/lib/RenderPanel.svelte:227
+#: web/lib/RenderPanel.svelte:227 web/lib/settingLabels.ts:75
 msgid "Quality"
 msgstr "画质"
 
 #: web/lib/RenderPanel.svelte:186
 msgid "Random"
 msgstr "随机"
+
+#: web/lib/settingLabels.ts:116
+msgid "Reader concurrency"
+msgstr "读取并发数"
 
 #: web/lib/labels.ts:108
 msgid "Reading picture facts"
@@ -1396,11 +1936,11 @@ msgstr "刷新建议"
 msgid "Refreshing..."
 msgstr "正在刷新…"
 
-#: web/lib/people/RelationshipRows.svelte:83
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Relationship"
 msgstr "关系"
 
-#: web/lib/people/RelationshipRows.svelte:43
+#: web/lib/people/RelationshipRows.svelte:44
 msgid "Relationships"
 msgstr "关系"
 
@@ -1408,7 +1948,7 @@ msgstr "关系"
 msgid "Release notes"
 msgstr "发布说明"
 
-#: web/lib/SettingsEditor.svelte:67
+#: web/lib/SettingsEditor.svelte:68
 msgid "Reload from Disk"
 msgstr "从磁盘重新加载"
 
@@ -1420,7 +1960,7 @@ msgstr "移除"
 msgid "Remove from this cut"
 msgstr "从此剪辑中移除"
 
-#: web/lib/people/RelationshipRows.svelte:48
+#: web/lib/people/RelationshipRows.svelte:49
 msgid "Remove this relationship"
 msgstr "移除此关系"
 
@@ -1435,6 +1975,14 @@ msgstr "渲染"
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Render film"
 msgstr "渲染影片"
+
+#: web/lib/settingLabels.ts:15
+msgid "Render worker"
+msgstr "渲染工作进程"
+
+#: web/lib/settingLabels.ts:113
+msgid "Repetition penalty"
+msgstr "重复惩罚"
 
 #: web/lib/labels.ts:45
 msgid "Replaced a picture the model doubted."
@@ -1452,7 +2000,7 @@ msgstr "立即重新扫描"
 msgid "Rescan the library"
 msgstr "重新扫描媒体库"
 
-#: web/lib/RenderPanel.svelte:215
+#: web/lib/RenderPanel.svelte:215 web/lib/settingLabels.ts:71
 msgid "Resolution"
 msgstr "分辨率"
 
@@ -1480,6 +2028,11 @@ msgstr "修订"
 #: web/lib/people/PersonCard.svelte:28
 msgid "Role (suggestions; type your own)"
 msgstr "角色（可选建议或自行输入）"
+
+#: web/lib/people/RelationshipRows.svelte:58
+#, python-brace-format
+msgid "Ruled out: {statement}"
+msgstr "已排除：{statement}"
 
 #: web/routes/runs/[run_id]/+page.svelte:347
 msgid "Run details"
@@ -1532,7 +2085,7 @@ msgstr "正在采样 Live Photo 帧"
 msgid "Sampling video frames"
 msgstr "正在采样视频帧"
 
-#: web/lib/SettingsEditor.svelte:120
+#: web/lib/SettingsEditor.svelte:122
 msgid "Save"
 msgstr "保存"
 
@@ -1556,7 +2109,7 @@ msgstr "保存分组"
 msgid "Save revision"
 msgstr "保存修订"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:95
+#: web/lib/SettingsEditor.svelte:112 web/routes/settings/+page.svelte:95
 msgid "Saved - type a new key to replace it"
 msgstr "已保存，输入新密钥可替换它"
 
@@ -1570,16 +2123,16 @@ msgstr "已保存为修订 {number}。"
 msgid "Saved groups"
 msgstr "已保存的分组"
 
-#: web/lib/SettingsEditor.svelte:40
+#: web/lib/SettingsEditor.svelte:41
 msgid "Saved here"
 msgstr "在此保存"
 
-#: web/lib/SettingsEditor.svelte:39
+#: web/lib/SettingsEditor.svelte:40
 #, python-brace-format
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:67
+#: web/lib/SettingsEditor.svelte:58 web/routes/settings/+page.svelte:67
 msgid "Saved to the database"
 msgstr "已保存到数据库"
 
@@ -1587,6 +2140,10 @@ msgstr "已保存到数据库"
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "已保存至：{output_path}"
+
+#: web/lib/settingLabels.ts:54
+msgid "Scale mode"
+msgstr "缩放模式"
 
 #: web/lib/RenderPanel.svelte:233
 msgid "Scaling Mode"
@@ -1596,6 +2153,14 @@ msgstr "缩放模式"
 msgid "Scheduled"
 msgstr "已计划"
 
+#: web/lib/settingLabels.ts:91
+msgid "Schema"
+msgstr "架构"
+
+#: web/lib/settingLabels.ts:166
+msgid "Scope"
+msgstr "范围"
+
 #: web/lib/ShotInspector.svelte:72
 msgid "Screen time (seconds)"
 msgstr "显示时长（秒）"
@@ -1604,23 +2169,43 @@ msgstr "显示时长（秒）"
 msgid "Season"
 msgstr "季节"
 
-#: web/lib/SettingsEditor.svelte:77
+#: web/lib/SettingsEditor.svelte:78
 #, python-brace-format
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
 msgstr "在设置 {name} 之前，无法在此保存密钥。请设置它，或将其保留在环境变量或 config.yaml 中。"
 
+#: web/lib/settingLabels.ts:44
+msgid "Secure cookies"
+msgstr "安全 Cookie"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Select pictures"
 msgstr "选择图片"
 
-#: web/lib/SettingsEditor.svelte:37
+#: web/lib/settingLabels.ts:115
+msgid "Send image detail"
+msgstr "发送图像细节级别"
+
+#: web/lib/settingLabels.ts:9
+msgid "Server"
+msgstr "服务器"
+
+#: web/lib/settingLabels.ts:48
+msgid "Server URL"
+msgstr "服务器 URL"
+
+#: web/lib/settingLabels.ts:159
+msgid "Session length (hours)"
+msgstr "会话时长（小时）"
+
+#: web/lib/SettingsEditor.svelte:38
 #, python-brace-format
 msgid "Set by {name} (environment)"
 msgstr "由 {name} 设置（环境变量）"
 
-#: web/lib/SettingsEditor.svelte:38
+#: web/lib/SettingsEditor.svelte:39
 #, python-brace-format
 msgid "Set in config.yaml as {key}"
 msgstr "在 config.yaml 中设为 {key}"
@@ -1634,9 +2219,17 @@ msgstr "设置"
 msgid "Shareable"
 msgstr "可分享"
 
+#: web/lib/settingLabels.ts:57
+msgid "Sharing level"
+msgstr "分享级别"
+
 #: web/routes/runs/[run_id]/+page.svelte:197
 msgid "Show"
 msgstr "显示"
+
+#: web/lib/settingLabels.ts:140
+msgid "Show month dividers"
+msgstr "显示月份分隔"
 
 #: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
@@ -1647,6 +2240,10 @@ msgstr "显示更多"
 msgid "Sign in"
 msgstr "登录"
 
+#: web/lib/settingLabels.ts:167
+msgid "Sign in automatically"
+msgstr "自动登录"
+
 #: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "通过此服务器前端的代理登录。"
@@ -1655,9 +2252,17 @@ msgstr "通过此服务器前端的代理登录。"
 msgid "Sign out"
 msgstr "退出登录"
 
+#: web/lib/settingLabels.ts:29
+msgid "Sign-in"
+msgstr "登录"
+
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "登录已过期。请重试。"
+
+#: web/lib/settingLabels.ts:64
+msgid "Skip stills without camera data"
+msgstr "跳过没有相机数据的静态照片"
 
 #: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
@@ -1687,6 +2292,10 @@ msgstr "部分素材在没有描述的情况下完成了剪辑。"
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr "视频和实况照片中录制的声音。关闭后只播放音乐，同时选择“无音乐”则生成无声影片。"
 
+#: web/lib/settingLabels.ts:61
+msgid "Source preparation workers"
+msgstr "素材预处理线程数"
+
 #: web/routes/create/+page.svelte:334
 msgid "South"
 msgstr "南半球"
@@ -1694,6 +2303,14 @@ msgstr "南半球"
 #: web/lib/labels.ts:14
 msgid "Special day"
 msgstr "特别的日子"
+
+#: web/lib/settingLabels.ts:183
+msgid "Special days per year"
+msgstr "每年特殊日子数量"
+
+#: web/lib/settingLabels.ts:13
+msgid "Speech"
+msgstr "语音"
 
 #: web/routes/create/+page.svelte:43
 msgid "Spring"
@@ -1735,11 +2352,23 @@ msgstr "已停止。"
 msgid "Stories"
 msgstr "故事"
 
+#: web/lib/settingLabels.ts:215
+msgid "Strict sharing"
+msgstr "严格分享"
+
+#: web/lib/settingLabels.ts:112
+msgid "Structured output"
+msgstr "结构化输出"
+
+#: web/lib/settingLabels.ts:138
+msgid "Style mode"
+msgstr "风格模式"
+
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "副标题"
 
-#: web/lib/people/RelationshipRows.svelte:50
+#: web/lib/people/RelationshipRows.svelte:51
 msgid "Suggested"
 msgstr "建议"
 
@@ -1830,7 +2459,7 @@ msgstr "剪辑已准备好。"
 msgid "The dates and places, never a model"
 msgstr "只用日期和地点，绝不使用模型"
 
-#: web/lib/SettingsEditor.svelte:74
+#: web/lib/SettingsEditor.svelte:75
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
@@ -1937,7 +2566,7 @@ msgstr "无法加载任务记录。"
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "服务器地址已更改：请输入新服务器的 API 密钥。"
 
-#: web/lib/SettingsEditor.svelte:52
+#: web/lib/SettingsEditor.svelte:53
 msgid "The settings could not be saved."
 msgstr "无法保存设置。"
 
@@ -1961,6 +2590,18 @@ msgstr "按拍摄顺序播放，像剪辑的其余部分一样经过处理。"
 msgid "Thin"
 msgstr "可用素材较少"
 
+#: web/lib/settingLabels.ts:214
+msgid "Thin model layer"
+msgstr "精简模型层"
+
+#: web/lib/settingLabels.ts:106
+msgid "Thinking"
+msgstr "思考"
+
+#: web/lib/settingLabels.ts:107
+msgid "Thinking parameters"
+msgstr "思考参数"
+
 #: web/lib/labels.ts:62
 msgid "This category already appears twice in the last six memories."
 msgstr "这个分类已在最近六次回忆中出现两次。"
@@ -1981,17 +2622,38 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "缩略图缓存"
 
+#: web/lib/settingLabels.ts:88
+msgid "Thumbnail cache size (MB)"
+msgstr "缩略图缓存大小（MB）"
+
+#: web/lib/settingLabels.ts:8 web/lib/settingLabels.ts:40
+msgid "Tier"
+msgstr "层级"
+
 #: web/lib/PhaseTimeline.svelte:42
 msgid "Time not known yet"
 msgstr "时间尚不清楚"
+
+#: web/lib/settingLabels.ts:81 web/lib/settingLabels.ts:105 web/lib/settingLabels.ts:125
+#: web/lib/settingLabels.ts:134 web/lib/settingLabels.ts:220
+msgid "Timeout (seconds)"
+msgstr "超时（秒）"
 
 #: web/lib/RenderPanel.svelte:198
 msgid "Title (decided as generate decides when empty)"
 msgstr "标题（留空则由 generate 决定）"
 
+#: web/lib/settingLabels.ts:23
+msgid "Title screens"
+msgstr "标题画面"
+
 #: web/lib/RenderPanel.svelte:183
 msgid "Title style"
 msgstr "标题样式"
+
+#: web/lib/settingLabels.ts:142
+msgid "Titles written by the model"
+msgstr "由模型撰写的标题"
 
 #: web/routes/create/+page.svelte:350
 msgid "To"
@@ -2009,9 +2671,25 @@ msgstr "替换了未通过检查的素材。"
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "替换了模型从这个故事中移除的素材。"
 
+#: web/lib/settingLabels.ts:55
+msgid "Transition"
+msgstr "转场"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Transition Style"
 msgstr "转场样式"
+
+#: web/lib/settingLabels.ts:56
+msgid "Transition duration"
+msgstr "转场时长"
+
+#: web/lib/settingLabels.ts:32
+msgid "Triage"
+msgstr "初筛"
+
+#: web/lib/settingLabels.ts:45
+msgid "Trigger token"
+msgstr "触发令牌"
 
 #: web/lib/labels.ts:12 web/routes/create/+page.svelte:398
 msgid "Trip"
@@ -2021,9 +2699,13 @@ msgstr "旅行"
 msgid "Trip detection failed."
 msgstr "旅行检测失败。"
 
-#: web/routes/create/+page.svelte:410
+#: web/lib/settingLabels.ts:26 web/routes/create/+page.svelte:410
 msgid "Trips"
 msgstr "旅行"
+
+#: web/lib/settingLabels.ts:173
+msgid "Trusted proxies"
+msgstr "受信任的代理"
 
 #: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
@@ -2050,7 +2732,7 @@ msgstr "使用以下命令更新："
 msgid "Updated {when}"
 msgstr "{when}更新"
 
-#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26
+#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26 web/lib/settingLabels.ts:28
 msgid "Updates"
 msgstr "更新"
 
@@ -2078,7 +2760,7 @@ msgstr "上传影片"
 msgid "Upload the film to Immich"
 msgstr "将影片上传到 Immich"
 
-#: web/lib/UploadFilm.svelte:49
+#: web/lib/UploadFilm.svelte:49 web/lib/settingLabels.ts:24
 msgid "Upload to Immich"
 msgstr "上传到 Immich"
 
@@ -2095,11 +2777,19 @@ msgstr "已上传到 Immich。"
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "请使用媒体库中的准确姓名，每个素材都须符合此条件。此条件将替代上方选择的姓名。"
 
+#: web/lib/settingLabels.ts:132
+msgid "Use the language model"
+msgstr "使用语言模型"
+
 #: web/lib/ShotInspector.svelte:142
 msgid "Use this picture instead"
 msgstr "改用这个素材"
 
-#: web/routes/login/+page.svelte:66
+#: web/lib/settingLabels.ts:171
+msgid "User header"
+msgstr "用户标头"
+
+#: web/lib/settingLabels.ts:160 web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "用户名"
 
@@ -2115,6 +2805,14 @@ msgstr "视频"
 #: web/routes/settings/+page.svelte:31
 msgid "Video cache"
 msgstr "视频缓存"
+
+#: web/lib/settingLabels.ts:87
+msgid "Video cache age (days)"
+msgstr "视频缓存保留时间（天）"
+
+#: web/lib/settingLabels.ts:86
+msgid "Video cache size (GB)"
+msgstr "视频缓存大小（GB）"
 
 #: web/routes/runs/[run_id]/+page.svelte:124
 msgid "Videos"
@@ -2155,7 +2853,7 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自动化接下来会创建的内容，与 `auto suggest` 打印的列表相同。可以像 `auto run` 那样运行，也可以先不渲染检查一遍。"
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
+#: web/lib/people/RelationshipRows.svelte:70 web/lib/people/RelationshipRows.svelte:72
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "{name} 是 {other} 的什么人？"
@@ -2222,9 +2920,25 @@ msgstr "为什么选择此素材"
 msgid "Winter"
 msgstr "冬季"
 
-#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
+#: web/lib/people/RelationshipRows.svelte:88 web/lib/people/RelationshipRows.svelte:89
 msgid "With"
 msgstr "对象"
+
+#: web/lib/settingLabels.ts:224
+msgid "WordNet"
+msgstr "WordNet"
+
+#: web/lib/settingLabels.ts:225
+msgid "WordNet URL"
+msgstr "WordNet URL"
+
+#: web/lib/settingLabels.ts:78
+msgid "Worker URL"
+msgstr "工作进程 URL"
+
+#: web/lib/settingLabels.ts:79
+msgid "Worker token"
+msgstr "工作进程令牌"
 
 #: web/routes/create/+page.svelte:324
 msgid "Year"
@@ -2241,10 +2955,6 @@ msgstr "回溯年数（留空则为全部）"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "跨越的年数"
-
-#: web/lib/people/RelationshipRows.svelte:53
-msgid "Yes, they are"
-msgstr "是的"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2284,29 +2994,153 @@ msgstr "所有人同时出现"
 msgid "any of them"
 msgstr "其中任意一人"
 
+#: web/lib/people/relationshipLabels.ts:26
+msgid "aunt of"
+msgstr "是以下人员的姑姑或阿姨"
+
+#: web/lib/people/relationshipLabels.ts:27
+msgid "aunt or uncle of"
+msgstr "是以下人员的叔伯姑姨"
+
+#: web/lib/people/relationshipLabels.ts:23
+msgid "best friend of"
+msgstr "是以下人员的挚友"
+
 #: web/lib/people/FamilyTree.svelte:100
 msgid "birth year?"
 msgstr "出生年份？"
+
+#: web/lib/people/relationshipLabels.ts:17
+msgid "brother of"
+msgstr "是以下人员的兄弟"
+
+#: web/lib/people/relationshipLabels.ts:12
+msgid "child of"
+msgstr "是以下人员的孩子"
+
+#: web/lib/people/relationshipLabels.ts:33
+msgid "child-in-law of"
+msgstr "是以下人员的女婿或儿媳"
+
+#: web/lib/people/relationshipLabels.ts:29
+msgid "cousin of"
+msgstr "是以下人员的堂表亲"
+
+#: web/lib/people/relationshipLabels.ts:14
+msgid "daughter of"
+msgstr "是以下人员的女儿"
+
+#: web/lib/people/relationshipLabels.ts:11
+msgid "father of"
+msgstr "是以下人员的父亲"
+
+#: web/lib/people/relationshipLabels.ts:24
+msgid "friend of"
+msgstr "是以下人员的朋友"
+
+#: web/lib/people/relationshipLabels.ts:22
+msgid "godchild of"
+msgstr "是以下人员的教子或教女"
+
+#: web/lib/people/relationshipLabels.ts:21
+msgid "godfather of"
+msgstr "是以下人员的教父"
+
+#: web/lib/people/relationshipLabels.ts:20
+msgid "godmother of"
+msgstr "是以下人员的教母"
+
+#: web/lib/people/relationshipLabels.ts:19
+msgid "godparent of"
+msgstr "是以下人员的教父母"
+
+#: web/lib/people/relationshipLabels.ts:31
+msgid "grandchild of"
+msgstr "是以下人员的孙辈"
+
+#: web/lib/people/relationshipLabels.ts:30
+msgid "grandparent of"
+msgstr "是以下人员的祖辈"
 
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "与 Immich 账户名一致"
 
+#: web/lib/people/relationshipLabels.ts:8
+msgid "married to"
+msgstr "与以下人员结婚"
+
+#: web/lib/people/relationshipLabels.ts:10
+msgid "mother of"
+msgstr "是以下人员的母亲"
+
+#: web/lib/people/relationshipLabels.ts:28
+msgid "niece or nephew of"
+msgstr "是以下人员的侄甥辈"
+
 #: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "暂未知"
+
+#: web/lib/people/relationshipLabels.ts:77
+msgid "often in the same pictures"
+msgstr "经常出现在同一张照片里"
 
 #: web/lib/AskPanel.svelte:141
 msgid "our cat along the years"
 msgstr "这些年，我们家的猫"
 
-#: web/lib/people/RelationshipRows.svelte:64
+#: web/lib/people/relationshipLabels.ts:9
+msgid "parent of"
+msgstr "是以下人员的父母"
+
+#: web/lib/people/relationshipLabels.ts:32
+msgid "parent-in-law of"
+msgstr "是以下人员的岳父母或公婆"
+
+#: web/lib/people/relationshipLabels.ts:7
+msgid "partner of"
+msgstr "是以下人员的伴侣"
+
+#: web/lib/people/RelationshipRows.svelte:65
 msgid "relationship not named"
 msgstr "关系未命名"
+
+#: web/lib/people/relationshipLabels.ts:78
+msgid "same birth date"
+msgstr "生日相同"
+
+#: web/lib/people/relationshipLabels.ts:79
+msgid "same name"
+msgstr "名字相同"
+
+#: web/lib/people/relationshipLabels.ts:15
+msgid "sibling of"
+msgstr "是以下人员的兄弟姐妹"
+
+#: web/lib/people/relationshipLabels.ts:34
+msgid "sibling-in-law of"
+msgstr "是以下人员的姻亲兄弟姐妹"
+
+#: web/lib/people/relationshipLabels.ts:16
+msgid "sister of"
+msgstr "是以下人员的姐妹"
+
+#: web/lib/people/relationshipLabels.ts:13
+msgid "son of"
+msgstr "是以下人员的儿子"
 
 #: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "正在启动"
+
+#: web/lib/people/relationshipLabels.ts:18
+msgid "twin of"
+msgstr "是以下人员的双胞胎"
+
+#: web/lib/people/relationshipLabels.ts:25
+msgid "uncle of"
+msgstr "是以下人员的叔叔或舅舅"
 
 #: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
@@ -2320,6 +3154,10 @@ msgstr "会写入推测；你的回答在多次扫描之间保留。"
 msgid "you confirmed it"
 msgstr "你已确认"
 
+#: web/lib/people/relationshipLabels.ts:80
+msgid "you said so"
+msgstr "你指定的"
+
 #: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
 msgstr "你在扫描时指定"
@@ -2328,6 +3166,146 @@ msgstr "你在扫描时指定"
 #, python-brace-format
 msgid "{amount} elapsed"
 msgstr "已用时 {amount}"
+
+#: web/lib/people/relationshipLabels.ts:57
+#, python-brace-format
+msgid "{a} is {b}'s aunt"
+msgstr "{a}是{b}的姑姑或阿姨"
+
+#: web/lib/people/relationshipLabels.ts:58
+#, python-brace-format
+msgid "{a} is {b}'s aunt or uncle"
+msgstr "{a}是{b}的叔伯姑姨"
+
+#: web/lib/people/relationshipLabels.ts:54
+#, python-brace-format
+msgid "{a} is {b}'s best friend"
+msgstr "{a}是{b}的挚友"
+
+#: web/lib/people/relationshipLabels.ts:48
+#, python-brace-format
+msgid "{a} is {b}'s brother"
+msgstr "{a}是{b}的兄弟"
+
+#: web/lib/people/relationshipLabels.ts:43
+#, python-brace-format
+msgid "{a} is {b}'s child"
+msgstr "{a}是{b}的孩子"
+
+#: web/lib/people/relationshipLabels.ts:64
+#, python-brace-format
+msgid "{a} is {b}'s child-in-law"
+msgstr "{a}是{b}的女婿或儿媳"
+
+#: web/lib/people/relationshipLabels.ts:60
+#, python-brace-format
+msgid "{a} is {b}'s cousin"
+msgstr "{a}是{b}的堂表亲"
+
+#: web/lib/people/relationshipLabels.ts:45
+#, python-brace-format
+msgid "{a} is {b}'s daughter"
+msgstr "{a}是{b}的女儿"
+
+#: web/lib/people/relationshipLabels.ts:42
+#, python-brace-format
+msgid "{a} is {b}'s father"
+msgstr "{a}是{b}的父亲"
+
+#: web/lib/people/relationshipLabels.ts:55
+#, python-brace-format
+msgid "{a} is {b}'s friend"
+msgstr "{a}是{b}的朋友"
+
+#: web/lib/people/relationshipLabels.ts:53
+#, python-brace-format
+msgid "{a} is {b}'s godchild"
+msgstr "{a}是{b}的教子或教女"
+
+#: web/lib/people/relationshipLabels.ts:52
+#, python-brace-format
+msgid "{a} is {b}'s godfather"
+msgstr "{a}是{b}的教父"
+
+#: web/lib/people/relationshipLabels.ts:51
+#, python-brace-format
+msgid "{a} is {b}'s godmother"
+msgstr "{a}是{b}的教母"
+
+#: web/lib/people/relationshipLabels.ts:50
+#, python-brace-format
+msgid "{a} is {b}'s godparent"
+msgstr "{a}是{b}的教父母"
+
+#: web/lib/people/relationshipLabels.ts:62
+#, python-brace-format
+msgid "{a} is {b}'s grandchild"
+msgstr "{a}是{b}的孙辈"
+
+#: web/lib/people/relationshipLabels.ts:61
+#, python-brace-format
+msgid "{a} is {b}'s grandparent"
+msgstr "{a}是{b}的祖辈"
+
+#: web/lib/people/relationshipLabels.ts:41
+#, python-brace-format
+msgid "{a} is {b}'s mother"
+msgstr "{a}是{b}的母亲"
+
+#: web/lib/people/relationshipLabels.ts:59
+#, python-brace-format
+msgid "{a} is {b}'s niece or nephew"
+msgstr "{a}是{b}的侄甥辈"
+
+#: web/lib/people/relationshipLabels.ts:40
+#, python-brace-format
+msgid "{a} is {b}'s parent"
+msgstr "{a}是{b}的父母"
+
+#: web/lib/people/relationshipLabels.ts:63
+#, python-brace-format
+msgid "{a} is {b}'s parent-in-law"
+msgstr "{a}是{b}的岳父母或公婆"
+
+#: web/lib/people/relationshipLabels.ts:38
+#, python-brace-format
+msgid "{a} is {b}'s partner"
+msgstr "{a}是{b}的伴侣"
+
+#: web/lib/people/relationshipLabels.ts:46
+#, python-brace-format
+msgid "{a} is {b}'s sibling"
+msgstr "{a}是{b}的兄弟姐妹"
+
+#: web/lib/people/relationshipLabels.ts:65
+#, python-brace-format
+msgid "{a} is {b}'s sibling-in-law"
+msgstr "{a}是{b}的姻亲兄弟姐妹"
+
+#: web/lib/people/relationshipLabels.ts:47
+#, python-brace-format
+msgid "{a} is {b}'s sister"
+msgstr "{a}是{b}的姐妹"
+
+#: web/lib/people/relationshipLabels.ts:44
+#, python-brace-format
+msgid "{a} is {b}'s son"
+msgstr "{a}是{b}的儿子"
+
+#: web/lib/people/relationshipLabels.ts:39
+#, python-brace-format
+msgid "{a} is {b}'s spouse"
+msgstr "{a}是{b}的配偶"
+
+#: web/lib/people/relationshipLabels.ts:49
+#, python-brace-format
+msgid "{a} is {b}'s twin"
+msgstr "{a}是{b}的双胞胎"
+
+#: web/lib/people/relationshipLabels.ts:56
+#, python-brace-format
+msgid "{a} is {b}'s uncle"
+msgstr "{a}是{b}的叔叔或舅舅"
 
 #: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
@@ -2373,6 +3351,11 @@ msgstr "{done} / {total} 个片段"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{done} / {total} 张图片"
+
+#: web/lib/people/relationshipLabels.ts:89
+#, python-brace-format
+msgid "{first}; {second}"
+msgstr "{first}；{second}"
 
 #: web/lib/people/FamilyTree.svelte:72
 #, python-brace-format

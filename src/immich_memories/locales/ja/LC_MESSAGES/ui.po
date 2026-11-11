@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-11 01:23+0100\n"
+"POT-Creation-Date: 2026-11-11 02:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -31,9 +31,26 @@ msgstr "人物の絞り込み条件に名前を付けます。「新しい思い
 msgid "A monthly review already finished this month."
 msgstr "今月はすでに月の振り返りムービーを作成しています。"
 
+#: web/lib/settingLabels.ts:22
+msgid "ACE-Step music"
+msgstr "ACE-Step音楽"
+
 #: web/routes/settings/+page.svelte:93
 msgid "API Key"
 msgstr "APIキー"
+
+#: web/lib/settingLabels.ts:128
+msgid "API URL"
+msgstr "API URL"
+
+#: web/lib/settingLabels.ts:49 web/lib/settingLabels.ts:104 web/lib/settingLabels.ts:124
+#: web/lib/settingLabels.ts:129
+msgid "API key"
+msgstr "APIキー"
+
+#: web/lib/settingLabels.ts:50
+msgid "API version"
+msgstr "APIバージョン"
 
 #: web/lib/JobPanel.svelte:52
 #, python-brace-format
@@ -60,7 +77,7 @@ msgstr "動画の完成まで約{amount}"
 msgid "About {percent}% overall"
 msgstr "全体の約{percent}%"
 
-#: web/lib/people/RelationshipRows.svelte:81
+#: web/lib/people/RelationshipRows.svelte:82
 msgid "Accept all suggestions"
 msgstr "提案をすべて承認"
 
@@ -72,15 +89,15 @@ msgstr "転送・ダウンロードされたメディアを許可"
 msgid "Account owner"
 msgstr "アカウントの所有者"
 
-#: web/lib/people/AccountLinks.svelte:46
+#: web/lib/people/AccountLinks.svelte:46 web/lib/settingLabels.ts:52 web/lib/settingLabels.ts:184
 msgid "Accounts"
 msgstr "アカウント"
 
-#: web/lib/people/RelationshipRows.svelte:91
+#: web/lib/people/RelationshipRows.svelte:92
 msgid "Add"
 msgstr "追加"
 
-#: web/lib/people/RelationshipRows.svelte:84
+#: web/lib/people/RelationshipRows.svelte:85
 msgid "Add a relationship"
 msgstr "関係を追加"
 
@@ -91,6 +108,14 @@ msgstr "日付を表示"
 #: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "Immich にいない人物を追加"
+
+#: web/lib/settingLabels.ts:58
+msgid "Add the date to titles"
+msgstr "タイトルに日付を入れる"
+
+#: web/lib/settingLabels.ts:59
+msgid "Add the place to titles"
+msgstr "タイトルに場所を入れる"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
@@ -123,7 +148,7 @@ msgstr "期間の後"
 msgid "Album"
 msgstr "アルバム"
 
-#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46
+#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "アルバム名"
 
@@ -139,6 +164,26 @@ msgstr "選んだ全員"
 msgid "All pictures"
 msgstr "すべての素材"
 
+#: web/lib/settingLabels.ts:213
+msgid "Allow model downloads"
+msgstr "モデルのダウンロードを許可"
+
+#: web/lib/settingLabels.ts:80
+msgid "Allow plain HTTP"
+msgstr "平文HTTPを許可"
+
+#: web/lib/settingLabels.ts:170
+msgid "Allowed domains"
+msgstr "許可するドメイン"
+
+#: web/lib/settingLabels.ts:169
+msgid "Allowed email addresses"
+msgstr "許可するメールアドレス"
+
+#: web/lib/settingLabels.ts:46
+msgid "Allowed hosts"
+msgstr "許可するホスト"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
 msgid "Also show the {count} pictures outside this memory"
@@ -148,11 +193,27 @@ msgstr "この思い出の対象外の素材 {count} 件も表示"
 msgid "Alternatives considered"
 msgstr "検討された代替候補"
 
+#: web/lib/settingLabels.ts:114
+msgid "Always reasons"
+msgstr "常に推論する"
+
+#: web/lib/settingLabels.ts:12
+msgid "Analysis"
+msgstr "分析"
+
+#: web/lib/settingLabels.ts:139
+msgid "Animated background"
+msgstr "動く背景"
+
 #: web/routes/create/+page.svelte:377
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr "まず記念日、それ以外はその後に表示します。スケジュール実行はその記念日にしか日を提案しません。ここではカタログにあるどの日でも選べます。"
+
+#: web/lib/settingLabels.ts:216
+msgid "Annotation database"
+msgstr "注釈データベース"
 
 #: web/routes/create/+page.svelte:356
 msgid "Another day (MM-DD)"
@@ -187,6 +248,14 @@ msgid ""
 "about this install goes with the request."
 msgstr "GitHub に公開リリースの一覧を問い合わせます。クリックするまで何も送信されず、リクエストにこのインストールの情報は含まれません。"
 
+#: web/lib/settingLabels.ts:197
+msgid "Attach a thumbnail"
+msgstr "サムネイルを添付"
+
+#: web/lib/settingLabels.ts:20
+msgid "Audio"
+msgstr "音声"
+
 #: web/lib/RenderPanel.svelte:186
 msgid "Auto (match the mood)"
 msgstr "自動（雰囲気に合わせる）"
@@ -202,6 +271,10 @@ msgstr "自動（設定どおり）"
 #: web/routes/+layout.svelte:60
 msgid "Automatic (browser)"
 msgstr "自動（ブラウザー）"
+
+#: web/lib/settingLabels.ts:30
+msgid "Automation"
+msgstr "自動化"
 
 #: web/routes/suggestions/+page.svelte:60
 msgid "Automation is already running. Open Runs to follow it."
@@ -223,6 +296,26 @@ msgstr "実行履歴に戻る"
 msgid "Back to the cut"
 msgstr "編集結果に戻る"
 
+#: web/lib/settingLabels.ts:94
+msgid "Backend"
+msgstr "バックエンド"
+
+#: web/lib/settingLabels.ts:99 web/lib/settingLabels.ts:123
+msgid "Base URL"
+msgstr "ベースURL"
+
+#: web/lib/settingLabels.ts:119
+msgid "Batch maximum wait (minutes)"
+msgstr "バッチの最大待機時間（分）"
+
+#: web/lib/settingLabels.ts:118
+msgid "Batch minimum requests"
+msgstr "バッチの最小リクエスト数"
+
+#: web/lib/settingLabels.ts:117
+msgid "Batch mode"
+msgstr "バッチモード"
+
 #: web/routes/create/+page.svelte:339
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "誕生日（MM-DD、空欄の場合は Immich に登録された生年月日）"
@@ -243,6 +336,14 @@ msgstr "ぼかした背景"
 msgid "Browse the whole pool"
 msgstr "候補の素材をすべて見る"
 
+#: web/lib/settingLabels.ts:168
+msgid "Button text"
+msgstr "ボタンの文言"
+
+#: web/lib/settingLabels.ts:16
+msgid "Cache"
+msgstr "キャッシュ"
+
 #: web/routes/settings/+page.svelte:117 web/routes/settings/+page.svelte:118
 msgid "Caches"
 msgstr "キャッシュ"
@@ -259,9 +360,33 @@ msgstr "キャンセル"
 msgid "Candidate key"
 msgstr "候補キー"
 
+#: web/lib/settingLabels.ts:205
+msgid "Caption API key"
+msgstr "キャプションのAPIキー"
+
+#: web/lib/settingLabels.ts:203
+msgid "Caption base URL"
+msgstr "キャプションのベースURL"
+
 #: web/lib/RenderPanel.svelte:240
 msgid "Caption clips with their place"
 msgstr "クリップに場所を表示"
+
+#: web/lib/settingLabels.ts:207
+msgid "Caption concurrency"
+msgstr "キャプションの同時実行数"
+
+#: web/lib/settingLabels.ts:204
+msgid "Caption model"
+msgstr "キャプションモデル"
+
+#: web/lib/settingLabels.ts:202
+msgid "Caption provider"
+msgstr "キャプションのプロバイダー"
+
+#: web/lib/settingLabels.ts:206
+msgid "Caption timeout (seconds)"
+msgstr "キャプションのタイムアウト（秒）"
 
 #: web/lib/ShotInspector.svelte:152
 msgid "Captions were read; the rules chose this cut."
@@ -283,6 +408,10 @@ msgstr "対象になるか確認"
 #: web/lib/UpdateCheck.svelte:29
 msgid "Check for updates"
 msgstr "アップデートを確認"
+
+#: web/lib/settingLabels.ts:156
+msgid "Check for updates daily"
+msgstr "毎日アップデートを確認"
 
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Check playback"
@@ -355,9 +484,25 @@ msgstr "この制限を解除しますか？"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache} から {count} 件のエントリを消去しました。"
 
+#: web/lib/settingLabels.ts:164
+msgid "Client ID"
+msgstr "クライアントID"
+
+#: web/lib/settingLabels.ts:165
+msgid "Client secret"
+msgstr "クライアントシークレット"
+
 #: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "クリップボードを使用できません。下のレポートを選択してコピーしてください。"
+
+#: web/lib/settingLabels.ts:72
+msgid "Codec"
+msgstr "コーデック"
+
+#: web/lib/settingLabels.ts:73
+msgid "Codec policy"
+msgstr "コーデックポリシー"
 
 #: web/routes/create/+page.svelte:507
 msgid "Command"
@@ -367,7 +512,7 @@ msgstr "コマンド"
 msgid "Completed"
 msgstr "完了"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:73
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "設定ファイル：{config_path}"
@@ -376,7 +521,7 @@ msgstr "設定ファイル：{config_path}"
 msgid "Config warnings"
 msgstr "設定の警告"
 
-#: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
+#: web/lib/SettingsEditor.svelte:65 web/lib/SettingsEditor.svelte:67
 msgid "Configuration"
 msgstr "設定"
 
@@ -384,6 +529,11 @@ msgstr "設定"
 #, python-brace-format
 msgid "Confirm that {name} is {relationship} {other}"
 msgstr "{name} は {other} の {relationship} であることを確認"
+
+#: web/lib/people/RelationshipRows.svelte:54
+#, python-brace-format
+msgid "Confirm: {statement}"
+msgstr "確認：{statement}"
 
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
@@ -394,9 +544,17 @@ msgstr "{name} として接続中"
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
+#: web/lib/settingLabels.ts:77
+msgid "Constant rate factor"
+msgstr "固定レート係数（CRF）"
+
 #: web/routes/runs/[run_id]/+page.svelte:118
 msgid "Contact sheet"
 msgstr "コンタクトシート"
+
+#: web/lib/settingLabels.ts:176 web/lib/settingLabels.ts:198
+msgid "Cooldown (hours)"
+msgstr "クールダウン（時間）"
 
 #: web/lib/JobPanel.svelte:136 web/lib/RunReport.svelte:76
 msgid "Copied"
@@ -447,6 +605,22 @@ msgstr "編集する"
 msgid "Cut contact sheet"
 msgstr "編集結果のコンタクトシート"
 
+#: web/lib/settingLabels.ts:175
+msgid "Daily at"
+msgstr "毎日の実行時刻"
+
+#: web/lib/settingLabels.ts:17
+msgid "Database"
+msgstr "データベース"
+
+#: web/lib/settingLabels.ts:90
+msgid "Database URL"
+msgstr "データベースURL"
+
+#: web/lib/settingLabels.ts:84
+msgid "Database file"
+msgstr "データベースファイル"
+
 #: web/routes/create/+page.svelte:336
 msgid "Day"
 msgstr "日"
@@ -459,7 +633,11 @@ msgstr "日 (MM-DD)"
 msgid "Decided while cutting"
 msgstr "編集中に判断"
 
-#: web/lib/SettingsEditor.svelte:41
+#: web/lib/settingLabels.ts:96
+msgid "Decode on the GPU"
+msgstr "GPUでデコード"
+
+#: web/lib/SettingsEditor.svelte:42
 msgid "Default"
 msgstr "既定値"
 
@@ -467,7 +645,7 @@ msgstr "既定値"
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "Immich に送信しました。ディスク容量を節約するため、ローカルファイルを削除しました。"
 
-#: web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
+#: web/lib/settingLabels.ts:43 web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
 msgid "Demo mode"
 msgstr "デモモード"
 
@@ -487,9 +665,57 @@ msgstr "素材の説明を作成しています"
 msgid "Descriptions not requested"
 msgstr "説明は要求されていません"
 
+#: web/lib/settingLabels.ts:189
+msgid "Detect a person's month"
+msgstr "人物の月を検出"
+
+#: web/lib/settingLabels.ts:188
+msgid "Detect albums"
+msgstr "アルバムを検出"
+
+#: web/lib/settingLabels.ts:182
+msgid "Detect bursts of activity"
+msgstr "活動の急増を検出"
+
+#: web/lib/settingLabels.ts:185
+msgid "Detect groups"
+msgstr "グループを検出"
+
+#: web/lib/settingLabels.ts:187
+msgid "Detect holidays"
+msgstr "祝日を検出"
+
+#: web/lib/settingLabels.ts:178
+msgid "Detect months"
+msgstr "月を検出"
+
+#: web/lib/settingLabels.ts:181
+msgid "Detect person spotlights"
+msgstr "人物スポットライトを検出"
+
+#: web/lib/settingLabels.ts:186
+msgid "Detect seasons"
+msgstr "季節を検出"
+
+#: web/lib/settingLabels.ts:180
+msgid "Detect trips"
+msgstr "旅行を検出"
+
+#: web/lib/settingLabels.ts:179
+msgid "Detect years"
+msgstr "年を検出"
+
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
 msgstr "GPSデータから旅行を検出しています…"
+
+#: web/lib/settingLabels.ts:209
+msgid "Detector Python"
+msgstr "検出用Python"
+
+#: web/lib/settingLabels.ts:210
+msgid "Detector cache folder"
+msgstr "検出キャッシュフォルダー"
 
 #: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Discard changes"
@@ -528,6 +754,10 @@ msgstr "モデルをダウンロード"
 msgid "Download report"
 msgstr "レポートをダウンロード"
 
+#: web/lib/settingLabels.ts:60
+msgid "Download workers"
+msgstr "ダウンロードワーカー数"
+
 #: web/lib/people/FamilyTree.svelte:61
 msgid "Draw the family tree"
 msgstr "家系図を描く"
@@ -537,6 +767,10 @@ msgid ""
 "Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
 "it. Click someone to open their card."
 msgstr "確認した関係から描かれています。点線は提案です。チェックで確認できます。人物をクリックするとカードが開きます。"
+
+#: web/lib/settingLabels.ts:147
+msgid "Duration per photo"
+msgstr "写真1枚あたりの長さ"
 
 #: web/routes/settings/people/+page.svelte:175
 msgid ""
@@ -558,6 +792,14 @@ msgstr "メタデータのみを使って編集しました。素材の内容は
 msgid "Edited without descriptions — picture content was classified, not read."
 msgstr "説明文なしで編集しました。素材の内容は分類しましたが、詳しい分析はしていません。"
 
+#: web/lib/settingLabels.ts:33
+msgid "Editorial"
+msgstr "編集"
+
+#: web/lib/settingLabels.ts:89
+msgid "Editorial runs size (GB)"
+msgstr "編集実行データのサイズ（GB）"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Elegant minimal"
 msgstr "上品でシンプル"
@@ -569,6 +811,29 @@ msgstr "このショットが選ばれた時点で候補でした。開いて比
 #: web/routes/suggestions/+page.svelte:65
 msgid "Eligible. No video was generated."
 msgstr "対象です。動画は作成されていません。"
+
+#: web/lib/settingLabels.ts:172
+msgid "Email header"
+msgstr "メールヘッダー"
+
+#: web/lib/settingLabels.ts:68 web/lib/settingLabels.ts:93 web/lib/settingLabels.ts:97
+#: web/lib/settingLabels.ts:122 web/lib/settingLabels.ts:126 web/lib/settingLabels.ts:135
+#: web/lib/settingLabels.ts:143 web/lib/settingLabels.ts:146 web/lib/settingLabels.ts:157
+#: web/lib/settingLabels.ts:174 web/lib/settingLabels.ts:193
+msgid "Enabled"
+msgstr "有効"
+
+#: web/lib/settingLabels.ts:199
+msgid "Encoder"
+msgstr "エンコーダー"
+
+#: web/lib/settingLabels.ts:200
+msgid "Encoder URL"
+msgstr "エンコーダーURL"
+
+#: web/lib/settingLabels.ts:95
+msgid "Encoder preset"
+msgstr "エンコーダープリセット"
 
 #: web/lib/ShotInspector.svelte:68
 msgid "End here"
@@ -608,6 +873,10 @@ msgstr "各設定とその値の出所。ここで保存した内容はデータ
 msgid "Every trip of the year"
 msgstr "その年のすべての旅行"
 
+#: web/lib/settingLabels.ts:63
+msgid "Excluded file name patterns"
+msgstr "除外するファイル名パターン"
+
 #: web/lib/AskPanel.svelte:125
 msgid "Experimental"
 msgstr "実験的"
@@ -616,6 +885,14 @@ msgstr "実験的"
 msgid "Expression"
 msgstr "式"
 
+#: web/lib/settingLabels.ts:191
+msgid "Extra holidays"
+msgstr "追加の祝日"
+
+#: web/lib/settingLabels.ts:111
+msgid "Extra parameters"
+msgstr "追加パラメーター"
+
 #: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
@@ -623,9 +900,25 @@ msgid ""
 "Immich or keep them apart."
 msgstr "顔認識は同じ顔をまとめるため、この2件のうち片方にほぼ全ての写真があり、もう片方にはほとんどありません。どちらの数も単独では意味を持ちません。Immichで統合するか、別々のままにしてください。"
 
+#: web/lib/settingLabels.ts:219
+msgid "Facts base URL"
+msgstr "ファクトのベースURL"
+
+#: web/lib/settingLabels.ts:221
+msgid "Facts concurrency"
+msgstr "ファクトの同時実行数"
+
+#: web/lib/settingLabels.ts:137
+msgid "Fade color"
+msgstr "フェードの色"
+
 #: web/lib/labels.ts:31
 msgid "Failed"
 msgstr "失敗"
+
+#: web/lib/settingLabels.ts:82 web/lib/settingLabels.ts:223
+msgid "Fall back to this machine"
+msgstr "このマシンに切り替える"
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
@@ -649,6 +942,18 @@ msgstr "素材のプレビューを取得しています"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "条件に合う素材が12件未満のため、短いムービーになります。"
 
+#: web/lib/settingLabels.ts:11
+msgid "Film defaults"
+msgstr "フィルムの既定値"
+
+#: web/lib/settingLabels.ts:136
+msgid "Film language"
+msgstr "フィルムの言語"
+
+#: web/lib/settingLabels.ts:145
+msgid "Film tags"
+msgstr "フィルムのタグ"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "この素材を使えるムービー"
@@ -661,13 +966,29 @@ msgstr "名前を検索"
 msgid "Finding faces"
 msgstr "顔を検出しています"
 
+#: web/lib/settingLabels.ts:141
+msgid "First names only"
+msgstr "名のみ"
+
 #: web/lib/RenderPanel.svelte:235
 msgid "Fit with bars"
 msgstr "帯を付けて収める"
 
-#: web/lib/RenderPanel.svelte:221
+#: web/lib/settingLabels.ts:69 web/lib/settingLabels.ts:83
+msgid "Folder"
+msgstr "フォルダー"
+
+#: web/lib/RenderPanel.svelte:221 web/lib/settingLabels.ts:70
 msgid "Format"
 msgstr "形式"
+
+#: web/lib/settingLabels.ts:65
+msgid "Forwarded copies when short"
+msgstr "短い場合の転送コピー"
+
+#: web/lib/settingLabels.ts:35
+msgid "Free text"
+msgstr "自由入力"
 
 #: web/routes/create/+page.svelte:344
 msgid "From"
@@ -685,9 +1006,21 @@ msgstr "祖父母、きょうだい、グループチャット。私的な場面
 msgid "Grouped condition"
 msgstr "グループ化された条件"
 
+#: web/lib/settingLabels.ts:74
+msgid "HDR mode"
+msgstr "HDRモード"
+
 #: web/lib/RenderPanel.svelte:180
 msgid "Hard cut"
 msgstr "カット"
+
+#: web/lib/settingLabels.ts:18
+msgid "Hardware"
+msgstr "ハードウェア"
+
+#: web/lib/settingLabels.ts:208
+msgid "Head bundle"
+msgstr "ヘッドバンドル"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
@@ -710,6 +1043,18 @@ msgstr "高"
 msgid "Holiday"
 msgstr "祝日・行事"
 
+#: web/lib/settingLabels.ts:148
+msgid "Home latitude"
+msgstr "自宅の緯度"
+
+#: web/lib/settingLabels.ts:149
+msgid "Home longitude"
+msgstr "自宅の経度"
+
+#: web/lib/settingLabels.ts:41
+msgid "Host"
+msgstr "ホスト"
+
 #: web/lib/AskPanel.svelte:20
 msgid "How it read your words"
 msgstr "リクエストの解釈"
@@ -729,6 +1074,10 @@ msgstr "更新方法"
 #: web/lib/UpdateCheck.svelte:46
 msgid "How to update this install"
 msgstr "このインストールの更新方法"
+
+#: web/lib/settingLabels.ts:10
+msgid "Immich"
+msgstr "Immich"
 
 #: web/routes/settings/+page.svelte:87 web/routes/settings/+page.svelte:88
 msgid "Immich Connection"
@@ -760,6 +1109,10 @@ msgstr ""
 msgid "Immich unreachable"
 msgstr "Immich に接続できません"
 
+#: web/lib/settingLabels.ts:92
+msgid "Import from"
+msgstr "インポート元"
+
 #: web/lib/labels.ts:72
 msgid "Important"
 msgstr "重要"
@@ -772,7 +1125,7 @@ msgstr "編集に使用"
 msgid "In the film"
 msgstr "ムービーに使用"
 
-#: web/routes/create/+page.svelte:500
+#: web/lib/settingLabels.ts:66 web/routes/create/+page.svelte:500
 msgid "Include Live Photos"
 msgstr "Live Photos を含める"
 
@@ -783,6 +1136,14 @@ msgstr "警告が付いた写真の説明文を含める"
 #: web/routes/create/+page.svelte:499
 msgid "Include photos"
 msgstr "写真を含める"
+
+#: web/lib/settingLabels.ts:192
+msgid "Include shared albums"
+msgstr "共有アルバムを含める"
+
+#: web/lib/settingLabels.ts:34
+msgid "Inference"
+msgstr "推論"
 
 #: web/routes/+layout.svelte:58
 msgid "Interface language"
@@ -796,6 +1157,10 @@ msgstr "中断"
 msgid "Invalid username or password"
 msgstr "ユーザー名またはパスワードが正しくありません"
 
+#: web/lib/settingLabels.ts:163
+msgid "Issuer URL"
+msgstr "発行者URL"
+
 #: web/lib/JobPanel.svelte:71
 msgid "It did not finish."
 msgstr "完了しませんでした。"
@@ -808,6 +1173,10 @@ msgstr "私たちだけ"
 #: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "別々のままにする"
+
+#: web/lib/settingLabels.ts:85
+msgid "Keep downloaded videos"
+msgstr "ダウンロードした動画を保持"
 
 #: web/lib/RenderPanel.svelte:251
 msgid "Keep original audio"
@@ -834,10 +1203,26 @@ msgstr "ラベル"
 msgid "Landscape"
 msgstr "横向き"
 
+#: web/lib/settingLabels.ts:19
+msgid "Language model"
+msgstr "言語モデル"
+
+#: web/lib/settingLabels.ts:131
+msgid "Language model size"
+msgstr "言語モデルのサイズ"
+
 #: web/lib/JobPanel.svelte:100
 #, python-brace-format
 msgid "Last measured progress: {amount} ago."
 msgstr "最後に進捗を計測したのは{amount}前です。"
+
+#: web/lib/settingLabels.ts:217
+msgid "Laya checkpoint"
+msgstr "Layaチェックポイント"
+
+#: web/lib/settingLabels.ts:218
+msgid "Laya checkpoint URL"
+msgstr "LayaチェックポイントURL"
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -856,7 +1241,7 @@ msgstr "リンク"
 msgid "Link a person from {account}"
 msgstr "{account}の人物をリンク"
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Linked to"
 msgstr "リンク先"
 
@@ -872,11 +1257,31 @@ msgstr "リアルタイム更新が切断されました。保存されたジョ
 msgid "Loading your config warned about these keys:"
 msgstr "設定の読み込みで次のキーに警告が出ました:"
 
+#: web/lib/settingLabels.ts:103
+msgid "Local context size"
+msgstr "ローカルのコンテキストサイズ"
+
+#: web/lib/settingLabels.ts:121
+msgid "Local music folder"
+msgstr "ローカル音楽フォルダー"
+
+#: web/lib/settingLabels.ts:101
+msgid "Local server"
+msgstr "ローカルサーバー"
+
+#: web/lib/settingLabels.ts:102
+msgid "Local vision projector"
+msgstr "ローカルのビジョンプロジェクター"
+
+#: web/lib/settingLabels.ts:67
+msgid "Longest source video (seconds)"
+msgstr "元動画の最大長（秒）"
+
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
 msgstr "提案できる思い出をライブラリから探しています..."
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Looks linked to"
 msgstr "リンクしていそう"
 
@@ -908,13 +1313,37 @@ msgstr "手動"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "手動・自動の実行履歴です。失敗も含みます。実行を開くと編集結果と所要時間を確認できます。"
 
+#: web/lib/settingLabels.ts:155
+msgid "Map tiles"
+msgstr "地図タイル"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:91
 msgid "Marked Never use. Tick it to include it in this revision."
 msgstr "「今後使わない」が設定されています。このリビジョンに含めるにはチェックしてください。"
 
+#: web/lib/settingLabels.ts:212
+msgid "Marqo ONNX URL"
+msgstr "Marqo ONNX URL"
+
+#: web/lib/settingLabels.ts:211
+msgid "Marqo ONNX model"
+msgstr "Marqo ONNXモデル"
+
 #: web/lib/RenderPanel.svelte:217
 msgid "Match the sources"
 msgstr "元の解像度に合わせる"
+
+#: web/lib/settingLabels.ts:177
+msgid "Maximum delivery attempts"
+msgstr "最大配信試行回数"
+
+#: web/lib/settingLabels.ts:152
+msgid "Maximum gap (days)"
+msgstr "最大間隔（日）"
+
+#: web/lib/settingLabels.ts:109
+msgid "Maximum tokens parameter"
+msgstr "最大トークン数パラメーター"
 
 #: web/lib/labels.ts:106
 msgid "Measuring motion in the videos"
@@ -940,9 +1369,29 @@ msgstr "思い出"
 msgid "Memory type"
 msgstr "思い出の種類"
 
+#: web/lib/settingLabels.ts:150
+msgid "Minimum distance (km)"
+msgstr "最小距離（km）"
+
+#: web/lib/settingLabels.ts:151
+msgid "Minimum duration (days)"
+msgstr "最小期間（日）"
+
+#: web/lib/settingLabels.ts:76
+msgid "Minimum free space (GB)"
+msgstr "最小空き容量（GB）"
+
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "作っていない月"
+
+#: web/lib/settingLabels.ts:127
+msgid "Mode"
+msgstr "モード"
+
+#: web/lib/settingLabels.ts:100
+msgid "Model"
+msgstr "モデル"
 
 #: web/lib/labels.ts:96
 msgid "Model checks not requested"
@@ -964,6 +1413,10 @@ msgstr "モデルの状態を確認できませんでした。"
 msgid "Model suggestion"
 msgstr "モデルの提案"
 
+#: web/lib/settingLabels.ts:130
+msgid "Model variant"
+msgstr "モデルのバリアント"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Modern warm"
 msgstr "モダンで温かみのある雰囲気"
@@ -976,6 +1429,10 @@ msgstr "月"
 msgid "Monthly Highlights"
 msgstr "月のハイライト"
 
+#: web/lib/settingLabels.ts:190
+msgid "Months to backfill"
+msgstr "遡って処理する月数"
+
 #: web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "複数の人物"
@@ -984,13 +1441,29 @@ msgstr "複数の人物"
 msgid "Music"
 msgstr "音楽"
 
+#: web/lib/settingLabels.ts:21
+msgid "Music generation"
+msgstr "音楽生成"
+
+#: web/lib/settingLabels.ts:47
+msgid "Music upload quota (MB)"
+msgstr "音楽アップロード上限（MB）"
+
 #: web/lib/RenderPanel.svelte:275
 msgid "Music volume:"
 msgstr "音楽の音量："
 
+#: web/lib/settingLabels.ts:51
+msgid "Native sharing"
+msgstr "ネイティブ共有"
+
 #: web/lib/AskPanel.svelte:34
 msgid "Needs preparation"
 msgstr "準備が必要"
+
+#: web/lib/settingLabels.ts:27
+msgid "Network"
+msgstr "ネットワーク"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
@@ -1030,7 +1503,7 @@ msgstr "このリクエストに合う素材がライブラリに見つからず
 msgid "No model read this cut: the rules chose every picture."
 msgstr "この編集は選別ルールだけで行いました。モデルによる分析はしていません。"
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:255 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "音楽なし"
 
@@ -1083,8 +1556,8 @@ msgstr "現在、提案はありません。"
 msgid "No trips detected for this year."
 msgstr "この年に検出された旅行はありません。"
 
-#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
-#: web/lib/people/RelationshipRows.svelte:74
+#: web/lib/people/RelationshipRows.svelte:55 web/lib/people/RelationshipRows.svelte:59
+#: web/lib/people/RelationshipRows.svelte:75
 msgid "No, they are not"
 msgstr "いいえ、違います"
 
@@ -1117,7 +1590,7 @@ msgstr "リクエストして作るムービーには適用されません"
 msgid "Not possible"
 msgstr "不可能"
 
-#: web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:58
 msgid "Not related to"
 msgstr "関係なし"
 
@@ -1125,22 +1598,37 @@ msgstr "関係なし"
 msgid "Not the same person"
 msgstr "別人"
 
-#: web/lib/people/RelationshipRows.svelte:57
-#, python-brace-format
-msgid "Not {relationship}"
-msgstr "{relationship}ではない"
-
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "メモ"
 
-#: web/lib/people/RelationshipRows.svelte:79
+#: web/lib/people/RelationshipRows.svelte:80
 msgid "Nothing recorded yet."
 msgstr "まだ記録がありません。"
+
+#: web/lib/settingLabels.ts:194
+msgid "Notification URLs"
+msgstr "通知URL"
+
+#: web/lib/settingLabels.ts:31
+msgid "Notifications"
+msgstr "通知"
+
+#: web/lib/settingLabels.ts:196
+msgid "Notify on failure"
+msgstr "失敗時に通知"
+
+#: web/lib/settingLabels.ts:195
+msgid "Notify on success"
+msgstr "成功時に通知"
 
 #: web/lib/SettingsChecks.svelte:19
 msgid "OK"
 msgstr "OK"
+
+#: web/lib/settingLabels.ts:133
+msgid "Offload to the CPU"
+msgstr "CPUにオフロード"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1205,6 +1693,10 @@ msgstr "この瞬間のほかの素材"
 msgid "Other pictures of this moment"
 msgstr "この瞬間のほかの素材"
 
+#: web/lib/settingLabels.ts:14
+msgid "Output"
+msgstr "出力"
+
 #: web/lib/JobPanel.svelte:90 web/lib/PhaseTimeline.svelte:26
 msgid "Overall time remaining is not known yet."
 msgstr "全体の残り時間はまだ不明です。"
@@ -1214,12 +1706,20 @@ msgstr "全体の残り時間はまだ不明です。"
 msgid "Owner of {account}"
 msgstr "{account}の所有者"
 
+#: web/lib/settingLabels.ts:110
+msgid "Parameters to drop"
+msgstr "除外するパラメーター"
+
+#: web/lib/settingLabels.ts:108
+msgid "Parameters without thinking"
+msgstr "思考なしのパラメーター"
+
 #: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "{stages}を通過"
 
-#: web/routes/login/+page.svelte:69
+#: web/lib/settingLabels.ts:161 web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "パスワード"
 
@@ -1262,6 +1762,10 @@ msgstr "フェーズ"
 msgid "Photo duration (seconds)"
 msgstr "写真の表示時間（秒）"
 
+#: web/lib/settingLabels.ts:25
+msgid "Photos"
+msgstr "写真"
+
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "人物を選ぶ"
@@ -1293,6 +1797,14 @@ msgstr "素材の条件"
 msgid "Pictures: {count}"
 msgstr "素材: {count}"
 
+#: web/lib/settingLabels.ts:153
+msgid "Place lookup"
+msgstr "場所の検索"
+
+#: web/lib/settingLabels.ts:154
+msgid "Place lookup URL"
+msgstr "場所検索URL"
+
 #: web/lib/RenderPanel.svelte:188
 msgid "Playful bright"
 msgstr "明るく楽しい雰囲気"
@@ -1305,6 +1817,10 @@ msgstr "URLとAPIキーの両方を入力してください"
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "候補の素材"
+
+#: web/lib/settingLabels.ts:42
+msgid "Port"
+msgstr "ポート"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Portrait"
@@ -1326,9 +1842,17 @@ msgstr "画像を準備"
 msgid "Prepare selected clips"
 msgstr "選択したクリップを準備"
 
+#: web/lib/settingLabels.ts:62
+msgid "Prepared source cache size (GB)"
+msgstr "準備済みソースのキャッシュサイズ（GB）"
+
 #: web/routes/settings/+page.svelte:33
 msgid "Prepared-source cache"
 msgstr "準備済みソースのキャッシュ"
+
+#: web/lib/settingLabels.ts:7 web/lib/settingLabels.ts:39
+msgid "Preset"
+msgstr "プリセット"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1354,21 +1878,37 @@ msgstr "プライバシーモード: すべての素材をぼかし、名前を�
 msgid "Processed"
 msgstr "処理済み"
 
+#: web/lib/settingLabels.ts:222
+msgid "Producers"
+msgstr "プロデューサー"
+
 #: web/lib/JobPanel.svelte:65 web/lib/JobPanel.svelte:79
 msgid "Progress"
 msgstr "進行状況"
+
+#: web/lib/settingLabels.ts:98 web/lib/settingLabels.ts:158 web/lib/settingLabels.ts:201
+msgid "Provider"
+msgstr "プロバイダー"
+
+#: web/lib/settingLabels.ts:53 web/lib/settingLabels.ts:162
+msgid "Public URL"
+msgstr "公開URL"
 
 #: web/lib/ShotInspector.svelte:60
 msgid "Put it back"
 msgstr "元に戻す"
 
-#: web/lib/RenderPanel.svelte:227
+#: web/lib/RenderPanel.svelte:227 web/lib/settingLabels.ts:75
 msgid "Quality"
 msgstr "画質"
 
 #: web/lib/RenderPanel.svelte:186
 msgid "Random"
 msgstr "ランダム"
+
+#: web/lib/settingLabels.ts:116
+msgid "Reader concurrency"
+msgstr "リーダーの同時実行数"
 
 #: web/lib/labels.ts:108
 msgid "Reading picture facts"
@@ -1402,11 +1942,11 @@ msgstr "提案を更新"
 msgid "Refreshing..."
 msgstr "更新中..."
 
-#: web/lib/people/RelationshipRows.svelte:83
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Relationship"
 msgstr "関係"
 
-#: web/lib/people/RelationshipRows.svelte:43
+#: web/lib/people/RelationshipRows.svelte:44
 msgid "Relationships"
 msgstr "関係"
 
@@ -1414,7 +1954,7 @@ msgstr "関係"
 msgid "Release notes"
 msgstr "リリースノート"
 
-#: web/lib/SettingsEditor.svelte:67
+#: web/lib/SettingsEditor.svelte:68
 msgid "Reload from Disk"
 msgstr "ディスクから再読み込み"
 
@@ -1426,7 +1966,7 @@ msgstr "削除"
 msgid "Remove from this cut"
 msgstr "この編集から外す"
 
-#: web/lib/people/RelationshipRows.svelte:48
+#: web/lib/people/RelationshipRows.svelte:49
 msgid "Remove this relationship"
 msgstr "この関係を削除"
 
@@ -1441,6 +1981,14 @@ msgstr "レンダリングする"
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Render film"
 msgstr "動画をレンダリング"
+
+#: web/lib/settingLabels.ts:15
+msgid "Render worker"
+msgstr "レンダーワーカー"
+
+#: web/lib/settingLabels.ts:113
+msgid "Repetition penalty"
+msgstr "繰り返しペナルティ"
 
 #: web/lib/labels.ts:45
 msgid "Replaced a picture the model doubted."
@@ -1458,7 +2006,7 @@ msgstr "今すぐ再スキャン"
 msgid "Rescan the library"
 msgstr "ライブラリを再スキャン"
 
-#: web/lib/RenderPanel.svelte:215
+#: web/lib/RenderPanel.svelte:215 web/lib/settingLabels.ts:71
 msgid "Resolution"
 msgstr "解像度"
 
@@ -1486,6 +2034,11 @@ msgstr "リビジョン"
 #: web/lib/people/PersonCard.svelte:28
 msgid "Role (suggestions; type your own)"
 msgstr "役割（候補から選ぶか自由入力）"
+
+#: web/lib/people/RelationshipRows.svelte:58
+#, python-brace-format
+msgid "Ruled out: {statement}"
+msgstr "除外：{statement}"
 
 #: web/routes/runs/[run_id]/+page.svelte:347
 msgid "Run details"
@@ -1538,7 +2091,7 @@ msgstr "Live Photoのフレームを抽出中"
 msgid "Sampling video frames"
 msgstr "動画フレームを抽出中"
 
-#: web/lib/SettingsEditor.svelte:120
+#: web/lib/SettingsEditor.svelte:122
 msgid "Save"
 msgstr "保存"
 
@@ -1562,7 +2115,7 @@ msgstr "グループを保存"
 msgid "Save revision"
 msgstr "リビジョンを保存"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:95
+#: web/lib/SettingsEditor.svelte:112 web/routes/settings/+page.svelte:95
 msgid "Saved - type a new key to replace it"
 msgstr "保存済み。置き換えるには新しいキーを入力してください"
 
@@ -1576,16 +2129,16 @@ msgstr "リビジョン {number} として保存しました。"
 msgid "Saved groups"
 msgstr "保存されたグループ"
 
-#: web/lib/SettingsEditor.svelte:40
+#: web/lib/SettingsEditor.svelte:41
 msgid "Saved here"
 msgstr "ここで保存"
 
-#: web/lib/SettingsEditor.svelte:39
+#: web/lib/SettingsEditor.svelte:40
 #, python-brace-format
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "ここに保存されていますが、{name} で復号できません。既定値を使用中です"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:67
+#: web/lib/SettingsEditor.svelte:58 web/routes/settings/+page.svelte:67
 msgid "Saved to the database"
 msgstr "データベースに保存しました"
 
@@ -1593,6 +2146,10 @@ msgstr "データベースに保存しました"
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "保存先：{output_path}"
+
+#: web/lib/settingLabels.ts:54
+msgid "Scale mode"
+msgstr "スケールモード"
 
 #: web/lib/RenderPanel.svelte:233
 msgid "Scaling Mode"
@@ -1602,6 +2159,14 @@ msgstr "拡大縮小の方法"
 msgid "Scheduled"
 msgstr "スケジュール"
 
+#: web/lib/settingLabels.ts:91
+msgid "Schema"
+msgstr "スキーマ"
+
+#: web/lib/settingLabels.ts:166
+msgid "Scope"
+msgstr "スコープ"
+
 #: web/lib/ShotInspector.svelte:72
 msgid "Screen time (seconds)"
 msgstr "表示時間（秒）"
@@ -1610,23 +2175,43 @@ msgstr "表示時間（秒）"
 msgid "Season"
 msgstr "季節"
 
-#: web/lib/SettingsEditor.svelte:77
+#: web/lib/SettingsEditor.svelte:78
 #, python-brace-format
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
 msgstr "{name} が設定されるまで、ここに秘密情報を保存できません。設定するか、環境変数か config.yaml に保存してください。"
 
+#: web/lib/settingLabels.ts:44
+msgid "Secure cookies"
+msgstr "セキュアCookie"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Select pictures"
 msgstr "画像を選択"
 
-#: web/lib/SettingsEditor.svelte:37
+#: web/lib/settingLabels.ts:115
+msgid "Send image detail"
+msgstr "画像の詳細度を送信"
+
+#: web/lib/settingLabels.ts:9
+msgid "Server"
+msgstr "サーバー"
+
+#: web/lib/settingLabels.ts:48
+msgid "Server URL"
+msgstr "サーバーURL"
+
+#: web/lib/settingLabels.ts:159
+msgid "Session length (hours)"
+msgstr "セッションの長さ（時間）"
+
+#: web/lib/SettingsEditor.svelte:38
 #, python-brace-format
 msgid "Set by {name} (environment)"
 msgstr "{name} で設定（環境変数）"
 
-#: web/lib/SettingsEditor.svelte:38
+#: web/lib/SettingsEditor.svelte:39
 #, python-brace-format
 msgid "Set in config.yaml as {key}"
 msgstr "config.yaml の {key} で設定"
@@ -1640,9 +2225,17 @@ msgstr "設定"
 msgid "Shareable"
 msgstr "共有可能"
 
+#: web/lib/settingLabels.ts:57
+msgid "Sharing level"
+msgstr "共有レベル"
+
 #: web/routes/runs/[run_id]/+page.svelte:197
 msgid "Show"
 msgstr "表示"
+
+#: web/lib/settingLabels.ts:140
+msgid "Show month dividers"
+msgstr "月の区切りを表示"
 
 #: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
@@ -1653,6 +2246,10 @@ msgstr "もっと見る"
 msgid "Sign in"
 msgstr "サインイン"
 
+#: web/lib/settingLabels.ts:167
+msgid "Sign in automatically"
+msgstr "自動でサインイン"
+
 #: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "このサーバーの前段にあるプロキシ経由でサインインします。"
@@ -1661,9 +2258,17 @@ msgstr "このサーバーの前段にあるプロキシ経由でサインイン
 msgid "Sign out"
 msgstr "サインアウト"
 
+#: web/lib/settingLabels.ts:29
+msgid "Sign-in"
+msgstr "サインイン"
+
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "サインインの有効期限が切れました。もう一度サインインしてください。"
+
+#: web/lib/settingLabels.ts:64
+msgid "Skip stills without camera data"
+msgstr "カメラ情報のない静止画をスキップ"
 
 #: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
@@ -1693,6 +2298,10 @@ msgstr "一部の素材は説明なしで編集されました。"
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr "動画とLive Photosに録音された音声です。オフにすると音楽のみになり、「音楽なし」も選ぶと無音になります。"
 
+#: web/lib/settingLabels.ts:61
+msgid "Source preparation workers"
+msgstr "ソース準備ワーカー数"
+
 #: web/routes/create/+page.svelte:334
 msgid "South"
 msgstr "南"
@@ -1700,6 +2309,14 @@ msgstr "南"
 #: web/lib/labels.ts:14
 msgid "Special day"
 msgstr "特別な日"
+
+#: web/lib/settingLabels.ts:183
+msgid "Special days per year"
+msgstr "年間の特別な日の数"
+
+#: web/lib/settingLabels.ts:13
+msgid "Speech"
+msgstr "音声読み上げ"
 
 #: web/routes/create/+page.svelte:43
 msgid "Spring"
@@ -1741,11 +2358,23 @@ msgstr "停止しました。"
 msgid "Stories"
 msgstr "ストーリー"
 
+#: web/lib/settingLabels.ts:215
+msgid "Strict sharing"
+msgstr "厳格な共有"
+
+#: web/lib/settingLabels.ts:112
+msgid "Structured output"
+msgstr "構造化出力"
+
+#: web/lib/settingLabels.ts:138
+msgid "Style mode"
+msgstr "スタイルモード"
+
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "サブタイトル"
 
-#: web/lib/people/RelationshipRows.svelte:50
+#: web/lib/people/RelationshipRows.svelte:51
 msgid "Suggested"
 msgstr "提案"
 
@@ -1836,7 +2465,7 @@ msgstr "編集結果の準備ができました。"
 msgid "The dates and places, never a model"
 msgstr "日付と場所のみ、モデルは使いません"
 
-#: web/lib/SettingsEditor.svelte:74
+#: web/lib/SettingsEditor.svelte:75
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
@@ -1947,7 +2576,7 @@ msgstr "実行履歴を読み込めませんでした。"
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "サーバーのURLが変更されました。新しいサーバーのAPIキーを入力してください。"
 
-#: web/lib/SettingsEditor.svelte:52
+#: web/lib/SettingsEditor.svelte:53
 msgid "The settings could not be saved."
 msgstr "設定を保存できませんでした。"
 
@@ -1971,6 +2600,18 @@ msgstr "撮影された順番で再生され、編集の他の部分と同様に
 msgid "Thin"
 msgstr "使える素材が少なめ"
 
+#: web/lib/settingLabels.ts:214
+msgid "Thin model layer"
+msgstr "薄いモデルレイヤー"
+
+#: web/lib/settingLabels.ts:106
+msgid "Thinking"
+msgstr "思考"
+
+#: web/lib/settingLabels.ts:107
+msgid "Thinking parameters"
+msgstr "思考パラメーター"
+
 #: web/lib/labels.ts:62
 msgid "This category already appears twice in the last six memories."
 msgstr "このカテゴリーは直近6件の思い出にすでに2回登場しています。"
@@ -1991,17 +2632,38 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
 
+#: web/lib/settingLabels.ts:88
+msgid "Thumbnail cache size (MB)"
+msgstr "サムネイルのキャッシュサイズ（MB）"
+
+#: web/lib/settingLabels.ts:8 web/lib/settingLabels.ts:40
+msgid "Tier"
+msgstr "ティア"
+
 #: web/lib/PhaseTimeline.svelte:42
 msgid "Time not known yet"
 msgstr "時間はまだ不明"
+
+#: web/lib/settingLabels.ts:81 web/lib/settingLabels.ts:105 web/lib/settingLabels.ts:125
+#: web/lib/settingLabels.ts:134 web/lib/settingLabels.ts:220
+msgid "Timeout (seconds)"
+msgstr "タイムアウト（秒）"
 
 #: web/lib/RenderPanel.svelte:198
 msgid "Title (decided as generate decides when empty)"
 msgstr "タイトル（空欄の場合は `generate` が決定）"
 
+#: web/lib/settingLabels.ts:23
+msgid "Title screens"
+msgstr "タイトル画面"
+
 #: web/lib/RenderPanel.svelte:183
 msgid "Title style"
 msgstr "タイトルのスタイル"
+
+#: web/lib/settingLabels.ts:142
+msgid "Titles written by the model"
+msgstr "モデルが書くタイトル"
 
 #: web/routes/create/+page.svelte:350
 msgid "To"
@@ -2019,9 +2681,25 @@ msgstr "チェックで除外された素材の枠に入りました。"
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "モデルがこのストーリーから外した素材の枠に入りました。"
 
+#: web/lib/settingLabels.ts:55
+msgid "Transition"
+msgstr "トランジション"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Transition Style"
 msgstr "トランジション"
+
+#: web/lib/settingLabels.ts:56
+msgid "Transition duration"
+msgstr "トランジションの長さ"
+
+#: web/lib/settingLabels.ts:32
+msgid "Triage"
+msgstr "トリアージ"
+
+#: web/lib/settingLabels.ts:45
+msgid "Trigger token"
+msgstr "トリガートークン"
 
 #: web/lib/labels.ts:12 web/routes/create/+page.svelte:398
 msgid "Trip"
@@ -2031,9 +2709,13 @@ msgstr "旅行"
 msgid "Trip detection failed."
 msgstr "旅行の検出に失敗しました。"
 
-#: web/routes/create/+page.svelte:410
+#: web/lib/settingLabels.ts:26 web/routes/create/+page.svelte:410
 msgid "Trips"
 msgstr "旅行"
+
+#: web/lib/settingLabels.ts:173
+msgid "Trusted proxies"
+msgstr "信頼するプロキシ"
 
 #: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
@@ -2060,7 +2742,7 @@ msgstr "次のコマンドで更新:"
 msgid "Updated {when}"
 msgstr "{when}に更新"
 
-#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26
+#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26 web/lib/settingLabels.ts:28
 msgid "Updates"
 msgstr "アップデート"
 
@@ -2088,7 +2770,7 @@ msgstr "動画をアップロード"
 msgid "Upload the film to Immich"
 msgstr "ムービーを Immich にアップロード"
 
-#: web/lib/UploadFilm.svelte:49
+#: web/lib/UploadFilm.svelte:49 web/lib/settingLabels.ts:24
 msgid "Upload to Immich"
 msgstr "Immichにアップロード"
 
@@ -2105,11 +2787,19 @@ msgstr "Immichにアップロードしました。"
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "ライブラリの名前を正確に入力してください。各素材が一致する必要があります。上の名前の代わりに使われます。"
 
+#: web/lib/settingLabels.ts:132
+msgid "Use the language model"
+msgstr "言語モデルを使う"
+
 #: web/lib/ShotInspector.svelte:142
 msgid "Use this picture instead"
 msgstr "代わりにこの素材を使う"
 
-#: web/routes/login/+page.svelte:66
+#: web/lib/settingLabels.ts:171
+msgid "User header"
+msgstr "ユーザーヘッダー"
+
+#: web/lib/settingLabels.ts:160 web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "ユーザー名"
 
@@ -2125,6 +2815,14 @@ msgstr "動画"
 #: web/routes/settings/+page.svelte:31
 msgid "Video cache"
 msgstr "動画キャッシュ"
+
+#: web/lib/settingLabels.ts:87
+msgid "Video cache age (days)"
+msgstr "動画キャッシュの保持期間（日）"
+
+#: web/lib/settingLabels.ts:86
+msgid "Video cache size (GB)"
+msgstr "動画キャッシュのサイズ（GB）"
 
 #: web/routes/runs/[run_id]/+page.svelte:124
 msgid "Videos"
@@ -2165,7 +2863,7 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自動化が次に作成する内容で、`auto suggest` が表示するのと同じリストです。`auto run` と同じように実行するか、レンダリングせずに先に確認できます。"
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
+#: web/lib/people/RelationshipRows.svelte:70 web/lib/people/RelationshipRows.svelte:72
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "{name}さんは、{other}さんの何にあたりますか？"
@@ -2232,9 +2930,25 @@ msgstr "この素材が選ばれた理由"
 msgid "Winter"
 msgstr "冬"
 
-#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
+#: web/lib/people/RelationshipRows.svelte:88 web/lib/people/RelationshipRows.svelte:89
 msgid "With"
 msgstr "相手"
+
+#: web/lib/settingLabels.ts:224
+msgid "WordNet"
+msgstr "WordNet"
+
+#: web/lib/settingLabels.ts:225
+msgid "WordNet URL"
+msgstr "WordNet URL"
+
+#: web/lib/settingLabels.ts:78
+msgid "Worker URL"
+msgstr "ワーカーURL"
+
+#: web/lib/settingLabels.ts:79
+msgid "Worker token"
+msgstr "ワーカートークン"
 
 #: web/routes/create/+page.svelte:324
 msgid "Year"
@@ -2251,10 +2965,6 @@ msgstr "遡る年数（空欄の場合はすべて）"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "対象とする年数"
-
-#: web/lib/people/RelationshipRows.svelte:53
-msgid "Yes, they are"
-msgstr "はい、そうです"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2294,29 +3004,153 @@ msgstr "全員一緒"
 msgid "any of them"
 msgstr "いずれか"
 
+#: web/lib/people/relationshipLabels.ts:26
+msgid "aunt of"
+msgstr "次の人のおば"
+
+#: web/lib/people/relationshipLabels.ts:27
+msgid "aunt or uncle of"
+msgstr "次の人のおばまたはおじ"
+
+#: web/lib/people/relationshipLabels.ts:23
+msgid "best friend of"
+msgstr "次の人の親友"
+
 #: web/lib/people/FamilyTree.svelte:100
 msgid "birth year?"
 msgstr "生年不明"
+
+#: web/lib/people/relationshipLabels.ts:17
+msgid "brother of"
+msgstr "次の人の兄弟"
+
+#: web/lib/people/relationshipLabels.ts:12
+msgid "child of"
+msgstr "次の人の子"
+
+#: web/lib/people/relationshipLabels.ts:33
+msgid "child-in-law of"
+msgstr "次の人の子の配偶者"
+
+#: web/lib/people/relationshipLabels.ts:29
+msgid "cousin of"
+msgstr "次の人のいとこ"
+
+#: web/lib/people/relationshipLabels.ts:14
+msgid "daughter of"
+msgstr "次の人の娘"
+
+#: web/lib/people/relationshipLabels.ts:11
+msgid "father of"
+msgstr "次の人の父"
+
+#: web/lib/people/relationshipLabels.ts:24
+msgid "friend of"
+msgstr "次の人の友人"
+
+#: web/lib/people/relationshipLabels.ts:22
+msgid "godchild of"
+msgstr "次の人の代子"
+
+#: web/lib/people/relationshipLabels.ts:21
+msgid "godfather of"
+msgstr "次の人の代父"
+
+#: web/lib/people/relationshipLabels.ts:20
+msgid "godmother of"
+msgstr "次の人の代母"
+
+#: web/lib/people/relationshipLabels.ts:19
+msgid "godparent of"
+msgstr "次の人の代父母"
+
+#: web/lib/people/relationshipLabels.ts:31
+msgid "grandchild of"
+msgstr "次の人の孫"
+
+#: web/lib/people/relationshipLabels.ts:30
+msgid "grandparent of"
+msgstr "次の人の祖父母"
 
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "Immichのアカウント名と一致"
 
+#: web/lib/people/relationshipLabels.ts:8
+msgid "married to"
+msgstr "次の人と結婚"
+
+#: web/lib/people/relationshipLabels.ts:10
+msgid "mother of"
+msgstr "次の人の母"
+
+#: web/lib/people/relationshipLabels.ts:28
+msgid "niece or nephew of"
+msgstr "次の人の姪または甥"
+
 #: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "まだ不明"
+
+#: web/lib/people/relationshipLabels.ts:77
+msgid "often in the same pictures"
+msgstr "よく同じ写真に写っている"
 
 #: web/lib/AskPanel.svelte:141
 msgid "our cat along the years"
 msgstr "うちの猫と過ごした年月"
 
-#: web/lib/people/RelationshipRows.svelte:64
+#: web/lib/people/relationshipLabels.ts:9
+msgid "parent of"
+msgstr "次の人の親"
+
+#: web/lib/people/relationshipLabels.ts:32
+msgid "parent-in-law of"
+msgstr "次の人の義理の親"
+
+#: web/lib/people/relationshipLabels.ts:7
+msgid "partner of"
+msgstr "次の人のパートナー"
+
+#: web/lib/people/RelationshipRows.svelte:65
 msgid "relationship not named"
 msgstr "関係の名前なし"
+
+#: web/lib/people/relationshipLabels.ts:78
+msgid "same birth date"
+msgstr "誕生日が同じ"
+
+#: web/lib/people/relationshipLabels.ts:79
+msgid "same name"
+msgstr "名前が同じ"
+
+#: web/lib/people/relationshipLabels.ts:15
+msgid "sibling of"
+msgstr "次の人のきょうだい"
+
+#: web/lib/people/relationshipLabels.ts:34
+msgid "sibling-in-law of"
+msgstr "次の人の義理のきょうだい"
+
+#: web/lib/people/relationshipLabels.ts:16
+msgid "sister of"
+msgstr "次の人の姉妹"
+
+#: web/lib/people/relationshipLabels.ts:13
+msgid "son of"
+msgstr "次の人の息子"
 
 #: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "開始中"
+
+#: web/lib/people/relationshipLabels.ts:18
+msgid "twin of"
+msgstr "次の人の双子"
+
+#: web/lib/people/relationshipLabels.ts:25
+msgid "uncle of"
+msgstr "次の人のおじ"
 
 #: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
@@ -2330,6 +3164,10 @@ msgstr "が推測を書き込みます。あなたの回答はスキャンをま
 msgid "you confirmed it"
 msgstr "あなたが確認済み"
 
+#: web/lib/people/relationshipLabels.ts:80
+msgid "you said so"
+msgstr "あなたが指定"
+
 #: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
 msgstr "あなたがスキャンに指定"
@@ -2338,6 +3176,146 @@ msgstr "あなたがスキャンに指定"
 #, python-brace-format
 msgid "{amount} elapsed"
 msgstr "{amount}経過"
+
+#: web/lib/people/relationshipLabels.ts:57
+#, python-brace-format
+msgid "{a} is {b}'s aunt"
+msgstr "{a}は{b}のおばです"
+
+#: web/lib/people/relationshipLabels.ts:58
+#, python-brace-format
+msgid "{a} is {b}'s aunt or uncle"
+msgstr "{a}は{b}のおばまたはおじです"
+
+#: web/lib/people/relationshipLabels.ts:54
+#, python-brace-format
+msgid "{a} is {b}'s best friend"
+msgstr "{a}は{b}の親友です"
+
+#: web/lib/people/relationshipLabels.ts:48
+#, python-brace-format
+msgid "{a} is {b}'s brother"
+msgstr "{a}は{b}の兄弟です"
+
+#: web/lib/people/relationshipLabels.ts:43
+#, python-brace-format
+msgid "{a} is {b}'s child"
+msgstr "{a}は{b}の子です"
+
+#: web/lib/people/relationshipLabels.ts:64
+#, python-brace-format
+msgid "{a} is {b}'s child-in-law"
+msgstr "{a}は{b}の子の配偶者です"
+
+#: web/lib/people/relationshipLabels.ts:60
+#, python-brace-format
+msgid "{a} is {b}'s cousin"
+msgstr "{a}は{b}のいとこです"
+
+#: web/lib/people/relationshipLabels.ts:45
+#, python-brace-format
+msgid "{a} is {b}'s daughter"
+msgstr "{a}は{b}の娘です"
+
+#: web/lib/people/relationshipLabels.ts:42
+#, python-brace-format
+msgid "{a} is {b}'s father"
+msgstr "{a}は{b}の父です"
+
+#: web/lib/people/relationshipLabels.ts:55
+#, python-brace-format
+msgid "{a} is {b}'s friend"
+msgstr "{a}は{b}の友人です"
+
+#: web/lib/people/relationshipLabels.ts:53
+#, python-brace-format
+msgid "{a} is {b}'s godchild"
+msgstr "{a}は{b}の代子です"
+
+#: web/lib/people/relationshipLabels.ts:52
+#, python-brace-format
+msgid "{a} is {b}'s godfather"
+msgstr "{a}は{b}の代父です"
+
+#: web/lib/people/relationshipLabels.ts:51
+#, python-brace-format
+msgid "{a} is {b}'s godmother"
+msgstr "{a}は{b}の代母です"
+
+#: web/lib/people/relationshipLabels.ts:50
+#, python-brace-format
+msgid "{a} is {b}'s godparent"
+msgstr "{a}は{b}の代父母です"
+
+#: web/lib/people/relationshipLabels.ts:62
+#, python-brace-format
+msgid "{a} is {b}'s grandchild"
+msgstr "{a}は{b}の孫です"
+
+#: web/lib/people/relationshipLabels.ts:61
+#, python-brace-format
+msgid "{a} is {b}'s grandparent"
+msgstr "{a}は{b}の祖父母です"
+
+#: web/lib/people/relationshipLabels.ts:41
+#, python-brace-format
+msgid "{a} is {b}'s mother"
+msgstr "{a}は{b}の母です"
+
+#: web/lib/people/relationshipLabels.ts:59
+#, python-brace-format
+msgid "{a} is {b}'s niece or nephew"
+msgstr "{a}は{b}の姪または甥です"
+
+#: web/lib/people/relationshipLabels.ts:40
+#, python-brace-format
+msgid "{a} is {b}'s parent"
+msgstr "{a}は{b}の親です"
+
+#: web/lib/people/relationshipLabels.ts:63
+#, python-brace-format
+msgid "{a} is {b}'s parent-in-law"
+msgstr "{a}は{b}の義理の親です"
+
+#: web/lib/people/relationshipLabels.ts:38
+#, python-brace-format
+msgid "{a} is {b}'s partner"
+msgstr "{a}は{b}のパートナーです"
+
+#: web/lib/people/relationshipLabels.ts:46
+#, python-brace-format
+msgid "{a} is {b}'s sibling"
+msgstr "{a}は{b}のきょうだいです"
+
+#: web/lib/people/relationshipLabels.ts:65
+#, python-brace-format
+msgid "{a} is {b}'s sibling-in-law"
+msgstr "{a}は{b}の義理のきょうだいです"
+
+#: web/lib/people/relationshipLabels.ts:47
+#, python-brace-format
+msgid "{a} is {b}'s sister"
+msgstr "{a}は{b}の姉妹です"
+
+#: web/lib/people/relationshipLabels.ts:44
+#, python-brace-format
+msgid "{a} is {b}'s son"
+msgstr "{a}は{b}の息子です"
+
+#: web/lib/people/relationshipLabels.ts:39
+#, python-brace-format
+msgid "{a} is {b}'s spouse"
+msgstr "{a}は{b}の配偶者です"
+
+#: web/lib/people/relationshipLabels.ts:49
+#, python-brace-format
+msgid "{a} is {b}'s twin"
+msgstr "{a}は{b}の双子です"
+
+#: web/lib/people/relationshipLabels.ts:56
+#, python-brace-format
+msgid "{a} is {b}'s uncle"
+msgstr "{a}は{b}のおじです"
 
 #: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
@@ -2383,6 +3361,11 @@ msgstr "{total}クリップ中{done}クリップ"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{total}枚中{done}枚"
+
+#: web/lib/people/relationshipLabels.ts:89
+#, python-brace-format
+msgid "{first}; {second}"
+msgstr "{first}；{second}"
 
 #: web/lib/people/FamilyTree.svelte:72
 #, python-brace-format

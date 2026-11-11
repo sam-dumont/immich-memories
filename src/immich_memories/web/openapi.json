@@ -2868,6 +2868,29 @@
         "title": "Roster",
         "type": "object"
       },
+      "RosterChainStep": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "person": {
+            "title": "Person",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person",
+          "kind",
+          "other"
+        ],
+        "title": "RosterChainStep",
+        "type": "object"
+      },
       "RosterFlag": {
         "properties": {
           "kind": {
@@ -2914,6 +2937,14 @@
       },
       "RosterLink": {
         "properties": {
+          "chain": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RosterChainStep"
+            },
+            "title": "Chain",
+            "type": "array"
+          },
           "confidence": {
             "title": "Confidence",
             "type": "number"
