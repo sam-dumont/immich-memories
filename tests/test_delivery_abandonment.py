@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories.automation.delivery_retry import abandon_if_exhausted
+from immich_memories.operational_warnings import render_warning
 from immich_memories.tracking.models import DeliveryStatus
 from immich_memories.tracking.run_database import RunDatabase
 
@@ -141,7 +142,7 @@ class TestTheRunnerGivesUpAndMovesOn:
 
         saved = runner.db.get_run("pending-run")
         assert saved is not None
-        assert "403 no upload scope" in (saved.delivery_error or "")
+        assert "403 no upload scope" in render_warning(saved.delivery_error or "")
 
     def test_a_delivery_inside_its_limit_is_still_retried(self, tmp_path: Path):
         runner = self._runner_with_pending(tmp_path, attempts=4)

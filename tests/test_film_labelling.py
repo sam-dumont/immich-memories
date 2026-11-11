@@ -13,6 +13,7 @@ from immich_memories.operations.film_labelling import (
     label_for_cut,
     label_for_run,
     memory_type_label,
+    title_for_run,
 )
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.operations.storyboard import PLAN_FILE
@@ -571,3 +572,31 @@ def test_a_run_recorded_before_its_release_was_kept_gets_no_version_tag(tmp_path
     assert label.tags == (
         f"immich-memories/generated-on/{run.created_at.astimezone().date().isoformat()}",
     )
+
+
+def test_a_runs_title_is_the_one_its_description_starts_with(tmp_path):
+    # WHY: a notification names the film by its title; it must be the title the film
+    # opens on and Immich shows, not a second guess at it.
+    config = _summarising()
+    store = open_store(config)
+    attempt = tmp_path / "attempt"
+    attempt.mkdir()
+    (attempt / PLAN_FILE).write_text(json.dumps(PLAN))
+    write_cut_titles(
+        attempt, title="Summer by the lake", subtitle=None, source="llm", preset_params={}
+    )
+    run = RunMetadata(
+        run_id="20260801_000000_abcd",
+        created_at=datetime(2026, 8, 1, tzinfo=UTC),
+        memory_type="monthly_highlights",
+        date_range_start=date(2026, 7, 1),
+        date_range_end=date(2026, 7, 31),
+    )
+    record_run_attempt(run.run_id, attempt, tmp_path / "film.mp4", store=store)
+
+    title = title_for_run(config, run, store=store)
+    label = label_for_run(config, run, store=store)
+
+    assert title is not None
+    assert label is not None and label.description is not None
+    assert label.description.startswith(title)

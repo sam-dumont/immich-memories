@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.film_label import FilmLabel
 from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG, generated_asset_ids
+from immich_memories.operational_warnings import coded, render_warning
 
 RequestFn = Callable[..., Any]
 ApiVersionFn = Callable[[], Awaitable[ResolvedApiVersion]]
@@ -657,13 +658,13 @@ class AlbumService:
                 "album_id": None,
                 "delivery_complete": False,
                 "missing_permissions": missing + label_missing,
-                "warnings": ["not uploaded: the key lacks " + ", ".join(missing + label_missing)],
+                "warnings": [coded("not_uploaded", permissions=", ".join(missing + label_missing))],
             }
         asset_id = await self.upload_asset(video_path, captured_at=captured_at)
         waits = upload_waits(video_path.stat().st_size)
         warnings: list[str] = []
         if missing:
-            warnings.append("delivery incomplete: the key lacks " + ", ".join(missing))
+            warnings.append(coded("delivery_incomplete", permissions=", ".join(missing)))
         allows = capabilities.allows if capabilities else lambda _permission: True
         # A key that cannot label is reported, never an incomplete delivery: keys made
         # before films had labels lack `asset.update`, and treating that as incomplete
@@ -675,18 +676,18 @@ class AlbumService:
         complete = not warnings
         warnings.extend(label_notes)
         if not allows("asset.delete"):
-            warnings.append("previous version kept: the key lacks asset.delete")
+            warnings.append(coded("previous_kept_key", permission="asset.delete"))
         elif not complete:
-            warnings.append("previous version kept: delivery incomplete")
+            warnings.append(coded("previous_kept_incomplete"))
         else:
             try:
                 await supersede_previous_renders(
                     self, album_id=album_id, filename=video_path.name, keep_asset_id=asset_id
                 )
             except (OSError, RuntimeError, ValueError, KeyError) as exc:
-                warnings.append(f"previous version kept: {exc}")
+                warnings.append(coded("previous_kept_error", detail=exc))
         for warning in warnings:
-            logger.warning("%s", warning)
+            logger.warning("%s", render_warning(warning))
         return {
             "asset_id": asset_id,
             "album_id": album_id,
@@ -723,13 +724,13 @@ class AlbumService:
         waits: UploadWaits,
     ) -> None:
         if tag_missing := tag_rights_missing(allows):
-            warnings.append("uploaded without provenance: the key lacks " + ", ".join(tag_missing))
+            warnings.append(coded("no_provenance_key", permissions=", ".join(tag_missing)))
             return
         try:
             if not await self.tag_as_generated_once_read(asset_id, waits=waits):
-                warnings.append("uploaded without verified provenance: the tag did not stay")
+                warnings.append(coded("provenance_unverified"))
         except Exception as exc:
-            warnings.append(f"uploaded without verified provenance: {exc}")
+            warnings.append(coded("provenance_error", detail=exc))
 
     async def _label_delivery(
         self,
@@ -747,9 +748,9 @@ class AlbumService:
         notes, warnings = reports
         tag_missing = tag_rights_missing(allows)
         if label.tags and tag_missing:
-            notes.append("uploaded without story tags: the key lacks " + ", ".join(tag_missing))
+            notes.append(coded("no_story_tags_key", permissions=", ".join(tag_missing)))
         if label.description and not allows(DESCRIBE):
-            notes.append(f"uploaded without description: the key lacks {DESCRIBE}")
+            notes.append(coded("no_description_key", permission=DESCRIBE))
         written = replace(label, tags=(GENERATED_MEMORY_TAG, *label.tags)) if provenance else label
         try:
             not_kept = await self.apply_label_once_read(
@@ -761,12 +762,12 @@ class AlbumService:
             )
         except Exception as exc:
             if provenance:
-                warnings.append(f"uploaded without verified provenance: {exc}")
-            warnings.append(f"uploaded without a verified description and tags: {exc}")
+                warnings.append(coded("provenance_error", detail=exc))
+            warnings.append(coded("label_unverified_error", detail=exc))
             return
         if provenance and "tags" in not_kept:
-            warnings.append("uploaded without verified provenance: the tag did not stay")
-        warnings.extend(f"uploaded film's {name} did not stay" for name in not_kept)
+            warnings.append(coded("provenance_unverified"))
+        warnings.extend(coded(f"{name}_not_kept") for name in not_kept)
 
     async def _album_delivery(
         self,
@@ -782,15 +783,15 @@ class AlbumService:
             album_id = await self.find_album_by_name(album_name)
             if album_id is None:
                 if not allows("album.create"):
-                    warnings.append("album not created: the key lacks album.create")
+                    warnings.append(coded("album_not_created_key", permission="album.create"))
                     return None
                 album_id = await self.create_album(album_name)
             if allows("albumAsset.create"):
                 await self.add_assets_to_album(album_id, [asset_id])
             else:
-                warnings.append("film not added to album: the key lacks albumAsset.create")
+                warnings.append(coded("album_not_added_key", permission="albumAsset.create"))
         except Exception as exc:
-            warnings.append(f"film not added to album: {exc}")
+            warnings.append(coded("album_not_added_error", detail=exc))
         return album_id
 
 

@@ -202,3 +202,89 @@ msgstr "cumpleaños"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "Cumpleaños"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "No subido: a la clave le falta {permissions}"
+
+msgid "warning.delivery_incomplete"
+msgstr "Entrega incompleta: a la clave le falta {permissions}"
+
+msgid "warning.previous_kept_key"
+msgstr "Versión anterior conservada: a la clave le falta {permission}"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "Versión anterior conservada: entrega incompleta"
+
+msgid "warning.previous_kept_error"
+msgstr "Versión anterior conservada: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "Subido sin procedencia: a la clave le falta {permissions}"
+
+msgid "warning.provenance_unverified"
+msgstr "Subido sin procedencia verificada: la etiqueta no se mantuvo"
+
+msgid "warning.provenance_error"
+msgstr "Subido sin procedencia verificada: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "Subido sin descripción ni etiquetas verificadas: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "Subido sin etiquetas de la historia: a la clave le falta {permissions}"
+
+msgid "warning.no_description_key"
+msgstr "Subido sin descripción: a la clave le falta {permission}"
+
+msgid "warning.album_not_created_key"
+msgstr "Álbum no creado: a la clave le falta {permission}"
+
+msgid "warning.album_not_added_key"
+msgstr "Película no añadida al álbum: a la clave le falta {permission}"
+
+msgid "warning.album_not_added_error"
+msgstr "Película no añadida al álbum: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "la descripción de la película subida no se mantuvo"
+
+msgid "warning.tags_not_kept"
+msgstr "las etiquetas de la película subida no se mantuvieron"
+
+msgid "warning.gave_up"
+msgstr "Se dejó de intentar entregar a Immich tras {attempts} intentos: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Se dejó de intentar entregar a Immich tras {attempts} intentos: no se registró ningún error"
+
+msgid "warning.low_space_output"
+msgstr "Poco espacio en disco (salida): quedan {free_gb} GB libres, por debajo del umbral de aviso de {min_gb} GB. Ejecuta `immich-memories runs delete` para liberar espacio, o activa la subida para que las películas terminadas se eliminen solas."
+
+msgid "warning.low_space_cache"
+msgstr "Poco espacio en disco (caché): quedan {free_gb} GB libres, por debajo del umbral de aviso de {min_gb} GB. Ejecuta `immich-memories runs delete` para liberar espacio, o activa la subida para que las películas terminadas se eliminen solas."
+
+msgid "notify.title.ready"
+msgstr "Película lista: {name}"
+
+msgid "notify.title.failed"
+msgstr "Película fallida: {name}"
+
+msgid "notify.body.type"
+msgstr "Tipo: {type}"
+
+msgid "notify.body.duration"
+msgstr "Tiempo de procesamiento: {minutes} min {seconds:02d} s"
+
+msgid "notify.body.output"
+msgstr "Archivo: {path}"
+
+msgid "notify.body.watch"
+msgstr "Ver en Immich: {url}"
+
+msgid "notify.body.error"
+msgstr "Error: {error}"
+
+msgid "notify.body.warning"
+msgstr "Aviso: {warning}"

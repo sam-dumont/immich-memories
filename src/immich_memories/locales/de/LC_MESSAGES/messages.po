@@ -202,3 +202,89 @@ msgstr "Geburtstag"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "Geburtstag"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "Nicht hochgeladen: dem Schlüssel fehlt {permissions}"
+
+msgid "warning.delivery_incomplete"
+msgstr "Übertragung unvollständig: dem Schlüssel fehlt {permissions}"
+
+msgid "warning.previous_kept_key"
+msgstr "Vorherige Version behalten: dem Schlüssel fehlt {permission}"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "Vorherige Version behalten: Übertragung unvollständig"
+
+msgid "warning.previous_kept_error"
+msgstr "Vorherige Version behalten: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "Ohne Herkunftsangabe hochgeladen: dem Schlüssel fehlt {permissions}"
+
+msgid "warning.provenance_unverified"
+msgstr "Ohne bestätigte Herkunftsangabe hochgeladen: der Tag ist nicht erhalten geblieben"
+
+msgid "warning.provenance_error"
+msgstr "Ohne bestätigte Herkunftsangabe hochgeladen: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "Ohne bestätigte Beschreibung und Tags hochgeladen: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "Ohne Story-Tags hochgeladen: dem Schlüssel fehlt {permissions}"
+
+msgid "warning.no_description_key"
+msgstr "Ohne Beschreibung hochgeladen: dem Schlüssel fehlt {permission}"
+
+msgid "warning.album_not_created_key"
+msgstr "Album nicht angelegt: dem Schlüssel fehlt {permission}"
+
+msgid "warning.album_not_added_key"
+msgstr "Film nicht zum Album hinzugefügt: dem Schlüssel fehlt {permission}"
+
+msgid "warning.album_not_added_error"
+msgstr "Film nicht zum Album hinzugefügt: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "die Beschreibung des hochgeladenen Films ist nicht erhalten geblieben"
+
+msgid "warning.tags_not_kept"
+msgstr "die Tags des hochgeladenen Films sind nicht erhalten geblieben"
+
+msgid "warning.gave_up"
+msgstr "Übertragung an Immich nach {attempts} Versuchen aufgegeben: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Übertragung an Immich nach {attempts} Versuchen aufgegeben: kein Fehler aufgezeichnet"
+
+msgid "warning.low_space_output"
+msgstr "Wenig Speicherplatz auf dem Datenträger (Ausgabe): {free_gb} GB frei, unter der Warnschwelle von {min_gb} GB. Mit `immich-memories runs delete` schaffst du Platz, oder aktiviere den Upload, damit fertige Filme automatisch entfernt werden."
+
+msgid "warning.low_space_cache"
+msgstr "Wenig Speicherplatz auf dem Datenträger (Cache): {free_gb} GB frei, unter der Warnschwelle von {min_gb} GB. Mit `immich-memories runs delete` schaffst du Platz, oder aktiviere den Upload, damit fertige Filme automatisch entfernt werden."
+
+msgid "notify.title.ready"
+msgstr "Film fertig: {name}"
+
+msgid "notify.title.failed"
+msgstr "Film fehlgeschlagen: {name}"
+
+msgid "notify.body.type"
+msgstr "Typ: {type}"
+
+msgid "notify.body.duration"
+msgstr "Verarbeitungszeit: {minutes} Min. {seconds:02d} s"
+
+msgid "notify.body.output"
+msgstr "Ausgabe: {path}"
+
+msgid "notify.body.watch"
+msgstr "In Immich ansehen: {url}"
+
+msgid "notify.body.error"
+msgstr "Fehler: {error}"
+
+msgid "notify.body.warning"
+msgstr "Warnung: {warning}"

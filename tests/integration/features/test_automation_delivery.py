@@ -127,6 +127,13 @@ def _suggested(home: UserHome, today: str = "") -> list[dict[str, Any]]:
 ROAD_NORTH = "2025-07-12 to 2025-07-30"
 
 
+def _names_the_film(title: str) -> bool:
+    """A finished film's notice carries the film's own title, not a generic "Memory Generated"."""
+    return (
+        bool(title.strip()) and "Memory Generated" not in title and "Generation Failed" not in title
+    )
+
+
 @pytest.mark.feature("detector.trip")
 def test_a_trip_is_proposed_7_days_after_coming_home(
     tmp_path: Path, immich: LibraryServer, outbound_trap: OutboundTrap
@@ -192,7 +199,7 @@ def test_auto_run_renders_delivers_and_announces_the_film_with_its_immich_link(
     assert len(delivered) == 1 and delivered[0].content_type == "video/mp4", result.explain()
     asset_id = "uploaded-1"
     messages = sink.posted()
-    assert [m["title"] for m in messages] == ["Memory Generated: Album"]
+    assert len(messages) == 1 and _names_the_film(messages[0]["title"])
     assert f"Watch in Immich: {PUBLIC_URL}/photos/{asset_id}" in messages[0]["message"]
 
 
@@ -251,7 +258,7 @@ def test_generate_announces_its_uploaded_film_with_a_link_to_the_server(
 ) -> None:
     assert hand_made_album.result.returncode == 0, hand_made_album.result.explain()
     messages = hand_made_album.messages
-    assert [m["title"] for m in messages] == ["Memory Generated: Album"]
+    assert len(messages) == 1 and _names_the_film(messages[0]["title"])
     # No public_url: the link starts from immich.url.
     link = f"Watch in Immich: {hand_made_album.immich_url}/photos/{hand_made_album.asset_id}"
     assert link in messages[0]["message"]
@@ -289,5 +296,5 @@ def test_a_saved_cut_sends_nothing_until_runs_render_makes_its_film(
 
     assert rendered.returncode == 0, rendered.explain()
     messages = sink.posted()
-    assert len(messages) == 1 and messages[0]["title"].startswith("Memory Generated")
+    assert len(messages) == 1 and _names_the_film(messages[0]["title"])
     assert "Output: " in messages[0]["message"]

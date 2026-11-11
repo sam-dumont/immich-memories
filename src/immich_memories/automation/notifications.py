@@ -11,6 +11,8 @@ from immich_memories.automation.notification_state import (
     NotificationFailureCategory,
     NotificationStateStore,
 )
+from immich_memories.i18n import DEFAULT_LOCALE, film_text, resolve_film_locale
+from immich_memories.operational_warnings import render_warning
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -46,6 +48,29 @@ def run_completion_details(
     return (list(run.warnings), config.immich.asset_url(run.immich_asset_id)) if run else ([], None)
 
 
+def run_film_title(config: Config, attempt_dir: Path | None) -> str | None:
+    """The title the run's film opens on, for its notice; None when it cannot be told.
+
+    Best-effort like `run_completion_details`: a notice without a title still goes out.
+    """
+    if attempt_dir is None:
+        return None
+    from immich_memories.db import open_store
+    from immich_memories.operations.film_labelling import title_for_run
+    from immich_memories.operations.run_index import run_id_for_attempt
+    from immich_memories.tracking import RunDatabase
+
+    run_id = run_id_for_attempt(attempt_dir)
+    if run_id is None:
+        return None
+    try:
+        store = open_store(config)
+        run = RunDatabase(store).get_run(run_id)
+        return title_for_run(config, run, store=store) if run else None
+    except (OSError, RuntimeError, SQLAlchemyError):
+        return None
+
+
 def send_configured_notification(
     config: Config,
     memory_type: str,
@@ -55,6 +80,7 @@ def send_configured_notification(
     error: str | None = None,
     warnings: list[str] | None = None,
     immich_asset_url: str | None = None,
+    film_title: str | None = None,
 ) -> None:
     """Send one enabled success/failure notification using the shared policy."""
     notif = config.notifications
@@ -75,6 +101,8 @@ def send_configured_notification(
         attach_thumbnail=notif.attach_thumbnail,
         cooldown_hours=notif.cooldown_hours,
         immich_asset_url=immich_asset_url,
+        film_title=film_title,
+        locale=resolve_film_locale(config.title_screens.locale),
     )
 
 
@@ -91,8 +119,13 @@ def notify_job_complete(
     cooldown_hours: int = 24,
     bypass_cooldown: bool = False,
     immich_asset_url: str | None = None,
+    film_title: str | None = None,
+    locale: str = DEFAULT_LOCALE,
 ) -> bool:
-    """Send a notification about job completion via Apprise.
+    """Send a notification about job completion via Apprise, in the film's language.
+
+    `film_title` is the title the film opens on and `locale` its language; a notice
+    with no title names the memory type instead.
 
     Returns True if at least one notification was delivered, False otherwise.
     Fails silently (logs warning) if the apprise package is not installed. With a `store`,
@@ -113,9 +146,16 @@ def notify_job_complete(
         _record_failure(state, NotificationFailureCategory.UNAVAILABLE)
         return False
 
-    title = _build_title(memory_type, status)
+    title = _build_title(memory_type, status, film_title, locale)
     body = _build_body(
-        memory_type, status, duration_seconds, output_path, error, warnings, immich_asset_url
+        memory_type,
+        status,
+        duration_seconds,
+        output_path,
+        error,
+        warnings,
+        immich_asset_url,
+        locale,
     )
 
     attach = (
@@ -281,9 +321,20 @@ def _cleanup_thumbnail(path: str) -> None:
         Path(path).unlink(missing_ok=True)
 
 
-def _build_title(memory_type: str, status: str) -> str:
-    label = "Memory Generated" if status == "completed" else "Generation Failed"
-    return f"{label}: {memory_type.replace('_', ' ').title()}"
+def _build_title(
+    memory_type: str, status: str, film_title: str | None = None, locale: str = DEFAULT_LOCALE
+) -> str:
+    """The film's title for a finished film; else what happened, then the film or its type."""
+    if status == "completed" and film_title:
+        return film_title
+    key = "notify.title.ready" if status == "completed" else "notify.title.failed"
+    return film_text(key, locale, name=film_title or _type_name(memory_type, locale))
+
+
+def _type_name(memory_type: str, locale: str) -> str:
+    from immich_memories.operations.film_labelling import memory_type_label
+
+    return memory_type_label(memory_type, locale) or memory_type
 
 
 _ERROR_TAIL_CHARS = 300
@@ -310,22 +361,27 @@ def _build_body(
     error: str | None,
     warnings: list[str] | None = None,
     immich_asset_url: str | None = None,
+    locale: str = DEFAULT_LOCALE,
 ) -> str:
-    lines = [f"Type: {memory_type}"]
+    lines = [film_text("notify.body.type", locale, type=_type_name(memory_type, locale))]
     if duration_seconds > 0:
         mins = int(duration_seconds // 60)
         secs = int(duration_seconds % 60)
-        lines.append(f"Processing time: {mins}m {secs:02d}s")
+        lines.append(film_text("notify.body.duration", locale, minutes=mins, seconds=secs))
     if output_path and status == "completed":
-        lines.append(f"Output: {output_path}")
+        lines.append(film_text("notify.body.output", locale, path=output_path))
     if immich_asset_url and status == "completed":
-        lines.append(f"Watch in Immich: {immich_asset_url}")
+        lines.append(film_text("notify.body.watch", locale, url=immich_asset_url))
     if error and status == "failed":
-        lines.append(f"Error: {_error_tail(error)}")
+        lines.append(
+            film_text("notify.body.error", locale, error=_error_tail(render_warning(error, locale)))
+        )
     # A run that completed still needs to say so if it is running out of room --
     # the automation channel is the one place a headless deployment sees this at all.
     for warning in warnings or []:
-        lines.append(f"Warning: {warning}")
+        lines.append(
+            film_text("notify.body.warning", locale, warning=render_warning(warning, locale))
+        )
     return "\n".join(lines)
 
 

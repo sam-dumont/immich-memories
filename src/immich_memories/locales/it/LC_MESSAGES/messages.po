@@ -202,3 +202,89 @@ msgstr "compleanno"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "Compleanno"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "Non caricato: alla chiave manca {permissions}"
+
+msgid "warning.delivery_incomplete"
+msgstr "Consegna incompleta: alla chiave manca {permissions}"
+
+msgid "warning.previous_kept_key"
+msgstr "Versione precedente conservata: alla chiave manca {permission}"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "Versione precedente conservata: consegna incompleta"
+
+msgid "warning.previous_kept_error"
+msgstr "Versione precedente conservata: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "Caricato senza provenienza: alla chiave manca {permissions}"
+
+msgid "warning.provenance_unverified"
+msgstr "Caricato senza provenienza verificata: il tag non è rimasto"
+
+msgid "warning.provenance_error"
+msgstr "Caricato senza provenienza verificata: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "Caricato senza descrizione e tag verificati: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "Caricato senza tag della storia: alla chiave manca {permissions}"
+
+msgid "warning.no_description_key"
+msgstr "Caricato senza descrizione: alla chiave manca {permission}"
+
+msgid "warning.album_not_created_key"
+msgstr "Album non creato: alla chiave manca {permission}"
+
+msgid "warning.album_not_added_key"
+msgstr "Film non aggiunto all'album: alla chiave manca {permission}"
+
+msgid "warning.album_not_added_error"
+msgstr "Film non aggiunto all'album: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "la descrizione del film caricato non è rimasta"
+
+msgid "warning.tags_not_kept"
+msgstr "i tag del film caricato non sono rimasti"
+
+msgid "warning.gave_up"
+msgstr "Consegna a Immich abbandonata dopo {attempts} tentativi: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Consegna a Immich abbandonata dopo {attempts} tentativi: nessun errore registrato"
+
+msgid "warning.low_space_output"
+msgstr "Poco spazio su disco (uscita): {free_gb} GB liberi, sotto la soglia di avviso di {min_gb} GB. Esegui `immich-memories runs delete` per liberare spazio, oppure attiva il caricamento così i film finiti vengono rimossi in automatico."
+
+msgid "warning.low_space_cache"
+msgstr "Poco spazio su disco (cache): {free_gb} GB liberi, sotto la soglia di avviso di {min_gb} GB. Esegui `immich-memories runs delete` per liberare spazio, oppure attiva il caricamento così i film finiti vengono rimossi in automatico."
+
+msgid "notify.title.ready"
+msgstr "Film pronto: {name}"
+
+msgid "notify.title.failed"
+msgstr "Film non riuscito: {name}"
+
+msgid "notify.body.type"
+msgstr "Tipo: {type}"
+
+msgid "notify.body.duration"
+msgstr "Tempo di elaborazione: {minutes} min {seconds:02d} s"
+
+msgid "notify.body.output"
+msgstr "File: {path}"
+
+msgid "notify.body.watch"
+msgstr "Guarda in Immich: {url}"
+
+msgid "notify.body.error"
+msgstr "Errore: {error}"
+
+msgid "notify.body.warning"
+msgstr "Avviso: {warning}"

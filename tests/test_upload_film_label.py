@@ -12,6 +12,7 @@ from immich_memories.api.album_service import AlbumService
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.film_label import FilmLabel
 from immich_memories.api.permissions import ApiKeyCapabilities
+from immich_memories.operational_warnings import render_warnings
 
 PROVENANCE = "immich-memories/generated"
 LABEL = FilmLabel(
@@ -156,7 +157,7 @@ async def test_description_and_tags_survive_immichs_own_read(film):
 
     result = await _service(immich).upload_memory(film, label=LABEL)
 
-    assert result["warnings"] == []
+    assert render_warnings(result["warnings"]) == []
     assert result["delivery_complete"] is True
     assert immich.read
     assert immich.description == LABEL.description
@@ -171,7 +172,7 @@ async def test_every_tag_survives_immich_reading_its_sidecar_back(film):
 
     result = await _service(immich).upload_memory(film, label=LABEL)
 
-    assert result["warnings"] == []
+    assert render_warnings(result["warnings"]) == []
     assert immich.sidecar is None
     assert immich.tags == {PROVENANCE, *LABEL.tags}
     assert immich.description == LABEL.description
@@ -186,8 +187,10 @@ async def test_a_label_that_did_not_stick_is_applied_again_then_warns(film):
 
     # Nothing sticks here, the provenance tag included: that one does make it incomplete.
     assert result["delivery_complete"] is False
-    assert any("description" in w and "did not stay" in w for w in result["warnings"])
-    assert any("tags" in w and "did not stay" in w for w in result["warnings"])
+    assert any(
+        "description" in w and "did not stay" in w for w in render_warnings(result["warnings"])
+    )
+    assert any("tags" in w and "did not stay" in w for w in render_warnings(result["warnings"]))
     assert sum(1 for write in immich.writes if write == ("PUT", "/assets/film")) > 1
 
 
@@ -208,9 +211,11 @@ async def test_a_key_without_asset_update_uploads_with_tags_and_warns(film):
 
     assert result["asset_id"] == "film"
     assert result["delivery_complete"] is True
-    assert not any("previous version kept" in w for w in result["warnings"])
+    assert not any("previous version kept" in w for w in render_warnings(result["warnings"]))
     assert "asset.update" in result["missing_permissions"]
-    assert any("description" in w and "asset.update" in w for w in result["warnings"])
+    assert any(
+        "description" in w and "asset.update" in w for w in render_warnings(result["warnings"])
+    )
     assert ("PUT", "/assets/film") not in immich.writes
     assert set(LABEL.tags) <= immich.tags
 
@@ -224,7 +229,7 @@ async def test_a_key_without_tag_rights_still_sets_the_description(film):
     assert result["asset_id"] == "film"
     assert immich.description == LABEL.description
     assert immich.tags == set()
-    assert any("tag.create" in w for w in result["warnings"])
+    assert any("tag.create" in w for w in render_warnings(result["warnings"]))
 
 
 @pytest.mark.asyncio
@@ -233,7 +238,7 @@ async def test_a_label_with_nothing_to_say_asks_immich_for_nothing(film):
 
     result = await _service(immich).upload_memory(film, label=FilmLabel())
 
-    assert result["warnings"] == []
+    assert render_warnings(result["warnings"]) == []
     assert immich.description == ""
     assert immich.tags == {PROVENANCE}
 
@@ -259,7 +264,7 @@ async def test_a_failing_label_step_keeps_the_upload_and_leaves_the_delivery_pen
     # Pending, so the delivery retry labels it again (#2540).
     assert result["delivery_complete"] is False
     assert not result["missing_permissions"]
-    assert any("boom" in w for w in result["warnings"])
+    assert any("boom" in w for w in render_warnings(result["warnings"]))
 
 
 # --- A long film's late metadata read (#2540) ------------------------------------------------
@@ -285,7 +290,7 @@ async def test_a_long_film_keeps_its_description_when_immich_reads_it_late(year_
     immich.reads_after = min(immich.reads_after, immich.gets)
     await immich("GET", "/assets/film")
 
-    assert result["warnings"] == []
+    assert render_warnings(result["warnings"]) == []
     assert result["delivery_complete"] is True
     assert immich.read
     assert immich.description == LABEL.description
@@ -300,7 +305,9 @@ async def test_a_read_later_still_leaves_the_delivery_pending_and_the_retry_labe
 
     assert first["delivery_complete"] is False
     assert not first["missing_permissions"]
-    assert any("description" in w and "did not stay" in w for w in first["warnings"])
+    assert any(
+        "description" in w and "did not stay" in w for w in render_warnings(first["warnings"])
+    )
 
     immich.reads_after = immich.gets  # Immich reads the film at last, wiping the label
     await immich("GET", "/assets/film")
@@ -329,7 +336,7 @@ async def test_a_long_film_keeps_its_label_when_immich_reads_it_again_slowly(yea
     immich.gets += 1_000
     await immich("GET", "/assets/film")
 
-    assert result["warnings"] == []
+    assert render_warnings(result["warnings"]) == []
     assert result["delivery_complete"] is True
     assert immich.description == LABEL.description
     assert immich.tags == {PROVENANCE, *LABEL.tags}
@@ -346,7 +353,7 @@ async def test_the_provenance_tag_rides_in_the_story_tags_write(film):
 
     result = await _service(immich).upload_memory(film, label=LABEL)
 
-    assert result["warnings"] == []
+    assert render_warnings(result["warnings"]) == []
     assert result["delivery_complete"] is True
     assert immich.tags == {PROVENANCE, *LABEL.tags}
     assert immich.writes == [("PUT", "/tags"), ("PUT", "/tags/assets"), ("PUT", "/assets/film")]
@@ -358,4 +365,6 @@ async def test_a_film_whose_provenance_did_not_stay_says_so(film):
 
     result = await _service(immich).upload_memory(film, label=LABEL)
 
-    assert any("provenance" in w and "did not stay" in w for w in result["warnings"])
+    assert any(
+        "provenance" in w and "did not stay" in w for w in render_warnings(result["warnings"])
+    )

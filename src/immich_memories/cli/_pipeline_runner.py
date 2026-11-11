@@ -748,7 +748,9 @@ def _send_notification(
             notification_store,
             notify_job_complete,
             run_completion_details,
+            run_film_title,
         )
+        from immich_memories.i18n import resolve_film_locale
 
         run_warnings, asset_url = run_completion_details(config, attempt_dir)
         notify_job_complete(
@@ -759,6 +761,8 @@ def _send_notification(
             error=error,
             warnings=[*(warnings or []), *run_warnings],
             immich_asset_url=asset_url,
+            film_title=run_film_title(config, attempt_dir) if status == "completed" else None,
+            locale=resolve_film_locale(config.title_screens.locale),
             urls=notif.urls,
             store=notification_store(config),
             attach_thumbnail=notif.attach_thumbnail,

@@ -164,7 +164,11 @@ def _add_delivery_rows(table: Table, run, immich) -> None:
     elif run.immich_asset_id:
         table.add_row("Immich Asset", run.immich_asset_id)
     if run.delivery_error and run.delivery_status is not DeliveryStatus.DELIVERED:
-        table.add_row("Delivery Error", f"[red]{run.delivery_error}[/red]")
+        from immich_memories.config import get_config
+        from immich_memories.operational_warnings import worded_for
+
+        error = worded_for(get_config(), run.delivery_error)
+        table.add_row("Delivery Error", f"[red]{error}[/red]")
 
 
 def _print_cut_checks(store: Store, run_id: str) -> None:

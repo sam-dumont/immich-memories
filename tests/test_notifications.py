@@ -13,6 +13,7 @@ from immich_memories.automation.notifications import (
     notify_job_complete,
     send_test_notification,
 )
+from immich_memories.operational_warnings import coded
 from tests.module_stubs import swapped_modules
 
 
@@ -60,7 +61,7 @@ class TestNotifyJobComplete:
         assert result is True
         mock_instance.add.assert_called_once_with("slack://token-a/token-b/token-c")
         call_kwargs = mock_instance.notify.call_args
-        assert "Memory Generated" in call_kwargs.kwargs["title"]
+        assert call_kwargs.kwargs["title"] == "Film ready: Monthly highlights"
 
     def test_sends_notification_on_failure(self) -> None:
         mock_apprise = MagicMock()
@@ -79,7 +80,7 @@ class TestNotifyJobComplete:
 
         assert result is True
         call_kwargs = mock_instance.notify.call_args
-        assert "Generation Failed" in call_kwargs.kwargs["title"]
+        assert call_kwargs.kwargs["title"] == "Film failed: Year in review"
         assert "FFmpeg crashed" in call_kwargs.kwargs["body"]
 
     def test_returns_false_when_apprise_notify_fails(self) -> None:
@@ -134,17 +135,113 @@ class TestNotifyJobComplete:
 
 
 class TestBuildTitle:
-    def test_completed_title(self) -> None:
-        assert _build_title("monthly_highlights", "completed") == (
-            "Memory Generated: Monthly Highlights"
+    def test_a_finished_film_is_named_by_its_own_title(self) -> None:
+        assert _build_title("monthly_highlights", "completed", "Summer by the lake") == (
+            "Summer by the lake"
         )
 
-    def test_failed_title(self) -> None:
-        assert _build_title("year_in_review", "failed") == ("Generation Failed: Year In Review")
+    def test_a_finished_film_without_a_title_names_its_type(self) -> None:
+        assert _build_title("monthly_highlights", "completed") == "Film ready: Monthly highlights"
 
-    def test_underscores_replaced_with_spaces(self) -> None:
-        title = _build_title("person_spotlight", "completed")
-        assert "Person Spotlight" in title
+    def test_failed_title_names_the_film_or_its_type(self) -> None:
+        assert _build_title("year_in_review", "failed") == "Film failed: Year in review"
+        assert _build_title("year_in_review", "failed", "Summer by the lake") == (
+            "Film failed: Summer by the lake"
+        )
+
+    def test_the_type_is_worded_in_the_films_language(self) -> None:
+        assert _build_title("monthly_highlights", "failed", locale="fr") == (
+            "Échec du film : Moments du mois"
+        )
+
+
+class TestNotificationInTheFilmsLanguage:
+    """What the maintainer reads in the PR: the notices a French and an English film send."""
+
+    def _sent(self, locale: str, **kwargs):
+        mock_apprise = MagicMock()
+        mock_instance = MagicMock()
+        mock_instance.notify.return_value = True
+        mock_apprise.Apprise.return_value = mock_instance
+        # WHY: would send real notifications to external services
+        with swapped_modules({"apprise": mock_apprise}):
+            notify_job_complete(urls=["slack://a/b/c"], locale=locale, **kwargs)
+        return mock_instance.notify.call_args.kwargs
+
+    def test_french_success(self) -> None:
+        sent = self._sent(
+            "fr",
+            memory_type="monthly_highlights",
+            status="completed",
+            duration_seconds=185,
+            output_path="/films/summer.mp4",
+            film_title="Un été au bord du lac",
+            immich_asset_url="https://immich.example/photos/abc",
+            warnings=[coded("low_space_output", free_gb="2.0", min_gb="5")],
+        )
+
+        assert sent["title"] == "Un été au bord du lac"
+        assert sent["body"].splitlines()[:5] == [
+            "Type : Moments du mois",
+            "Durée du traitement : 3 min 05 s",
+            "Fichier : /films/summer.mp4",
+            "À voir dans Immich : https://immich.example/photos/abc",
+            "Attention : Espace disque faible sur le volume de sortie : 2.0 Go libres, "
+            "sous le seuil d'alerte de 5 Go. Lancez `immich-memories runs delete` pour "
+            "libérer de la place, ou activez l'envoi pour que les films terminés soient "
+            "supprimés automatiquement.",
+        ]
+
+    def test_french_failure(self) -> None:
+        sent = self._sent(
+            "fr", memory_type="year_in_review", status="failed", error="FFmpeg a planté"
+        )
+
+        assert sent["title"] == "Échec du film : Rétrospective de l’année"
+        assert sent["body"].splitlines()[-1] == "Erreur : FFmpeg a planté"
+
+    def test_english_success_and_failure(self) -> None:
+        ok = self._sent(
+            "en",
+            memory_type="monthly_highlights",
+            status="completed",
+            duration_seconds=185,
+            film_title="Summer by the lake",
+            warnings=[coded("low_space_output", free_gb="2.0", min_gb="5")],
+        )
+        bad = self._sent("en", memory_type="monthly_highlights", status="failed", error="boom")
+
+        assert ok["title"] == "Summer by the lake"
+        assert ok["body"].splitlines()[1] == "Processing time: 3m 05s"
+        assert (
+            ok["body"]
+            .splitlines()[-1]
+            .startswith(
+                "Warning: Low disk space on output: 2.0 GB free, below the 5 GB warning threshold."
+            )
+        )
+        assert bad["title"] == "Film failed: Monthly highlights"
+        assert bad["body"].splitlines()[-1] == "Error: boom"
+
+    def test_a_warning_stored_in_english_before_codes_still_shows(self) -> None:
+        sent = self._sent(
+            "fr",
+            memory_type="monthly",
+            status="completed",
+            warnings=["uploaded film's tags did not stay"],
+        )
+
+        assert sent["body"].splitlines()[-1] == "Attention : uploaded film's tags did not stay"
+
+    def test_no_notification_prints_a_config_path(self) -> None:
+        sent = self._sent(
+            "fr",
+            memory_type="monthly",
+            status="completed",
+            warnings=[coded("low_space_cache", free_gb="1.0", min_gb="5")],
+        )
+
+        assert "/" not in sent["body"].split("Attention")[-1].replace("immich-memories", "")
 
 
 class TestBuildBody:
@@ -156,7 +253,7 @@ class TestBuildBody:
             output_path="/videos/memory.mp4",
             error=None,
         )
-        assert "Type: monthly_highlights" in body
+        assert "Type: Monthly highlights" in body
         assert "Processing time: 2m 05s" in body
         assert "Output: /videos/memory.mp4" in body
         assert "Error" not in body
@@ -226,9 +323,9 @@ class TestBuildBody:
             duration_seconds=60.0,
             output_path="/videos/memory.mp4",
             error=None,
-            warnings=["Low disk space on output (/videos): 2.0 GB free, below 5 GB."],
+            warnings=[coded("low_space_output", free_gb="2.0", min_gb="5")],
         )
-        assert "Warning: Low disk space on output" in body
+        assert "Warning: Low disk space on output: 2.0 GB free" in body
 
 
 class TestThumbnailExtraction:
