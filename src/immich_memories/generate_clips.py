@@ -15,6 +15,7 @@ from immich_memories.generate_privacy import clip_location_name
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.preparation_fallbacks import note_fallback
 from immich_memories.processing.render_control import check_render_stopped
+from immich_memories.progress_text import Stage, coded
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -298,7 +299,7 @@ def _extracted_segment(extraction: _Extraction, clip, video_path: Path, progress
     params = extraction.params
     start_time, end_time = segment_window(params, clip)
 
-    extraction.report("extract", progress, f"Extracting segment: {name}")
+    extraction.report("extract", progress, coded(Stage.RENDER_EXTRACTING, name=name))
     if clip.editorial_live_manifest is not None:
         from immich_memories.processing.editorial_live_render import extract_certified_live
 
@@ -501,7 +502,11 @@ def _prepare_in_workers(
         if rendered is not None:
             ordered[index] = rendered
         done = counted[0] + completed
-        report("extract", done / counted[1] * 0.7, f"Prepared {done}/{counted[1]} sources")
+        report(
+            "extract",
+            done / counted[1] * 0.7,
+            coded(Stage.RENDER_SOURCES_PREPARED, done=done, total=counted[1]),
+        )
     return sorted(ordered.items())
 
 
@@ -668,7 +673,7 @@ def _prepare_part(
     for i, clip in enumerate(params.clips):
         progress = ((before + i) / total) * 0.7
         clip_name = clip.asset.original_file_name or clip.asset.id[:8]
-        _report("extract", progress, f"Downloading: {clip_name}")
+        _report("extract", progress, coded(Stage.RENDER_DOWNLOADING, name=clip_name))
 
         try:
             rendered = _rendered_clip(extraction, clip, progress, clip_name)

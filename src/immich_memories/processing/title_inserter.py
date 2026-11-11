@@ -20,6 +20,7 @@ from immich_memories.processing.map_move_timing import map_move_timing_of
 from immich_memories.processing.scaling_utilities import aggregate_mood_from_clips
 from immich_memories.processing.title_background_renderer import TitleBackgroundRenderer
 from immich_memories.processing.title_divider_planner import TitleDividerPlanner
+from immich_memories.progress_text import Stage, coded
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +198,7 @@ class TitleInserter:
     ) -> None:
         """Generate ending screen with the configured solid-color fade."""
         if progress_callback:
-            progress_callback(_ENDING_START, "Generating ending screen...")
+            progress_callback(_ENDING_START, coded(Stage.RENDER_ENDING))
         ending_clip = None
         if use_content_bg:
             ending_clip = self.background_renderer.render_last_clip(
@@ -214,7 +215,7 @@ class TitleInserter:
                 share = min(1.0, frame / max(total, 1))
                 progress_callback(
                     _ENDING_START + (_ENCODE_START - _ENDING_START) * share,
-                    f"Generating ending screen... (frame {frame}/{total})",
+                    coded(Stage.RENDER_ENDING, frame=frame, frames=total),
                 )
 
         ending_screen = generator.generate_ending_screen(
@@ -281,14 +282,14 @@ class TitleInserter:
         trip_map = bool(
             is_trip and title_settings.trip_locations and title_settings.trip_title_text
         )
-        stage = "Generating trip map..." if trip_map else "Generating title screen..."
+        stage = Stage.RENDER_TRIP_MAP if trip_map else Stage.RENDER_TITLE
         if progress_callback:
-            progress_callback(0.0, stage)
+            progress_callback(0.0, coded(stage))
 
         def _frame_progress(frame: int, total: int) -> None:
             if progress_callback:
                 share = min(1.0, frame / max(total, 1))
-                progress_callback(_TITLE_END * share, f"{stage} (frame {frame}/{total})")
+                progress_callback(_TITLE_END * share, coded(stage, frame=frame, frames=total))
 
         if trip_map:
             title_screen = generator.generate_trip_map_screen(
@@ -431,7 +432,7 @@ class TitleInserter:
 
         _t_title_done = _time.monotonic()
         if progress_callback:
-            progress_callback(_TITLE_END, "Title screen ready")
+            progress_callback(_TITLE_END, coded(Stage.RENDER_TITLE_READY))
 
         # 2-3. Clips with dividers
         def _divider_progress(share: float, message: str) -> None:
@@ -475,7 +476,7 @@ class TitleInserter:
 
         # 5. Assemble
         if progress_callback:
-            progress_callback(_ENCODE_START, "Encoding video...")
+            progress_callback(_ENCODE_START, coded(Stage.RENDER_ENCODING))
         logger.info(f"Assembling {len(final_clips)} clips (including title screens)")
         result = self._encode_composed_clips(
             final_clips, output_path, assemble_fn, progress_callback, (target_w, target_h)

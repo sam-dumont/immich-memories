@@ -40,6 +40,7 @@ from immich_memories.analysis.runtime.workprint import (
 )
 from immich_memories.analysis.stories.rule_episodes import EpisodeReader
 from immich_memories.operations.cut_progress import StageUpdate
+from immich_memories.progress_text import Stage
 from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
@@ -155,7 +156,7 @@ class TextEditorialPlanner:
         if not any(episode.reading is not None for episode in episodes.episodes):
             return _unavailable(trace, "no readable episode evidence")
 
-        _stage(on_stage, "Building editorial cards")
+        _stage(on_stage, Stage.CUT_CARDS)
         workprint = self._build_workprint(
             candidates,
             prepared=prepared,
@@ -165,7 +166,7 @@ class TextEditorialPlanner:
         )
         if workprint is None:
             return EditorialPlan()
-        _stage(on_stage, "Editing the memory")
+        _stage(on_stage, Stage.CUT_EDITING)
         return self._scoped_plan(workprint, trace=trace)
 
     def _read_episodes(
@@ -176,7 +177,7 @@ class TextEditorialPlanner:
         trace: Trace,
         on_stage: Callable[[StageUpdate], None] | None,
     ) -> TextEpisodeReadResult:
-        _stage(on_stage, "Reading event evidence")
+        _stage(on_stage, Stage.CUT_EVENT_EVIDENCE)
         episodes = reader.read(episode_projections)
         _record_warnings(trace, episodes.warnings)
         if episodes.request_trace is not None:
@@ -252,9 +253,9 @@ def _demanded_ids(candidates: tuple[ClipWithSegment, ...]) -> tuple[str, ...]:
     return demanded_ids
 
 
-def _stage(on_stage: Callable[[StageUpdate], None] | None, label: str) -> None:
+def _stage(on_stage: Callable[[StageUpdate], None] | None, stage: Stage) -> None:
     if on_stage is not None:
-        on_stage(StageUpdate(label))
+        on_stage(StageUpdate(stage))
 
 
 def _cull_provenance(

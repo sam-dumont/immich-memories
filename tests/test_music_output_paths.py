@@ -13,6 +13,7 @@ import pytest
 from immich_memories import generate_render as generate_render_module
 from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
+from immich_memories.progress_text import Stage, coded
 from tests.conftest import make_clip
 from tests.output_tools_fake import output_tools
 
@@ -884,7 +885,8 @@ def test_optional_music_failure_preserves_base_and_uploads_valid_artifact(
     warning = "Optional music failed: music backend unavailable"
     assert result.read_bytes() == b"validated-base"
     assert uploaded == [b"validated-base"]
-    assert ("music", warning) in progress
+    # The heading says the music ended on a warning; the warning itself is the run's.
+    assert ("music", coded(Stage.RENDER_MUSIC_WARNING)) in progress
     tracker.complete_artifact.assert_called_once()
     # Only the music warning is this test's: a host short on disk adds its own low-space line.
     run_warnings = tracker.complete_artifact.call_args.args[2]

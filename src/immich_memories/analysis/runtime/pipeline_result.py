@@ -16,6 +16,7 @@ from math import isfinite
 from typing import TYPE_CHECKING
 
 from immich_memories.operations.cut_progress import StageUpdate
+from immich_memories.progress_text import Stage
 
 if TYPE_CHECKING:
     from immich_memories.analysis.runtime.plan import EditorialPlan, EditorialSelection
@@ -36,7 +37,7 @@ class EditorialStageReporter:
     ) -> None:
         self._tracker = tracker
         self._progress_callback = progress_callback
-        self.stage = StageUpdate("Preparing editorial evidence", "analysis")
+        self.stage = StageUpdate(Stage.CUT_EVIDENCE, "analysis")
 
     def __call__(self, update: StageUpdate | str, *, status: str = "running") -> None:
         if isinstance(update, str):

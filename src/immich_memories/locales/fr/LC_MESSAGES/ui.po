@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-11 02:30+0100\n"
+"POT-Creation-Date: 2026-11-11 03:39+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -54,7 +54,7 @@ msgstr "Clé d'API"
 msgid "API version"
 msgstr "Version de l'API"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:54
 #, python-brace-format
 msgid "About {amount} left overall"
 msgstr "Environ {amount} restantes au total"
@@ -74,7 +74,7 @@ msgstr "Environ {amount} avant que le montage soit prêt"
 msgid "About {amount} until the film is ready"
 msgstr "Environ {amount} avant que le film soit prêt"
 
-#: web/lib/JobPanel.svelte:41
+#: web/lib/JobPanel.svelte:42
 #, python-brace-format, python-format
 msgid "About {percent}% overall"
 msgstr "Environ {percent}% au total"
@@ -342,6 +342,10 @@ msgstr "Arrière-plan flouté"
 msgid "Browse the whole pool"
 msgstr "Parcourir tous les médias disponibles"
 
+#: web/lib/stages.ts:12
+msgid "Building editorial cards"
+msgstr "Construction des fiches de montage"
+
 #: web/lib/settingLabels.ts:168
 msgid "Button text"
 msgstr "Texte du bouton"
@@ -354,7 +358,7 @@ msgstr "Cache"
 msgid "Caches"
 msgstr "Caches"
 
-#: web/lib/JobPanel.svelte:138 web/routes/runs/[run_id]/pool/+page.svelte:171
+#: web/lib/JobPanel.svelte:140 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -423,35 +427,56 @@ msgstr "Vérifier les mises à jour chaque jour"
 msgid "Check playback"
 msgstr "Vérifier la lecture"
 
-#: web/lib/labels.ts:116
+#: web/lib/stages.ts:102 web/lib/stages.ts:107
 msgid "Checking Live Photo clips"
 msgstr "Vérification des clips Live Photo"
 
-#: web/lib/labels.ts:118
+#: web/lib/stages.ts:105
 msgid "Checking Live Photo clips for a covered lens"
 msgstr "Recherche d’un objectif couvert dans les clips Live Photo"
 
-#: web/lib/labels.ts:100
+#: web/lib/stages.ts:100
 msgid "Checking Live Photo frames for the family audience"
 msgstr "Vérification des images Live Photo pour un public familial"
 
-#: web/lib/labels.ts:109
+#: web/lib/stages.ts:91
 msgid "Checking for a covered lens"
 msgstr "Recherche d’un objectif couvert"
 
-#: web/lib/labels.ts:105
+#: web/lib/stages.ts:75
+msgid "Checking music service"
+msgstr "Vérification du service de musique"
+
+#: web/lib/stages.ts:87
 msgid "Checking pictures for the family audience"
 msgstr "Vérification des images pour un visionnage en famille"
 
-#: web/lib/labels.ts:111
+#: web/lib/stages.ts:72
+msgid "Checking the downloaded film"
+msgstr "Vérification du film téléchargé"
+
+#: web/lib/stages.ts:57
+msgid "Checking the finished film"
+msgstr "Vérification du film terminé"
+
+#: web/lib/stages.ts:58
+#, python-brace-format
+msgid "Checking the finished film: {done} of {total} decoded"
+msgstr "Vérification du film terminé : {done} sur {total} décodés"
+
+#: web/lib/stages.ts:67
+msgid "Checking the render worker"
+msgstr "Vérification du serveur de rendu"
+
+#: web/lib/stages.ts:95 web/lib/stages.ts:106
 msgid "Checking video clips"
 msgstr "Vérification des clips vidéo"
 
-#: web/lib/labels.ts:114
+#: web/lib/stages.ts:98
 msgid "Checking video clips for a covered lens"
 msgstr "Recherche d’un objectif couvert dans les clips vidéo"
 
-#: web/lib/labels.ts:98
+#: web/lib/stages.ts:93
 msgid "Checking video frames for the family audience"
 msgstr "Vérification des images vidéo pour un public familial"
 
@@ -504,6 +529,10 @@ msgstr "Secret client"
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "Presse-papiers indisponible. Sélectionnez le rapport ci-dessous et copiez-le."
 
+#: web/lib/stages.ts:39
+msgid "Clips prepared"
+msgstr "Clips préparés"
+
 #: web/lib/settingLabels.ts:72
 msgid "Codec"
 msgstr "Codec"
@@ -515,6 +544,10 @@ msgstr "Politique de codec"
 #: web/routes/create/+page.svelte:507
 msgid "Command"
 msgstr "Commande"
+
+#: web/lib/stages.ts:66
+msgid "Complete!"
+msgstr "Terminé !"
 
 #: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:29
 msgid "Completed"
@@ -564,11 +597,11 @@ msgstr "Planche contact"
 msgid "Cooldown (hours)"
 msgstr "Délai de repos (heures)"
 
-#: web/lib/JobPanel.svelte:136 web/lib/RunReport.svelte:76
+#: web/lib/JobPanel.svelte:138 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "Copié"
 
-#: web/lib/JobPanel.svelte:136
+#: web/lib/JobPanel.svelte:138
 msgid "Copy as CLI command"
 msgstr "Copier comme commande CLI"
 
@@ -665,11 +698,11 @@ msgstr "Décrivez le film avec vos propres mots"
 msgid "Describe the film you want"
 msgstr "Décrivez le film que vous voulez"
 
-#: web/lib/labels.ts:107
+#: web/lib/stages.ts:89
 msgid "Describing the pictures"
 msgstr "Description des images"
 
-#: web/lib/labels.ts:97
+#: web/lib/stages.ts:82
 msgid "Descriptions not requested"
 msgstr "Descriptions non demandées"
 
@@ -738,7 +771,7 @@ msgstr "Échec de la recherche : {error}"
 msgid "Dismiss"
 msgstr "Fermer"
 
-#: web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:71
 msgid "Done."
 msgstr "Terminé."
 
@@ -765,6 +798,38 @@ msgstr "Télécharger le rapport"
 #: web/lib/settingLabels.ts:60
 msgid "Download workers"
 msgstr "Workers de téléchargement"
+
+#: web/lib/stages.ts:32
+msgid "Downloading pinned models"
+msgstr "Téléchargement des modèles épinglés"
+
+#: web/lib/stages.ts:34
+msgid "Downloading the detector snapshots"
+msgstr "Téléchargement des instantanés des détecteurs"
+
+#: web/lib/stages.ts:69
+msgid "Downloading the finished film"
+msgstr "Téléchargement du film terminé"
+
+#: web/lib/stages.ts:71
+#, python-brace-format
+msgid "Downloading the finished film: {done} bytes received"
+msgstr "Téléchargement du film terminé : {done} octets reçus"
+
+#: web/lib/stages.ts:70
+#, python-brace-format
+msgid "Downloading the finished film: {done}/{total} bytes"
+msgstr "Téléchargement du film terminé : {done}/{total} octets"
+
+#: web/lib/stages.ts:33
+#, python-brace-format
+msgid "Downloading {name}"
+msgstr "Téléchargement de {name}"
+
+#: web/lib/stages.ts:40
+#, python-brace-format
+msgid "Downloading: {name}"
+msgstr "Téléchargement : {name}"
 
 #: web/lib/people/FamilyTree.svelte:61
 msgid "Draw the family tree"
@@ -809,6 +874,27 @@ msgstr ""
 "Montage réalisé sans descriptions : le contenu des images a été classé, mais pas analysé en "
 "détail."
 
+#: web/lib/stages.ts:13
+msgid "Editing the memory"
+msgstr "Montage du souvenir"
+
+#: web/lib/stages.ts:15
+#, python-brace-format
+msgid "Editing the memory: {pictures} pictures after the duplicate review"
+msgstr "Montage du souvenir : {pictures} images après la revue des doublons"
+
+#: web/lib/stages.ts:14
+#, python-brace-format
+msgid "Editing the memory: {pictures} pictures going into the family-viewing check"
+msgstr ""
+"Montage du souvenir : {pictures} images soumises à la vérification pour un visionnage en "
+"famille"
+
+#: web/lib/stages.ts:16
+#, python-brace-format
+msgid "Editing the memory: {pictures} pictures going into the picture review"
+msgstr "Montage du souvenir : {pictures} images soumises à la revue des images"
+
 #: web/lib/settingLabels.ts:33
 msgid "Editorial"
 msgstr "Éditorial"
@@ -816,6 +902,18 @@ msgstr "Éditorial"
 #: web/lib/settingLabels.ts:89
 msgid "Editorial runs size (GB)"
 msgstr "Taille des exécutions éditoriales (Go)"
+
+#: web/lib/stages.ts:21
+msgid "Editorial selection cancelled"
+msgstr "Sélection du montage annulée"
+
+#: web/lib/stages.ts:20
+msgid "Editorial selection complete"
+msgstr "Sélection du montage terminée"
+
+#: web/lib/stages.ts:22
+msgid "Editorial selection failed"
+msgstr "Échec de la sélection du montage"
 
 #: web/lib/RenderPanel.svelte:187
 msgid "Elegant minimal"
@@ -851,6 +949,25 @@ msgstr "URL de l'encodeur"
 #: web/lib/settingLabels.ts:95
 msgid "Encoder preset"
 msgstr "Préréglage de l'encodeur"
+
+#: web/lib/stages.ts:51
+#, python-brace-format
+msgid "Encoding ({done} / {total}) — {percent}%"
+msgstr "Encodage ({done} / {total}) — {percent} %"
+
+#: web/lib/stages.ts:52
+#, python-brace-format
+msgid "Encoding ({time})"
+msgstr "Encodage ({time})"
+
+#: web/lib/stages.ts:53
+#, python-brace-format
+msgid "Encoding ({time}) @ {speed}x"
+msgstr "Encodage ({time}) à {speed}x"
+
+#: web/lib/stages.ts:50
+msgid "Encoding video..."
+msgstr "Encodage de la vidéo…"
 
 #: web/lib/ShotInspector.svelte:68
 msgid "End here"
@@ -917,6 +1034,11 @@ msgstr "Fêtes supplémentaires"
 msgid "Extra parameters"
 msgstr "Paramètres supplémentaires"
 
+#: web/lib/stages.ts:41
+#, python-brace-format
+msgid "Extracting segment: {name}"
+msgstr "Extraction du segment : {name}"
+
 #: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
@@ -957,13 +1079,17 @@ msgstr "Famille"
 msgid "Family tree"
 msgstr "Arbre généalogique"
 
-#: web/lib/labels.ts:99
+#: web/lib/stages.ts:99
 msgid "Fetching Live Photo clip previews"
 msgstr "Récupération des aperçus des clips Live Photo"
 
-#: web/lib/labels.ts:101
+#: web/lib/stages.ts:83
 msgid "Fetching picture previews"
 msgstr "Chargement des aperçus des images"
+
+#: web/lib/stages.ts:92
+msgid "Fetching video clip previews"
+msgstr "Récupération des aperçus des clips vidéo"
 
 #: web/lib/AskPanel.svelte:177
 msgid "Fewer than 12 pictures fit: the film will be short."
@@ -989,7 +1115,7 @@ msgstr "Films qui peuvent l’utiliser"
 msgid "Find a name"
 msgstr "Rechercher un nom"
 
-#: web/lib/labels.ts:103
+#: web/lib/stages.ts:85
 msgid "Finding faces"
 msgstr "Recherche des visages"
 
@@ -1024,6 +1150,31 @@ msgstr "Du"
 #: web/routes/settings/people/+page.svelte:183
 msgid "Full name"
 msgstr "Nom complet"
+
+#: web/lib/stages.ts:25
+#, python-brace-format
+msgid "Gave up on the reader after {retries} dropped connections: check that server"
+msgstr "Abandon du lecteur après {retries} connexions perdues : vérifiez ce serveur"
+
+#: web/lib/stages.ts:49
+msgid "Generating ending screen..."
+msgstr "Création de l’écran de fin…"
+
+#: web/lib/stages.ts:76
+msgid "Generating music"
+msgstr "Création de la musique"
+
+#: web/lib/stages.ts:60
+msgid "Generating music..."
+msgstr "Création de la musique…"
+
+#: web/lib/stages.ts:43
+msgid "Generating title screen..."
+msgstr "Création de l’écran titre…"
+
+#: web/lib/stages.ts:44
+msgid "Generating trip map..."
+msgstr "Création de la carte du voyage…"
 
 #: web/routes/create/+page.svelte:37
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
@@ -1118,6 +1269,10 @@ msgstr "URL du serveur Immich"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Comptes Immich à lire (le principal seul si aucun n'est choisi)"
 
+#: web/lib/stages.ts:65
+msgid "Immich delivery incomplete; local film kept"
+msgstr "Envoi vers Immich incomplet ; le film local est conservé"
+
 #: web/routes/runs/[run_id]/+page.svelte:349
 #, python-brace-format
 msgid "Immich delivery: {value}"
@@ -1189,7 +1344,7 @@ msgstr "Nom d’utilisateur ou mot de passe incorrect"
 msgid "Issuer URL"
 msgstr "URL de l'émetteur"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/JobPanel.svelte:73
 msgid "It did not finish."
 msgstr "Le traitement n’a pas abouti."
 
@@ -1239,7 +1394,7 @@ msgstr "Modèle de langage"
 msgid "Language model size"
 msgstr "Taille du modèle de langage"
 
-#: web/lib/JobPanel.svelte:100
+#: web/lib/JobPanel.svelte:102
 #, python-brace-format
 msgid "Last measured progress: {amount} ago."
 msgstr "Dernière progression mesurée : il y a {amount}."
@@ -1277,7 +1432,7 @@ msgstr "Lié à"
 msgid "Live"
 msgstr "Live"
 
-#: web/lib/JobPanel.svelte:95
+#: web/lib/JobPanel.svelte:97
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "Mises à jour en direct déconnectées. Vérification de l’état enregistré de la tâche."
 
@@ -1300,6 +1455,11 @@ msgstr "Serveur local"
 #: web/lib/settingLabels.ts:102
 msgid "Local vision projector"
 msgstr "Projecteur de vision local"
+
+#: web/lib/stages.ts:48
+#, python-brace-format
+msgid "Location card {index} of {count}"
+msgstr "Carte de lieu {index} sur {count}"
 
 #: web/lib/settingLabels.ts:67
 msgid "Longest source video (seconds)"
@@ -1375,15 +1535,19 @@ msgstr "Écart maximal (jours)"
 msgid "Maximum tokens parameter"
 msgstr "Paramètre de tokens maximum"
 
-#: web/lib/labels.ts:106
+#: web/lib/stages.ts:104
+msgid "Measuring motion in Live Photo clips"
+msgstr "Mesure du mouvement dans les clips Live Photo"
+
+#: web/lib/stages.ts:88
 msgid "Measuring motion in the videos"
 msgstr "Mesure du mouvement dans les vidéos"
 
-#: web/lib/labels.ts:113
+#: web/lib/stages.ts:97
 msgid "Measuring motion in video clips"
 msgstr "Mesure du mouvement dans les clips vidéo"
 
-#: web/lib/labels.ts:102
+#: web/lib/stages.ts:84
 msgid "Measuring the pictures"
 msgstr "Analyse des caractéristiques des images"
 
@@ -1415,6 +1579,14 @@ msgstr "Espace libre minimal (Go)"
 msgid "Missed month"
 msgstr "Mois manqué"
 
+#: web/lib/stages.ts:55
+msgid "Mixing audio..."
+msgstr "Mixage du son…"
+
+#: web/lib/stages.ts:61
+msgid "Mixing music..."
+msgstr "Mixage de la musique…"
+
 #: web/lib/settingLabels.ts:127
 msgid "Mode"
 msgstr "Mode"
@@ -1423,7 +1595,7 @@ msgstr "Mode"
 msgid "Model"
 msgstr "Modèle"
 
-#: web/lib/labels.ts:96
+#: web/lib/stages.ts:81
 msgid "Model checks not requested"
 msgstr "Vérifications par modèle non demandées"
 
@@ -1455,6 +1627,11 @@ msgstr "Moderne et chaleureux"
 msgid "Month"
 msgstr "Mois"
 
+#: web/lib/stages.ts:47
+#, python-brace-format
+msgid "Month divider {index} of {count}"
+msgstr "Intertitre de mois {index} sur {count}"
+
 #: web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "Moments du mois"
@@ -1471,9 +1648,21 @@ msgstr "Plusieurs personnes"
 msgid "Music"
 msgstr "Musique"
 
+#: web/lib/stages.ts:63
+msgid "Music finished with a warning"
+msgstr "Musique terminée avec un avertissement"
+
 #: web/lib/settingLabels.ts:21
 msgid "Music generation"
 msgstr "Génération de musique"
+
+#: web/lib/stages.ts:62
+msgid "Music ready"
+msgstr "Musique prête"
+
+#: web/lib/stages.ts:77
+msgid "Music service failed; trying the next service"
+msgstr "Échec du service de musique ; essai du service suivant"
 
 #: web/lib/settingLabels.ts:47
 msgid "Music upload quota (MB)"
@@ -1482,6 +1671,14 @@ msgstr "Quota d'envoi de musique (Mo)"
 #: web/lib/RenderPanel.svelte:275
 msgid "Music volume:"
 msgstr "Volume de la musique :"
+
+#: web/lib/stages.ts:59
+msgid "Muting original audio..."
+msgstr "Coupure du son d’origine…"
+
+#: web/lib/stages.ts:56
+msgid "Muxing final output..."
+msgstr "Assemblage du fichier final…"
 
 #: web/lib/settingLabels.ts:51
 msgid "Native sharing"
@@ -1503,7 +1700,7 @@ msgstr "Ne jamais utiliser"
 msgid "New memory"
 msgstr "Nouveau souvenir"
 
-#: web/lib/JobPanel.svelte:85
+#: web/lib/JobPanel.svelte:87
 msgid "Next: select pictures and save the cut. More checks may be needed during selection."
 msgstr ""
 "Ensuite : sélectionner les images et enregistrer le montage. D’autres vérifications peuvent "
@@ -1555,7 +1752,7 @@ msgstr "Aucun nom ne correspond."
 msgid "No named people in Immich yet."
 msgstr "Aucune personne nommée dans Immich pour l’instant."
 
-#: web/lib/JobPanel.svelte:97
+#: web/lib/JobPanel.svelte:99
 #, python-brace-format
 msgid "No new progress for {amount}. The job is still running."
 msgstr "Aucune nouvelle progression depuis {amount}. La tâche est toujours en cours."
@@ -1740,7 +1937,7 @@ msgstr "Autres images de ce moment"
 msgid "Output"
 msgstr "Sortie"
 
-#: web/lib/JobPanel.svelte:90 web/lib/PhaseTimeline.svelte:26
+#: web/lib/JobPanel.svelte:92 web/lib/PhaseTimeline.svelte:26
 msgid "Overall time remaining is not known yet."
 msgstr "Le temps restant total n’est pas encore connu."
 
@@ -1821,7 +2018,7 @@ msgstr "Description de l’image"
 msgid "Picture review"
 msgstr "Examen de l’image"
 
-#: web/lib/JobPanel.svelte:103
+#: web/lib/JobPanel.svelte:105
 msgid "Pictures just read"
 msgstr "Images récemment analysées"
 
@@ -1889,9 +2086,34 @@ msgstr "Préparer les clips sélectionnés"
 msgid "Prepared source cache size (GB)"
 msgstr "Taille du cache des sources préparées (Go)"
 
+#: web/lib/stages.ts:42
+#, python-brace-format
+msgid "Prepared {done}/{total} sources"
+msgstr "{done}/{total} sources préparées"
+
 #: web/routes/settings/+page.svelte:33
 msgid "Prepared-source cache"
 msgstr "Cache des sources préparées"
+
+#: web/lib/stages.ts:38
+msgid "Preparing clips..."
+msgstr "Préparation des clips…"
+
+#: web/lib/stages.ts:8
+msgid "Preparing editorial evidence"
+msgstr "Préparation des éléments du montage"
+
+#: web/lib/stages.ts:108
+msgid "Preparing the pictures"
+msgstr "Préparation des images"
+
+#: web/lib/stages.ts:30
+msgid "Preparing the pool"
+msgstr "Préparation de la sélection d’images"
+
+#: web/lib/stages.ts:31
+msgid "Preparing the render"
+msgstr "Préparation du rendu"
 
 #: web/lib/settingLabels.ts:7 web/lib/settingLabels.ts:39
 msgid "Preset"
@@ -1909,7 +2131,7 @@ msgstr "Écouter un morceau"
 msgid "Preview with these choices"
 msgstr "Aperçu avec cette sélection"
 
-#: web/lib/JobPanel.svelte:115
+#: web/lib/JobPanel.svelte:117
 msgid "Previous stages"
 msgstr "Étapes précédentes"
 
@@ -1917,7 +2139,7 @@ msgstr "Étapes précédentes"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Mode confidentialité : flouter les images et masquer les noms"
 
-#: web/lib/JobPanel.svelte:119
+#: web/lib/JobPanel.svelte:121
 msgid "Processed"
 msgstr "Traité"
 
@@ -1925,7 +2147,7 @@ msgstr "Traité"
 msgid "Producers"
 msgstr "Producteurs"
 
-#: web/lib/JobPanel.svelte:65 web/lib/JobPanel.svelte:79
+#: web/lib/JobPanel.svelte:67 web/lib/JobPanel.svelte:81
 msgid "Progress"
 msgstr "Progression"
 
@@ -1953,21 +2175,46 @@ msgstr "Aléatoire"
 msgid "Reader concurrency"
 msgstr "Parallélisme des lecteurs"
 
-#: web/lib/labels.ts:108
+#: web/lib/stages.ts:9
+msgid "Reading dates, places and people"
+msgstr "Lecture des dates, des lieux et des personnes"
+
+#: web/lib/stages.ts:10 web/lib/stages.ts:11
+msgid "Reading event evidence"
+msgstr "Lecture des éléments des événements"
+
+#: web/lib/stages.ts:90
 msgid "Reading picture facts"
 msgstr "Lecture des informations sur les images"
 
-#: web/lib/labels.ts:117
+#: web/lib/stages.ts:74
+msgid "Reading the cut for music"
+msgstr "Lecture du montage pour la musique"
+
+#: web/lib/stages.ts:36
+msgid "Reading the library"
+msgstr "Lecture de la bibliothèque"
+
+#: web/lib/stages.ts:18
+#, python-brace-format
+msgid "Reading the period account: {month}"
+msgstr "Lecture du récit de la période : {month}"
+
+#: web/lib/stages.ts:103
 msgid "Reading what each Live Photo clip shows"
 msgstr "Analyse du contenu de chaque clip Live Photo"
 
-#: web/lib/labels.ts:104
+#: web/lib/stages.ts:86
 msgid "Reading what each picture shows"
 msgstr "Analyse du contenu des images"
 
-#: web/lib/labels.ts:112
+#: web/lib/stages.ts:96
 msgid "Reading what each video shows"
 msgstr "Analyse du contenu de chaque vidéo"
+
+#: web/lib/stages.ts:35
+msgid "Reading your sentence"
+msgstr "Lecture de votre phrase"
 
 #: web/lib/ShotInspector.svelte:168
 msgid "Recorded alternative"
@@ -2053,11 +2300,11 @@ msgstr "Réanalyser la photothèque"
 msgid "Resolution"
 msgstr "Résolution"
 
-#: web/lib/JobPanel.svelte:119
+#: web/lib/JobPanel.svelte:121
 msgid "Reused"
 msgstr "Réutilisé"
 
-#: web/lib/labels.ts:95
+#: web/lib/stages.ts:80
 msgid "Reusing saved picture checks"
 msgstr "Réutilisation des vérifications d’images enregistrées"
 
@@ -2112,6 +2359,10 @@ msgstr "En cours"
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "En cours sur le serveur : {phase}. Le traitement continue si vous quittez cette page."
 
+#: web/lib/stages.ts:17
+msgid "Running the family-viewing check"
+msgstr "Vérification pour un visionnage en famille"
+
 #: web/lib/SettingsChecks.svelte:68
 msgid "Running the preflight checks..."
 msgstr "Vérifications préalables en cours..."
@@ -2126,11 +2377,11 @@ msgstr "Exécutions"
 msgid "Same person as {name}?"
 msgstr "Même personne que {name} ?"
 
-#: web/lib/labels.ts:115
+#: web/lib/stages.ts:101
 msgid "Sampling Live Photo frames"
 msgstr "Échantillonnage des images Live Photo"
 
-#: web/lib/labels.ts:110
+#: web/lib/stages.ts:94
 msgid "Sampling video frames"
 msgstr "Échantillonnage des images vidéo"
 
@@ -2239,6 +2490,10 @@ msgstr "Sélectionner les images"
 msgid "Send image detail"
 msgstr "Envoyer le niveau de détail des images"
 
+#: web/lib/stages.ts:78
+msgid "Separating stems"
+msgstr "Séparation des pistes"
+
 #: web/lib/settingLabels.ts:9
 msgid "Server"
 msgstr "Serveur"
@@ -2286,7 +2541,7 @@ msgstr "Afficher les séparateurs de mois"
 msgid "Show more"
 msgstr "Afficher plus"
 
-#: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
+#: web/lib/JobPanel.svelte:95 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
 #: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "Se connecter"
@@ -2377,7 +2632,7 @@ msgstr "Carré"
 msgid "Start here"
 msgstr "Commencer ici"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:70
 msgid "Starting"
 msgstr "Démarrage"
 
@@ -2399,13 +2654,17 @@ msgstr ""
 "Arrêté avant d'avoir enregistré un film. Le montage dont il vient se trouve dans Exécutions, "
 "dans sa propre exécution."
 
-#: web/lib/JobPanel.svelte:70
+#: web/lib/JobPanel.svelte:72
 msgid "Stopped."
 msgstr "Arrêté."
 
 #: web/routes/runs/[run_id]/+page.svelte:119 web/routes/runs/[run_id]/+page.svelte:214
 msgid "Stories"
 msgstr "Histoires"
+
+#: web/lib/stages.ts:54
+msgid "Streaming video assembly..."
+msgstr "Assemblage de la vidéo en continu…"
 
 #: web/lib/settingLabels.ts:215
 msgid "Strict sharing"
@@ -2508,7 +2767,7 @@ msgstr "Le montage tel que choisi"
 msgid "The cut could not start."
 msgstr "Impossible de démarrer le montage."
 
-#: web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:71
 msgid "The cut is ready."
 msgstr "Le montage est prêt."
 
@@ -2538,11 +2797,11 @@ msgstr "Le film"
 msgid "The film file is gone, so there is nothing to upload."
 msgstr "Le fichier du film n’existe plus, il n’y a donc rien à envoyer."
 
-#: web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:71
 msgid "The film is ready."
 msgstr "Le film est prêt."
 
-#: web/lib/JobPanel.svelte:87
+#: web/lib/JobPanel.svelte:89
 msgid "The film still needs its playback check before it is ready."
 msgstr "La lecture du film doit encore être vérifiée avant qu’il soit prêt."
 
@@ -2714,6 +2973,10 @@ msgstr "Délai d'attente (secondes)"
 msgid "Title (decided as generate decides when empty)"
 msgstr "Titre (choisi par generate si vide)"
 
+#: web/lib/stages.ts:45
+msgid "Title screen ready"
+msgstr "Écran titre prêt"
+
 #: web/lib/settingLabels.ts:23
 msgid "Title screens"
 msgstr "Écrans de titre"
@@ -2846,6 +3109,10 @@ msgstr "Envoyé vers Immich, album {album}."
 msgid "Uploaded to Immich."
 msgstr "Envoyé vers Immich."
 
+#: web/lib/stages.ts:64
+msgid "Uploading to Immich..."
+msgstr "Envoi vers Immich…"
+
 #: web/routes/create/+page.svelte:465
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr ""
@@ -2867,6 +3134,10 @@ msgstr "En-tête utilisateur"
 #: web/lib/settingLabels.ts:160 web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "Nom d'utilisateur"
+
+#: web/lib/stages.ts:19
+msgid "Validating selected source timing"
+msgstr "Validation du minutage des sources choisies"
 
 #: web/lib/AskPanel.svelte:27
 msgid "Verdict"
@@ -2909,6 +3180,20 @@ msgstr "Voir dans Immich"
 #: web/lib/RenderPanel.svelte:188
 msgid "Vintage charm"
 msgstr "Charme rétro"
+
+#: web/lib/stages.ts:24
+#, python-brace-format
+msgid "Waiting for the reader: connection dropped, retry {attempt} of {retries}"
+msgstr "En attente du lecteur : connexion perdue, nouvel essai {attempt} sur {retries}"
+
+#: web/lib/stages.ts:68
+msgid "Waiting for the render worker"
+msgstr "En attente du serveur de rendu"
+
+#: web/lib/stages.ts:23
+#, python-brace-format
+msgid "Waiting on the {provider} batch: {count} prompts, submitted {time}"
+msgstr "En attente du lot {provider} : {count} requêtes, envoyé à {time}"
 
 #: web/lib/SettingsChecks.svelte:20
 msgid "Warning"
@@ -3023,6 +3308,11 @@ msgstr "Jeton du worker"
 msgid "Year"
 msgstr "Année"
 
+#: web/lib/stages.ts:46
+#, python-brace-format
+msgid "Year divider {index} of {count}"
+msgstr "Intertitre d’année {index} sur {count}"
+
 #: web/lib/labels.ts:5
 msgid "Year in Review"
 msgstr "Rétrospective de l’année"
@@ -3054,7 +3344,7 @@ msgstr ""
 "Votre premier film a besoin de ces fichiers de modèles. Rien ne se télécharge avant que vous "
 "appuyiez sur le bouton."
 
-#: web/lib/JobPanel.svelte:93
+#: web/lib/JobPanel.svelte:95
 msgid "Your login expired. Sign in again to see the job’s status."
 msgstr "Votre session a expiré. Reconnectez-vous pour voir l’état de la tâche."
 
@@ -3398,6 +3688,20 @@ msgstr "{content} d’images et de vidéo"
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content} : le film dépassera la durée prévue de {budget} pour tout inclure"
 
+#: web/lib/stages.ts:27
+#, python-brace-format
+msgid ""
+"{count} pictures in this period aren't prepared yet; preparing them first takes about "
+"{duration}"
+msgstr ""
+"{count} images de cette période ne sont pas encore préparées ; les préparer d’abord prend "
+"environ {duration}"
+
+#: web/lib/stages.ts:28
+#, python-brace-format
+msgid "{count} pictures prepared"
+msgstr "{count} images préparées"
+
 #: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
@@ -3408,27 +3712,27 @@ msgstr "Du {date_range_start} au {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} jours · {count} images"
 
-#: web/lib/labels.ts:130
+#: web/lib/labels.ts:100
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} sur {total}"
 
-#: web/lib/labels.ts:127
+#: web/lib/labels.ts:97
 #, python-brace-format
 msgid "{done} of {total} bytes"
 msgstr "{done} octets sur {total}"
 
-#: web/lib/labels.ts:126
+#: web/lib/labels.ts:96
 #, python-brace-format
 msgid "{done} of {total} checks"
 msgstr "{done} vérifications sur {total}"
 
-#: web/lib/labels.ts:124
+#: web/lib/labels.ts:94
 #, python-brace-format
 msgid "{done} of {total} clips"
 msgstr "{done} clips sur {total}"
 
-#: web/lib/labels.ts:125
+#: web/lib/labels.ts:95
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{done} images sur {total}"
@@ -3491,7 +3795,7 @@ msgstr ""
 "{passed} images préparées sur {checked} respectent les critères vérifiés avant le montage ; "
 "{unread} ne sont pas encore préparées."
 
-#: web/lib/JobPanel.svelte:40
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format, python-format
 msgid "{percent}% of this stage"
 msgstr "{percent}% de cette étape"
@@ -3505,6 +3809,11 @@ msgstr "{pictures} : {photos}, {videos}"
 #, python-brace-format
 msgid "{seconds} on screen"
 msgstr "{seconds} à l’écran"
+
+#: web/lib/stages.ts:117
+#, python-brace-format
+msgid "{stage} (frame {frame}/{frames})"
+msgstr "{stage} (image {frame}/{frames})"
 
 #: web/lib/UpdateBanner.svelte:31 web/lib/UpdateCheck.svelte:40
 #, python-brace-format
@@ -3526,7 +3835,7 @@ msgstr "~{amount} estimées, plus le travail non mesuré"
 msgid "~{amount} left"
 msgstr "~{amount} restantes"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:56
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "~{amount} restant à cette étape"

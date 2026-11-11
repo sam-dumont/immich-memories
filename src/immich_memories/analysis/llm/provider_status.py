@@ -1,51 +1,39 @@
-"""Name the provider that stopped answering, the moment it stops.
+"""Say that the reader stopped answering, the moment it stops.
 
 The retry in `llm.query` is right and stays: one dropped connection once
 killed a 26-minute run. What was missing is that nobody was told. Until this
 module, a reader that went away meant six silent seconds and then a dead run,
-with the endpoint named nowhere on either surface.
+with nothing said on either surface.
+
+The stage names the reader, never its server: progress text carries no config value.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from urllib.parse import urlsplit
 
 from immich_memories.analysis.llm.wire import TRANSPORT_RETRIES, LLMTransportAttempt
-from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cut_progress import StageUpdate, announce_stage
+from immich_memories.progress_text import Stage
 
 
-def endpoint_of(config: LLMConfig) -> str:
-    """The host and port a person would check, without the path or the scheme."""
-    parts = urlsplit(config.base_url)
-    return parts.netloc or config.base_url
-
-
-def watch_provider(role: str, config: LLMConfig) -> Callable[[LLMTransportAttempt], None]:
+def watch_provider() -> Callable[[LLMTransportAttempt], None]:
     """A transport observer that announces each dropped connection as a stage."""
-    endpoint = endpoint_of(config)
 
     def observe(attempt: LLMTransportAttempt) -> None:
         if attempt.outcome != "connection_error":
             return
         if attempt.attempt >= TRANSPORT_RETRIES:
             # Most callers now go on without it (the film falls back to the rules), so this
-            # names the server to check and promises nothing about the run.
+            # says to check the server and promises nothing about the run.
             announce_stage(
-                StageUpdate(
-                    f"Gave up on the {role} at {endpoint} after {TRANSPORT_RETRIES} dropped "
-                    "connections: check that server",
-                    # The key names the stage in history and traces; the server stays out of it.
-                    key=f"Gave up on the {role}",
-                )
+                StageUpdate(Stage.CUT_READER_GAVE_UP, params={"retries": TRANSPORT_RETRIES})
             )
             return
         announce_stage(
             StageUpdate(
-                f"Waiting for the {role} at {endpoint}: connection dropped, "
-                f"retry {attempt.attempt} of {TRANSPORT_RETRIES}",
-                key=f"Waiting for the {role}",
+                Stage.CUT_READER_WAITING,
+                params={"attempt": attempt.attempt, "retries": TRANSPORT_RETRIES},
             )
         )
 

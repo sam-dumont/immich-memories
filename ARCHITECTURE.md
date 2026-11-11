@@ -1551,6 +1551,8 @@ src/immich_memories/
 │                               # (the SQLite migration lock, the place-name cache)
 ├── i18n.py                     # Internationalization
 ├── operational_warnings.py     # Warnings as `warn.<code>?params`, worded in the film's language where read
+├── progress_text.py            # Progress headings as a stage key + params (`stage.<key>?params` as one string),
+│                               #   worded by the web client (web/src/lib/stages.ts) and in English for the CLI
 ├── i18n_places.py              # Country names in the film's language (CLDR, offline)
 ├── place_names.py              # Offline island boxes and short island/region names
 ├── place_name_translations.py  # Island and region names for the languages whose titles take no preposition

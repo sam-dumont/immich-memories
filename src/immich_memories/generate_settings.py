@@ -41,6 +41,7 @@ from immich_memories.processing.hdr_utilities import (
     quality_encoder_preset,
 )
 from immich_memories.processing.map_move_timing import MapMoveTiming
+from immich_memories.progress_text import Stage, coded
 from immich_memories.titles.title_routing import PEOPLE_MEMORY_TYPES
 from immich_memories.titles.title_source import TitleSource
 from immich_memories.tracking.timed import timed
@@ -553,7 +554,7 @@ def run_music_phase(
             )
             if not selection.path:
                 return _complete_music_without_track(selection.warning, phase_started, run_tracker)
-            _report_fn("music", 0.9, "Mixing music...")
+            _report_fn("music", 0.9, coded(Stage.RENDER_MUSIC_MIX))
             if not phase_started:
                 # Defensive fallback for custom resolvers that produce a track
                 # without an explicit path or configured generation backend.

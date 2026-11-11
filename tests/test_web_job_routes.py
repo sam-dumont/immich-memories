@@ -276,15 +276,96 @@ def test_an_unprepared_window_surfaces_its_warning_as_the_cuts_progress(client, 
 def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):
     from immich_memories.operations.cut_progress import StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt
+    from immich_memories.progress_text import Stage
 
     started = client.post("/api/v1/cuts", json={"memory_type": "year_in_review", "year": 2023})
     job_id = started.json()["id"]
     root = tmp_path / "cache" / "editorial-runs" / f"web-{job_id}"
     with EditorialAttempt(root, request={"key": "k"}) as attempt:
-        attempt.stage(StageUpdate("Reading the period account", remaining_seconds=9.0))
+        attempt.stage(StageUpdate(Stage.CUT_PERIOD_ACCOUNT, remaining_seconds=9.0))
         progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
 
     assert progress["remaining_seconds"] is None
+
+
+def test_a_cut_sends_its_stage_key_and_params_for_the_page_to_word(client, tmp_path):
+    """#1960: the page words the heading; the English label stays for older readers."""
+    from immich_memories.operations.cut_progress import StageUpdate
+    from immich_memories.operations.editorial_attempt import EditorialAttempt
+    from immich_memories.progress_text import Stage
+
+    started = client.post("/api/v1/cuts", json={"memory_type": "year_in_review", "year": 2023})
+    job_id = started.json()["id"]
+    root = tmp_path / "cache" / "editorial-runs" / f"web-{job_id}"
+    with EditorialAttempt(root, request={"key": "k"}) as attempt:
+        attempt.stage(StageUpdate(Stage.CUT_PERIOD_ACCOUNT, params={"month": "2023-04"}))
+        progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+        attempt.stage(StageUpdate("videos.brand_new_pass", "analysis", 1, 4))
+        unlisted = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+
+    assert (progress["key"], progress["params"]) == ("cut.period_account", {"month": "2023-04"})
+    assert progress["label"] == "Reading the period account: 2023-04"
+    # The stage before it is history, worded from its own key.
+    assert unlisted["history"][-1]["key"] == "cut.period_account"
+    # A pass the catalogue has not met yet still words as its scope's work, never as English.
+    assert unlisted["key"] == "videos.other"
+
+
+def test_a_free_text_cut_words_its_preparation_warning_on_the_page(client, tmp_path):
+    from immich_memories.cli._ask_generation import _progress_reporter
+    from immich_memories.cli.generate import _ask_progress_file
+    from immich_memories.progress_text import Stage, coded, coded_pass
+
+    started = client.post("/api/v1/cuts", json={"ask": "our cat along the years"})
+    job_id = started.json()["id"]
+    deadline = time.monotonic() + 20
+    while not client.recorded.is_file() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    argv = json.loads(client.recorded.read_text())
+    report = _progress_reporter(_ask_progress_file(argv[argv.index("--output") + 1], dry_run=False))
+    assert report is not None
+
+    report(
+        coded(Stage.ASK_UNPREPARED, count=1240, duration_seconds=360, duration="6 min"), 0.0, 360.0
+    )
+    warning = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+    report(coded_pass("previews", done=31, total=1240), 0.025, 350.0)
+    preparing = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+
+    assert warning["key"] == "ask.unprepared"
+    assert warning["params"] == {"count": "1240", "duration_seconds": "360", "duration": "6 min"}
+    assert warning["label"] == (
+        "1240 pictures in this period aren't prepared yet; preparing them first takes about 6 min"
+    )
+    assert (preparing["key"], preparing["done"], preparing["total"]) == ("previews", 31, 1240)
+    assert preparing["unit"] == "pictures"
+
+
+def test_a_render_sends_its_stage_key_and_keeps_the_english_message(tmp_path):
+    from immich_memories.cli.progress_file import progress_writer
+    from immich_memories.progress_text import Stage, coded
+    from immich_memories.web.job_routes import _render_progress
+    from immich_memories.web.schemas import Job
+
+    path = tmp_path / "render.json"
+    job = Job(id="j", kind="render", argv=[], status="running", started_at=0.0)
+    job.meta["progress_file"] = str(path)
+    assert _render_progress(job).key == "job.render"
+
+    report = progress_writer(path)
+    assert report is not None
+    report("extract", 0.2, coded(Stage.RENDER_DOWNLOADING, name="IMG_0001.HEIC"))
+    report("assembly", 0.3, coded(Stage.RENDER_YEAR_CARD, index=1, count=3))
+    progress = _render_progress(job)
+
+    assert (progress.key, progress.params) == ("render.year_card", {"index": "1", "count": "3"})
+    assert progress.label == "Year divider 1 of 3"
+    assert json.loads(path.read_text())["message"] == "Year divider 1 of 3"
+    # The phase before it is history, worded from its own key.
+    assert (progress.history[-1].key, progress.history[-1].params) == (
+        "render.downloading",
+        {"name": "IMG_0001.HEIC"},
+    )
 
 
 def test_the_brief_offers_the_people_with_the_most_pictures_first(tmp_path):

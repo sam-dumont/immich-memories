@@ -180,7 +180,7 @@ class _Billing:
     def __init__(self, config) -> None:
         self.attempt: LLMTransportAttempt | None = None
         self.status: int | None = None
-        self._watch = watch_provider("reader", config)
+        self._watch = watch_provider()
 
     def __call__(self, attempt: LLMTransportAttempt) -> None:
         if attempt.status_code is not None:

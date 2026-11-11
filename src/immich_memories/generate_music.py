@@ -25,6 +25,7 @@ from immich_memories.processing.output_contract import (
     OutputProbe,
     check_output,
 )
+from immich_memories.progress_text import Stage, as_stage, coded
 from immich_memories.security import configured_secret_values, sanitize_error_message
 
 if TYPE_CHECKING:
@@ -221,7 +222,7 @@ def resolve_music(
         logger.info(warning)
     elif source is MusicSource.AUTO and music_config_available(config):
         if report_fn:
-            report_fn("music", 0.85, "Generating AI music...")
+            report_fn("music", 0.85, coded(Stage.MUSIC_GENERATING))
         try:
             generated = auto_generate_music(
                 config,
@@ -517,7 +518,7 @@ def auto_generate_music(
 def _stem_progress(report_fn: Callable[[str, float, str], None] | None):
     def progress(_version: int, status: str, progress: float, _detail: object) -> None:
         if report_fn:
-            report_fn("music", progress / 100.0, status)
+            report_fn("music", progress / 100.0, as_stage(status, Stage.MUSIC_STEMS))
 
     return progress
 
@@ -547,7 +548,8 @@ def _generate_take(
 
     def music_progress(version_idx: int, status: str, progress: float, detail: object) -> None:
         if report_fn:
-            report_fn("music", progress / 100.0, f"Music candidate {version_idx + 1}: {status}")
+            # One take per film: a backend's own status reads as the music being generated.
+            report_fn("music", progress / 100.0, as_stage(status, Stage.MUSIC_GENERATING))
 
     result = run(
         generate_music_for_video(

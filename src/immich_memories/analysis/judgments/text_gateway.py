@@ -240,7 +240,7 @@ class QueryTextRequester:
         that a later attempt would have answered. The billed-reply observer stays on
         every attempt, so the last completed POST is still the one on the record.
         """
-        watch = billed.watching(watch_provider("reader", request.llm_config))
+        watch = billed.watching(watch_provider())
         held = THROTTLE.pause()
         if held:
             # Another reader is already waiting out a rate limit on this key. Joining
@@ -481,7 +481,7 @@ class SyncTextPromptRequester:
                 timeout_seconds=self.timeout_seconds,
                 thinking=self.thinking,
                 judgments=None,
-                transport_observer=billed.watching(watch_provider("reader", self.llm_config)),
+                transport_observer=billed.watching(watch_provider()),
                 require_complete=True,
                 response_format=shape,
             )

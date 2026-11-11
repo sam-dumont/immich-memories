@@ -1994,12 +1994,24 @@ export interface components {
              */
             history: components["schemas"]["JobStage"][];
             /**
+             * Key
+             * @default
+             */
+            key: string;
+            /**
              * Label
              * @default
              */
             label: string;
             /** Last Completed At */
             last_completed_at?: number | null;
+            /**
+             * Params
+             * @default {}
+             */
+            params: {
+                [key: string]: string | number;
+            };
             /**
              * Pass Id
              * @default 0
@@ -2045,8 +2057,20 @@ export interface components {
         JobStage: {
             /** Done */
             done?: number | null;
+            /**
+             * Key
+             * @default
+             */
+            key: string;
             /** Label */
             label: string;
+            /**
+             * Params
+             * @default {}
+             */
+            params: {
+                [key: string]: string | number;
+            };
             /**
              * Pass Id
              * @default 0

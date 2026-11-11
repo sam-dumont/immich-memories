@@ -19,12 +19,12 @@ from immich_memories.operational_warnings import (
     JOINER,
     render_warning,
     scrub_warning,
-    worded_for,
 )
 from immich_memories.operations.film_labelling import label_for_params
 from immich_memories.operations.local_output_cleanup import remove_after_confirmed_upload
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.processing.output_contract import InvalidOutputArtifact
+from immich_memories.progress_text import Stage, coded
 from immich_memories.security import configured_secret_values, sanitize_error_message
 
 if TYPE_CHECKING:
@@ -112,7 +112,7 @@ def deliver_completed_artifact(
                 run_tracker, safe_delivery_message(exc, params.config), attempted=False
             )
 
-    report_progress(params, "upload", 0.95, "Uploading to Immich...")
+    report_progress(params, "upload", 0.95, coded(Stage.RENDER_UPLOAD))
     delivery_error: DeliveryError | None = None
     asset_id: str | None = None
     try:
@@ -129,9 +129,8 @@ def deliver_completed_artifact(
             reason = JOINER.join(warnings) or "Immich delivery incomplete; local film kept"
             _record_incomplete_delivery(run_tracker, result, reason, warnings)
             logger.warning("%s; local film kept at %s", render_warning(reason), result_path)
-            report_progress(
-                params, "upload", 1.0, f"{worded_for(params.config, reason)}; local film kept"
-            )
+            # The reason is on the run's warnings; the heading says what happened to the film.
+            report_progress(params, "upload", 1.0, coded(Stage.RENDER_UPLOAD_INCOMPLETE))
             return result
         if not isinstance(asset_id, str) or not asset_id.strip():
             raise ValueError("Immich upload returned no asset ID")

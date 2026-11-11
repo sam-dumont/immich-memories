@@ -240,6 +240,9 @@ class Job(BaseModel):
 
 class JobStage(BaseModel):
     label: str
+    # The stage's key and params, as on `JobProgress`.
+    key: str = ""
+    params: dict[str, str | int] = {}
     done: int | None = None
     total: int | None = None
     unit: str = ""
@@ -268,9 +271,14 @@ class JobForecast(BaseModel):
 
 
 class JobProgress(BaseModel):
+    # The heading in English, for a reader that does not word `key` itself.
     label: str = ""
-    # The stage's own name ("previews", "public_heads"), for the page to word; `label` is the
-    # engine's sentence.
+    # The heading's catalogue key and the values it needs ("render.year_card", {"index": 2,
+    # "count": 9}): the page words them in the reader's language. Empty only for a stage a
+    # version before keys recorded, whose English `label` is all there is.
+    key: str = ""
+    params: dict[str, str | int] = {}
+    # The stage's own name ("previews", "public_heads"); `label` is the engine's sentence.
     stage_name: str = ""
     phase: str = ""
     done: int | None = None
