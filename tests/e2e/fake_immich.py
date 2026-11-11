@@ -1290,6 +1290,20 @@ def _handler_type(
             self._unexpected()
 
         def do_DELETE(self) -> None:  # noqa: N802
+            if self.headers.get("x-api-key") != FakeImmichServer.api_key:
+                self._send_json(401, {"message": "invalid API key"})
+                return
+            path = urlsplit(self.path).path
+            payload = self._read_json()
+            if self._refused(path, {}, payload):
+                return
+            tag_id = path.removeprefix("/api/tags/").removesuffix("/assets")
+            if path.startswith("/api/tags/") and path.endswith("/assets") and tag_id in tagged:
+                # A tag taken off the assets it held, answered per id as Immich does.
+                ids = list(payload.get("ids") or ())
+                tagged[tag_id].difference_update(ids)
+                self._send_json(200, [{"id": asset_id, "success": True} for asset_id in ids])
+                return
             self._unexpected()
 
         def _tagged(

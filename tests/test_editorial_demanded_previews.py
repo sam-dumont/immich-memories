@@ -36,9 +36,9 @@ def test_reading_a_large_cached_pool_does_not_keep_every_jpeg_in_memory(tmp_path
         pytest.fail(f"Cached preview unexpectedly fetched: {asset_id}")
 
     reader = DemandedPreviewReader(cache, fetch, allowed_ids=ids)
-    # Count only what was allocated with the reader on the stack. tracemalloc sees every
-    # thread, and on CI something else in the process once added a steady 7.7 MB to the
-    # whole-process total while this loop ran.
+    # Count only what was allocated with the reader on the stack. On CI this has failed
+    # now and then at a steady 7.7 MB that no local replay reproduces (macOS, Linux, the
+    # same shard and workers, the same Python), so a failure names the stacks holding it.
     under_the_reader = tracemalloc.Filter(
         True, inspect.getfile(DemandedPreviewReader), all_frames=True
     )
@@ -50,9 +50,12 @@ def test_reading_a_large_cached_pool_does_not_keep_every_jpeg_in_memory(tmp_path
         snapshot = tracemalloc.take_snapshot()
     finally:
         tracemalloc.stop()
-    traces = snapshot.filter_traces([under_the_reader]).statistics("filename")
-    retained = sum(stat.size for stat in traces)
-    assert retained < 2 * 1024 * 1024
+    held = snapshot.filter_traces([under_the_reader]).statistics("traceback")
+    retained = sum(stat.size for stat in held)
+    assert retained < 2 * 1024 * 1024, "the reader's calls still hold memory:\n" + "\n\n".join(
+        f"{stat.size} bytes in {stat.count} blocks\n" + "\n".join(stat.traceback.format()[-10:])
+        for stat in held[:3]
+    )
     assert reader.metrics()["cache_hits"] == len(ids)
     assert reader.metrics()["fetch_attempts"] == 0
 

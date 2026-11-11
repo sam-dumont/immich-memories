@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-22 10:00+0200\n"
+"POT-Creation-Date: 2026-11-10 22:01+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -101,8 +101,8 @@ msgstr "追加：{include}・除外：{exclude}"
 msgid "Added for a moment the catalogue records as notable."
 msgstr "カタログで注目すべき瞬間として記録されているため追加されました。"
 
-#: web/routes/runs/[run_id]/+page.svelte:287 web/routes/runs/[run_id]/+page.svelte:289
-#: web/routes/runs/[run_id]/+page.svelte:292
+#: web/routes/runs/[run_id]/+page.svelte:289 web/routes/runs/[run_id]/+page.svelte:291
+#: web/routes/runs/[run_id]/+page.svelte:294
 msgid "Added from the pool"
 msgstr "候補の素材から追加"
 
@@ -135,7 +135,7 @@ msgstr "すべて"
 msgid "All of them"
 msgstr "選んだ全員"
 
-#: web/routes/runs/[run_id]/+page.svelte:122
+#: web/routes/runs/[run_id]/+page.svelte:123
 msgid "All pictures"
 msgstr "すべての素材"
 
@@ -199,7 +199,7 @@ msgstr "自動"
 msgid "Automatic (as configured)"
 msgstr "自動（設定どおり）"
 
-#: web/routes/+layout.svelte:48
+#: web/routes/+layout.svelte:60
 msgid "Automatic (browser)"
 msgstr "自動（ブラウザー）"
 
@@ -211,11 +211,11 @@ msgstr "自動化はすでに実行中です。実行履歴を開いて確認し
 msgid "Autumn"
 msgstr "秋"
 
-#: web/routes/runs/[run_id]/+page.svelte:279
+#: web/routes/runs/[run_id]/+page.svelte:281
 msgid "Back to pictures"
 msgstr "素材一覧に戻る"
 
-#: web/routes/runs/[run_id]/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:135
 msgid "Back to runs"
 msgstr "実行履歴に戻る"
 
@@ -271,7 +271,7 @@ msgstr "説明文を読み取り、ルールに基づいてこのカットを選
 msgid "Catalogued days"
 msgstr "記録済みの日"
 
-#: web/routes/runs/[run_id]/+page.svelte:303
+#: web/routes/runs/[run_id]/+page.svelte:305
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "変更: {count}"
@@ -389,7 +389,7 @@ msgstr "{name} として接続中"
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
-#: web/routes/runs/[run_id]/+page.svelte:117
+#: web/routes/runs/[run_id]/+page.svelte:118
 msgid "Contact sheet"
 msgstr "コンタクトシート"
 
@@ -434,7 +434,7 @@ msgstr "日付範囲を指定"
 msgid "Cut"
 msgstr "編集する"
 
-#: web/routes/runs/[run_id]/+page.svelte:240
+#: web/routes/runs/[run_id]/+page.svelte:242
 msgid "Cut contact sheet"
 msgstr "編集結果のコンタクトシート"
 
@@ -454,11 +454,11 @@ msgstr "編集中に判断"
 msgid "Default"
 msgstr "既定値"
 
-#: web/routes/runs/[run_id]/+page.svelte:156
+#: web/routes/runs/[run_id]/+page.svelte:157
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "Immich に送信しました。ディスク容量を節約するため、ローカルファイルを削除しました。"
 
-#: web/routes/+layout.svelte:52 web/routes/+layout.svelte:53
+#: web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
 msgid "Demo mode"
 msgstr "デモモード"
 
@@ -482,7 +482,7 @@ msgstr "説明は要求されていません"
 msgid "Detecting trips from GPS data..."
 msgstr "GPSデータから旅行を検出しています…"
 
-#: web/routes/runs/[run_id]/+page.svelte:312
+#: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Discard changes"
 msgstr "変更を破棄"
 
@@ -499,11 +499,11 @@ msgstr "閉じる"
 msgid "Done."
 msgstr "完了しました。"
 
-#: web/routes/runs/[run_id]/+page.svelte:357
+#: web/routes/runs/[run_id]/+page.svelte:359
 msgid "Download child output"
 msgstr "処理ログをダウンロード"
 
-#: web/lib/RenderPanel.svelte:162 web/routes/runs/[run_id]/+page.svelte:170
+#: web/lib/RenderPanel.svelte:162 web/routes/runs/[run_id]/+page.svelte:171
 msgid "Download film"
 msgstr "ムービーをダウンロード"
 
@@ -714,7 +714,7 @@ msgstr "Immichサーバーの URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "読み込むImmichアカウント(選択がなければプライマリのみ)"
 
-#: web/routes/runs/[run_id]/+page.svelte:347
+#: web/routes/runs/[run_id]/+page.svelte:349
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
@@ -756,7 +756,7 @@ msgstr "警告が付いた写真の説明文を含める"
 msgid "Include photos"
 msgstr "写真を含める"
 
-#: web/routes/+layout.svelte:46
+#: web/routes/+layout.svelte:58
 msgid "Interface language"
 msgstr "画面の言語"
 
@@ -856,7 +856,7 @@ msgstr "リンクしていそう"
 msgid "Low"
 msgstr "低"
 
-#: web/routes/+layout.svelte:70 web/routes/+layout.svelte:82
+#: web/routes/+layout.svelte:82 web/routes/+layout.svelte:94
 msgid "Main navigation"
 msgstr "メインナビゲーション"
 
@@ -904,7 +904,7 @@ msgstr "素材の特徴を分析しています"
 msgid "Medium"
 msgstr "中"
 
-#: web/lib/labels.ts:21 web/routes/+layout.svelte:22
+#: web/lib/labels.ts:21 web/routes/+layout.svelte:34
 msgid "Memory"
 msgstr "思い出"
 
@@ -982,7 +982,7 @@ msgid ""
 "its date."
 msgstr "まだ記録済みの日がありません。immich-memories discover-days で探すか、日付を指定してムービーを作れます。"
 
-#: web/routes/runs/[run_id]/+page.svelte:359
+#: web/routes/runs/[run_id]/+page.svelte:361
 msgid "No child output was retained for this run."
 msgstr "この実行の処理ログは保存されていません。"
 
@@ -1017,7 +1017,7 @@ msgstr "{amount}の間、新しい進捗はありません。ジョブはまだ�
 msgid "No outcome recorded."
 msgstr "結果の記録がありません。"
 
-#: web/routes/runs/[run_id]/+page.svelte:270
+#: web/routes/runs/[run_id]/+page.svelte:272
 msgid "No pictures match this filter."
 msgstr "このフィルターに一致する素材はありません。"
 
@@ -1033,7 +1033,7 @@ msgstr "プレビューで確認したルールでは、除外される素材は
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "この表示に一致する実行はありません。「思い出」か「提案」から作成してください。"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:339
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:341
 msgid "No saved cut is available for this run."
 msgstr "この実行に保存された編集結果はありません。"
 
@@ -1130,7 +1130,7 @@ msgstr "誕生日だけ、この年数さかのぼる（空欄：1年分すべ�
 msgid "Only with (optional)"
 msgstr "対象を限定（任意）"
 
-#: web/routes/runs/[run_id]/+page.svelte:330
+#: web/routes/runs/[run_id]/+page.svelte:332
 msgid "Open"
 msgstr "開く"
 
@@ -1155,7 +1155,7 @@ msgstr "{name}をImmichで開く"
 msgid "Opening and closing fade"
 msgstr "開始と終了のフェード"
 
-#: web/routes/runs/[run_id]/+page.svelte:205
+#: web/routes/runs/[run_id]/+page.svelte:207
 msgid "Order and timecodes from the saved cut."
 msgstr "保存済みの編集内容の順序とタイムコードです。"
 
@@ -1193,7 +1193,7 @@ msgstr "パスワード"
 msgid "Pending"
 msgstr "待機中"
 
-#: web/routes/+layout.svelte:25 web/routes/create/+page.svelte:431
+#: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
 #: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
 #: web/routes/settings/people/+page.svelte:121
 msgid "People"
@@ -1253,7 +1253,7 @@ msgid "Pictures with"
 msgstr "素材の条件"
 
 #: web/lib/people/AccountLinks.svelte:63 web/lib/people/PersonCard.svelte:23
-#: web/routes/runs/[run_id]/+page.svelte:144 web/routes/runs/[run_id]/+page.svelte:219
+#: web/routes/runs/[run_id]/+page.svelte:145 web/routes/runs/[run_id]/+page.svelte:221
 #: web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
@@ -1267,7 +1267,7 @@ msgstr "明るく楽しい雰囲気"
 msgid "Please enter both URL and API key"
 msgstr "URLとAPIキーの両方を入力してください"
 
-#: web/routes/runs/[run_id]/+page.svelte:206 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:208 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "候補の素材"
@@ -1396,7 +1396,7 @@ msgstr "この編集から外す"
 msgid "Remove this relationship"
 msgstr "この関係を削除"
 
-#: web/routes/runs/[run_id]/+page.svelte:253
+#: web/routes/runs/[run_id]/+page.svelte:255
 msgid "Removed"
 msgstr "外しました"
 
@@ -1440,12 +1440,12 @@ msgstr "保存済みの画像確認結果を再利用中"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "レポートを確認してからコピーしてください。自動で送信されるものはありません。"
 
-#: web/lib/RenderPanel.svelte:174 web/routes/runs/[run_id]/+page.svelte:327
+#: web/lib/RenderPanel.svelte:174 web/routes/runs/[run_id]/+page.svelte:329
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "リビジョン {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:323
+#: web/routes/runs/[run_id]/+page.svelte:325
 msgid "Revisions"
 msgstr "リビジョン"
 
@@ -1453,7 +1453,7 @@ msgstr "リビジョン"
 msgid "Role (suggestions; type your own)"
 msgstr "役割（候補から選ぶか自由入力）"
 
-#: web/routes/runs/[run_id]/+page.svelte:345
+#: web/routes/runs/[run_id]/+page.svelte:347
 msgid "Run details"
 msgstr "実行の詳細"
 
@@ -1486,8 +1486,8 @@ msgstr "サーバーで実行中：{phase}。このページを離れても続�
 msgid "Running the preflight checks..."
 msgstr "事前チェックを実行中..."
 
-#: web/routes/+layout.svelte:24 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
+#: web/routes/+layout.svelte:36 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:129
 msgid "Runs"
 msgstr "実行履歴"
 
@@ -1516,7 +1516,7 @@ msgstr "設定を保存"
 msgid "Save group"
 msgstr "グループを保存"
 
-#: web/routes/runs/[run_id]/+page.svelte:314
+#: web/routes/runs/[run_id]/+page.svelte:316
 msgid "Save revision"
 msgstr "リビジョンを保存"
 
@@ -1524,7 +1524,7 @@ msgstr "リビジョンを保存"
 msgid "Saved - type a new key to replace it"
 msgstr "保存済み。置き換えるには新しいキーを入力してください"
 
-#: web/routes/runs/[run_id]/+page.svelte:317
+#: web/routes/runs/[run_id]/+page.svelte:319
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "リビジョン {number} として保存しました。"
@@ -1547,7 +1547,7 @@ msgstr "ここに保存されていますが、{name} で復号できません�
 msgid "Saved to the database"
 msgstr "データベースに保存しました"
 
-#: web/routes/runs/[run_id]/+page.svelte:346
+#: web/routes/runs/[run_id]/+page.svelte:348
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "保存先：{output_path}"
@@ -1589,7 +1589,7 @@ msgstr "{name} で設定（環境変数）"
 msgid "Set in config.yaml as {key}"
 msgstr "config.yaml の {key} で設定"
 
-#: web/routes/+layout.svelte:26 web/routes/settings/+page.svelte:79
+#: web/routes/+layout.svelte:38 web/routes/settings/+page.svelte:79
 #: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
 msgid "Settings"
 msgstr "設定"
@@ -1598,7 +1598,7 @@ msgstr "設定"
 msgid "Shareable"
 msgstr "共有可能"
 
-#: web/routes/runs/[run_id]/+page.svelte:195
+#: web/routes/runs/[run_id]/+page.svelte:197
 msgid "Show"
 msgstr "表示"
 
@@ -1615,7 +1615,7 @@ msgstr "サインイン"
 msgid "Sign in through the proxy in front of this server."
 msgstr "このサーバーの前段にあるプロキシ経由でサインインします。"
 
-#: web/routes/+layout.svelte:61
+#: web/routes/+layout.svelte:73
 msgid "Sign out"
 msgstr "サインアウト"
 
@@ -1683,11 +1683,11 @@ msgstr "状態"
 msgid "Still"
 msgstr "静止画"
 
-#: web/routes/runs/[run_id]/+page.svelte:124
+#: web/routes/runs/[run_id]/+page.svelte:125
 msgid "Stills"
 msgstr "静止画"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:337
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:339
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr "ムービーを保存する前に停止しました。元の編集結果は「実行履歴」の、その編集を行った実行に保存されています。"
 
@@ -1695,7 +1695,7 @@ msgstr "ムービーを保存する前に停止しました。元の編集結果
 msgid "Stopped."
 msgstr "停止しました。"
 
-#: web/routes/runs/[run_id]/+page.svelte:118 web/routes/runs/[run_id]/+page.svelte:212
+#: web/routes/runs/[run_id]/+page.svelte:119 web/routes/runs/[run_id]/+page.svelte:214
 msgid "Stories"
 msgstr "ストーリー"
 
@@ -1707,7 +1707,7 @@ msgstr "サブタイトル"
 msgid "Suggested"
 msgstr "提案"
 
-#: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
+#: web/routes/+layout.svelte:35 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
 msgid "Suggestions"
 msgstr "提案"
@@ -1724,11 +1724,11 @@ msgstr "夏"
 msgid "Supporting"
 msgstr "補助的"
 
-#: web/routes/runs/[run_id]/+page.svelte:255
+#: web/routes/runs/[run_id]/+page.svelte:257
 msgid "Swapped"
 msgstr "差し替え"
 
-#: web/routes/runs/[run_id]/+page.svelte:293
+#: web/routes/runs/[run_id]/+page.svelte:295
 msgid "Take out"
 msgstr "外す"
 
@@ -1761,6 +1761,14 @@ msgid ""
 "The API key's account name has not been matched to a named person. Choose the owner, or name "
 "people in Immich and rescan."
 msgstr "APIキーのアカウント名に一致する名前付きの人物が見つかっていません。所有者を選ぶか、Immichで人物に名前を付けて再スキャンしてください。"
+
+#: web/lib/RelabelFilm.svelte:33
+msgid "The Immich label was already up to date."
+msgstr "Immich のラベルはすでに最新です。"
+
+#: web/lib/RelabelFilm.svelte:33
+msgid "The Immich label was updated."
+msgstr "Immich のラベルを更新しました。"
 
 #: web/lib/SettingsChecks.svelte:70
 msgid "The checks could not be run."
@@ -1795,7 +1803,7 @@ msgstr ""
 "config.yaml、次にここでの保存内容、最後に既定値が使われます。先の2つのいずれかで設定されている項目はグレー表示になります。ラベルに示された場所で変更してください。"
 
 #: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:157
-#: web/routes/runs/[run_id]/+page.svelte:152
+#: web/routes/runs/[run_id]/+page.svelte:153
 msgid "The film"
 msgstr "ムービー"
 
@@ -1814,6 +1822,10 @@ msgstr "動画の完成には、まだ再生確認が必要です。"
 #: web/routes/create/+page.svelte:36
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "同居家族。説明文に記された入浴などの私的な場面も含みます。"
+
+#: web/lib/RelabelFilm.svelte:22
+msgid "The label could not be updated."
+msgstr "ラベルを更新できませんでした。"
 
 #: web/lib/UploadFilm.svelte:58
 msgid "The local film was removed: Immich holds it now."
@@ -1877,7 +1889,7 @@ msgstr "レンダリングを開始できませんでした。"
 msgid "The report could not be loaded."
 msgstr "レポートを読み込めませんでした。"
 
-#: web/routes/runs/[run_id]/+page.svelte:72 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/routes/runs/[run_id]/+page.svelte:73 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "リビジョンを保存できませんでした。"
 
@@ -1905,7 +1917,7 @@ msgstr "プレビュー後にリクエストが変更されています。ムー
 msgid "These people appear in the last two people memories."
 msgstr "これらの人物は直近2件の人物思い出に登場しています。"
 
-#: web/routes/runs/[run_id]/+page.svelte:288
+#: web/routes/runs/[run_id]/+page.svelte:290
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "撮影された順番で再生され、編集の他の部分と同様に準備されます。"
 
@@ -1981,13 +1993,17 @@ msgstr "旅行"
 msgid "Try again"
 msgstr "再試行"
 
-#: web/routes/runs/[run_id]/+page.svelte:311 web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:313 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "元に戻す"
 
 #: web/lib/people/AccountLinks.svelte:54
 msgid "Unlink"
 msgstr "リンク解除"
+
+#: web/lib/RelabelFilm.svelte:30
+msgid "Update the Immich label"
+msgstr "Immich のラベルを更新"
 
 #: web/lib/UpdateCheck.svelte:43
 msgid "Update with:"
@@ -2055,8 +2071,8 @@ msgstr "ユーザー名"
 msgid "Verdict"
 msgstr "判定"
 
-#: web/lib/ShotInspector.svelte:86 web/routes/runs/[run_id]/+page.svelte:229
-#: web/routes/runs/[run_id]/+page.svelte:259 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:86 web/routes/runs/[run_id]/+page.svelte:231
+#: web/routes/runs/[run_id]/+page.svelte:261 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "動画"
 
@@ -2064,20 +2080,20 @@ msgstr "動画"
 msgid "Video cache"
 msgstr "動画キャッシュ"
 
-#: web/routes/runs/[run_id]/+page.svelte:123
+#: web/routes/runs/[run_id]/+page.svelte:124
 msgid "Videos"
 msgstr "動画"
 
-#: web/routes/runs/[run_id]/+page.svelte:145
+#: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "動画: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:187
+#: web/routes/runs/[run_id]/+page.svelte:189
 msgid "View"
 msgstr "表示"
 
-#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:158
+#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:159
 msgid "View in Immich"
 msgstr "Immich で見る"
 
@@ -2219,7 +2235,7 @@ msgstr "セッションの有効期限が切れました。ジョブの状態を
 msgid "a guess: the longest span and the most pictures"
 msgstr "推測: 最も長い期間と最も多い素材"
 
-#: web/routes/runs/[run_id]/+page.svelte:147
+#: web/routes/runs/[run_id]/+page.svelte:148
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "ムービーの長さは約{film}"
@@ -2273,12 +2289,12 @@ msgstr "あなたがスキャンに指定"
 msgid "{amount} elapsed"
 msgstr "{amount}経過"
 
-#: web/routes/runs/[run_id]/+page.svelte:146
+#: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "素材と動画で{content}"
 
-#: web/routes/runs/[run_id]/+page.svelte:306
+#: web/routes/runs/[run_id]/+page.svelte:308
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}：すべて収めるため、ムービーが予定の{budget}より長くなります"

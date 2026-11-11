@@ -806,6 +806,30 @@ immich-memories runs delete [OPTIONS] RUN_ID
 **Arguments:**
 - `run_id` (text; required)
 
+### `runs label`
+
+Write RUN_ID's description and tags to its film in Immich again.
+
+Nothing is rendered or uploaded: the label is rebuilt from the stored run and written to
+the asset the run was delivered as, by the same write-and-settle steps as the upload. The
+app's own tags the current label no longer has (version, generated-on, type, year, story)
+are removed; a tag outside those kinds is never touched. A film whose label already
+matches is left alone and reported as unchanged. A film gone from Immich, or a key without
+the tag and asset-update rights, is reported and nothing is written.
+
+Give a RUN_ID, or --all for every delivered run.
+
+```bash
+immich-memories runs label [OPTIONS] [RUN_ID]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--all` | boolean | false | Re-label every run delivered to Immich |
+
+**Arguments:**
+- `run_id` (text; optional)
+
 ### `runs list`
 
 List recent pipeline runs.

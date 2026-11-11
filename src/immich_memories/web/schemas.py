@@ -8,6 +8,16 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_serializer
 
 
+class RelabelAnswer(BaseModel):
+    """What re-labelling a delivered film in Immich did."""
+
+    status: Literal["written", "unchanged", "asset_gone", "rights_missing", "failed"]
+    detail: str
+    # The app's own tags taken off because the current label no longer has them.
+    removed_tags: list[str]
+    warnings: list[str]
+
+
 class RunSummary(BaseModel):
     run_id: str
     status: str

@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Mapping
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -190,6 +190,59 @@ def _screen(title: str, subtitle: str | None) -> str:
     return DESCRIPTION_SEPARATOR.join(part for part in (title, subtitle) if part)
 
 
+@dataclass(frozen=True)
+class _Cut:
+    """What a film's label and its title are both read from."""
+
+    locale: str
+    story: Mapping[str, Any]
+    episodes: list[Mapping[str, Any]]
+    params: dict[str, Any]
+    title: str | None
+
+
+def _read_cut(
+    config: Config,
+    *,
+    memory_type: str | None,
+    start: date | None,
+    end: date | None,
+    attempt_dir: Path | None,
+    title: str | None,
+    person_name: str | None,
+    preset_params: Mapping[str, Any] | None,
+) -> _Cut:
+    from immich_memories.i18n import resolve_film_locale
+    from immich_memories.processing.render_inputs import read_cut_titles
+
+    locale = resolve_film_locale(config.title_screens.locale)
+    story = _read_plan_story(attempt_dir)
+    episodes = [e for e in story.get("episodes") or () if isinstance(e, Mapping)]
+    kept = read_cut_titles(attempt_dir) if attempt_dir is not None else None
+    params = with_the_cuts_holiday(
+        _preset_params(preset_params, kept),
+        memory_type=memory_type,
+        start=start,
+        end=end,
+        config=config,
+    )
+    screen = _title_of_the_cut(
+        config,
+        title=title,
+        attempt_dir=attempt_dir,
+        memory_type=memory_type,
+        start=start,
+        end=end,
+        person_name=person_name,
+        preset_params=params,
+        # The years the cut shows, as the title screen read them: a holiday's span.
+        years=years_shown(episodes, start, end),
+    )
+    return _Cut(
+        locale, story, episodes, params, _ordinary_case(screen, memory_type, params, locale)
+    )
+
+
 def label_for_cut(
     config: Config,
     *,
@@ -208,41 +261,25 @@ def label_for_cut(
     `made_with` and `made_on` are the release that made the film and the day it was made: they
     tag every upload, whether or not the install opted into the film tags.
     """
-    from immich_memories.i18n import resolve_film_locale
-    from immich_memories.processing.render_inputs import read_cut_titles
-
     start, end = _as_date(date_start), _as_date(date_end)
     try:
-        locale = resolve_film_locale(config.title_screens.locale)
-        story = _read_plan_story(attempt_dir)
-        episodes = [e for e in story.get("episodes") or () if isinstance(e, Mapping)]
-        kept = read_cut_titles(attempt_dir) if attempt_dir is not None else None
-        params = with_the_cuts_holiday(
-            _preset_params(preset_params, kept),
-            memory_type=memory_type,
-            start=start,
-            end=end,
-            config=config,
-        )
-        screen = _title_of_the_cut(
+        cut = _read_cut(
             config,
-            title=title,
-            attempt_dir=attempt_dir,
             memory_type=memory_type,
             start=start,
             end=end,
+            attempt_dir=attempt_dir,
+            title=title,
             person_name=person_name,
-            preset_params=params,
-            # The years the cut shows, as the title screen read them: a holiday's span.
-            years=years_shown(episodes, start, end),
+            preset_params=preset_params,
         )
         label = film_label(
-            title=_ordinary_case(screen, memory_type, params, locale),
-            summary=_summary_in(story, locale, model_text=config.title_screens.llm_titles),
-            type_label=film_type_label(memory_type, params, locale),
+            title=cut.title,
+            summary=_summary_in(cut.story, cut.locale, model_text=config.title_screens.llm_titles),
+            type_label=film_type_label(memory_type, cut.params, cut.locale),
             date_start=start,
             date_end=end,
-            episodes=episodes,
+            episodes=cut.episodes,
         )
         # The type, year and story tags are opt-in (`upload.film_tags`); the description and
         # the provenance tags are not.
@@ -250,6 +287,33 @@ def label_for_cut(
         return replace(label, tags=(*kept_tags, *provenance_tags(made_with, made_on)))
     except Exception as exc:  # WHY: the film is finished; a label we cannot build must not fail it
         logger.warning("Uploading without a description and tags: %s", type(exc).__name__)
+        return None
+
+
+def title_for_run(config: Config, run: RunMetadata, *, store: Store) -> str | None:
+    """The title the run's film opens on, in the film's language, or None when it has none.
+
+    The same title the Immich description starts with; a notification names the film by it.
+    """
+    from immich_memories.operations.run_index import attempt_dir_for_run
+
+    try:
+        attempt_dir = attempt_dir_for_run(run.run_id, store=store)
+    except Exception:  # WHY: a store that cannot say still leaves a title from the run's dates
+        attempt_dir = None
+    try:
+        return _read_cut(
+            config,
+            memory_type=run.memory_type,
+            start=_as_date(run.date_range_start),
+            end=_as_date(run.date_range_end),
+            attempt_dir=attempt_dir,
+            title=None,
+            person_name=run.person_name,
+            preset_params=None,
+        ).title
+    except Exception as exc:  # WHY: a notice is worth sending without its film's title
+        logger.warning("Notifying without the film's title: %s", type(exc).__name__)
         return None
 
 

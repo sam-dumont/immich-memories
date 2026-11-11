@@ -1038,6 +1038,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relabel Run Film
+         * @description Write this run's current description and tags to the film Immich holds, and take off
+         *     the app's own tags the label no longer has.
+         */
+        post: operations["relabel_run_film_api_v1_runs__run_id__label_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/runs/{run_id}/music-preview": {
         parameters: {
             query?: never;
@@ -2281,6 +2302,23 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "warning" | "error" | "skipped";
+        };
+        /**
+         * RelabelAnswer
+         * @description What re-labelling a delivered film in Immich did.
+         */
+        RelabelAnswer: {
+            /** Detail */
+            detail: string;
+            /** Removed Tags */
+            removed_tags: string[];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "written" | "unchanged" | "asset_gone" | "rights_missing" | "failed";
+            /** Warnings */
+            warnings: string[];
         };
         /** Relationship */
         Relationship: {
@@ -4609,6 +4647,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    relabel_run_film_api_v1_runs__run_id__label_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelabelAnswer"];
+                };
             };
             /** @description Validation Error */
             422: {
