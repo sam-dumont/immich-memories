@@ -518,6 +518,13 @@ class ModelFetchRequest(BaseModel):
     plan_id: str = Field(pattern=r"^[0-9a-f]{128}$", min_length=128, max_length=128)
 
 
+class RosterChainStep(BaseModel):
+    person: str
+    # A relationship kind (`parent-of`): the client words it.
+    kind: str
+    other: str
+
+
 class RosterLink(BaseModel):
     kind: str
     target_id: str
@@ -530,6 +537,8 @@ class RosterLink(BaseModel):
     # detected, unnamed, rejected, named or suggested (the family tree implies it; `via`
     # names the chain): what the page offers for this row.
     status: str = "named"
+    # A suggestion's chain as keys, for the client to word in the reader's language.
+    chain: list[RosterChainStep] = []
 
 
 class RosterPerson(BaseModel):

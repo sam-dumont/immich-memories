@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-11 01:23+0100\n"
+"POT-Creation-Date: 2026-11-11 02:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -29,9 +29,26 @@ msgstr "인물 필터에 이름을 붙이면 새 추억 페이지나 generate --
 msgid "A monthly review already finished this month."
 msgstr "이번 달에는 이미 월간 추억 영상을 만들었습니다."
 
+#: web/lib/settingLabels.ts:22
+msgid "ACE-Step music"
+msgstr "ACE-Step 음악"
+
 #: web/routes/settings/+page.svelte:93
 msgid "API Key"
 msgstr "API 키"
+
+#: web/lib/settingLabels.ts:128
+msgid "API URL"
+msgstr "API URL"
+
+#: web/lib/settingLabels.ts:49 web/lib/settingLabels.ts:104 web/lib/settingLabels.ts:124
+#: web/lib/settingLabels.ts:129
+msgid "API key"
+msgstr "API 키"
+
+#: web/lib/settingLabels.ts:50
+msgid "API version"
+msgstr "API 버전"
 
 #: web/lib/JobPanel.svelte:52
 #, python-brace-format
@@ -58,7 +75,7 @@ msgstr "영상 완료까지 약 {amount}"
 msgid "About {percent}% overall"
 msgstr "전체 약 {percent}%"
 
-#: web/lib/people/RelationshipRows.svelte:81
+#: web/lib/people/RelationshipRows.svelte:82
 msgid "Accept all suggestions"
 msgstr "제안 모두 수락"
 
@@ -70,15 +87,15 @@ msgstr "전달되거나 다운로드된 미디어 허용"
 msgid "Account owner"
 msgstr "계정 소유자"
 
-#: web/lib/people/AccountLinks.svelte:46
+#: web/lib/people/AccountLinks.svelte:46 web/lib/settingLabels.ts:52 web/lib/settingLabels.ts:184
 msgid "Accounts"
 msgstr "계정"
 
-#: web/lib/people/RelationshipRows.svelte:91
+#: web/lib/people/RelationshipRows.svelte:92
 msgid "Add"
 msgstr "추가"
 
-#: web/lib/people/RelationshipRows.svelte:84
+#: web/lib/people/RelationshipRows.svelte:85
 msgid "Add a relationship"
 msgstr "관계 추가"
 
@@ -89,6 +106,14 @@ msgstr "날짜 표시"
 #: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "Immich에 없는 인물 추가"
+
+#: web/lib/settingLabels.ts:58
+msgid "Add the date to titles"
+msgstr "제목에 날짜 추가"
+
+#: web/lib/settingLabels.ts:59
+msgid "Add the place to titles"
+msgstr "제목에 장소 추가"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
@@ -121,7 +146,7 @@ msgstr "기간 후"
 msgid "Album"
 msgstr "앨범"
 
-#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46
+#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "앨범 이름"
 
@@ -137,6 +162,26 @@ msgstr "선택한 인물 모두"
 msgid "All pictures"
 msgstr "모든 소재"
 
+#: web/lib/settingLabels.ts:213
+msgid "Allow model downloads"
+msgstr "모델 다운로드 허용"
+
+#: web/lib/settingLabels.ts:80
+msgid "Allow plain HTTP"
+msgstr "일반 HTTP 허용"
+
+#: web/lib/settingLabels.ts:170
+msgid "Allowed domains"
+msgstr "허용된 도메인"
+
+#: web/lib/settingLabels.ts:169
+msgid "Allowed email addresses"
+msgstr "허용된 이메일 주소"
+
+#: web/lib/settingLabels.ts:46
+msgid "Allowed hosts"
+msgstr "허용된 호스트"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
 msgid "Also show the {count} pictures outside this memory"
@@ -146,11 +191,27 @@ msgstr "이 추억에 포함되지 않은 소재 {count}개도 보기"
 msgid "Alternatives considered"
 msgstr "검토한 대안"
 
+#: web/lib/settingLabels.ts:114
+msgid "Always reasons"
+msgstr "항상 추론"
+
+#: web/lib/settingLabels.ts:12
+msgid "Analysis"
+msgstr "분석"
+
+#: web/lib/settingLabels.ts:139
+msgid "Animated background"
+msgstr "움직이는 배경"
+
 #: web/routes/create/+page.svelte:377
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr "기념일을 먼저, 나머지는 그다음에 표시합니다. 예약된 작업은 기념일에만 날짜를 제안합니다. 여기서는 카탈로그에 있는 어떤 날짜든 선택할 수 있습니다."
+
+#: web/lib/settingLabels.ts:216
+msgid "Annotation database"
+msgstr "주석 데이터베이스"
 
 #: web/routes/create/+page.svelte:356
 msgid "Another day (MM-DD)"
@@ -185,6 +246,14 @@ msgid ""
 "about this install goes with the request."
 msgstr "GitHub에 공개 릴리스 목록을 요청합니다. 클릭하기 전에는 아무것도 전송되지 않으며, 요청에 이 설치에 대한 정보는 담기지 않습니다."
 
+#: web/lib/settingLabels.ts:197
+msgid "Attach a thumbnail"
+msgstr "썸네일 첨부"
+
+#: web/lib/settingLabels.ts:20
+msgid "Audio"
+msgstr "오디오"
+
 #: web/lib/RenderPanel.svelte:186
 msgid "Auto (match the mood)"
 msgstr "자동(영상 분위기에 맞게)"
@@ -200,6 +269,10 @@ msgstr "자동(설정대로)"
 #: web/routes/+layout.svelte:60
 msgid "Automatic (browser)"
 msgstr "자동(브라우저)"
+
+#: web/lib/settingLabels.ts:30
+msgid "Automation"
+msgstr "자동화"
 
 #: web/routes/suggestions/+page.svelte:60
 msgid "Automation is already running. Open Runs to follow it."
@@ -221,6 +294,26 @@ msgstr "작업 내역으로 돌아가기"
 msgid "Back to the cut"
 msgstr "편집 결과로 돌아가기"
 
+#: web/lib/settingLabels.ts:94
+msgid "Backend"
+msgstr "백엔드"
+
+#: web/lib/settingLabels.ts:99 web/lib/settingLabels.ts:123
+msgid "Base URL"
+msgstr "기본 URL"
+
+#: web/lib/settingLabels.ts:119
+msgid "Batch maximum wait (minutes)"
+msgstr "배치 최대 대기 시간(분)"
+
+#: web/lib/settingLabels.ts:118
+msgid "Batch minimum requests"
+msgstr "배치 최소 요청 수"
+
+#: web/lib/settingLabels.ts:117
+msgid "Batch mode"
+msgstr "배치 모드"
+
 #: web/routes/create/+page.svelte:339
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "생일(MM-DD, 비워두면 Immich에 등록된 생년월일)"
@@ -241,6 +334,14 @@ msgstr "흐린 배경"
 msgid "Browse the whole pool"
 msgstr "후보 소재 전체 보기"
 
+#: web/lib/settingLabels.ts:168
+msgid "Button text"
+msgstr "버튼 문구"
+
+#: web/lib/settingLabels.ts:16
+msgid "Cache"
+msgstr "캐시"
+
 #: web/routes/settings/+page.svelte:117 web/routes/settings/+page.svelte:118
 msgid "Caches"
 msgstr "캐시"
@@ -257,9 +358,33 @@ msgstr "취소됨"
 msgid "Candidate key"
 msgstr "후보 키"
 
+#: web/lib/settingLabels.ts:205
+msgid "Caption API key"
+msgstr "캡션 API 키"
+
+#: web/lib/settingLabels.ts:203
+msgid "Caption base URL"
+msgstr "캡션 기본 URL"
+
 #: web/lib/RenderPanel.svelte:240
 msgid "Caption clips with their place"
 msgstr "클립에 장소 표시"
+
+#: web/lib/settingLabels.ts:207
+msgid "Caption concurrency"
+msgstr "캡션 동시 처리 수"
+
+#: web/lib/settingLabels.ts:204
+msgid "Caption model"
+msgstr "캡션 모델"
+
+#: web/lib/settingLabels.ts:202
+msgid "Caption provider"
+msgstr "캡션 제공자"
+
+#: web/lib/settingLabels.ts:206
+msgid "Caption timeout (seconds)"
+msgstr "캡션 제한 시간(초)"
 
 #: web/lib/ShotInspector.svelte:152
 msgid "Captions were read; the rules chose this cut."
@@ -281,6 +406,10 @@ msgstr "사용 가능 여부 확인"
 #: web/lib/UpdateCheck.svelte:29
 msgid "Check for updates"
 msgstr "업데이트 확인"
+
+#: web/lib/settingLabels.ts:156
+msgid "Check for updates daily"
+msgstr "매일 업데이트 확인"
 
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Check playback"
@@ -353,9 +482,25 @@ msgstr "이 제한을 해제할까요?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache}에서 {count}개 항목을 지웠습니다."
 
+#: web/lib/settingLabels.ts:164
+msgid "Client ID"
+msgstr "클라이언트 ID"
+
+#: web/lib/settingLabels.ts:165
+msgid "Client secret"
+msgstr "클라이언트 시크릿"
+
 #: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "클립보드를 사용할 수 없습니다. 아래 보고서를 선택해 복사하세요."
+
+#: web/lib/settingLabels.ts:72
+msgid "Codec"
+msgstr "코덱"
+
+#: web/lib/settingLabels.ts:73
+msgid "Codec policy"
+msgstr "코덱 정책"
 
 #: web/routes/create/+page.svelte:507
 msgid "Command"
@@ -365,7 +510,7 @@ msgstr "명령어"
 msgid "Completed"
 msgstr "완료됨"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:73
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "설정 파일: {config_path}"
@@ -374,7 +519,7 @@ msgstr "설정 파일: {config_path}"
 msgid "Config warnings"
 msgstr "설정 경고"
 
-#: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
+#: web/lib/SettingsEditor.svelte:65 web/lib/SettingsEditor.svelte:67
 msgid "Configuration"
 msgstr "설정"
 
@@ -382,6 +527,11 @@ msgstr "설정"
 #, python-brace-format
 msgid "Confirm that {name} is {relationship} {other}"
 msgstr "{name}이(가) {other}의 {relationship}임을 확인"
+
+#: web/lib/people/RelationshipRows.svelte:54
+#, python-brace-format
+msgid "Confirm: {statement}"
+msgstr "확인: {statement}"
 
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
@@ -392,9 +542,17 @@ msgstr "{name}(으)로 연결됨"
 msgid "Considered by the model"
 msgstr "모델이 검토함"
 
+#: web/lib/settingLabels.ts:77
+msgid "Constant rate factor"
+msgstr "고정 비율 계수(CRF)"
+
 #: web/routes/runs/[run_id]/+page.svelte:118
 msgid "Contact sheet"
 msgstr "밀착 인화"
+
+#: web/lib/settingLabels.ts:176 web/lib/settingLabels.ts:198
+msgid "Cooldown (hours)"
+msgstr "대기 시간(시간)"
 
 #: web/lib/JobPanel.svelte:136 web/lib/RunReport.svelte:76
 msgid "Copied"
@@ -445,6 +603,22 @@ msgstr "편집하기"
 msgid "Cut contact sheet"
 msgstr "편집본 한눈에 보기"
 
+#: web/lib/settingLabels.ts:175
+msgid "Daily at"
+msgstr "매일 실행 시각"
+
+#: web/lib/settingLabels.ts:17
+msgid "Database"
+msgstr "데이터베이스"
+
+#: web/lib/settingLabels.ts:90
+msgid "Database URL"
+msgstr "데이터베이스 URL"
+
+#: web/lib/settingLabels.ts:84
+msgid "Database file"
+msgstr "데이터베이스 파일"
+
 #: web/routes/create/+page.svelte:336
 msgid "Day"
 msgstr "날짜"
@@ -457,7 +631,11 @@ msgstr "날짜 (MM-DD)"
 msgid "Decided while cutting"
 msgstr "편집 중에 결정"
 
-#: web/lib/SettingsEditor.svelte:41
+#: web/lib/settingLabels.ts:96
+msgid "Decode on the GPU"
+msgstr "GPU로 디코딩"
+
+#: web/lib/SettingsEditor.svelte:42
 msgid "Default"
 msgstr "기본값"
 
@@ -465,7 +643,7 @@ msgstr "기본값"
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "Immich에 전달했습니다. 디스크 공간을 아끼기 위해 로컬 파일을 삭제했습니다."
 
-#: web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
+#: web/lib/settingLabels.ts:43 web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
 msgid "Demo mode"
 msgstr "데모 모드"
 
@@ -485,9 +663,57 @@ msgstr "소재를 설명하는 중"
 msgid "Descriptions not requested"
 msgstr "설명을 요청하지 않음"
 
+#: web/lib/settingLabels.ts:189
+msgid "Detect a person's month"
+msgstr "인물의 달 감지"
+
+#: web/lib/settingLabels.ts:188
+msgid "Detect albums"
+msgstr "앨범 감지"
+
+#: web/lib/settingLabels.ts:182
+msgid "Detect bursts of activity"
+msgstr "활동 급증 감지"
+
+#: web/lib/settingLabels.ts:185
+msgid "Detect groups"
+msgstr "그룹 감지"
+
+#: web/lib/settingLabels.ts:187
+msgid "Detect holidays"
+msgstr "휴일 감지"
+
+#: web/lib/settingLabels.ts:178
+msgid "Detect months"
+msgstr "월 감지"
+
+#: web/lib/settingLabels.ts:181
+msgid "Detect person spotlights"
+msgstr "인물 스포트라이트 감지"
+
+#: web/lib/settingLabels.ts:186
+msgid "Detect seasons"
+msgstr "계절 감지"
+
+#: web/lib/settingLabels.ts:180
+msgid "Detect trips"
+msgstr "여행 감지"
+
+#: web/lib/settingLabels.ts:179
+msgid "Detect years"
+msgstr "연도 감지"
+
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
 msgstr "GPS 데이터로 여행을 감지하는 중…"
+
+#: web/lib/settingLabels.ts:209
+msgid "Detector Python"
+msgstr "감지기 Python"
+
+#: web/lib/settingLabels.ts:210
+msgid "Detector cache folder"
+msgstr "감지기 캐시 폴더"
 
 #: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Discard changes"
@@ -526,6 +752,10 @@ msgstr "모델 다운로드"
 msgid "Download report"
 msgstr "보고서 다운로드"
 
+#: web/lib/settingLabels.ts:60
+msgid "Download workers"
+msgstr "다운로드 작업자 수"
+
 #: web/lib/people/FamilyTree.svelte:61
 msgid "Draw the family tree"
 msgstr "가계도 그리기"
@@ -535,6 +765,10 @@ msgid ""
 "Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
 "it. Click someone to open their card."
 msgstr "확인한 관계로 그렸습니다. 점선은 제안이며 체크 표시로 확인합니다. 사람을 클릭하면 카드가 열립니다."
+
+#: web/lib/settingLabels.ts:147
+msgid "Duration per photo"
+msgstr "사진당 길이"
 
 #: web/routes/settings/people/+page.svelte:175
 msgid ""
@@ -558,6 +792,14 @@ msgstr "메타데이터만으로 편집했습니다. 소재의 내용을 분류�
 msgid "Edited without descriptions — picture content was classified, not read."
 msgstr "설명 없이 편집했습니다. 소재의 내용을 분류했지만 자세히 분석하지는 않았습니다."
 
+#: web/lib/settingLabels.ts:33
+msgid "Editorial"
+msgstr "편집"
+
+#: web/lib/settingLabels.ts:89
+msgid "Editorial runs size (GB)"
+msgstr "편집 실행 데이터 크기(GB)"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Elegant minimal"
 msgstr "우아하고 간결하게"
@@ -569,6 +811,29 @@ msgstr "이 장면이 선택될 때 후보였습니다. 열어서 비교하세�
 #: web/routes/suggestions/+page.svelte:65
 msgid "Eligible. No video was generated."
 msgstr "대상입니다. 영상은 생성되지 않았습니다."
+
+#: web/lib/settingLabels.ts:172
+msgid "Email header"
+msgstr "이메일 헤더"
+
+#: web/lib/settingLabels.ts:68 web/lib/settingLabels.ts:93 web/lib/settingLabels.ts:97
+#: web/lib/settingLabels.ts:122 web/lib/settingLabels.ts:126 web/lib/settingLabels.ts:135
+#: web/lib/settingLabels.ts:143 web/lib/settingLabels.ts:146 web/lib/settingLabels.ts:157
+#: web/lib/settingLabels.ts:174 web/lib/settingLabels.ts:193
+msgid "Enabled"
+msgstr "사용"
+
+#: web/lib/settingLabels.ts:199
+msgid "Encoder"
+msgstr "인코더"
+
+#: web/lib/settingLabels.ts:200
+msgid "Encoder URL"
+msgstr "인코더 URL"
+
+#: web/lib/settingLabels.ts:95
+msgid "Encoder preset"
+msgstr "인코더 프리셋"
 
 #: web/lib/ShotInspector.svelte:68
 msgid "End here"
@@ -610,6 +875,10 @@ msgstr "각 설정과 값이 어디서 오는지. 여기서 저장한 내용은 
 msgid "Every trip of the year"
 msgstr "그 해의 모든 여행"
 
+#: web/lib/settingLabels.ts:63
+msgid "Excluded file name patterns"
+msgstr "제외할 파일 이름 패턴"
+
 #: web/lib/AskPanel.svelte:125
 msgid "Experimental"
 msgstr "실험적"
@@ -617,6 +886,14 @@ msgstr "실험적"
 #: web/lib/people/GroupsSection.svelte:67
 msgid "Expression"
 msgstr "표현식"
+
+#: web/lib/settingLabels.ts:191
+msgid "Extra holidays"
+msgstr "추가 휴일"
+
+#: web/lib/settingLabels.ts:111
+msgid "Extra parameters"
+msgstr "추가 매개변수"
 
 #: web/routes/settings/people/+page.svelte:90
 msgid ""
@@ -627,9 +904,25 @@ msgstr ""
 "얼굴 인식은 같은 얼굴을 합치기 때문에 이 기록 중 하나에 사진이 거의 다 있고 다른 하나에는 거의 없습니다. 어느 쪽 개수도 혼자서는 의미가 없습니다. "
 "Immich에서 합치거나 따로 두세요."
 
+#: web/lib/settingLabels.ts:219
+msgid "Facts base URL"
+msgstr "팩트 기본 URL"
+
+#: web/lib/settingLabels.ts:221
+msgid "Facts concurrency"
+msgstr "팩트 동시 처리 수"
+
+#: web/lib/settingLabels.ts:137
+msgid "Fade color"
+msgstr "페이드 색상"
+
 #: web/lib/labels.ts:31
 msgid "Failed"
 msgstr "실패"
+
+#: web/lib/settingLabels.ts:82 web/lib/settingLabels.ts:223
+msgid "Fall back to this machine"
+msgstr "이 컴퓨터로 대체"
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
@@ -653,6 +946,18 @@ msgstr "소재 미리보기를 가져오는 중"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "조건에 맞는 소재가 12개 미만이라 짧은 영상이 만들어집니다."
 
+#: web/lib/settingLabels.ts:11
+msgid "Film defaults"
+msgstr "영상 기본값"
+
+#: web/lib/settingLabels.ts:136
+msgid "Film language"
+msgstr "영상 언어"
+
+#: web/lib/settingLabels.ts:145
+msgid "Film tags"
+msgstr "영상 태그"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
@@ -665,13 +970,29 @@ msgstr "이름 검색"
 msgid "Finding faces"
 msgstr "얼굴을 찾는 중"
 
+#: web/lib/settingLabels.ts:141
+msgid "First names only"
+msgstr "이름만 사용"
+
 #: web/lib/RenderPanel.svelte:235
 msgid "Fit with bars"
 msgstr "여백을 두고 맞춤"
 
-#: web/lib/RenderPanel.svelte:221
+#: web/lib/settingLabels.ts:69 web/lib/settingLabels.ts:83
+msgid "Folder"
+msgstr "폴더"
+
+#: web/lib/RenderPanel.svelte:221 web/lib/settingLabels.ts:70
 msgid "Format"
 msgstr "형식"
+
+#: web/lib/settingLabels.ts:65
+msgid "Forwarded copies when short"
+msgstr "부족할 때 전달 사본"
+
+#: web/lib/settingLabels.ts:35
+msgid "Free text"
+msgstr "자유 입력"
 
 #: web/routes/create/+page.svelte:344
 msgid "From"
@@ -689,9 +1010,21 @@ msgstr "조부모, 형제자매, 단체 대화방. 사적인 순간은 제외합
 msgid "Grouped condition"
 msgstr "그룹 조건"
 
+#: web/lib/settingLabels.ts:74
+msgid "HDR mode"
+msgstr "HDR 모드"
+
 #: web/lib/RenderPanel.svelte:180
 msgid "Hard cut"
 msgstr "컷 전환"
+
+#: web/lib/settingLabels.ts:18
+msgid "Hardware"
+msgstr "하드웨어"
+
+#: web/lib/settingLabels.ts:208
+msgid "Head bundle"
+msgstr "헤드 번들"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
@@ -714,6 +1047,18 @@ msgstr "높음"
 msgid "Holiday"
 msgstr "명절·기념일"
 
+#: web/lib/settingLabels.ts:148
+msgid "Home latitude"
+msgstr "집 위도"
+
+#: web/lib/settingLabels.ts:149
+msgid "Home longitude"
+msgstr "집 경도"
+
+#: web/lib/settingLabels.ts:41
+msgid "Host"
+msgstr "호스트"
+
 #: web/lib/AskPanel.svelte:20
 msgid "How it read your words"
 msgstr "요청을 이해한 방식"
@@ -733,6 +1078,10 @@ msgstr "업데이트 방법"
 #: web/lib/UpdateCheck.svelte:46
 msgid "How to update this install"
 msgstr "이 설치를 업데이트하는 방법"
+
+#: web/lib/settingLabels.ts:10
+msgid "Immich"
+msgstr "Immich"
 
 #: web/routes/settings/+page.svelte:87 web/routes/settings/+page.svelte:88
 msgid "Immich Connection"
@@ -764,6 +1113,10 @@ msgstr ""
 msgid "Immich unreachable"
 msgstr "Immich에 연결할 수 없습니다"
 
+#: web/lib/settingLabels.ts:92
+msgid "Import from"
+msgstr "가져올 위치"
+
 #: web/lib/labels.ts:72
 msgid "Important"
 msgstr "중요"
@@ -776,7 +1129,7 @@ msgstr "편집본에 포함"
 msgid "In the film"
 msgstr "영상에 포함"
 
-#: web/routes/create/+page.svelte:500
+#: web/lib/settingLabels.ts:66 web/routes/create/+page.svelte:500
 msgid "Include Live Photos"
 msgstr "Live Photos 포함"
 
@@ -787,6 +1140,14 @@ msgstr "표시된 사진의 설명 포함"
 #: web/routes/create/+page.svelte:499
 msgid "Include photos"
 msgstr "사진 포함"
+
+#: web/lib/settingLabels.ts:192
+msgid "Include shared albums"
+msgstr "공유 앨범 포함"
+
+#: web/lib/settingLabels.ts:34
+msgid "Inference"
+msgstr "추론"
 
 #: web/routes/+layout.svelte:58
 msgid "Interface language"
@@ -800,6 +1161,10 @@ msgstr "중단됨"
 msgid "Invalid username or password"
 msgstr "사용자 이름 또는 비밀번호가 올바르지 않습니다"
 
+#: web/lib/settingLabels.ts:163
+msgid "Issuer URL"
+msgstr "발급자 URL"
+
 #: web/lib/JobPanel.svelte:71
 msgid "It did not finish."
 msgstr "완료되지 않았습니다."
@@ -812,6 +1177,10 @@ msgstr "우리끼리"
 #: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "따로 두기"
+
+#: web/lib/settingLabels.ts:85
+msgid "Keep downloaded videos"
+msgstr "다운로드한 동영상 보관"
 
 #: web/lib/RenderPanel.svelte:251
 msgid "Keep original audio"
@@ -838,10 +1207,26 @@ msgstr "레이블"
 msgid "Landscape"
 msgstr "가로"
 
+#: web/lib/settingLabels.ts:19
+msgid "Language model"
+msgstr "언어 모델"
+
+#: web/lib/settingLabels.ts:131
+msgid "Language model size"
+msgstr "언어 모델 크기"
+
 #: web/lib/JobPanel.svelte:100
 #, python-brace-format
 msgid "Last measured progress: {amount} ago."
 msgstr "마지막으로 측정된 진행: {amount} 전."
+
+#: web/lib/settingLabels.ts:217
+msgid "Laya checkpoint"
+msgstr "Laya 체크포인트"
+
+#: web/lib/settingLabels.ts:218
+msgid "Laya checkpoint URL"
+msgstr "Laya 체크포인트 URL"
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -860,7 +1245,7 @@ msgstr "연결"
 msgid "Link a person from {account}"
 msgstr "{account}의 사람 연결"
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Linked to"
 msgstr "연결된 상대"
 
@@ -876,11 +1261,31 @@ msgstr "실시간 업데이트 연결이 끊겼습니다. 저장된 작업 상�
 msgid "Loading your config warned about these keys:"
 msgstr "설정을 불러올 때 다음 키에 대한 경고가 있었습니다:"
 
+#: web/lib/settingLabels.ts:103
+msgid "Local context size"
+msgstr "로컬 컨텍스트 크기"
+
+#: web/lib/settingLabels.ts:121
+msgid "Local music folder"
+msgstr "로컬 음악 폴더"
+
+#: web/lib/settingLabels.ts:101
+msgid "Local server"
+msgstr "로컬 서버"
+
+#: web/lib/settingLabels.ts:102
+msgid "Local vision projector"
+msgstr "로컬 비전 프로젝터"
+
+#: web/lib/settingLabels.ts:67
+msgid "Longest source video (seconds)"
+msgstr "원본 동영상 최대 길이(초)"
+
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
 msgstr "라이브러리에서 추천할 추억을 찾는 중..."
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Looks linked to"
 msgstr "연결된 것 같은 상대"
 
@@ -912,13 +1317,37 @@ msgstr "수동"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "실패한 작업을 포함한 수동·자동 작업입니다. 작업을 열어 편집 결과와 소요 시간을 확인하세요."
 
+#: web/lib/settingLabels.ts:155
+msgid "Map tiles"
+msgstr "지도 타일"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:91
 msgid "Marked Never use. Tick it to include it in this revision."
 msgstr "‘사용하지 않기’로 표시되었습니다. 이번 수정본에 포함하려면 선택하세요."
 
+#: web/lib/settingLabels.ts:212
+msgid "Marqo ONNX URL"
+msgstr "Marqo ONNX URL"
+
+#: web/lib/settingLabels.ts:211
+msgid "Marqo ONNX model"
+msgstr "Marqo ONNX 모델"
+
 #: web/lib/RenderPanel.svelte:217
 msgid "Match the sources"
 msgstr "원본 해상도에 맞춤"
+
+#: web/lib/settingLabels.ts:177
+msgid "Maximum delivery attempts"
+msgstr "최대 전송 시도 횟수"
+
+#: web/lib/settingLabels.ts:152
+msgid "Maximum gap (days)"
+msgstr "최대 간격(일)"
+
+#: web/lib/settingLabels.ts:109
+msgid "Maximum tokens parameter"
+msgstr "최대 토큰 수 매개변수"
 
 #: web/lib/labels.ts:106
 msgid "Measuring motion in the videos"
@@ -944,9 +1373,29 @@ msgstr "추억"
 msgid "Memory type"
 msgstr "추억 유형"
 
+#: web/lib/settingLabels.ts:150
+msgid "Minimum distance (km)"
+msgstr "최소 거리(km)"
+
+#: web/lib/settingLabels.ts:151
+msgid "Minimum duration (days)"
+msgstr "최소 기간(일)"
+
+#: web/lib/settingLabels.ts:76
+msgid "Minimum free space (GB)"
+msgstr "최소 여유 공간(GB)"
+
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "만들지 않은 달"
+
+#: web/lib/settingLabels.ts:127
+msgid "Mode"
+msgstr "모드"
+
+#: web/lib/settingLabels.ts:100
+msgid "Model"
+msgstr "모델"
 
 #: web/lib/labels.ts:96
 msgid "Model checks not requested"
@@ -968,6 +1417,10 @@ msgstr "모델 상태를 확인할 수 없습니다."
 msgid "Model suggestion"
 msgstr "모델의 제안"
 
+#: web/lib/settingLabels.ts:130
+msgid "Model variant"
+msgstr "모델 변형"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Modern warm"
 msgstr "모던하고 따뜻하게"
@@ -980,6 +1433,10 @@ msgstr "월"
 msgid "Monthly Highlights"
 msgstr "이달의 하이라이트"
 
+#: web/lib/settingLabels.ts:190
+msgid "Months to backfill"
+msgstr "소급 처리할 개월 수"
+
 #: web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "여러 인물"
@@ -988,13 +1445,29 @@ msgstr "여러 인물"
 msgid "Music"
 msgstr "음악"
 
+#: web/lib/settingLabels.ts:21
+msgid "Music generation"
+msgstr "음악 생성"
+
+#: web/lib/settingLabels.ts:47
+msgid "Music upload quota (MB)"
+msgstr "음악 업로드 한도(MB)"
+
 #: web/lib/RenderPanel.svelte:275
 msgid "Music volume:"
 msgstr "음악 음량:"
 
+#: web/lib/settingLabels.ts:51
+msgid "Native sharing"
+msgstr "기본 공유"
+
 #: web/lib/AskPanel.svelte:34
 msgid "Needs preparation"
 msgstr "준비가 필요합니다"
+
+#: web/lib/settingLabels.ts:27
+msgid "Network"
+msgstr "네트워크"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
@@ -1034,7 +1507,7 @@ msgstr "라이브러리에서 요청에 맞는 소재를 찾지 못해 영상을
 msgid "No model read this cut: the rules chose every picture."
 msgstr "모델의 분석 없이 선별 규칙만으로 만든 편집본입니다."
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:255 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "음악 없음"
 
@@ -1087,8 +1560,8 @@ msgstr "현재 제안이 없습니다."
 msgid "No trips detected for this year."
 msgstr "이 해에 감지된 여행이 없습니다."
 
-#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
-#: web/lib/people/RelationshipRows.svelte:74
+#: web/lib/people/RelationshipRows.svelte:55 web/lib/people/RelationshipRows.svelte:59
+#: web/lib/people/RelationshipRows.svelte:75
 msgid "No, they are not"
 msgstr "아니요, 아닙니다"
 
@@ -1121,7 +1594,7 @@ msgstr "직접 요청한 영상에는 적용되지 않음"
 msgid "Not possible"
 msgstr "불가능"
 
-#: web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:58
 msgid "Not related to"
 msgstr "관계 없는 상대"
 
@@ -1129,22 +1602,37 @@ msgstr "관계 없는 상대"
 msgid "Not the same person"
 msgstr "같은 사람 아님"
 
-#: web/lib/people/RelationshipRows.svelte:57
-#, python-brace-format
-msgid "Not {relationship}"
-msgstr "{relationship} 아님"
-
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "메모"
 
-#: web/lib/people/RelationshipRows.svelte:79
+#: web/lib/people/RelationshipRows.svelte:80
 msgid "Nothing recorded yet."
 msgstr "아직 기록이 없습니다."
+
+#: web/lib/settingLabels.ts:194
+msgid "Notification URLs"
+msgstr "알림 URL"
+
+#: web/lib/settingLabels.ts:31
+msgid "Notifications"
+msgstr "알림"
+
+#: web/lib/settingLabels.ts:196
+msgid "Notify on failure"
+msgstr "실패 시 알림"
+
+#: web/lib/settingLabels.ts:195
+msgid "Notify on success"
+msgstr "성공 시 알림"
 
 #: web/lib/SettingsChecks.svelte:19
 msgid "OK"
 msgstr "정상"
+
+#: web/lib/settingLabels.ts:133
+msgid "Offload to the CPU"
+msgstr "CPU로 오프로드"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1209,6 +1697,10 @@ msgstr "이 순간의 다른 소재"
 msgid "Other pictures of this moment"
 msgstr "이 순간의 다른 소재"
 
+#: web/lib/settingLabels.ts:14
+msgid "Output"
+msgstr "출력"
+
 #: web/lib/JobPanel.svelte:90 web/lib/PhaseTimeline.svelte:26
 msgid "Overall time remaining is not known yet."
 msgstr "전체 남은 시간은 아직 알 수 없습니다."
@@ -1218,12 +1710,20 @@ msgstr "전체 남은 시간은 아직 알 수 없습니다."
 msgid "Owner of {account}"
 msgstr "{account}의 소유자"
 
+#: web/lib/settingLabels.ts:110
+msgid "Parameters to drop"
+msgstr "제외할 매개변수"
+
+#: web/lib/settingLabels.ts:108
+msgid "Parameters without thinking"
+msgstr "생각 없는 매개변수"
+
 #: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "{stages} 통과"
 
-#: web/routes/login/+page.svelte:69
+#: web/lib/settingLabels.ts:161 web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "비밀번호"
 
@@ -1266,6 +1766,10 @@ msgstr "단계"
 msgid "Photo duration (seconds)"
 msgstr "사진 표시 시간(초)"
 
+#: web/lib/settingLabels.ts:25
+msgid "Photos"
+msgstr "사진"
+
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "사람 고르기"
@@ -1297,6 +1801,14 @@ msgstr "다음 인물이 있는 소재"
 msgid "Pictures: {count}"
 msgstr "소재: {count}"
 
+#: web/lib/settingLabels.ts:153
+msgid "Place lookup"
+msgstr "장소 조회"
+
+#: web/lib/settingLabels.ts:154
+msgid "Place lookup URL"
+msgstr "장소 조회 URL"
+
 #: web/lib/RenderPanel.svelte:188
 msgid "Playful bright"
 msgstr "밝고 경쾌하게"
@@ -1309,6 +1821,10 @@ msgstr "URL과 API 키를 모두 입력하세요"
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "후보 소재"
+
+#: web/lib/settingLabels.ts:42
+msgid "Port"
+msgstr "포트"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Portrait"
@@ -1330,9 +1846,17 @@ msgstr "사진 준비"
 msgid "Prepare selected clips"
 msgstr "선택한 클립 준비"
 
+#: web/lib/settingLabels.ts:62
+msgid "Prepared source cache size (GB)"
+msgstr "준비된 소스 캐시 크기(GB)"
+
 #: web/routes/settings/+page.svelte:33
 msgid "Prepared-source cache"
 msgstr "준비된 소스 캐시"
+
+#: web/lib/settingLabels.ts:7 web/lib/settingLabels.ts:39
+msgid "Preset"
+msgstr "프리셋"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1358,21 +1882,37 @@ msgstr "개인정보 보호 모드: 모든 소재를 흐리게 하고 이름을 
 msgid "Processed"
 msgstr "처리됨"
 
+#: web/lib/settingLabels.ts:222
+msgid "Producers"
+msgstr "프로듀서"
+
 #: web/lib/JobPanel.svelte:65 web/lib/JobPanel.svelte:79
 msgid "Progress"
 msgstr "진행 상황"
+
+#: web/lib/settingLabels.ts:98 web/lib/settingLabels.ts:158 web/lib/settingLabels.ts:201
+msgid "Provider"
+msgstr "제공자"
+
+#: web/lib/settingLabels.ts:53 web/lib/settingLabels.ts:162
+msgid "Public URL"
+msgstr "공개 URL"
 
 #: web/lib/ShotInspector.svelte:60
 msgid "Put it back"
 msgstr "되돌리기"
 
-#: web/lib/RenderPanel.svelte:227
+#: web/lib/RenderPanel.svelte:227 web/lib/settingLabels.ts:75
 msgid "Quality"
 msgstr "화질"
 
 #: web/lib/RenderPanel.svelte:186
 msgid "Random"
 msgstr "무작위"
+
+#: web/lib/settingLabels.ts:116
+msgid "Reader concurrency"
+msgstr "리더 동시 처리 수"
 
 #: web/lib/labels.ts:108
 msgid "Reading picture facts"
@@ -1406,11 +1946,11 @@ msgstr "제안 새로고침"
 msgid "Refreshing..."
 msgstr "새로고침 중..."
 
-#: web/lib/people/RelationshipRows.svelte:83
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Relationship"
 msgstr "관계"
 
-#: web/lib/people/RelationshipRows.svelte:43
+#: web/lib/people/RelationshipRows.svelte:44
 msgid "Relationships"
 msgstr "관계"
 
@@ -1418,7 +1958,7 @@ msgstr "관계"
 msgid "Release notes"
 msgstr "릴리스 노트"
 
-#: web/lib/SettingsEditor.svelte:67
+#: web/lib/SettingsEditor.svelte:68
 msgid "Reload from Disk"
 msgstr "디스크에서 다시 불러오기"
 
@@ -1430,7 +1970,7 @@ msgstr "제거"
 msgid "Remove from this cut"
 msgstr "이 편집본에서 빼기"
 
-#: web/lib/people/RelationshipRows.svelte:48
+#: web/lib/people/RelationshipRows.svelte:49
 msgid "Remove this relationship"
 msgstr "이 관계 삭제"
 
@@ -1445,6 +1985,14 @@ msgstr "렌더링"
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Render film"
 msgstr "영상 렌더링"
+
+#: web/lib/settingLabels.ts:15
+msgid "Render worker"
+msgstr "렌더 작업자"
+
+#: web/lib/settingLabels.ts:113
+msgid "Repetition penalty"
+msgstr "반복 페널티"
 
 #: web/lib/labels.ts:45
 msgid "Replaced a picture the model doubted."
@@ -1462,7 +2010,7 @@ msgstr "지금 다시 스캔"
 msgid "Rescan the library"
 msgstr "라이브러리 다시 스캔"
 
-#: web/lib/RenderPanel.svelte:215
+#: web/lib/RenderPanel.svelte:215 web/lib/settingLabels.ts:71
 msgid "Resolution"
 msgstr "해상도"
 
@@ -1490,6 +2038,11 @@ msgstr "수정본"
 #: web/lib/people/PersonCard.svelte:28
 msgid "Role (suggestions; type your own)"
 msgstr "역할(제안 선택 또는 직접 입력)"
+
+#: web/lib/people/RelationshipRows.svelte:58
+#, python-brace-format
+msgid "Ruled out: {statement}"
+msgstr "제외됨: {statement}"
 
 #: web/routes/runs/[run_id]/+page.svelte:347
 msgid "Run details"
@@ -1542,7 +2095,7 @@ msgstr "Live Photo 프레임 샘플링 중"
 msgid "Sampling video frames"
 msgstr "동영상 프레임 샘플링 중"
 
-#: web/lib/SettingsEditor.svelte:120
+#: web/lib/SettingsEditor.svelte:122
 msgid "Save"
 msgstr "저장"
 
@@ -1566,7 +2119,7 @@ msgstr "그룹 저장"
 msgid "Save revision"
 msgstr "수정본 저장"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:95
+#: web/lib/SettingsEditor.svelte:112 web/routes/settings/+page.svelte:95
 msgid "Saved - type a new key to replace it"
 msgstr "저장됨. 교체하려면 새 키를 입력하세요"
 
@@ -1580,16 +2133,16 @@ msgstr "수정본 {number}로 저장했습니다."
 msgid "Saved groups"
 msgstr "저장된 그룹"
 
-#: web/lib/SettingsEditor.svelte:40
+#: web/lib/SettingsEditor.svelte:41
 msgid "Saved here"
 msgstr "여기에 저장됨"
 
-#: web/lib/SettingsEditor.svelte:39
+#: web/lib/SettingsEditor.svelte:40
 #, python-brace-format
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "여기에 저장되어 있지만 {name}(으)로 복호화할 수 없어 기본값을 사용 중입니다"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:67
+#: web/lib/SettingsEditor.svelte:58 web/routes/settings/+page.svelte:67
 msgid "Saved to the database"
 msgstr "데이터베이스에 저장했습니다"
 
@@ -1597,6 +2150,10 @@ msgstr "데이터베이스에 저장했습니다"
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "저장 위치: {output_path}"
+
+#: web/lib/settingLabels.ts:54
+msgid "Scale mode"
+msgstr "스케일 모드"
 
 #: web/lib/RenderPanel.svelte:233
 msgid "Scaling Mode"
@@ -1606,6 +2163,14 @@ msgstr "크기 조절 방식"
 msgid "Scheduled"
 msgstr "예약됨"
 
+#: web/lib/settingLabels.ts:91
+msgid "Schema"
+msgstr "스키마"
+
+#: web/lib/settingLabels.ts:166
+msgid "Scope"
+msgstr "범위"
+
 #: web/lib/ShotInspector.svelte:72
 msgid "Screen time (seconds)"
 msgstr "화면 표시 시간(초)"
@@ -1614,23 +2179,43 @@ msgstr "화면 표시 시간(초)"
 msgid "Season"
 msgstr "계절"
 
-#: web/lib/SettingsEditor.svelte:77
+#: web/lib/SettingsEditor.svelte:78
 #, python-brace-format
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
 msgstr "{name}이(가) 설정되기 전에는 여기에 비밀 값을 저장할 수 없습니다. 설정하거나, 환경 변수나 config.yaml에 보관하세요."
 
+#: web/lib/settingLabels.ts:44
+msgid "Secure cookies"
+msgstr "보안 쿠키"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Select pictures"
 msgstr "사진 선택"
 
-#: web/lib/SettingsEditor.svelte:37
+#: web/lib/settingLabels.ts:115
+msgid "Send image detail"
+msgstr "이미지 상세도 전송"
+
+#: web/lib/settingLabels.ts:9
+msgid "Server"
+msgstr "서버"
+
+#: web/lib/settingLabels.ts:48
+msgid "Server URL"
+msgstr "서버 URL"
+
+#: web/lib/settingLabels.ts:159
+msgid "Session length (hours)"
+msgstr "세션 유지 시간(시간)"
+
+#: web/lib/SettingsEditor.svelte:38
 #, python-brace-format
 msgid "Set by {name} (environment)"
 msgstr "{name}(환경 변수)로 설정됨"
 
-#: web/lib/SettingsEditor.svelte:38
+#: web/lib/SettingsEditor.svelte:39
 #, python-brace-format
 msgid "Set in config.yaml as {key}"
 msgstr "config.yaml의 {key}로 설정됨"
@@ -1644,9 +2229,17 @@ msgstr "설정"
 msgid "Shareable"
 msgstr "공유 가능"
 
+#: web/lib/settingLabels.ts:57
+msgid "Sharing level"
+msgstr "공유 수준"
+
 #: web/routes/runs/[run_id]/+page.svelte:197
 msgid "Show"
 msgstr "표시"
+
+#: web/lib/settingLabels.ts:140
+msgid "Show month dividers"
+msgstr "월 구분선 표시"
 
 #: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
@@ -1657,6 +2250,10 @@ msgstr "더 보기"
 msgid "Sign in"
 msgstr "로그인"
 
+#: web/lib/settingLabels.ts:167
+msgid "Sign in automatically"
+msgstr "자동 로그인"
+
 #: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "이 서버 앞의 프록시를 통해 로그인합니다."
@@ -1665,9 +2262,17 @@ msgstr "이 서버 앞의 프록시를 통해 로그인합니다."
 msgid "Sign out"
 msgstr "로그아웃"
 
+#: web/lib/settingLabels.ts:29
+msgid "Sign-in"
+msgstr "로그인"
+
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "로그인 시간이 만료되었습니다. 다시 시도해 주세요."
+
+#: web/lib/settingLabels.ts:64
+msgid "Skip stills without camera data"
+msgstr "카메라 정보 없는 사진 건너뛰기"
 
 #: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
@@ -1697,6 +2302,10 @@ msgstr "일부 소재는 설명 없이 편집되었습니다."
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr "동영상과 Live Photos에 녹음된 소리입니다. 끄면 음악만 재생되며, 음악 없음도 선택하면 무음이 됩니다."
 
+#: web/lib/settingLabels.ts:61
+msgid "Source preparation workers"
+msgstr "소스 준비 작업자 수"
+
 #: web/routes/create/+page.svelte:334
 msgid "South"
 msgstr "남반구"
@@ -1704,6 +2313,14 @@ msgstr "남반구"
 #: web/lib/labels.ts:14
 msgid "Special day"
 msgstr "특별한 날"
+
+#: web/lib/settingLabels.ts:183
+msgid "Special days per year"
+msgstr "연간 특별한 날 수"
+
+#: web/lib/settingLabels.ts:13
+msgid "Speech"
+msgstr "음성"
 
 #: web/routes/create/+page.svelte:43
 msgid "Spring"
@@ -1745,11 +2362,23 @@ msgstr "중지되었습니다."
 msgid "Stories"
 msgstr "이야기"
 
+#: web/lib/settingLabels.ts:215
+msgid "Strict sharing"
+msgstr "엄격한 공유"
+
+#: web/lib/settingLabels.ts:112
+msgid "Structured output"
+msgstr "구조화된 출력"
+
+#: web/lib/settingLabels.ts:138
+msgid "Style mode"
+msgstr "스타일 모드"
+
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "부제목"
 
-#: web/lib/people/RelationshipRows.svelte:50
+#: web/lib/people/RelationshipRows.svelte:51
 msgid "Suggested"
 msgstr "제안됨"
 
@@ -1840,7 +2469,7 @@ msgstr "편집본이 준비되었습니다."
 msgid "The dates and places, never a model"
 msgstr "날짜와 장소만, 모델은 사용하지 않음"
 
-#: web/lib/SettingsEditor.svelte:74
+#: web/lib/SettingsEditor.svelte:75
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
@@ -1953,7 +2582,7 @@ msgstr "작업 내역을 불러오지 못했습니다."
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "서버 URL이 변경되었습니다. 새 서버의 API 키를 입력하세요."
 
-#: web/lib/SettingsEditor.svelte:52
+#: web/lib/SettingsEditor.svelte:53
 msgid "The settings could not be saved."
 msgstr "설정을 저장하지 못했습니다."
 
@@ -1977,6 +2606,18 @@ msgstr "촬영된 순서대로 재생되며, 편집의 나머지 부분과 동�
 msgid "Thin"
 msgstr "쓸 수 있는 소재가 적음"
 
+#: web/lib/settingLabels.ts:214
+msgid "Thin model layer"
+msgstr "얇은 모델 계층"
+
+#: web/lib/settingLabels.ts:106
+msgid "Thinking"
+msgstr "생각"
+
+#: web/lib/settingLabels.ts:107
+msgid "Thinking parameters"
+msgstr "생각 매개변수"
+
 #: web/lib/labels.ts:62
 msgid "This category already appears twice in the last six memories."
 msgstr "이 카테고리는 최근 여섯 개의 추억에 이미 두 번 등장했습니다."
@@ -1997,17 +2638,38 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
 
+#: web/lib/settingLabels.ts:88
+msgid "Thumbnail cache size (MB)"
+msgstr "썸네일 캐시 크기(MB)"
+
+#: web/lib/settingLabels.ts:8 web/lib/settingLabels.ts:40
+msgid "Tier"
+msgstr "티어"
+
 #: web/lib/PhaseTimeline.svelte:42
 msgid "Time not known yet"
 msgstr "시간을 아직 알 수 없음"
+
+#: web/lib/settingLabels.ts:81 web/lib/settingLabels.ts:105 web/lib/settingLabels.ts:125
+#: web/lib/settingLabels.ts:134 web/lib/settingLabels.ts:220
+msgid "Timeout (seconds)"
+msgstr "제한 시간(초)"
 
 #: web/lib/RenderPanel.svelte:198
 msgid "Title (decided as generate decides when empty)"
 msgstr "제목(비워두면 generate가 결정)"
 
+#: web/lib/settingLabels.ts:23
+msgid "Title screens"
+msgstr "타이틀 화면"
+
 #: web/lib/RenderPanel.svelte:183
 msgid "Title style"
 msgstr "제목 스타일"
+
+#: web/lib/settingLabels.ts:142
+msgid "Titles written by the model"
+msgstr "모델이 쓰는 제목"
 
 #: web/routes/create/+page.svelte:350
 msgid "To"
@@ -2025,9 +2687,25 @@ msgstr "검사를 통과하지 못한 소재를 대신합니다."
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "모델이 이 이야기에서 뺀 소재를 대신합니다."
 
+#: web/lib/settingLabels.ts:55
+msgid "Transition"
+msgstr "전환 효과"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Transition Style"
 msgstr "전환 스타일"
+
+#: web/lib/settingLabels.ts:56
+msgid "Transition duration"
+msgstr "전환 효과 길이"
+
+#: web/lib/settingLabels.ts:32
+msgid "Triage"
+msgstr "선별"
+
+#: web/lib/settingLabels.ts:45
+msgid "Trigger token"
+msgstr "트리거 토큰"
 
 #: web/lib/labels.ts:12 web/routes/create/+page.svelte:398
 msgid "Trip"
@@ -2037,9 +2715,13 @@ msgstr "여행"
 msgid "Trip detection failed."
 msgstr "여행 감지에 실패했습니다."
 
-#: web/routes/create/+page.svelte:410
+#: web/lib/settingLabels.ts:26 web/routes/create/+page.svelte:410
 msgid "Trips"
 msgstr "여행"
+
+#: web/lib/settingLabels.ts:173
+msgid "Trusted proxies"
+msgstr "신뢰하는 프록시"
 
 #: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
@@ -2066,7 +2748,7 @@ msgstr "다음 명령으로 업데이트:"
 msgid "Updated {when}"
 msgstr "{when} 업데이트됨"
 
-#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26
+#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26 web/lib/settingLabels.ts:28
 msgid "Updates"
 msgstr "업데이트"
 
@@ -2094,7 +2776,7 @@ msgstr "영상 업로드"
 msgid "Upload the film to Immich"
 msgstr "영상을 Immich에 업로드"
 
-#: web/lib/UploadFilm.svelte:49
+#: web/lib/UploadFilm.svelte:49 web/lib/settingLabels.ts:24
 msgid "Upload to Immich"
 msgstr "Immich에 업로드"
 
@@ -2111,11 +2793,19 @@ msgstr "Immich에 업로드했습니다."
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "라이브러리에 등록된 이름을 정확히 쓰세요. 각 소재가 이 조건에 맞아야 합니다. 이 조건은 위에서 선택한 이름을 대체합니다."
 
+#: web/lib/settingLabels.ts:132
+msgid "Use the language model"
+msgstr "언어 모델 사용"
+
 #: web/lib/ShotInspector.svelte:142
 msgid "Use this picture instead"
 msgstr "대신 이 소재 사용"
 
-#: web/routes/login/+page.svelte:66
+#: web/lib/settingLabels.ts:171
+msgid "User header"
+msgstr "사용자 헤더"
+
+#: web/lib/settingLabels.ts:160 web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "사용자 이름"
 
@@ -2131,6 +2821,14 @@ msgstr "동영상"
 #: web/routes/settings/+page.svelte:31
 msgid "Video cache"
 msgstr "동영상 캐시"
+
+#: web/lib/settingLabels.ts:87
+msgid "Video cache age (days)"
+msgstr "동영상 캐시 보관 기간(일)"
+
+#: web/lib/settingLabels.ts:86
+msgid "Video cache size (GB)"
+msgstr "동영상 캐시 크기(GB)"
 
 #: web/routes/runs/[run_id]/+page.svelte:124
 msgid "Videos"
@@ -2171,7 +2869,7 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "자동화가 다음에 만들 내용으로, `auto suggest`가 출력하는 목록과 같습니다. `auto run`처럼 실행하거나, 렌더링 없이 먼저 확인할 수 있습니다."
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
+#: web/lib/people/RelationshipRows.svelte:70 web/lib/people/RelationshipRows.svelte:72
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "{other} 님에게 {name} 님은 어떤 관계인가요?"
@@ -2238,9 +2936,25 @@ msgstr "이 소재를 선택한 이유"
 msgid "Winter"
 msgstr "겨울"
 
-#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
+#: web/lib/people/RelationshipRows.svelte:88 web/lib/people/RelationshipRows.svelte:89
 msgid "With"
 msgstr "상대"
+
+#: web/lib/settingLabels.ts:224
+msgid "WordNet"
+msgstr "WordNet"
+
+#: web/lib/settingLabels.ts:225
+msgid "WordNet URL"
+msgstr "WordNet URL"
+
+#: web/lib/settingLabels.ts:78
+msgid "Worker URL"
+msgstr "작업자 URL"
+
+#: web/lib/settingLabels.ts:79
+msgid "Worker token"
+msgstr "작업자 토큰"
 
 #: web/routes/create/+page.svelte:324
 msgid "Year"
@@ -2257,10 +2971,6 @@ msgstr "지난 연수(비워두면 전체)"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "포함할 연도 수"
-
-#: web/lib/people/RelationshipRows.svelte:53
-msgid "Yes, they are"
-msgstr "네, 맞아요"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2300,29 +3010,153 @@ msgstr "모두 함께"
 msgid "any of them"
 msgstr "그중 한 명이라도"
 
+#: web/lib/people/relationshipLabels.ts:26
+msgid "aunt of"
+msgstr "다음 사람의 이모 또는 고모"
+
+#: web/lib/people/relationshipLabels.ts:27
+msgid "aunt or uncle of"
+msgstr "다음 사람의 삼촌 또는 이모, 고모"
+
+#: web/lib/people/relationshipLabels.ts:23
+msgid "best friend of"
+msgstr "다음 사람의 절친"
+
 #: web/lib/people/FamilyTree.svelte:100
 msgid "birth year?"
 msgstr "출생 연도?"
+
+#: web/lib/people/relationshipLabels.ts:17
+msgid "brother of"
+msgstr "다음 사람의 형제"
+
+#: web/lib/people/relationshipLabels.ts:12
+msgid "child of"
+msgstr "다음 사람의 자녀"
+
+#: web/lib/people/relationshipLabels.ts:33
+msgid "child-in-law of"
+msgstr "다음 사람의 사위 또는 며느리"
+
+#: web/lib/people/relationshipLabels.ts:29
+msgid "cousin of"
+msgstr "다음 사람의 사촌"
+
+#: web/lib/people/relationshipLabels.ts:14
+msgid "daughter of"
+msgstr "다음 사람의 딸"
+
+#: web/lib/people/relationshipLabels.ts:11
+msgid "father of"
+msgstr "다음 사람의 아버지"
+
+#: web/lib/people/relationshipLabels.ts:24
+msgid "friend of"
+msgstr "다음 사람의 친구"
+
+#: web/lib/people/relationshipLabels.ts:22
+msgid "godchild of"
+msgstr "다음 사람의 대자녀"
+
+#: web/lib/people/relationshipLabels.ts:21
+msgid "godfather of"
+msgstr "다음 사람의 대부"
+
+#: web/lib/people/relationshipLabels.ts:20
+msgid "godmother of"
+msgstr "다음 사람의 대모"
+
+#: web/lib/people/relationshipLabels.ts:19
+msgid "godparent of"
+msgstr "다음 사람의 대부모"
+
+#: web/lib/people/relationshipLabels.ts:31
+msgid "grandchild of"
+msgstr "다음 사람의 손주"
+
+#: web/lib/people/relationshipLabels.ts:30
+msgid "grandparent of"
+msgstr "다음 사람의 조부모"
 
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "Immich 계정 이름과 일치"
 
+#: web/lib/people/relationshipLabels.ts:8
+msgid "married to"
+msgstr "다음 사람과 결혼"
+
+#: web/lib/people/relationshipLabels.ts:10
+msgid "mother of"
+msgstr "다음 사람의 어머니"
+
+#: web/lib/people/relationshipLabels.ts:28
+msgid "niece or nephew of"
+msgstr "다음 사람의 조카"
+
 #: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "아직 알 수 없음"
+
+#: web/lib/people/relationshipLabels.ts:77
+msgid "often in the same pictures"
+msgstr "같은 사진에 자주 등장"
 
 #: web/lib/AskPanel.svelte:141
 msgid "our cat along the years"
 msgstr "우리 고양이와 함께한 시간"
 
-#: web/lib/people/RelationshipRows.svelte:64
+#: web/lib/people/relationshipLabels.ts:9
+msgid "parent of"
+msgstr "다음 사람의 부모"
+
+#: web/lib/people/relationshipLabels.ts:32
+msgid "parent-in-law of"
+msgstr "다음 사람의 장인, 장모 또는 시부모"
+
+#: web/lib/people/relationshipLabels.ts:7
+msgid "partner of"
+msgstr "다음 사람의 파트너"
+
+#: web/lib/people/RelationshipRows.svelte:65
 msgid "relationship not named"
 msgstr "관계 이름 없음"
+
+#: web/lib/people/relationshipLabels.ts:78
+msgid "same birth date"
+msgstr "생일이 같음"
+
+#: web/lib/people/relationshipLabels.ts:79
+msgid "same name"
+msgstr "이름이 같음"
+
+#: web/lib/people/relationshipLabels.ts:15
+msgid "sibling of"
+msgstr "다음 사람의 형제자매"
+
+#: web/lib/people/relationshipLabels.ts:34
+msgid "sibling-in-law of"
+msgstr "다음 사람의 인척 형제자매"
+
+#: web/lib/people/relationshipLabels.ts:16
+msgid "sister of"
+msgstr "다음 사람의 자매"
+
+#: web/lib/people/relationshipLabels.ts:13
+msgid "son of"
+msgstr "다음 사람의 아들"
 
 #: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "시작 중"
+
+#: web/lib/people/relationshipLabels.ts:18
+msgid "twin of"
+msgstr "다음 사람의 쌍둥이"
+
+#: web/lib/people/relationshipLabels.ts:25
+msgid "uncle of"
+msgstr "다음 사람의 삼촌"
 
 #: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
@@ -2336,6 +3170,10 @@ msgstr "이(가) 추정 결과를 저장합니다. 직접 입력한 답은 다�
 msgid "you confirmed it"
 msgstr "직접 확인함"
 
+#: web/lib/people/relationshipLabels.ts:80
+msgid "you said so"
+msgstr "직접 지정함"
+
 #: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
 msgstr "스캔에 직접 알려줌"
@@ -2344,6 +3182,146 @@ msgstr "스캔에 직접 알려줌"
 #, python-brace-format
 msgid "{amount} elapsed"
 msgstr "{amount} 경과"
+
+#: web/lib/people/relationshipLabels.ts:57
+#, python-brace-format
+msgid "{a} is {b}'s aunt"
+msgstr "{a}: {b}의 이모 또는 고모"
+
+#: web/lib/people/relationshipLabels.ts:58
+#, python-brace-format
+msgid "{a} is {b}'s aunt or uncle"
+msgstr "{a}: {b}의 삼촌 또는 이모, 고모"
+
+#: web/lib/people/relationshipLabels.ts:54
+#, python-brace-format
+msgid "{a} is {b}'s best friend"
+msgstr "{a}: {b}의 절친"
+
+#: web/lib/people/relationshipLabels.ts:48
+#, python-brace-format
+msgid "{a} is {b}'s brother"
+msgstr "{a}: {b}의 형제"
+
+#: web/lib/people/relationshipLabels.ts:43
+#, python-brace-format
+msgid "{a} is {b}'s child"
+msgstr "{a}: {b}의 자녀"
+
+#: web/lib/people/relationshipLabels.ts:64
+#, python-brace-format
+msgid "{a} is {b}'s child-in-law"
+msgstr "{a}: {b}의 사위 또는 며느리"
+
+#: web/lib/people/relationshipLabels.ts:60
+#, python-brace-format
+msgid "{a} is {b}'s cousin"
+msgstr "{a}: {b}의 사촌"
+
+#: web/lib/people/relationshipLabels.ts:45
+#, python-brace-format
+msgid "{a} is {b}'s daughter"
+msgstr "{a}: {b}의 딸"
+
+#: web/lib/people/relationshipLabels.ts:42
+#, python-brace-format
+msgid "{a} is {b}'s father"
+msgstr "{a}: {b}의 아버지"
+
+#: web/lib/people/relationshipLabels.ts:55
+#, python-brace-format
+msgid "{a} is {b}'s friend"
+msgstr "{a}: {b}의 친구"
+
+#: web/lib/people/relationshipLabels.ts:53
+#, python-brace-format
+msgid "{a} is {b}'s godchild"
+msgstr "{a}: {b}의 대자녀"
+
+#: web/lib/people/relationshipLabels.ts:52
+#, python-brace-format
+msgid "{a} is {b}'s godfather"
+msgstr "{a}: {b}의 대부"
+
+#: web/lib/people/relationshipLabels.ts:51
+#, python-brace-format
+msgid "{a} is {b}'s godmother"
+msgstr "{a}: {b}의 대모"
+
+#: web/lib/people/relationshipLabels.ts:50
+#, python-brace-format
+msgid "{a} is {b}'s godparent"
+msgstr "{a}: {b}의 대부모"
+
+#: web/lib/people/relationshipLabels.ts:62
+#, python-brace-format
+msgid "{a} is {b}'s grandchild"
+msgstr "{a}: {b}의 손주"
+
+#: web/lib/people/relationshipLabels.ts:61
+#, python-brace-format
+msgid "{a} is {b}'s grandparent"
+msgstr "{a}: {b}의 조부모"
+
+#: web/lib/people/relationshipLabels.ts:41
+#, python-brace-format
+msgid "{a} is {b}'s mother"
+msgstr "{a}: {b}의 어머니"
+
+#: web/lib/people/relationshipLabels.ts:59
+#, python-brace-format
+msgid "{a} is {b}'s niece or nephew"
+msgstr "{a}: {b}의 조카"
+
+#: web/lib/people/relationshipLabels.ts:40
+#, python-brace-format
+msgid "{a} is {b}'s parent"
+msgstr "{a}: {b}의 부모"
+
+#: web/lib/people/relationshipLabels.ts:63
+#, python-brace-format
+msgid "{a} is {b}'s parent-in-law"
+msgstr "{a}: {b}의 장인, 장모 또는 시부모"
+
+#: web/lib/people/relationshipLabels.ts:38
+#, python-brace-format
+msgid "{a} is {b}'s partner"
+msgstr "{a}: {b}의 파트너"
+
+#: web/lib/people/relationshipLabels.ts:46
+#, python-brace-format
+msgid "{a} is {b}'s sibling"
+msgstr "{a}: {b}의 형제자매"
+
+#: web/lib/people/relationshipLabels.ts:65
+#, python-brace-format
+msgid "{a} is {b}'s sibling-in-law"
+msgstr "{a}: {b}의 인척 형제자매"
+
+#: web/lib/people/relationshipLabels.ts:47
+#, python-brace-format
+msgid "{a} is {b}'s sister"
+msgstr "{a}: {b}의 자매"
+
+#: web/lib/people/relationshipLabels.ts:44
+#, python-brace-format
+msgid "{a} is {b}'s son"
+msgstr "{a}: {b}의 아들"
+
+#: web/lib/people/relationshipLabels.ts:39
+#, python-brace-format
+msgid "{a} is {b}'s spouse"
+msgstr "{a}: {b}의 배우자"
+
+#: web/lib/people/relationshipLabels.ts:49
+#, python-brace-format
+msgid "{a} is {b}'s twin"
+msgstr "{a}: {b}의 쌍둥이"
+
+#: web/lib/people/relationshipLabels.ts:56
+#, python-brace-format
+msgid "{a} is {b}'s uncle"
+msgstr "{a}: {b}의 삼촌"
 
 #: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
@@ -2389,6 +3367,11 @@ msgstr "{total}개 클립 중 {done}개"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{total}장 중 {done}장"
+
+#: web/lib/people/relationshipLabels.ts:89
+#, python-brace-format
+msgid "{first}; {second}"
+msgstr "{first}; {second}"
 
 #: web/lib/people/FamilyTree.svelte:72
 #, python-brace-format

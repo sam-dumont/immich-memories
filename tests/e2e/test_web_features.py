@@ -188,11 +188,17 @@ def test_settings_names_each_source_locks_file_and_environment_values_and_masks_
 ) -> None:
     served = page.request.get(f"{launch_app_url}/api/v1/settings").text()
     page.goto(f"{launch_app_url}/app/settings")
-    page.get_by_text("auth", exact=True).click()
 
-    codec = page.get_by_label("output.codec", exact=True)
-    auth = page.get_by_label("auth.enabled", exact=True)
-    key = page.get_by_label("immich.api_key", exact=True)
+    def section(title: str):
+        # A section is a <details> whose summary is the section's worded name.
+        summary = page.locator("summary").filter(has_text=re.compile(rf"^{title}$"))
+        return page.locator("details").filter(has=summary)
+
+    page.locator("summary").filter(has_text=re.compile(r"^Sign-in$")).click()
+
+    codec = section("Output").get_by_label("Codec", exact=True)
+    auth = section("Sign-in").get_by_label("Enabled", exact=True)
+    key = section("Immich").get_by_label("API key", exact=True)
     expect(codec).to_be_disabled()
     expect(page.get_by_text("Set in config.yaml as output.codec", exact=True)).to_be_visible()
     expect(auth).to_be_disabled()

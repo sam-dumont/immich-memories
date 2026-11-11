@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-11 01:23+0100\n"
+"POT-Creation-Date: 2026-11-11 02:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -33,9 +33,26 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "In diesem Monat wurde bereits ein Monatsrückblick erstellt."
 
+#: web/lib/settingLabels.ts:22
+msgid "ACE-Step music"
+msgstr "ACE-Step-Musik"
+
 #: web/routes/settings/+page.svelte:93
 msgid "API Key"
 msgstr "API-Schlüssel"
+
+#: web/lib/settingLabels.ts:128
+msgid "API URL"
+msgstr "API-URL"
+
+#: web/lib/settingLabels.ts:49 web/lib/settingLabels.ts:104 web/lib/settingLabels.ts:124
+#: web/lib/settingLabels.ts:129
+msgid "API key"
+msgstr "API-Schlüssel"
+
+#: web/lib/settingLabels.ts:50
+msgid "API version"
+msgstr "API-Version"
 
 #: web/lib/JobPanel.svelte:52
 #, python-brace-format
@@ -62,7 +79,7 @@ msgstr "Noch etwa {amount}, bis der Film fertig ist"
 msgid "About {percent}% overall"
 msgstr "Insgesamt etwa {percent}%"
 
-#: web/lib/people/RelationshipRows.svelte:81
+#: web/lib/people/RelationshipRows.svelte:82
 msgid "Accept all suggestions"
 msgstr "Alle Vorschläge übernehmen"
 
@@ -74,15 +91,15 @@ msgstr "Weitergeleitete und heruntergeladene Medien akzeptieren"
 msgid "Account owner"
 msgstr "Kontoinhaber"
 
-#: web/lib/people/AccountLinks.svelte:46
+#: web/lib/people/AccountLinks.svelte:46 web/lib/settingLabels.ts:52 web/lib/settingLabels.ts:184
 msgid "Accounts"
 msgstr "Konten"
 
-#: web/lib/people/RelationshipRows.svelte:91
+#: web/lib/people/RelationshipRows.svelte:92
 msgid "Add"
 msgstr "Hinzufügen"
 
-#: web/lib/people/RelationshipRows.svelte:84
+#: web/lib/people/RelationshipRows.svelte:85
 msgid "Add a relationship"
 msgstr "Eine Beziehung hinzufügen"
 
@@ -93,6 +110,14 @@ msgstr "Datum einblenden"
 #: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "Jemanden hinzufügen, der nicht in Immich ist"
+
+#: web/lib/settingLabels.ts:58
+msgid "Add the date to titles"
+msgstr "Datum in Titel einfügen"
+
+#: web/lib/settingLabels.ts:59
+msgid "Add the place to titles"
+msgstr "Ort in Titel einfügen"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
@@ -125,7 +150,7 @@ msgstr "Nach einer Zeitspanne"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46
+#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "Albumname"
 
@@ -141,6 +166,26 @@ msgstr "Alle diese Personen"
 msgid "All pictures"
 msgstr "Alle Bilder"
 
+#: web/lib/settingLabels.ts:213
+msgid "Allow model downloads"
+msgstr "Modell-Downloads erlauben"
+
+#: web/lib/settingLabels.ts:80
+msgid "Allow plain HTTP"
+msgstr "Unverschlüsseltes HTTP erlauben"
+
+#: web/lib/settingLabels.ts:170
+msgid "Allowed domains"
+msgstr "Erlaubte Domains"
+
+#: web/lib/settingLabels.ts:169
+msgid "Allowed email addresses"
+msgstr "Erlaubte E-Mail-Adressen"
+
+#: web/lib/settingLabels.ts:46
+msgid "Allowed hosts"
+msgstr "Erlaubte Hosts"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
 msgid "Also show the {count} pictures outside this memory"
@@ -150,6 +195,18 @@ msgstr "Auch die {count} Bilder außerhalb dieser Erinnerung zeigen"
 msgid "Alternatives considered"
 msgstr "Berücksichtigte Alternativen"
 
+#: web/lib/settingLabels.ts:114
+msgid "Always reasons"
+msgstr "Denkt immer nach"
+
+#: web/lib/settingLabels.ts:12
+msgid "Analysis"
+msgstr "Analyse"
+
+#: web/lib/settingLabels.ts:139
+msgid "Animated background"
+msgstr "Animierter Hintergrund"
+
 #: web/routes/create/+page.svelte:377
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
@@ -157,6 +214,10 @@ msgid ""
 msgstr ""
 "Zuerst die Jubiläen, dann der Rest. Ein geplanter Lauf schlägt einen Tag nur an seinem "
 "Jahrestag vor; hier kannst du jeden Tag wählen, den der Katalog enthält."
+
+#: web/lib/settingLabels.ts:216
+msgid "Annotation database"
+msgstr "Annotationsdatenbank"
 
 #: web/routes/create/+page.svelte:356
 msgid "Another day (MM-DD)"
@@ -193,6 +254,14 @@ msgstr ""
 "Fragt bei GitHub die öffentliche Liste der Versionen ab. Vor dem Klick geht nichts raus, und "
 "nichts über diese Installation wird mitgeschickt."
 
+#: web/lib/settingLabels.ts:197
+msgid "Attach a thumbnail"
+msgstr "Vorschaubild anhängen"
+
+#: web/lib/settingLabels.ts:20
+msgid "Audio"
+msgstr "Audio"
+
 #: web/lib/RenderPanel.svelte:186
 msgid "Auto (match the mood)"
 msgstr "Automatisch (passend zur Stimmung)"
@@ -208,6 +277,10 @@ msgstr "Automatisch (wie konfiguriert)"
 #: web/routes/+layout.svelte:60
 msgid "Automatic (browser)"
 msgstr "Automatisch (Browser)"
+
+#: web/lib/settingLabels.ts:30
+msgid "Automation"
+msgstr "Automatisierung"
 
 #: web/routes/suggestions/+page.svelte:60
 msgid "Automation is already running. Open Runs to follow it."
@@ -229,6 +302,26 @@ msgstr "Zurück zu den Läufen"
 msgid "Back to the cut"
 msgstr "Zurück zum Schnitt"
 
+#: web/lib/settingLabels.ts:94
+msgid "Backend"
+msgstr "Backend"
+
+#: web/lib/settingLabels.ts:99 web/lib/settingLabels.ts:123
+msgid "Base URL"
+msgstr "Basis-URL"
+
+#: web/lib/settingLabels.ts:119
+msgid "Batch maximum wait (minutes)"
+msgstr "Maximale Wartezeit für Batches (Minuten)"
+
+#: web/lib/settingLabels.ts:118
+msgid "Batch minimum requests"
+msgstr "Mindestanzahl Anfragen pro Batch"
+
+#: web/lib/settingLabels.ts:117
+msgid "Batch mode"
+msgstr "Batch-Modus"
+
 #: web/routes/create/+page.svelte:339
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "Geburtstag (MM-DD; leer lassen für das in Immich gespeicherte Geburtsdatum)"
@@ -249,6 +342,14 @@ msgstr "Unscharfer Hintergrund"
 msgid "Browse the whole pool"
 msgstr "Alle verfügbaren Medien ansehen"
 
+#: web/lib/settingLabels.ts:168
+msgid "Button text"
+msgstr "Schaltflächentext"
+
+#: web/lib/settingLabels.ts:16
+msgid "Cache"
+msgstr "Cache"
+
 #: web/routes/settings/+page.svelte:117 web/routes/settings/+page.svelte:118
 msgid "Caches"
 msgstr "Caches"
@@ -265,9 +366,33 @@ msgstr "Abgebrochen"
 msgid "Candidate key"
 msgstr "Kandidatenschlüssel"
 
+#: web/lib/settingLabels.ts:205
+msgid "Caption API key"
+msgstr "API-Schlüssel für Bildunterschriften"
+
+#: web/lib/settingLabels.ts:203
+msgid "Caption base URL"
+msgstr "Basis-URL für Bildunterschriften"
+
 #: web/lib/RenderPanel.svelte:240
 msgid "Caption clips with their place"
 msgstr "Ortsnamen bei Clips einblenden"
+
+#: web/lib/settingLabels.ts:207
+msgid "Caption concurrency"
+msgstr "Parallelität bei Bildunterschriften"
+
+#: web/lib/settingLabels.ts:204
+msgid "Caption model"
+msgstr "Modell für Bildunterschriften"
+
+#: web/lib/settingLabels.ts:202
+msgid "Caption provider"
+msgstr "Anbieter für Bildunterschriften"
+
+#: web/lib/settingLabels.ts:206
+msgid "Caption timeout (seconds)"
+msgstr "Timeout für Bildunterschriften (Sekunden)"
 
 #: web/lib/ShotInspector.svelte:152
 msgid "Captions were read; the rules chose this cut."
@@ -289,6 +414,10 @@ msgstr "Eignung prüfen"
 #: web/lib/UpdateCheck.svelte:29
 msgid "Check for updates"
 msgstr "Nach Updates suchen"
+
+#: web/lib/settingLabels.ts:156
+msgid "Check for updates daily"
+msgstr "Täglich nach Updates suchen"
 
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Check playback"
@@ -363,9 +492,25 @@ msgstr "Diese Sperre aufheben?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} Einträge aus {cache} gelöscht."
 
+#: web/lib/settingLabels.ts:164
+msgid "Client ID"
+msgstr "Client-ID"
+
+#: web/lib/settingLabels.ts:165
+msgid "Client secret"
+msgstr "Client-Secret"
+
 #: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "Zwischenablage nicht verfügbar. Markiere den Bericht unten und kopiere ihn."
+
+#: web/lib/settingLabels.ts:72
+msgid "Codec"
+msgstr "Codec"
+
+#: web/lib/settingLabels.ts:73
+msgid "Codec policy"
+msgstr "Codec-Richtlinie"
 
 #: web/routes/create/+page.svelte:507
 msgid "Command"
@@ -375,7 +520,7 @@ msgstr "Befehl"
 msgid "Completed"
 msgstr "Abgeschlossen"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:73
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsdatei: {config_path}"
@@ -384,7 +529,7 @@ msgstr "Konfigurationsdatei: {config_path}"
 msgid "Config warnings"
 msgstr "Konfigurationswarnungen"
 
-#: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
+#: web/lib/SettingsEditor.svelte:65 web/lib/SettingsEditor.svelte:67
 msgid "Configuration"
 msgstr "Konfiguration"
 
@@ -392,6 +537,11 @@ msgstr "Konfiguration"
 #, python-brace-format
 msgid "Confirm that {name} is {relationship} {other}"
 msgstr "Bestätigen: {name} ist {relationship} {other}"
+
+#: web/lib/people/RelationshipRows.svelte:54
+#, python-brace-format
+msgid "Confirm: {statement}"
+msgstr "Bestätigen: {statement}"
 
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
@@ -402,9 +552,17 @@ msgstr "Verbunden als: {name}"
 msgid "Considered by the model"
 msgstr "Vom Modell erwogen"
 
+#: web/lib/settingLabels.ts:77
+msgid "Constant rate factor"
+msgstr "Konstanter Ratenfaktor"
+
 #: web/routes/runs/[run_id]/+page.svelte:118
 msgid "Contact sheet"
 msgstr "Kontaktbogen"
+
+#: web/lib/settingLabels.ts:176 web/lib/settingLabels.ts:198
+msgid "Cooldown (hours)"
+msgstr "Abkühlzeit (Stunden)"
 
 #: web/lib/JobPanel.svelte:136 web/lib/RunReport.svelte:76
 msgid "Copied"
@@ -455,6 +613,22 @@ msgstr "Schneiden"
 msgid "Cut contact sheet"
 msgstr "Kontaktbogen des Schnitts"
 
+#: web/lib/settingLabels.ts:175
+msgid "Daily at"
+msgstr "Täglich um"
+
+#: web/lib/settingLabels.ts:17
+msgid "Database"
+msgstr "Datenbank"
+
+#: web/lib/settingLabels.ts:90
+msgid "Database URL"
+msgstr "Datenbank-URL"
+
+#: web/lib/settingLabels.ts:84
+msgid "Database file"
+msgstr "Datenbankdatei"
+
 #: web/routes/create/+page.svelte:336
 msgid "Day"
 msgstr "Tag"
@@ -467,7 +641,11 @@ msgstr "Tag (MM-DD)"
 msgid "Decided while cutting"
 msgstr "Beim Schnitt entschieden"
 
-#: web/lib/SettingsEditor.svelte:41
+#: web/lib/settingLabels.ts:96
+msgid "Decode on the GPU"
+msgstr "Auf der GPU dekodieren"
+
+#: web/lib/SettingsEditor.svelte:42
 msgid "Default"
 msgstr "Standard"
 
@@ -475,7 +653,7 @@ msgstr "Standard"
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "An Immich übergeben. Die lokale Datei wurde entfernt, um Speicherplatz zu sparen."
 
-#: web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
+#: web/lib/settingLabels.ts:43 web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
 msgid "Demo mode"
 msgstr "Demomodus"
 
@@ -495,9 +673,57 @@ msgstr "Bilder werden beschrieben"
 msgid "Descriptions not requested"
 msgstr "Beschreibungen nicht angefordert"
 
+#: web/lib/settingLabels.ts:189
+msgid "Detect a person's month"
+msgstr "Monat einer Person erkennen"
+
+#: web/lib/settingLabels.ts:188
+msgid "Detect albums"
+msgstr "Alben erkennen"
+
+#: web/lib/settingLabels.ts:182
+msgid "Detect bursts of activity"
+msgstr "Aktivitätsspitzen erkennen"
+
+#: web/lib/settingLabels.ts:185
+msgid "Detect groups"
+msgstr "Gruppen erkennen"
+
+#: web/lib/settingLabels.ts:187
+msgid "Detect holidays"
+msgstr "Feiertage erkennen"
+
+#: web/lib/settingLabels.ts:178
+msgid "Detect months"
+msgstr "Monate erkennen"
+
+#: web/lib/settingLabels.ts:181
+msgid "Detect person spotlights"
+msgstr "Personen im Rampenlicht erkennen"
+
+#: web/lib/settingLabels.ts:186
+msgid "Detect seasons"
+msgstr "Jahreszeiten erkennen"
+
+#: web/lib/settingLabels.ts:180
+msgid "Detect trips"
+msgstr "Reisen erkennen"
+
+#: web/lib/settingLabels.ts:179
+msgid "Detect years"
+msgstr "Jahre erkennen"
+
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
 msgstr "Reisen werden aus GPS-Daten erkannt …"
+
+#: web/lib/settingLabels.ts:209
+msgid "Detector Python"
+msgstr "Python des Detektors"
+
+#: web/lib/settingLabels.ts:210
+msgid "Detector cache folder"
+msgstr "Cache-Ordner des Detektors"
 
 #: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Discard changes"
@@ -536,6 +762,10 @@ msgstr "Modelle herunterladen"
 msgid "Download report"
 msgstr "Bericht herunterladen"
 
+#: web/lib/settingLabels.ts:60
+msgid "Download workers"
+msgstr "Download-Worker"
+
 #: web/lib/people/FamilyTree.svelte:61
 msgid "Draw the family tree"
 msgstr "Stammbaum zeichnen"
@@ -547,6 +777,10 @@ msgid ""
 msgstr ""
 "Gezeichnet aus den Beziehungen, die du bestätigt hast. Eine gepunktete Linie ist ein "
 "Vorschlag: Ihr Häkchen bestätigt ihn. Klicke auf eine Person, um ihre Karte zu öffnen."
+
+#: web/lib/settingLabels.ts:147
+msgid "Duration per photo"
+msgstr "Dauer pro Foto"
 
 #: web/routes/settings/people/+page.svelte:175
 msgid ""
@@ -575,6 +809,14 @@ msgstr ""
 "Ohne Bildbeschreibungen geschnitten: Die Inhalte wurden klassifiziert, aber nicht im Detail "
 "analysiert."
 
+#: web/lib/settingLabels.ts:33
+msgid "Editorial"
+msgstr "Redaktionell"
+
+#: web/lib/settingLabels.ts:89
+msgid "Editorial runs size (GB)"
+msgstr "Größe der redaktionellen Läufe (GB)"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Elegant minimal"
 msgstr "Elegant und schlicht"
@@ -586,6 +828,29 @@ msgstr "Wählbar, als diese Aufnahme gewählt wurde. Öffne eines zum Vergleiche
 #: web/routes/suggestions/+page.svelte:65
 msgid "Eligible. No video was generated."
 msgstr "Geeignet. Es wurde kein Video erstellt."
+
+#: web/lib/settingLabels.ts:172
+msgid "Email header"
+msgstr "E-Mail-Header"
+
+#: web/lib/settingLabels.ts:68 web/lib/settingLabels.ts:93 web/lib/settingLabels.ts:97
+#: web/lib/settingLabels.ts:122 web/lib/settingLabels.ts:126 web/lib/settingLabels.ts:135
+#: web/lib/settingLabels.ts:143 web/lib/settingLabels.ts:146 web/lib/settingLabels.ts:157
+#: web/lib/settingLabels.ts:174 web/lib/settingLabels.ts:193
+msgid "Enabled"
+msgstr "Aktiviert"
+
+#: web/lib/settingLabels.ts:199
+msgid "Encoder"
+msgstr "Encoder"
+
+#: web/lib/settingLabels.ts:200
+msgid "Encoder URL"
+msgstr "Encoder-URL"
+
+#: web/lib/settingLabels.ts:95
+msgid "Encoder preset"
+msgstr "Encoder-Voreinstellung"
 
 #: web/lib/ShotInspector.svelte:68
 msgid "End here"
@@ -630,6 +895,10 @@ msgstr ""
 msgid "Every trip of the year"
 msgstr "Jede Reise des Jahres"
 
+#: web/lib/settingLabels.ts:63
+msgid "Excluded file name patterns"
+msgstr "Ausgeschlossene Dateinamenmuster"
+
 #: web/lib/AskPanel.svelte:125
 msgid "Experimental"
 msgstr "Experimentell"
@@ -637,6 +906,14 @@ msgstr "Experimentell"
 #: web/lib/people/GroupsSection.svelte:67
 msgid "Expression"
 msgstr "Ausdruck"
+
+#: web/lib/settingLabels.ts:191
+msgid "Extra holidays"
+msgstr "Zusätzliche Feiertage"
+
+#: web/lib/settingLabels.ts:111
+msgid "Extra parameters"
+msgstr "Zusätzliche Parameter"
 
 #: web/routes/settings/people/+page.svelte:90
 msgid ""
@@ -648,9 +925,25 @@ msgstr ""
 "Einträge fast alle Bilder und der andere fast keine. Keine der beiden Zahlen sagt für sich "
 "allein etwas aus. Führe sie in Immich zusammen oder halte sie getrennt."
 
+#: web/lib/settingLabels.ts:219
+msgid "Facts base URL"
+msgstr "Basis-URL für Fakten"
+
+#: web/lib/settingLabels.ts:221
+msgid "Facts concurrency"
+msgstr "Parallelität bei Fakten"
+
+#: web/lib/settingLabels.ts:137
+msgid "Fade color"
+msgstr "Farbe der Überblendung"
+
 #: web/lib/labels.ts:31
 msgid "Failed"
 msgstr "Fehlgeschlagen"
+
+#: web/lib/settingLabels.ts:82 web/lib/settingLabels.ts:223
+msgid "Fall back to this machine"
+msgstr "Auf diesen Rechner zurückfallen"
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
@@ -674,6 +967,18 @@ msgstr "Bildvorschauen werden geladen"
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Weniger als 12 Bilder passen: Der Film wird kurz."
 
+#: web/lib/settingLabels.ts:11
+msgid "Film defaults"
+msgstr "Standardwerte für Filme"
+
+#: web/lib/settingLabels.ts:136
+msgid "Film language"
+msgstr "Filmsprache"
+
+#: web/lib/settingLabels.ts:145
+msgid "Film tags"
+msgstr "Film-Tags"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "Filme, die es verwenden dürfen"
@@ -686,13 +991,29 @@ msgstr "Einen Namen suchen"
 msgid "Finding faces"
 msgstr "Gesichter werden gesucht"
 
+#: web/lib/settingLabels.ts:141
+msgid "First names only"
+msgstr "Nur Vornamen"
+
 #: web/lib/RenderPanel.svelte:235
 msgid "Fit with bars"
 msgstr "Mit Balken einpassen"
 
-#: web/lib/RenderPanel.svelte:221
+#: web/lib/settingLabels.ts:69 web/lib/settingLabels.ts:83
+msgid "Folder"
+msgstr "Ordner"
+
+#: web/lib/RenderPanel.svelte:221 web/lib/settingLabels.ts:70
 msgid "Format"
 msgstr "Format"
+
+#: web/lib/settingLabels.ts:65
+msgid "Forwarded copies when short"
+msgstr "Weitergeleitete Kopien bei zu kurzen Clips"
+
+#: web/lib/settingLabels.ts:35
+msgid "Free text"
+msgstr "Freitext"
 
 #: web/routes/create/+page.svelte:344
 msgid "From"
@@ -710,9 +1031,21 @@ msgstr "Großeltern, Geschwister, der Gruppenchat. Private Momente bleiben drau�
 msgid "Grouped condition"
 msgstr "Gruppierte Bedingung"
 
+#: web/lib/settingLabels.ts:74
+msgid "HDR mode"
+msgstr "HDR-Modus"
+
 #: web/lib/RenderPanel.svelte:180
 msgid "Hard cut"
 msgstr "Harter Schnitt"
+
+#: web/lib/settingLabels.ts:18
+msgid "Hardware"
+msgstr "Hardware"
+
+#: web/lib/settingLabels.ts:208
+msgid "Head bundle"
+msgstr "Head-Bundle"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
@@ -735,6 +1068,18 @@ msgstr "Hoch"
 msgid "Holiday"
 msgstr "Feiertag"
 
+#: web/lib/settingLabels.ts:148
+msgid "Home latitude"
+msgstr "Breitengrad des Zuhauses"
+
+#: web/lib/settingLabels.ts:149
+msgid "Home longitude"
+msgstr "Längengrad des Zuhauses"
+
+#: web/lib/settingLabels.ts:41
+msgid "Host"
+msgstr "Host"
+
 #: web/lib/AskPanel.svelte:20
 msgid "How it read your words"
 msgstr "Wie deine Anfrage verstanden wurde"
@@ -754,6 +1099,10 @@ msgstr "So aktualisieren Sie"
 #: web/lib/UpdateCheck.svelte:46
 msgid "How to update this install"
 msgstr "So aktualisieren Sie diese Installation"
+
+#: web/lib/settingLabels.ts:10
+msgid "Immich"
+msgstr "Immich"
 
 #: web/routes/settings/+page.svelte:87 web/routes/settings/+page.svelte:88
 msgid "Immich Connection"
@@ -786,6 +1135,10 @@ msgstr ""
 msgid "Immich unreachable"
 msgstr "Immich nicht erreichbar"
 
+#: web/lib/settingLabels.ts:92
+msgid "Import from"
+msgstr "Importieren aus"
+
 #: web/lib/labels.ts:72
 msgid "Important"
 msgstr "Wichtig"
@@ -798,7 +1151,7 @@ msgstr "Im Schnitt"
 msgid "In the film"
 msgstr "Im Film"
 
-#: web/routes/create/+page.svelte:500
+#: web/lib/settingLabels.ts:66 web/routes/create/+page.svelte:500
 msgid "Include Live Photos"
 msgstr "Live Photos einbeziehen"
 
@@ -809,6 +1162,14 @@ msgstr "Beschreibungen markierter Fotos einbeziehen"
 #: web/routes/create/+page.svelte:499
 msgid "Include photos"
 msgstr "Fotos einbeziehen"
+
+#: web/lib/settingLabels.ts:192
+msgid "Include shared albums"
+msgstr "Geteilte Alben einbeziehen"
+
+#: web/lib/settingLabels.ts:34
+msgid "Inference"
+msgstr "Inferenz"
 
 #: web/routes/+layout.svelte:58
 msgid "Interface language"
@@ -822,6 +1183,10 @@ msgstr "Unterbrochen"
 msgid "Invalid username or password"
 msgstr "Ungültiger Benutzername oder ungültiges Passwort"
 
+#: web/lib/settingLabels.ts:163
+msgid "Issuer URL"
+msgstr "Aussteller-URL"
+
 #: web/lib/JobPanel.svelte:71
 msgid "It did not finish."
 msgstr "Der Lauf wurde nicht abgeschlossen."
@@ -834,6 +1199,10 @@ msgstr "Nur wir"
 #: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "Getrennt halten"
+
+#: web/lib/settingLabels.ts:85
+msgid "Keep downloaded videos"
+msgstr "Heruntergeladene Videos behalten"
 
 #: web/lib/RenderPanel.svelte:251
 msgid "Keep original audio"
@@ -860,10 +1229,26 @@ msgstr "Bezeichnung"
 msgid "Landscape"
 msgstr "Querformat"
 
+#: web/lib/settingLabels.ts:19
+msgid "Language model"
+msgstr "Sprachmodell"
+
+#: web/lib/settingLabels.ts:131
+msgid "Language model size"
+msgstr "Größe des Sprachmodells"
+
 #: web/lib/JobPanel.svelte:100
 #, python-brace-format
 msgid "Last measured progress: {amount} ago."
 msgstr "Letzter gemessener Fortschritt: vor {amount}."
+
+#: web/lib/settingLabels.ts:217
+msgid "Laya checkpoint"
+msgstr "Laya-Checkpoint"
+
+#: web/lib/settingLabels.ts:218
+msgid "Laya checkpoint URL"
+msgstr "Laya-Checkpoint-URL"
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -882,7 +1267,7 @@ msgstr "Verknüpfen"
 msgid "Link a person from {account}"
 msgstr "Person aus {account} verknüpfen"
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Linked to"
 msgstr "Verknüpft mit"
 
@@ -898,11 +1283,31 @@ msgstr "Live-Aktualisierungen unterbrochen. Gespeicherter Auftragsstatus wird ge
 msgid "Loading your config warned about these keys:"
 msgstr "Beim Laden deiner Konfiguration gab es Warnungen zu diesen Schlüsseln:"
 
+#: web/lib/settingLabels.ts:103
+msgid "Local context size"
+msgstr "Lokale Kontextgröße"
+
+#: web/lib/settingLabels.ts:121
+msgid "Local music folder"
+msgstr "Lokaler Musikordner"
+
+#: web/lib/settingLabels.ts:101
+msgid "Local server"
+msgstr "Lokaler Server"
+
+#: web/lib/settingLabels.ts:102
+msgid "Local vision projector"
+msgstr "Lokaler Vision-Projektor"
+
+#: web/lib/settingLabels.ts:67
+msgid "Longest source video (seconds)"
+msgstr "Längstes Quellvideo (Sekunden)"
+
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
 msgstr "Deine Mediathek wird nach passenden Erinnerungen durchsucht …"
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Looks linked to"
 msgstr "Wirkt verknüpft mit"
 
@@ -936,13 +1341,37 @@ msgstr ""
 "Manuelle und automatische Läufe, einschließlich fehlgeschlagener. Öffne einen Lauf, um "
 "Schnitt und Laufzeiten zu sehen."
 
+#: web/lib/settingLabels.ts:155
+msgid "Map tiles"
+msgstr "Kartenkacheln"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:91
 msgid "Marked Never use. Tick it to include it in this revision."
 msgstr "Als „Nie verwenden“ markiert. Ankreuzen, um das Bild in diese Revision aufzunehmen."
 
+#: web/lib/settingLabels.ts:212
+msgid "Marqo ONNX URL"
+msgstr "Marqo-ONNX-URL"
+
+#: web/lib/settingLabels.ts:211
+msgid "Marqo ONNX model"
+msgstr "Marqo-ONNX-Modell"
+
 #: web/lib/RenderPanel.svelte:217
 msgid "Match the sources"
 msgstr "Wie die Quellen"
+
+#: web/lib/settingLabels.ts:177
+msgid "Maximum delivery attempts"
+msgstr "Maximale Zustellversuche"
+
+#: web/lib/settingLabels.ts:152
+msgid "Maximum gap (days)"
+msgstr "Maximale Lücke (Tage)"
+
+#: web/lib/settingLabels.ts:109
+msgid "Maximum tokens parameter"
+msgstr "Parameter für maximale Tokens"
 
 #: web/lib/labels.ts:106
 msgid "Measuring motion in the videos"
@@ -968,9 +1397,29 @@ msgstr "Erinnerung"
 msgid "Memory type"
 msgstr "Erinnerungstyp"
 
+#: web/lib/settingLabels.ts:150
+msgid "Minimum distance (km)"
+msgstr "Mindestentfernung (km)"
+
+#: web/lib/settingLabels.ts:151
+msgid "Minimum duration (days)"
+msgstr "Mindestdauer (Tage)"
+
+#: web/lib/settingLabels.ts:76
+msgid "Minimum free space (GB)"
+msgstr "Mindestens freier Speicher (GB)"
+
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "Verpasster Monat"
+
+#: web/lib/settingLabels.ts:127
+msgid "Mode"
+msgstr "Modus"
+
+#: web/lib/settingLabels.ts:100
+msgid "Model"
+msgstr "Modell"
 
 #: web/lib/labels.ts:96
 msgid "Model checks not requested"
@@ -992,6 +1441,10 @@ msgstr "Der Modellstatus konnte nicht geprüft werden."
 msgid "Model suggestion"
 msgstr "Vorschlag des Modells"
 
+#: web/lib/settingLabels.ts:130
+msgid "Model variant"
+msgstr "Modellvariante"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Modern warm"
 msgstr "Modern und warm"
@@ -1004,6 +1457,10 @@ msgstr "Monat"
 msgid "Monthly Highlights"
 msgstr "Monatshöhepunkte"
 
+#: web/lib/settingLabels.ts:190
+msgid "Months to backfill"
+msgstr "Nachzuholende Monate"
+
 #: web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "Mehrere Personen"
@@ -1012,13 +1469,29 @@ msgstr "Mehrere Personen"
 msgid "Music"
 msgstr "Musik"
 
+#: web/lib/settingLabels.ts:21
+msgid "Music generation"
+msgstr "Musikgenerierung"
+
+#: web/lib/settingLabels.ts:47
+msgid "Music upload quota (MB)"
+msgstr "Upload-Kontingent für Musik (MB)"
+
 #: web/lib/RenderPanel.svelte:275
 msgid "Music volume:"
 msgstr "Musiklautstärke:"
 
+#: web/lib/settingLabels.ts:51
+msgid "Native sharing"
+msgstr "Native Freigabe"
+
 #: web/lib/AskPanel.svelte:34
 msgid "Needs preparation"
 msgstr "Muss vorbereitet werden"
+
+#: web/lib/settingLabels.ts:27
+msgid "Network"
+msgstr "Netzwerk"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
@@ -1068,7 +1541,7 @@ msgstr ""
 "Dieser Schnitt wurde ausschließlich nach Auswahlregeln erstellt, ohne Analyse durch ein "
 "Modell."
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:255 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "Keine Musik"
 
@@ -1121,8 +1594,8 @@ msgstr "Zurzeit keine Vorschläge."
 msgid "No trips detected for this year."
 msgstr "Für dieses Jahr wurden keine Reisen erkannt."
 
-#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
-#: web/lib/people/RelationshipRows.svelte:74
+#: web/lib/people/RelationshipRows.svelte:55 web/lib/people/RelationshipRows.svelte:59
+#: web/lib/people/RelationshipRows.svelte:75
 msgid "No, they are not"
 msgstr "Nein, das stimmt nicht"
 
@@ -1156,7 +1629,7 @@ msgstr "Gilt nicht für einen Film, den du angefragt hast"
 msgid "Not possible"
 msgstr "Nicht möglich"
 
-#: web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:58
 msgid "Not related to"
 msgstr "Nicht verwandt mit"
 
@@ -1164,22 +1637,37 @@ msgstr "Nicht verwandt mit"
 msgid "Not the same person"
 msgstr "Nicht dieselbe Person"
 
-#: web/lib/people/RelationshipRows.svelte:57
-#, python-brace-format
-msgid "Not {relationship}"
-msgstr "Nicht {relationship}"
-
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "Notizen"
 
-#: web/lib/people/RelationshipRows.svelte:79
+#: web/lib/people/RelationshipRows.svelte:80
 msgid "Nothing recorded yet."
 msgstr "Noch nichts aufgezeichnet."
+
+#: web/lib/settingLabels.ts:194
+msgid "Notification URLs"
+msgstr "Benachrichtigungs-URLs"
+
+#: web/lib/settingLabels.ts:31
+msgid "Notifications"
+msgstr "Benachrichtigungen"
+
+#: web/lib/settingLabels.ts:196
+msgid "Notify on failure"
+msgstr "Bei Fehlschlag benachrichtigen"
+
+#: web/lib/settingLabels.ts:195
+msgid "Notify on success"
+msgstr "Bei Erfolg benachrichtigen"
 
 #: web/lib/SettingsChecks.svelte:19
 msgid "OK"
 msgstr "OK"
+
+#: web/lib/settingLabels.ts:133
+msgid "Offload to the CPU"
+msgstr "Auf die CPU auslagern"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1246,6 +1734,10 @@ msgstr "Weiteres Bild dieses Moments"
 msgid "Other pictures of this moment"
 msgstr "Weitere Bilder dieses Moments"
 
+#: web/lib/settingLabels.ts:14
+msgid "Output"
+msgstr "Ausgabe"
+
 #: web/lib/JobPanel.svelte:90 web/lib/PhaseTimeline.svelte:26
 msgid "Overall time remaining is not known yet."
 msgstr "Die gesamte Restzeit ist noch unbekannt."
@@ -1255,12 +1747,20 @@ msgstr "Die gesamte Restzeit ist noch unbekannt."
 msgid "Owner of {account}"
 msgstr "Inhaber von {account}"
 
+#: web/lib/settingLabels.ts:110
+msgid "Parameters to drop"
+msgstr "Zu entfernende Parameter"
+
+#: web/lib/settingLabels.ts:108
+msgid "Parameters without thinking"
+msgstr "Parameter ohne Denkmodus"
+
 #: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "Bestanden: {stages}"
 
-#: web/routes/login/+page.svelte:69
+#: web/lib/settingLabels.ts:161 web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "Passwort"
 
@@ -1303,6 +1803,10 @@ msgstr "Phasen"
 msgid "Photo duration (seconds)"
 msgstr "Fotodauer (Sekunden)"
 
+#: web/lib/settingLabels.ts:25
+msgid "Photos"
+msgstr "Fotos"
+
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "Personen auswählen"
@@ -1334,6 +1838,14 @@ msgstr "Bilder mit"
 msgid "Pictures: {count}"
 msgstr "Bilder: {count}"
 
+#: web/lib/settingLabels.ts:153
+msgid "Place lookup"
+msgstr "Ortssuche"
+
+#: web/lib/settingLabels.ts:154
+msgid "Place lookup URL"
+msgstr "URL der Ortssuche"
+
 #: web/lib/RenderPanel.svelte:188
 msgid "Playful bright"
 msgstr "Verspielt und hell"
@@ -1346,6 +1858,10 @@ msgstr "Bitte URL und API-Schlüssel angeben"
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "Verfügbare Medien"
+
+#: web/lib/settingLabels.ts:42
+msgid "Port"
+msgstr "Port"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Portrait"
@@ -1367,9 +1883,17 @@ msgstr "Bilder vorbereiten"
 msgid "Prepare selected clips"
 msgstr "Ausgewählte Clips vorbereiten"
 
+#: web/lib/settingLabels.ts:62
+msgid "Prepared source cache size (GB)"
+msgstr "Größe des Caches für vorbereitete Quellen (GB)"
+
 #: web/routes/settings/+page.svelte:33
 msgid "Prepared-source cache"
 msgstr "Cache vorbereiteter Quellen"
+
+#: web/lib/settingLabels.ts:7 web/lib/settingLabels.ts:39
+msgid "Preset"
+msgstr "Voreinstellung"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1395,21 +1919,37 @@ msgstr "Datenschutzmodus: Jedes Bild verwischen und Namen verfremden"
 msgid "Processed"
 msgstr "Verarbeitet"
 
+#: web/lib/settingLabels.ts:222
+msgid "Producers"
+msgstr "Produzenten"
+
 #: web/lib/JobPanel.svelte:65 web/lib/JobPanel.svelte:79
 msgid "Progress"
 msgstr "Fortschritt"
+
+#: web/lib/settingLabels.ts:98 web/lib/settingLabels.ts:158 web/lib/settingLabels.ts:201
+msgid "Provider"
+msgstr "Anbieter"
+
+#: web/lib/settingLabels.ts:53 web/lib/settingLabels.ts:162
+msgid "Public URL"
+msgstr "Öffentliche URL"
 
 #: web/lib/ShotInspector.svelte:60
 msgid "Put it back"
 msgstr "Zurücklegen"
 
-#: web/lib/RenderPanel.svelte:227
+#: web/lib/RenderPanel.svelte:227 web/lib/settingLabels.ts:75
 msgid "Quality"
 msgstr "Qualität"
 
 #: web/lib/RenderPanel.svelte:186
 msgid "Random"
 msgstr "Zufällig"
+
+#: web/lib/settingLabels.ts:116
+msgid "Reader concurrency"
+msgstr "Parallelität der Leser"
 
 #: web/lib/labels.ts:108
 msgid "Reading picture facts"
@@ -1443,11 +1983,11 @@ msgstr "Vorschläge aktualisieren"
 msgid "Refreshing..."
 msgstr "Wird aktualisiert..."
 
-#: web/lib/people/RelationshipRows.svelte:83
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Relationship"
 msgstr "Beziehung"
 
-#: web/lib/people/RelationshipRows.svelte:43
+#: web/lib/people/RelationshipRows.svelte:44
 msgid "Relationships"
 msgstr "Beziehungen"
 
@@ -1455,7 +1995,7 @@ msgstr "Beziehungen"
 msgid "Release notes"
 msgstr "Versionshinweise"
 
-#: web/lib/SettingsEditor.svelte:67
+#: web/lib/SettingsEditor.svelte:68
 msgid "Reload from Disk"
 msgstr "Von Festplatte neu laden"
 
@@ -1467,7 +2007,7 @@ msgstr "Entfernen"
 msgid "Remove from this cut"
 msgstr "Aus diesem Schnitt entfernen"
 
-#: web/lib/people/RelationshipRows.svelte:48
+#: web/lib/people/RelationshipRows.svelte:49
 msgid "Remove this relationship"
 msgstr "Diese Beziehung entfernen"
 
@@ -1482,6 +2022,14 @@ msgstr "Rendern"
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Render film"
 msgstr "Film rendern"
+
+#: web/lib/settingLabels.ts:15
+msgid "Render worker"
+msgstr "Render-Worker"
+
+#: web/lib/settingLabels.ts:113
+msgid "Repetition penalty"
+msgstr "Wiederholungsstrafe"
 
 #: web/lib/labels.ts:45
 msgid "Replaced a picture the model doubted."
@@ -1499,7 +2047,7 @@ msgstr "Jetzt neu scannen"
 msgid "Rescan the library"
 msgstr "Mediathek neu scannen"
 
-#: web/lib/RenderPanel.svelte:215
+#: web/lib/RenderPanel.svelte:215 web/lib/settingLabels.ts:71
 msgid "Resolution"
 msgstr "Auflösung"
 
@@ -1527,6 +2075,11 @@ msgstr "Revisionen"
 #: web/lib/people/PersonCard.svelte:28
 msgid "Role (suggestions; type your own)"
 msgstr "Rolle (Vorschläge oder eigene Eingabe)"
+
+#: web/lib/people/RelationshipRows.svelte:58
+#, python-brace-format
+msgid "Ruled out: {statement}"
+msgstr "Ausgeschlossen: {statement}"
 
 #: web/routes/runs/[run_id]/+page.svelte:347
 msgid "Run details"
@@ -1579,7 +2132,7 @@ msgstr "Live Photo-Einzelbilder abtasten"
 msgid "Sampling video frames"
 msgstr "Video-Einzelbilder abtasten"
 
-#: web/lib/SettingsEditor.svelte:120
+#: web/lib/SettingsEditor.svelte:122
 msgid "Save"
 msgstr "Speichern"
 
@@ -1603,7 +2156,7 @@ msgstr "Gruppe speichern"
 msgid "Save revision"
 msgstr "Revision speichern"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:95
+#: web/lib/SettingsEditor.svelte:112 web/routes/settings/+page.svelte:95
 msgid "Saved - type a new key to replace it"
 msgstr "Gespeichert: neuen Schlüssel eingeben, um ihn zu ersetzen"
 
@@ -1617,16 +2170,16 @@ msgstr "Als Revision {number} gespeichert."
 msgid "Saved groups"
 msgstr "Gespeicherte Gruppen"
 
-#: web/lib/SettingsEditor.svelte:40
+#: web/lib/SettingsEditor.svelte:41
 msgid "Saved here"
 msgstr "Hier gespeichert"
 
-#: web/lib/SettingsEditor.svelte:39
+#: web/lib/SettingsEditor.svelte:40
 #, python-brace-format
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Hier gespeichert, aber {name} kann es nicht entschlüsseln: der Standardwert gilt"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:67
+#: web/lib/SettingsEditor.svelte:58 web/routes/settings/+page.svelte:67
 msgid "Saved to the database"
 msgstr "In der Datenbank gespeichert"
 
@@ -1634,6 +2187,10 @@ msgstr "In der Datenbank gespeichert"
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Gespeichert unter: {output_path}"
+
+#: web/lib/settingLabels.ts:54
+msgid "Scale mode"
+msgstr "Skalierungsmodus"
 
 #: web/lib/RenderPanel.svelte:233
 msgid "Scaling Mode"
@@ -1643,6 +2200,14 @@ msgstr "Skalierungsmodus"
 msgid "Scheduled"
 msgstr "Geplant"
 
+#: web/lib/settingLabels.ts:91
+msgid "Schema"
+msgstr "Schema"
+
+#: web/lib/settingLabels.ts:166
+msgid "Scope"
+msgstr "Geltungsbereich"
+
 #: web/lib/ShotInspector.svelte:72
 msgid "Screen time (seconds)"
 msgstr "Anzeigedauer (Sekunden)"
@@ -1651,7 +2216,7 @@ msgstr "Anzeigedauer (Sekunden)"
 msgid "Season"
 msgstr "Jahreszeit"
 
-#: web/lib/SettingsEditor.svelte:77
+#: web/lib/SettingsEditor.svelte:78
 #, python-brace-format
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
@@ -1660,16 +2225,36 @@ msgstr ""
 "Um Zugangsdaten hier zu speichern, musst du zuerst {name} setzen. Alternativ kannst du sie in"
 " den Umgebungsvariablen oder in config.yaml hinterlegen."
 
+#: web/lib/settingLabels.ts:44
+msgid "Secure cookies"
+msgstr "Sichere Cookies"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Select pictures"
 msgstr "Bilder auswählen"
 
-#: web/lib/SettingsEditor.svelte:37
+#: web/lib/settingLabels.ts:115
+msgid "Send image detail"
+msgstr "Bilddetailstufe senden"
+
+#: web/lib/settingLabels.ts:9
+msgid "Server"
+msgstr "Server"
+
+#: web/lib/settingLabels.ts:48
+msgid "Server URL"
+msgstr "Server-URL"
+
+#: web/lib/settingLabels.ts:159
+msgid "Session length (hours)"
+msgstr "Sitzungsdauer (Stunden)"
+
+#: web/lib/SettingsEditor.svelte:38
 #, python-brace-format
 msgid "Set by {name} (environment)"
 msgstr "Gesetzt durch {name} (Umgebung)"
 
-#: web/lib/SettingsEditor.svelte:38
+#: web/lib/SettingsEditor.svelte:39
 #, python-brace-format
 msgid "Set in config.yaml as {key}"
 msgstr "Gesetzt in config.yaml als {key}"
@@ -1683,9 +2268,17 @@ msgstr "Einstellungen"
 msgid "Shareable"
 msgstr "Teilbar"
 
+#: web/lib/settingLabels.ts:57
+msgid "Sharing level"
+msgstr "Freigabestufe"
+
 #: web/routes/runs/[run_id]/+page.svelte:197
 msgid "Show"
 msgstr "Anzeigen"
+
+#: web/lib/settingLabels.ts:140
+msgid "Show month dividers"
+msgstr "Monatstrenner anzeigen"
 
 #: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
@@ -1696,6 +2289,10 @@ msgstr "Mehr anzeigen"
 msgid "Sign in"
 msgstr "Anmelden"
 
+#: web/lib/settingLabels.ts:167
+msgid "Sign in automatically"
+msgstr "Automatisch anmelden"
+
 #: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "Über den vorgeschalteten Proxy dieses Servers anmelden."
@@ -1704,9 +2301,17 @@ msgstr "Über den vorgeschalteten Proxy dieses Servers anmelden."
 msgid "Sign out"
 msgstr "Abmelden"
 
+#: web/lib/settingLabels.ts:29
+msgid "Sign-in"
+msgstr "Anmeldung"
+
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "Die Anmeldung ist abgelaufen. Versuche es erneut."
+
+#: web/lib/settingLabels.ts:64
+msgid "Skip stills without camera data"
+msgstr "Fotos ohne Kameradaten überspringen"
 
 #: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
@@ -1738,6 +2343,10 @@ msgstr ""
 "Ton aus Videos und Live Photos. Ausschalten für nur Musik oder einen stummen Film mit „Keine "
 "Musik“."
 
+#: web/lib/settingLabels.ts:61
+msgid "Source preparation workers"
+msgstr "Worker für die Quellvorbereitung"
+
 #: web/routes/create/+page.svelte:334
 msgid "South"
 msgstr "Süd"
@@ -1745,6 +2354,14 @@ msgstr "Süd"
 #: web/lib/labels.ts:14
 msgid "Special day"
 msgstr "Besonderer Tag"
+
+#: web/lib/settingLabels.ts:183
+msgid "Special days per year"
+msgstr "Besondere Tage pro Jahr"
+
+#: web/lib/settingLabels.ts:13
+msgid "Speech"
+msgstr "Sprache"
 
 #: web/routes/create/+page.svelte:43
 msgid "Spring"
@@ -1788,11 +2405,23 @@ msgstr "Abgebrochen."
 msgid "Stories"
 msgstr "Geschichten"
 
+#: web/lib/settingLabels.ts:215
+msgid "Strict sharing"
+msgstr "Strenge Freigabe"
+
+#: web/lib/settingLabels.ts:112
+msgid "Structured output"
+msgstr "Strukturierte Ausgabe"
+
+#: web/lib/settingLabels.ts:138
+msgid "Style mode"
+msgstr "Stilmodus"
+
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "Untertitel"
 
-#: web/lib/people/RelationshipRows.svelte:50
+#: web/lib/people/RelationshipRows.svelte:51
 msgid "Suggested"
 msgstr "Vorgeschlagen"
 
@@ -1885,7 +2514,7 @@ msgstr "Der Schnitt ist fertig."
 msgid "The dates and places, never a model"
 msgstr "Aufnahmedatum und Ort, ohne Modell"
 
-#: web/lib/SettingsEditor.svelte:74
+#: web/lib/SettingsEditor.svelte:75
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
@@ -2003,7 +2632,7 @@ msgstr "Die Läufe konnten nicht geladen werden."
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "Die Server-URL hat sich geändert: API-Schlüssel für den neuen Server eingeben."
 
-#: web/lib/SettingsEditor.svelte:52
+#: web/lib/SettingsEditor.svelte:53
 msgid "The settings could not be saved."
 msgstr "Die Einstellungen konnten nicht gespeichert werden."
 
@@ -2031,6 +2660,18 @@ msgstr ""
 msgid "Thin"
 msgstr "Wenig passendes Material"
 
+#: web/lib/settingLabels.ts:214
+msgid "Thin model layer"
+msgstr "Schlanke Modellschicht"
+
+#: web/lib/settingLabels.ts:106
+msgid "Thinking"
+msgstr "Denkmodus"
+
+#: web/lib/settingLabels.ts:107
+msgid "Thinking parameters"
+msgstr "Parameter für den Denkmodus"
+
 #: web/lib/labels.ts:62
 msgid "This category already appears twice in the last six memories."
 msgstr "Diese Kategorie erscheint bereits zweimal in den letzten sechs Erinnerungen."
@@ -2054,17 +2695,38 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "Miniaturbild-Cache"
 
+#: web/lib/settingLabels.ts:88
+msgid "Thumbnail cache size (MB)"
+msgstr "Größe des Vorschaubild-Caches (MB)"
+
+#: web/lib/settingLabels.ts:8 web/lib/settingLabels.ts:40
+msgid "Tier"
+msgstr "Stufe"
+
 #: web/lib/PhaseTimeline.svelte:42
 msgid "Time not known yet"
 msgstr "Zeit noch unbekannt"
+
+#: web/lib/settingLabels.ts:81 web/lib/settingLabels.ts:105 web/lib/settingLabels.ts:125
+#: web/lib/settingLabels.ts:134 web/lib/settingLabels.ts:220
+msgid "Timeout (seconds)"
+msgstr "Timeout (Sekunden)"
 
 #: web/lib/RenderPanel.svelte:198
 msgid "Title (decided as generate decides when empty)"
 msgstr "Titel (von generate gewählt, wenn leer)"
 
+#: web/lib/settingLabels.ts:23
+msgid "Title screens"
+msgstr "Titelbildschirme"
+
 #: web/lib/RenderPanel.svelte:183
 msgid "Title style"
 msgstr "Titelstil"
+
+#: web/lib/settingLabels.ts:142
+msgid "Titles written by the model"
+msgstr "Vom Modell geschriebene Titel"
 
 #: web/routes/create/+page.svelte:350
 msgid "To"
@@ -2082,9 +2744,25 @@ msgstr "Hat den Platz eines Bildes übernommen, das eine Prüfung abgelehnt hat.
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "Hat den Platz eines Bildes übernommen, das das Modell aus dieser Geschichte entfernt hat."
 
+#: web/lib/settingLabels.ts:55
+msgid "Transition"
+msgstr "Übergang"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Transition Style"
 msgstr "Übergangsstil"
+
+#: web/lib/settingLabels.ts:56
+msgid "Transition duration"
+msgstr "Dauer des Übergangs"
+
+#: web/lib/settingLabels.ts:32
+msgid "Triage"
+msgstr "Vorauswahl"
+
+#: web/lib/settingLabels.ts:45
+msgid "Trigger token"
+msgstr "Auslöser-Token"
 
 #: web/lib/labels.ts:12 web/routes/create/+page.svelte:398
 msgid "Trip"
@@ -2094,9 +2772,13 @@ msgstr "Reise"
 msgid "Trip detection failed."
 msgstr "Reiseerkennung fehlgeschlagen."
 
-#: web/routes/create/+page.svelte:410
+#: web/lib/settingLabels.ts:26 web/routes/create/+page.svelte:410
 msgid "Trips"
 msgstr "Reisen"
+
+#: web/lib/settingLabels.ts:173
+msgid "Trusted proxies"
+msgstr "Vertrauenswürdige Proxys"
 
 #: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
@@ -2123,7 +2805,7 @@ msgstr "Aktualisieren mit:"
 msgid "Updated {when}"
 msgstr "Aktualisiert {when}"
 
-#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26
+#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26 web/lib/settingLabels.ts:28
 msgid "Updates"
 msgstr "Updates"
 
@@ -2153,7 +2835,7 @@ msgstr "Film hochladen"
 msgid "Upload the film to Immich"
 msgstr "Film zu Immich hochladen"
 
-#: web/lib/UploadFilm.svelte:49
+#: web/lib/UploadFilm.svelte:49 web/lib/settingLabels.ts:24
 msgid "Upload to Immich"
 msgstr "Zu Immich hochladen"
 
@@ -2172,11 +2854,19 @@ msgstr ""
 "Verwende die genauen Namen aus der Mediathek; jedes Bild muss diese Bedingung erfüllen. Sie "
 "ersetzt die oben ausgewählten Namen."
 
+#: web/lib/settingLabels.ts:132
+msgid "Use the language model"
+msgstr "Sprachmodell verwenden"
+
 #: web/lib/ShotInspector.svelte:142
 msgid "Use this picture instead"
 msgstr "Stattdessen dieses Bild verwenden"
 
-#: web/routes/login/+page.svelte:66
+#: web/lib/settingLabels.ts:171
+msgid "User header"
+msgstr "Benutzer-Header"
+
+#: web/lib/settingLabels.ts:160 web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "Benutzername"
 
@@ -2192,6 +2882,14 @@ msgstr "Video"
 #: web/routes/settings/+page.svelte:31
 msgid "Video cache"
 msgstr "Video-Cache"
+
+#: web/lib/settingLabels.ts:87
+msgid "Video cache age (days)"
+msgstr "Alter des Video-Caches (Tage)"
+
+#: web/lib/settingLabels.ts:86
+msgid "Video cache size (GB)"
+msgstr "Größe des Video-Caches (GB)"
 
 #: web/routes/runs/[run_id]/+page.svelte:124
 msgid "Videos"
@@ -2235,7 +2933,7 @@ msgstr ""
 "ausgibt. Starte einen Lauf so, wie `auto run` es täte, oder prüfe ihn zuerst, ohne zu "
 "rendern."
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
+#: web/lib/people/RelationshipRows.svelte:70 web/lib/people/RelationshipRows.svelte:72
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "Was ist {name} für {other}?"
@@ -2305,9 +3003,25 @@ msgstr "Warum dieses Bild"
 msgid "Winter"
 msgstr "Winter"
 
-#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
+#: web/lib/people/RelationshipRows.svelte:88 web/lib/people/RelationshipRows.svelte:89
 msgid "With"
 msgstr "Mit"
+
+#: web/lib/settingLabels.ts:224
+msgid "WordNet"
+msgstr "WordNet"
+
+#: web/lib/settingLabels.ts:225
+msgid "WordNet URL"
+msgstr "WordNet-URL"
+
+#: web/lib/settingLabels.ts:78
+msgid "Worker URL"
+msgstr "Worker-URL"
+
+#: web/lib/settingLabels.ts:79
+msgid "Worker token"
+msgstr "Worker-Token"
 
 #: web/routes/create/+page.svelte:324
 msgid "Year"
@@ -2324,10 +3038,6 @@ msgstr "Jahre zurück (alle, wenn leer)"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "Anzahl der Jahre"
-
-#: web/lib/people/RelationshipRows.svelte:53
-msgid "Yes, they are"
-msgstr "Ja, stimmt"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2369,29 +3079,153 @@ msgstr "alle zusammen"
 msgid "any of them"
 msgstr "eine von ihnen"
 
+#: web/lib/people/relationshipLabels.ts:26
+msgid "aunt of"
+msgstr "Tante von"
+
+#: web/lib/people/relationshipLabels.ts:27
+msgid "aunt or uncle of"
+msgstr "Tante oder Onkel von"
+
+#: web/lib/people/relationshipLabels.ts:23
+msgid "best friend of"
+msgstr "bester Freund oder beste Freundin von"
+
 #: web/lib/people/FamilyTree.svelte:100
 msgid "birth year?"
 msgstr "Geburtsjahr?"
+
+#: web/lib/people/relationshipLabels.ts:17
+msgid "brother of"
+msgstr "Bruder von"
+
+#: web/lib/people/relationshipLabels.ts:12
+msgid "child of"
+msgstr "Kind von"
+
+#: web/lib/people/relationshipLabels.ts:33
+msgid "child-in-law of"
+msgstr "Schwiegersohn oder Schwiegertochter von"
+
+#: web/lib/people/relationshipLabels.ts:29
+msgid "cousin of"
+msgstr "Cousin oder Cousine von"
+
+#: web/lib/people/relationshipLabels.ts:14
+msgid "daughter of"
+msgstr "Tochter von"
+
+#: web/lib/people/relationshipLabels.ts:11
+msgid "father of"
+msgstr "Vater von"
+
+#: web/lib/people/relationshipLabels.ts:24
+msgid "friend of"
+msgstr "Freund oder Freundin von"
+
+#: web/lib/people/relationshipLabels.ts:22
+msgid "godchild of"
+msgstr "Patenkind von"
+
+#: web/lib/people/relationshipLabels.ts:21
+msgid "godfather of"
+msgstr "Patenonkel von"
+
+#: web/lib/people/relationshipLabels.ts:20
+msgid "godmother of"
+msgstr "Patentante von"
+
+#: web/lib/people/relationshipLabels.ts:19
+msgid "godparent of"
+msgstr "Patenonkel oder Patentante von"
+
+#: web/lib/people/relationshipLabels.ts:31
+msgid "grandchild of"
+msgstr "Enkelkind von"
+
+#: web/lib/people/relationshipLabels.ts:30
+msgid "grandparent of"
+msgstr "Großelternteil von"
 
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "passt zum Namen des Immich-Kontos"
 
+#: web/lib/people/relationshipLabels.ts:8
+msgid "married to"
+msgstr "verheiratet mit"
+
+#: web/lib/people/relationshipLabels.ts:10
+msgid "mother of"
+msgstr "Mutter von"
+
+#: web/lib/people/relationshipLabels.ts:28
+msgid "niece or nephew of"
+msgstr "Nichte oder Neffe von"
+
 #: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "noch nicht bekannt"
+
+#: web/lib/people/relationshipLabels.ts:77
+msgid "often in the same pictures"
+msgstr "oft auf denselben Bildern"
 
 #: web/lib/AskPanel.svelte:141
 msgid "our cat along the years"
 msgstr "unsere Katze über die Jahre"
 
-#: web/lib/people/RelationshipRows.svelte:64
+#: web/lib/people/relationshipLabels.ts:9
+msgid "parent of"
+msgstr "Elternteil von"
+
+#: web/lib/people/relationshipLabels.ts:32
+msgid "parent-in-law of"
+msgstr "Schwiegervater oder Schwiegermutter von"
+
+#: web/lib/people/relationshipLabels.ts:7
+msgid "partner of"
+msgstr "Partner oder Partnerin von"
+
+#: web/lib/people/RelationshipRows.svelte:65
 msgid "relationship not named"
 msgstr "Beziehung nicht benannt"
+
+#: web/lib/people/relationshipLabels.ts:78
+msgid "same birth date"
+msgstr "gleiches Geburtsdatum"
+
+#: web/lib/people/relationshipLabels.ts:79
+msgid "same name"
+msgstr "gleicher Name"
+
+#: web/lib/people/relationshipLabels.ts:15
+msgid "sibling of"
+msgstr "Bruder oder Schwester von"
+
+#: web/lib/people/relationshipLabels.ts:34
+msgid "sibling-in-law of"
+msgstr "Schwager oder Schwägerin von"
+
+#: web/lib/people/relationshipLabels.ts:16
+msgid "sister of"
+msgstr "Schwester von"
+
+#: web/lib/people/relationshipLabels.ts:13
+msgid "son of"
+msgstr "Sohn von"
 
 #: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "wird gestartet"
+
+#: web/lib/people/relationshipLabels.ts:18
+msgid "twin of"
+msgstr "Zwilling von"
+
+#: web/lib/people/relationshipLabels.ts:25
+msgid "uncle of"
+msgstr "Onkel von"
 
 #: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
@@ -2405,6 +3239,10 @@ msgstr "schreibt die Vermutungen; deine Antworten bleiben über Scans hinweg erh
 msgid "you confirmed it"
 msgstr "du hast es bestätigt"
 
+#: web/lib/people/relationshipLabels.ts:80
+msgid "you said so"
+msgstr "von dir angegeben"
+
 #: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
 msgstr "du hast es dem Scan gesagt"
@@ -2413,6 +3251,146 @@ msgstr "du hast es dem Scan gesagt"
 #, python-brace-format
 msgid "{amount} elapsed"
 msgstr "{amount} vergangen"
+
+#: web/lib/people/relationshipLabels.ts:57
+#, python-brace-format
+msgid "{a} is {b}'s aunt"
+msgstr "{a} ist die Tante von {b}"
+
+#: web/lib/people/relationshipLabels.ts:58
+#, python-brace-format
+msgid "{a} is {b}'s aunt or uncle"
+msgstr "{a} ist die Tante oder der Onkel von {b}"
+
+#: web/lib/people/relationshipLabels.ts:54
+#, python-brace-format
+msgid "{a} is {b}'s best friend"
+msgstr "{a} ist der beste Freund oder die beste Freundin von {b}"
+
+#: web/lib/people/relationshipLabels.ts:48
+#, python-brace-format
+msgid "{a} is {b}'s brother"
+msgstr "{a} ist der Bruder von {b}"
+
+#: web/lib/people/relationshipLabels.ts:43
+#, python-brace-format
+msgid "{a} is {b}'s child"
+msgstr "{a} ist ein Kind von {b}"
+
+#: web/lib/people/relationshipLabels.ts:64
+#, python-brace-format
+msgid "{a} is {b}'s child-in-law"
+msgstr "{a} ist der Schwiegersohn oder die Schwiegertochter von {b}"
+
+#: web/lib/people/relationshipLabels.ts:60
+#, python-brace-format
+msgid "{a} is {b}'s cousin"
+msgstr "{a} ist der Cousin oder die Cousine von {b}"
+
+#: web/lib/people/relationshipLabels.ts:45
+#, python-brace-format
+msgid "{a} is {b}'s daughter"
+msgstr "{a} ist die Tochter von {b}"
+
+#: web/lib/people/relationshipLabels.ts:42
+#, python-brace-format
+msgid "{a} is {b}'s father"
+msgstr "{a} ist der Vater von {b}"
+
+#: web/lib/people/relationshipLabels.ts:55
+#, python-brace-format
+msgid "{a} is {b}'s friend"
+msgstr "{a} ist ein Freund oder eine Freundin von {b}"
+
+#: web/lib/people/relationshipLabels.ts:53
+#, python-brace-format
+msgid "{a} is {b}'s godchild"
+msgstr "{a} ist das Patenkind von {b}"
+
+#: web/lib/people/relationshipLabels.ts:52
+#, python-brace-format
+msgid "{a} is {b}'s godfather"
+msgstr "{a} ist der Patenonkel von {b}"
+
+#: web/lib/people/relationshipLabels.ts:51
+#, python-brace-format
+msgid "{a} is {b}'s godmother"
+msgstr "{a} ist die Patentante von {b}"
+
+#: web/lib/people/relationshipLabels.ts:50
+#, python-brace-format
+msgid "{a} is {b}'s godparent"
+msgstr "{a} ist der Patenonkel oder die Patentante von {b}"
+
+#: web/lib/people/relationshipLabels.ts:62
+#, python-brace-format
+msgid "{a} is {b}'s grandchild"
+msgstr "{a} ist ein Enkelkind von {b}"
+
+#: web/lib/people/relationshipLabels.ts:61
+#, python-brace-format
+msgid "{a} is {b}'s grandparent"
+msgstr "{a} ist ein Großelternteil von {b}"
+
+#: web/lib/people/relationshipLabels.ts:41
+#, python-brace-format
+msgid "{a} is {b}'s mother"
+msgstr "{a} ist die Mutter von {b}"
+
+#: web/lib/people/relationshipLabels.ts:59
+#, python-brace-format
+msgid "{a} is {b}'s niece or nephew"
+msgstr "{a} ist die Nichte oder der Neffe von {b}"
+
+#: web/lib/people/relationshipLabels.ts:40
+#, python-brace-format
+msgid "{a} is {b}'s parent"
+msgstr "{a} ist ein Elternteil von {b}"
+
+#: web/lib/people/relationshipLabels.ts:63
+#, python-brace-format
+msgid "{a} is {b}'s parent-in-law"
+msgstr "{a} ist der Schwiegervater oder die Schwiegermutter von {b}"
+
+#: web/lib/people/relationshipLabels.ts:38
+#, python-brace-format
+msgid "{a} is {b}'s partner"
+msgstr "{a} ist Partner oder Partnerin von {b}"
+
+#: web/lib/people/relationshipLabels.ts:46
+#, python-brace-format
+msgid "{a} is {b}'s sibling"
+msgstr "{a} ist der Bruder oder die Schwester von {b}"
+
+#: web/lib/people/relationshipLabels.ts:65
+#, python-brace-format
+msgid "{a} is {b}'s sibling-in-law"
+msgstr "{a} ist der Schwager oder die Schwägerin von {b}"
+
+#: web/lib/people/relationshipLabels.ts:47
+#, python-brace-format
+msgid "{a} is {b}'s sister"
+msgstr "{a} ist die Schwester von {b}"
+
+#: web/lib/people/relationshipLabels.ts:44
+#, python-brace-format
+msgid "{a} is {b}'s son"
+msgstr "{a} ist der Sohn von {b}"
+
+#: web/lib/people/relationshipLabels.ts:39
+#, python-brace-format
+msgid "{a} is {b}'s spouse"
+msgstr "{a} ist mit {b} verheiratet"
+
+#: web/lib/people/relationshipLabels.ts:49
+#, python-brace-format
+msgid "{a} is {b}'s twin"
+msgstr "{a} ist der Zwilling von {b}"
+
+#: web/lib/people/relationshipLabels.ts:56
+#, python-brace-format
+msgid "{a} is {b}'s uncle"
+msgstr "{a} ist der Onkel von {b}"
 
 #: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
@@ -2458,6 +3436,11 @@ msgstr "{done} von {total} Clips"
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{done} von {total} Bildern"
+
+#: web/lib/people/relationshipLabels.ts:89
+#, python-brace-format
+msgid "{first}; {second}"
+msgstr "{first}; {second}"
 
 #: web/lib/people/FamilyTree.svelte:72
 #, python-brace-format

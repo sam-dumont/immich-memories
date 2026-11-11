@@ -2517,6 +2517,15 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /** RosterChainStep */
+        RosterChainStep: {
+            /** Kind */
+            kind: string;
+            /** Other */
+            other: string;
+            /** Person */
+            person: string;
+        };
         /** RosterFlag */
         RosterFlag: {
             /** Kind */
@@ -2530,6 +2539,11 @@ export interface components {
         };
         /** RosterLink */
         RosterLink: {
+            /**
+             * Chain
+             * @default []
+             */
+            chain: components["schemas"]["RosterChainStep"][];
             /** Confidence */
             confidence: number;
             /** Decision */

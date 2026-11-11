@@ -580,12 +580,12 @@ def test_the_tier_and_the_codec_are_dropdowns_with_readable_labels(
 ) -> None:
     _seed(launch_workspace)
     page.goto(f"{launch_app_url}/app/settings")
-    page.get_by_text("output", exact=True).click()
-    codec = page.get_by_label("output.codec", exact=True)
+    page.locator("summary").get_by_text("Output", exact=True).click()
+    codec = page.get_by_label("Codec", exact=True)
     expect(codec.locator("option")).to_have_text(
         ["H.264, software (libx264)", "H.265, software (libx265)", "ProRes (large files)"]
     )
-    tier = page.get_by_label("tier", exact=True)
+    tier = page.get_by_label("Tier", exact=True)
     expect(tier.locator("option")).to_have_count(4)
     expect(tier.locator("option", has_text="nas")).to_have_count(0)
 
@@ -595,15 +595,15 @@ def test_fade_controls_save_a_default_and_submit_a_film_override(
 ) -> None:
     _seed(launch_workspace)
     page.goto(f"{launch_app_url}/app/settings")
-    page.get_by_text("title screens", exact=True).click()
-    fade = page.get_by_label("title_screens.fade_color", exact=True)
+    page.locator("summary").get_by_text("Title screens", exact=True).click()
+    fade = page.get_by_label("Fade color", exact=True)
     expect(fade).to_have_value("white")
     fade.select_option("black")
     section = page.locator("details").filter(has=fade)
     section.get_by_role("button", name="Save", exact=True).click()
     expect(section.get_by_role("status")).to_have_text("Saved to the database")
     page.reload()
-    page.get_by_text("title screens", exact=True).click()
+    page.locator("summary").get_by_text("Title screens", exact=True).click()
     expect(fade).to_have_value("black")
 
     sent = []
