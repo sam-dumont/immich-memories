@@ -172,6 +172,14 @@ def _for(request: Request, snapshot: dict[str, Any]) -> dict[str, Any]:
     return snapshot | dict.fromkeys(_DETAIL_FIELDS)
 
 
+def _worded_low_space(config: Config, volume: Any, threshold: float) -> str | None:
+    from immich_memories.operational_warnings import worded_for
+    from immich_memories.operations.disk_guard import low_space_warning
+
+    warning = low_space_warning(volume, min_free_gb=threshold)
+    return worded_for(config, warning) if warning else None
+
+
 def _disk_status(config: Config) -> dict[str, Any] | None:
     """Free space on the output and cache volumes, and whether either is running low.
 
@@ -179,7 +187,7 @@ def _disk_status(config: Config) -> dict[str, Any] | None:
     (`operations/disk_guard.py`), so an operator watching this page sees the
     exact line a run would log rather than a second, differently-worded check.
     """
-    from immich_memories.operations.disk_guard import low_space_warning, volume_space
+    from immich_memories.operations.disk_guard import volume_space
 
     threshold = config.output.min_free_space_gb
     roots = {"output": config.output.output_path, "cache": config.cache.cache_path}
@@ -190,7 +198,7 @@ def _disk_status(config: Config) -> dict[str, Any] | None:
             continue
         volumes[label] = {
             "free_gb": round(volume.free_gb, 1),
-            "warning": low_space_warning(volume, min_free_gb=threshold),
+            "warning": _worded_low_space(config, volume, threshold),
         }
     return volumes or None
 

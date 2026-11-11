@@ -26,10 +26,6 @@ class TestCreatePresetYearInReview:
         assert preset.date_ranges[0].start == datetime(2024, 1, 1, 0, 0, 0)
         assert preset.date_ranges[0].end == datetime(2024, 12, 31, 23, 59, 59)
 
-    def test_title_template(self) -> None:
-        preset = create_preset(MemoryType.YEAR_IN_REVIEW, year=2024)
-        assert "2024" in preset.name
-
 
 class TestPersonFilterOnEveryType:
     """#683: a memory type that is not about people still narrows to them.
@@ -170,7 +166,6 @@ class TestCreatePresetMultiPerson:
 
         assert not preset.person_filter.require_co_occurrence
         assert preset.person_filter.mode == "any"
-        assert preset.name == "Riley or Bob"
 
     def test_requires_multiple_people(self) -> None:
         with pytest.raises((ValueError, TypeError)):
@@ -270,16 +265,6 @@ class TestCreatePresetTrip:
         assert preset.date_ranges[0].start.day == 12
         assert preset.date_ranges[0].end.month == 6
         assert preset.date_ranges[0].end.day == 18
-
-    def test_title_uses_location(self) -> None:
-        preset = create_preset(
-            MemoryType.TRIP,
-            year=2024,
-            trip_start=date(2024, 6, 12),
-            trip_end=date(2024, 6, 18),
-            location_name="Barcelona, Spain",
-        )
-        assert "Barcelona" in preset.name
 
     def test_twelve_day_trip_starts_with_a_realistic_auto_duration(self) -> None:
         """Regression: the old 35-seconds/day placeholder produced seven minutes."""

@@ -14,6 +14,9 @@ from datetime import date
 from typing import Any
 
 TAG_ROOT = "immich-memories"
+# The tag families the app writes under its root. A re-label may remove a tag of these kinds and
+# nothing else: a tag a person made, even under the root, is theirs.
+LABEL_TAG_KINDS = ("version", "generated-on", "type", "year", "story")
 DESCRIPTION_SEPARATOR = " · "
 # The plan's occasions that name something the household would look for by name.
 _NAMED_OCCASIONS = frozenset({"birthday", "visit", "trip", "leg"})
@@ -124,3 +127,8 @@ def film_label(
         ),
         tags=tuple(tags),
     )
+
+
+def is_label_tag(value: str) -> bool:
+    """Whether the app itself writes a tag of this name: under the root, in one of its kinds."""
+    return any(value.startswith(f"{TAG_ROOT}/{kind}/") for kind in LABEL_TAG_KINDS)

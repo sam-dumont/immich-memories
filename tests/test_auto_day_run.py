@@ -182,8 +182,8 @@ class TestAnAttemptADeadProcessLeft:
         assert settled is not None and settled.outcome is AutoOutcome.FAILED
         assert "interrupted" in settled.reason
         assert apprise.delivered == [
-            ("ntfy://first/topic", "Generation Failed: Automation"),
-            ("ntfy://second/topic", "Generation Failed: Automation"),
+            ("ntfy://first/topic", "Film failed: Automation"),
+            ("ntfy://second/topic", "Film failed: Automation"),
         ]
         assert fired == [config]
 

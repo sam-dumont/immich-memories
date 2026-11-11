@@ -287,8 +287,12 @@ _RELATIONAL_WORDS: frozenset[str] = _folded(
         "farmor",  # sv
         "дедушка",
         "бабушка",  # ru
-        # An absolute positive pronoun ("everyone"): the opposite of "nobody", always a
-        # people word on its own, never gated to a negated clause the way "people" is.
+    }
+)
+# An absolute positive pronoun ("everyone"): the opposite of "nobody", always a people word
+# on its own, never gated to a negated clause the way "people" is.
+_EVERYONE_WORDS: frozenset[str] = _folded(
+    {
         "everyone",
         "everybody",  # en
         "tous",
@@ -303,7 +307,7 @@ _RELATIONAL_WORDS: frozenset[str] = _folded(
         "все",  # ru
     }
 )
-_PEOPLE_WORDS: frozenset[str] = _BARE_PEOPLE_WORDS | _RELATIONAL_WORDS
+_PEOPLE_WORDS: frozenset[str] = _BARE_PEOPLE_WORDS | _RELATIONAL_WORDS | _EVERYONE_WORDS
 _CHILDREN_WORDS: frozenset[str] = _folded(
     {
         "children",
@@ -327,7 +331,8 @@ _CHILDREN_WORDS: frozenset[str] = _folded(
         "crianca",  # pt-BR, pt-PT
         "dzieci",  # pl
         "barn",  # sv
-        "дети",  # ru
+        "дети",
+        "детей",  # ru (nominative and the genitive "без детей" takes)
     }
 )
 _TEEN_WORDS: frozenset[str] = _folded(
@@ -346,10 +351,12 @@ _TEEN_WORDS: frozenset[str] = _folded(
         "jugendliche",  # de
         "adolescenti",  # it
         "nastolatkowie",
-        "nastolatek",  # pl
+        "nastolatek",
+        "nastolatkow",  # pl (nominative and the genitive "bez nastolatków" takes)
         "tonaringar",
         "tonaring",  # sv
-        "подростки",  # ru
+        "подростки",
+        "подростков",  # ru (nominative and the genitive "без подростков" takes)
     }
 )
 _PERFORMER_WORDS: frozenset[str] = _folded(
@@ -457,15 +464,21 @@ _PERFORMER_WORDS: frozenset[str] = _folded(
         "dancarina",  # pt-BR, pt-PT
         "muzycy",
         "muzyk",
+        "muzykow",
         "spiewacy",
         "spiewak",
+        "spiewakow",
         "tancerze",
-        "tancerz",  # pl
+        "tancerz",
+        "tancerzy",  # pl (nominative and genitive plural)
         "sangare",
         "dansare",  # sv
         "музыканты",
+        "музыкантов",
         "певцы",
-        "танцоры",  # ru
+        "певцов",
+        "танцоры",
+        "танцоров",  # ru (nominative and genitive plural)
     }
 )
 _AUDIENCE_WORDS: frozenset[str] = _folded(
@@ -555,6 +568,17 @@ def request_kind_of(word: str, *, negated: bool = False) -> str | None:
         if folded in words:
             return kind
     return None
+
+
+def is_everyone(token: str) -> bool:
+    """Whether the token is the bare generic "everyone" ("tous", "wszyscy", "все")."""
+    return _fold(token) in _EVERYONE_WORDS
+
+
+def is_specific_relation(token: str) -> bool:
+    """Whether the token names one relation ("grandpa", "friends"), not everyone: said
+    against "everyone", it carves a person out of the group (#2072)."""
+    return _fold(token) in _RELATIONAL_WORDS
 
 
 def cjk_locale_of(text: str) -> str | None:

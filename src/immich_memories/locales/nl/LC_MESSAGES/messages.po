@@ -202,3 +202,89 @@ msgstr "verjaardag"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "Verjaardag"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "niet geüpload: de sleutel mist {permissions}"
+
+msgid "warning.delivery_incomplete"
+msgstr "levering onvolledig: de sleutel mist {permissions}"
+
+msgid "warning.previous_kept_key"
+msgstr "vorige versie behouden: de sleutel mist {permission}"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "vorige versie behouden: levering onvolledig"
+
+msgid "warning.previous_kept_error"
+msgstr "vorige versie behouden: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "geüpload zonder herkomst: de sleutel mist {permissions}"
+
+msgid "warning.provenance_unverified"
+msgstr "geüpload zonder geverifieerde herkomst: de tag is niet blijven staan"
+
+msgid "warning.provenance_error"
+msgstr "geüpload zonder geverifieerde herkomst: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "geüpload zonder geverifieerde beschrijving en tags: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "geüpload zonder verhaaltags: de sleutel mist {permissions}"
+
+msgid "warning.no_description_key"
+msgstr "geüpload zonder beschrijving: de sleutel mist {permission}"
+
+msgid "warning.album_not_created_key"
+msgstr "album niet aangemaakt: de sleutel mist {permission}"
+
+msgid "warning.album_not_added_key"
+msgstr "film niet aan album toegevoegd: de sleutel mist {permission}"
+
+msgid "warning.album_not_added_error"
+msgstr "film niet aan album toegevoegd: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "de beschrijving van de geüploade film is niet blijven staan"
+
+msgid "warning.tags_not_kept"
+msgstr "de tags van de geüploade film zijn niet blijven staan"
+
+msgid "warning.gave_up"
+msgstr "Levering aan Immich opgegeven na {attempts} pogingen: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Levering aan Immich opgegeven na {attempts} pogingen: geen fout vastgelegd"
+
+msgid "warning.low_space_output"
+msgstr "Weinig schijfruimte op het uitvoervolume: {free_gb} GB vrij, onder de waarschuwingsdrempel van {min_gb} GB. Voer `immich-memories runs delete` uit om ruimte vrij te maken, of schakel uploaden in zodat afgewerkte films automatisch worden verwijderd."
+
+msgid "warning.low_space_cache"
+msgstr "Weinig schijfruimte op het cachevolume: {free_gb} GB vrij, onder de waarschuwingsdrempel van {min_gb} GB. Voer `immich-memories runs delete` uit om ruimte vrij te maken, of schakel uploaden in zodat afgewerkte films automatisch worden verwijderd."
+
+msgid "notify.title.ready"
+msgstr "Film klaar: {name}"
+
+msgid "notify.title.failed"
+msgstr "Film mislukt: {name}"
+
+msgid "notify.body.type"
+msgstr "Type: {type}"
+
+msgid "notify.body.duration"
+msgstr "Verwerkingstijd: {minutes} min {seconds:02d} s"
+
+msgid "notify.body.output"
+msgstr "Uitvoer: {path}"
+
+msgid "notify.body.watch"
+msgstr "Bekijk in Immich: {url}"
+
+msgid "notify.body.error"
+msgstr "Fout: {error}"
+
+msgid "notify.body.warning"
+msgstr "Waarschuwing: {warning}"

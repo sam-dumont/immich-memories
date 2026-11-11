@@ -477,6 +477,12 @@ features:
     covers: ["cli:runs upload", "cli:runs upload --album"]
     tests:
       - tests/integration/features/test_runs_render_and_upload.py::test_runs_upload_sends_the_film_on_disk_into_the_album_and_frees_it
+  - id: runs.label
+    promise: "runs label writes a delivered film's description and tags to Immich again without rendering, removes the app's own tags the current label no longer has and leaves every other tag alone; a label that already matches is reported unchanged."
+    doc: make/cli/runs.md#re-label-a-film-already-in-immich
+    covers: ["cli:runs label", "cli:runs label --all"]
+    tests:
+      - tests/integration/features/test_runs_render_and_upload.py::test_runs_label_rewrites_a_delivered_film_and_drops_only_the_apps_stale_tags
   - id: runs.delete
     promise: "runs delete removes the run record and its output after confirmation; --keep-output keeps the film and --yes skips the question."
     doc: make/cli/runs.md#storage-and-deletion

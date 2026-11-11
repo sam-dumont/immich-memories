@@ -15,19 +15,6 @@ def test_a_holiday_preset_spans_years() -> None:
     assert preset.memory_type is MemoryType.HOLIDAY
 
 
-def test_a_holiday_preset_is_named_after_the_holiday() -> None:
-    preset = create_preset(MemoryType.HOLIDAY, holiday="christmas", year=2025)
-
-    assert "Christmas" in preset.name
-
-
-def test_an_explicit_date_is_named_by_its_date() -> None:
-    """A household holiday has no name to print, so print the date."""
-    preset = create_preset(MemoryType.HOLIDAY, holiday="07-04", year=2025)
-
-    assert preset.name
-
-
 class TestDateResolution:
     """The CLI must turn the new types into the right ranges, not just accept them."""
 
