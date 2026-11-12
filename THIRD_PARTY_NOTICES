@@ -789,15 +789,15 @@ pygments 2.20.0
   License: BSD-2-Clause
   URL: https://pygments.org
 
-pyobjc-core 12.1
+pyobjc-core 13.0
   License: MIT
   URL: https://github.com/ronaldoussoren/pyobjc
 
-pyobjc-framework-cocoa 12.1
+pyobjc-framework-cocoa 13.0
   License: MIT
   URL: https://github.com/ronaldoussoren/pyobjc
 
-pyobjc-framework-metal 12.1
+pyobjc-framework-metal 13.0
   License: MIT
   URL: https://github.com/ronaldoussoren/pyobjc
 
