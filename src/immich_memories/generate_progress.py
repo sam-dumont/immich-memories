@@ -14,6 +14,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
+from immich_memories.progress_text import stage_text
 
 if TYPE_CHECKING:
     from immich_memories.generate import GenerationParams
@@ -37,8 +38,11 @@ def emit_operational_phase(
     message: str,
     elapsed_seconds: float = 0.0,
 ) -> PhaseEvent:
-    """Publish and persist an outer phase without making telemetry job-critical."""
-    event = PhaseEvent(phase, current, total, message, elapsed_seconds)
+    """Publish and persist an outer phase without making telemetry job-critical.
+
+    The event's message is part of the status contract, so a coded heading is worded in English.
+    """
+    event = PhaseEvent(phase, current, total, stage_text(message), elapsed_seconds)
     try:
         run_tracker.record_phase_event(event)
     except Exception:  # WHY: extension trackers must not make status telemetry fatal
@@ -155,7 +159,7 @@ class OperationalProgress:
 
     def observe(self, phase: OperationalPhase, current: int, total: int, message: str) -> None:
         """Keep live observers current between persisted phase events."""
-        _notify_phase(self._params, PhaseEvent(phase, current, total, message, 0.0))
+        _notify_phase(self._params, PhaseEvent(phase, current, total, stage_text(message), 0.0))
 
     def emit_unperformed_prerequisites(self, through: OperationalPhase) -> None:
         """Mark only prerequisites not owned by this generation call as complete."""

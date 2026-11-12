@@ -38,6 +38,7 @@ from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
+from immich_memories.progress_text import stage_text
 from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.timed import timed
 from immich_memories.update_check import log_daily_update_notice
@@ -601,6 +602,7 @@ def run_pipeline_and_generate(
     progress.reset(task, total=None)
 
     def gen_progress(phase: str, frac: float, msg: str) -> None:
+        msg = stage_text(msg)
         phases.heartbeat.activity(msg)
         from immich_memories.tracking.timing import active
 
@@ -748,7 +750,9 @@ def _send_notification(
             notification_store,
             notify_job_complete,
             run_completion_details,
+            run_film_title,
         )
+        from immich_memories.i18n import resolve_film_locale
 
         run_warnings, asset_url = run_completion_details(config, attempt_dir)
         notify_job_complete(
@@ -759,6 +763,8 @@ def _send_notification(
             error=error,
             warnings=[*(warnings or []), *run_warnings],
             immich_asset_url=asset_url,
+            film_title=run_film_title(config, attempt_dir) if status == "completed" else None,
+            locale=resolve_film_locale(config.title_screens.locale),
             urls=notif.urls,
             store=notification_store(config),
             attach_thumbnail=notif.attach_thumbnail,

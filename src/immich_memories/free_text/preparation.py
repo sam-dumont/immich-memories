@@ -33,6 +33,7 @@ from immich_memories.free_text.library import LibraryView, read_library
 from immich_memories.free_text.linking import WhenLink
 from immich_memories.free_text.preparation_scope import PlaceFilter, picture_of
 from immich_memories.progress_lines import StageLines
+from immich_memories.progress_text import Stage, coded, coded_pass
 from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 from immich_memories.timeperiod import DateRange, custom_range
 from immich_memories.tracking.span_store import SpanStore
@@ -246,7 +247,16 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
     warning = warning_line(readiness.missing, seconds)
     print_line(warning)
     if report:
-        report(warning, 0.0, seconds)
+        report(
+            coded(
+                Stage.ASK_UNPREPARED,
+                count=len(readiness.missing),
+                duration_seconds=round(seconds),
+                duration=human_duration(seconds),
+            ),
+            0.0,
+            seconds,
+        )
     notice = Notice(len(readiness.missing), seconds, warning)
     if dry_run:
         raise NeedsPreparationPreview(notice)
@@ -265,7 +275,7 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
         if stage_lines.keeps(producer, done, total):
             print_line(message)
         if report:
-            report(message, done / total, remaining)
+            report(coded_pass(producer, done=done, total=total), done / total, remaining)
 
     clock, result = run_preparation(client, config, readiness.missing, progress=live)
     pictures = len(readiness.missing)
@@ -276,5 +286,5 @@ def prepare_for_request(  # noqa: PLR0913 - every argument is one external bound
             f"{pictures:,} pictures could not be prepared -- {_failure_detail(result)}"
         )
     if report:
-        report(f"{pictures:,} pictures prepared", 1.0, 0.0)
+        report(coded(Stage.ASK_PREPARED, count=pictures), 1.0, 0.0)
     return read_library(store, config.editorial), notice

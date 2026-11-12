@@ -200,9 +200,10 @@ def _register_preview(music: click.Group) -> None:
             preview_music_for_cut,
         )
         from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
-        from immich_memories.cli.progress_file import write_progress
+        from immich_memories.cli.progress_file import worded, write_progress
         from immich_memories.config import get_config
         from immich_memories.db import open_store
+        from immich_memories.progress_text import Stage, as_stage
         from immich_memories.tracking import RunDatabase
 
         config = get_config()
@@ -213,6 +214,8 @@ def _register_preview(music: click.Group) -> None:
             sys.exit(1)
 
         def progress(version: int, status: str, percent: float, _detail: str) -> None:
+            # A backend's own status words nothing a reader can translate.
+            heading = as_stage(status, Stage.MUSIC_GENERATING)
             write_progress(
                 progress_file,
                 {
@@ -222,9 +225,9 @@ def _register_preview(music: click.Group) -> None:
                     "fraction_scope": "unknown",
                     "stage_fraction": None,
                     "scope": f"candidate/{version + 1}",
-                    "stage_name": status,
-                    "message": f"Music candidate {version + 1}: {status}",
-                },
+                    "stage_name": heading,
+                }
+                | worded(heading),
             )
 
         target = out_dir or config.cache.cache_path / "music-previews" / resolved

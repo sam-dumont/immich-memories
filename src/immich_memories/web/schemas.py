@@ -8,6 +8,16 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_serializer
 
 
+class RelabelAnswer(BaseModel):
+    """What re-labelling a delivered film in Immich did."""
+
+    status: Literal["written", "unchanged", "asset_gone", "rights_missing", "failed"]
+    detail: str
+    # The app's own tags taken off because the current label no longer has them.
+    removed_tags: list[str]
+    warnings: list[str]
+
+
 class RunSummary(BaseModel):
     run_id: str
     status: str
@@ -230,6 +240,9 @@ class Job(BaseModel):
 
 class JobStage(BaseModel):
     label: str
+    # The stage's key and params, as on `JobProgress`.
+    key: str = ""
+    params: dict[str, str | int] = {}
     done: int | None = None
     total: int | None = None
     unit: str = ""
@@ -258,9 +271,14 @@ class JobForecast(BaseModel):
 
 
 class JobProgress(BaseModel):
+    # The heading in English, for a reader that does not word `key` itself.
     label: str = ""
-    # The stage's own name ("previews", "public_heads"), for the page to word; `label` is the
-    # engine's sentence.
+    # The heading's catalogue key and the values it needs ("render.year_card", {"index": 2,
+    # "count": 9}): the page words them in the reader's language. Empty only for a stage a
+    # version before keys recorded, whose English `label` is all there is.
+    key: str = ""
+    params: dict[str, str | int] = {}
+    # The stage's own name ("previews", "public_heads"); `label` is the engine's sentence.
     stage_name: str = ""
     phase: str = ""
     done: int | None = None
@@ -508,6 +526,13 @@ class ModelFetchRequest(BaseModel):
     plan_id: str = Field(pattern=r"^[0-9a-f]{128}$", min_length=128, max_length=128)
 
 
+class RosterChainStep(BaseModel):
+    person: str
+    # A relationship kind (`parent-of`): the client words it.
+    kind: str
+    other: str
+
+
 class RosterLink(BaseModel):
     kind: str
     target_id: str
@@ -520,6 +545,8 @@ class RosterLink(BaseModel):
     # detected, unnamed, rejected, named or suggested (the family tree implies it; `via`
     # names the chain): what the page offers for this row.
     status: str = "named"
+    # A suggestion's chain as keys, for the client to word in the reader's language.
+    chain: list[RosterChainStep] = []
 
 
 class RosterPerson(BaseModel):
@@ -540,6 +567,44 @@ class RosterPerson(BaseModel):
     alias_urls: dict[str, str | None] = {}
     # Other accounts' people somebody said are not this one, by account.
     declined: dict[str, list[str]] = {}
+
+
+class TreePerson(BaseModel):
+    person_id: str
+    name: str
+    birth_year: int | None
+    # Rows from the top, and the place along the row in person widths (partners stand 1 apart).
+    generation: int
+    x: float
+    owner: bool
+
+
+class TreeChild(BaseModel):
+    person_id: str
+    # In the family through a sibling, not a recorded parent: the line is drawn dashed.
+    through_sibling: bool
+
+
+class TreeFamily(BaseModel):
+    # Empty for siblings whose parents aren't in the tree.
+    parents: list[str]
+    children: list[TreeChild]
+
+
+class TreeSuggestion(BaseModel):
+    source: str
+    kind: str
+    target: str
+
+
+class FamilyTree(BaseModel):
+    people: list[TreePerson]
+    couples: list[tuple[str, str]]
+    families: list[TreeFamily]
+    # Close ties the tree implies and nobody confirmed, drawn dotted: `source` is `kind` `target`.
+    suggestions: list[TreeSuggestion]
+    # People with no confirmed parent, child, partner or sibling, so not drawn.
+    left_out: int
 
 
 class AccountPerson(BaseModel):

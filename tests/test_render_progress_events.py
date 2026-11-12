@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from immich_memories.generate_progress import render_progress_events
 from immich_memories.operations.phases import OperationalPhase
+from immich_memories.progress_text import Stage, coded
 
 
 class _Operational:
@@ -100,10 +101,11 @@ def test_a_quiet_audio_mix_never_repeats_an_older_encoding_percentage(tmp_path) 
     callback = render_progress_events(None, OperationalProgress(params, tracker), 15, clock=clock)
     callback(0.83, "Encoding: 83%")
     clock.now = 1
-    callback(1.0, "Mixing audio...")
+    callback(1.0, coded(Stage.RENDER_AUDIO_MIX))
     clock.now = 32
     assert heartbeat.tick()
 
     assert beats[-1][1:3] == (0, 0)
+    # The phase event is the status contract: a coded heading reaches it in English.
     assert beats[-1][3].startswith("Mixing audio...")
     assert tracker.record_phase_event.call_count == 1

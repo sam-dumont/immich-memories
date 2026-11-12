@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-22 10:00+0200\n"
+"POT-Creation-Date: 2026-11-11 03:39+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -33,11 +33,28 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "En månadssammanfattning har redan skapats den här månaden."
 
+#: web/lib/settingLabels.ts:22
+msgid "ACE-Step music"
+msgstr "ACE-Step-musik"
+
 #: web/routes/settings/+page.svelte:93
 msgid "API Key"
 msgstr "API-nyckel"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/settingLabels.ts:128
+msgid "API URL"
+msgstr "API-URL"
+
+#: web/lib/settingLabels.ts:49 web/lib/settingLabels.ts:104 web/lib/settingLabels.ts:124
+#: web/lib/settingLabels.ts:129
+msgid "API key"
+msgstr "API-nyckel"
+
+#: web/lib/settingLabels.ts:50
+msgid "API version"
+msgstr "API-version"
+
+#: web/lib/JobPanel.svelte:54
 #, python-brace-format
 msgid "About {amount} left overall"
 msgstr "Ungefär {amount} kvar totalt"
@@ -57,12 +74,12 @@ msgstr "Ungefär {amount} tills klippningen är klar"
 msgid "About {amount} until the film is ready"
 msgstr "Ungefär {amount} tills filmen är klar"
 
-#: web/lib/JobPanel.svelte:41
+#: web/lib/JobPanel.svelte:42
 #, python-brace-format, python-format
 msgid "About {percent}% overall"
 msgstr "Ungefär {percent}% totalt"
 
-#: web/lib/people/RelationshipRows.svelte:81
+#: web/lib/people/RelationshipRows.svelte:82
 msgid "Accept all suggestions"
 msgstr "Godkänn alla förslag"
 
@@ -74,15 +91,15 @@ msgstr "Acceptera vidarebefordrade och nedladdade medier"
 msgid "Account owner"
 msgstr "Kontoägare"
 
-#: web/lib/people/AccountLinks.svelte:46
+#: web/lib/people/AccountLinks.svelte:46 web/lib/settingLabels.ts:52 web/lib/settingLabels.ts:184
 msgid "Accounts"
 msgstr "Konton"
 
-#: web/lib/people/RelationshipRows.svelte:91
+#: web/lib/people/RelationshipRows.svelte:92
 msgid "Add"
 msgstr "Lägg till"
 
-#: web/lib/people/RelationshipRows.svelte:84
+#: web/lib/people/RelationshipRows.svelte:85
 msgid "Add a relationship"
 msgstr "Lägg till en relation"
 
@@ -90,9 +107,17 @@ msgstr "Lägg till en relation"
 msgid "Add date overlay"
 msgstr "Visa datum"
 
-#: web/routes/settings/people/+page.svelte:167
+#: web/routes/settings/people/+page.svelte:184
 msgid "Add someone not in Immich"
 msgstr "Lägg till någon som inte finns i Immich"
+
+#: web/lib/settingLabels.ts:58
+msgid "Add the date to titles"
+msgstr "Lägg till datum i titlar"
+
+#: web/lib/settingLabels.ts:59
+msgid "Add the place to titles"
+msgstr "Lägg till plats i titlar"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:149
 #, python-brace-format
@@ -103,8 +128,8 @@ msgstr "Lägg till: {include} · Ta bort: {exclude}"
 msgid "Added for a moment the catalogue records as notable."
 msgstr "Tillagd för ett ögonblick som katalogen noterar som anmärkningsvärt."
 
-#: web/routes/runs/[run_id]/+page.svelte:287 web/routes/runs/[run_id]/+page.svelte:289
-#: web/routes/runs/[run_id]/+page.svelte:292
+#: web/routes/runs/[run_id]/+page.svelte:289 web/routes/runs/[run_id]/+page.svelte:291
+#: web/routes/runs/[run_id]/+page.svelte:294
 msgid "Added from the pool"
 msgstr "Tillagd från tillgängliga medier"
 
@@ -125,7 +150,7 @@ msgstr "Efter en period"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46
+#: web/lib/RenderPanel.svelte:284 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "Albumnamn"
 
@@ -137,9 +162,29 @@ msgstr "Alla"
 msgid "All of them"
 msgstr "Alla dessa personer"
 
-#: web/routes/runs/[run_id]/+page.svelte:122
+#: web/routes/runs/[run_id]/+page.svelte:123
 msgid "All pictures"
 msgstr "Alla bilder"
+
+#: web/lib/settingLabels.ts:213
+msgid "Allow model downloads"
+msgstr "Tillåt modellnedladdningar"
+
+#: web/lib/settingLabels.ts:80
+msgid "Allow plain HTTP"
+msgstr "Tillåt vanlig HTTP"
+
+#: web/lib/settingLabels.ts:170
+msgid "Allowed domains"
+msgstr "Tillåtna domäner"
+
+#: web/lib/settingLabels.ts:169
+msgid "Allowed email addresses"
+msgstr "Tillåtna e-postadresser"
+
+#: web/lib/settingLabels.ts:46
+msgid "Allowed hosts"
+msgstr "Tillåtna värdar"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
@@ -150,6 +195,18 @@ msgstr "Visa även de {count} bilderna utanför det här minnet"
 msgid "Alternatives considered"
 msgstr "Övervägda alternativ"
 
+#: web/lib/settingLabels.ts:114
+msgid "Always reasons"
+msgstr "Resonerar alltid"
+
+#: web/lib/settingLabels.ts:12
+msgid "Analysis"
+msgstr "Analys"
+
+#: web/lib/settingLabels.ts:139
+msgid "Animated background"
+msgstr "Animerad bakgrund"
+
 #: web/routes/create/+page.svelte:377
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
@@ -157,6 +214,10 @@ msgid ""
 msgstr ""
 "Först jubileerna, sedan resten. En schemalagd körning föreslår bara en dag på dess jubileum; "
 "här kan du välja vilken dag som helst som finns i katalogen."
+
+#: web/lib/settingLabels.ts:216
+msgid "Annotation database"
+msgstr "Annoteringsdatabas"
 
 #: web/routes/create/+page.svelte:356
 msgid "Another day (MM-DD)"
@@ -193,6 +254,14 @@ msgstr ""
 "Frågar GitHub efter den publika listan över versioner. Inget skickas förrän du klickar, och "
 "inget om den här installationen följer med förfrågan."
 
+#: web/lib/settingLabels.ts:197
+msgid "Attach a thumbnail"
+msgstr "Bifoga miniatyrbild"
+
+#: web/lib/settingLabels.ts:20
+msgid "Audio"
+msgstr "Ljud"
+
 #: web/lib/RenderPanel.svelte:186
 msgid "Auto (match the mood)"
 msgstr "Automatiskt (efter stämningen)"
@@ -205,9 +274,13 @@ msgstr "Automatisk"
 msgid "Automatic (as configured)"
 msgstr "Automatiskt (enligt konfigurationen)"
 
-#: web/routes/+layout.svelte:48
+#: web/routes/+layout.svelte:60
 msgid "Automatic (browser)"
 msgstr "Automatiskt (webbläsare)"
+
+#: web/lib/settingLabels.ts:30
+msgid "Automation"
+msgstr "Automatisering"
 
 #: web/routes/suggestions/+page.svelte:60
 msgid "Automation is already running. Open Runs to follow it."
@@ -217,17 +290,37 @@ msgstr "Automatiseringen körs redan. Öppna Körningar för att följa den."
 msgid "Autumn"
 msgstr "Höst"
 
-#: web/routes/runs/[run_id]/+page.svelte:279
+#: web/routes/runs/[run_id]/+page.svelte:281
 msgid "Back to pictures"
 msgstr "Tillbaka till bilderna"
 
-#: web/routes/runs/[run_id]/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:135
 msgid "Back to runs"
 msgstr "Tillbaka till körningar"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:104
 msgid "Back to the cut"
 msgstr "Tillbaka till klippningen"
+
+#: web/lib/settingLabels.ts:94
+msgid "Backend"
+msgstr "Backend"
+
+#: web/lib/settingLabels.ts:99 web/lib/settingLabels.ts:123
+msgid "Base URL"
+msgstr "Bas-URL"
+
+#: web/lib/settingLabels.ts:119
+msgid "Batch maximum wait (minutes)"
+msgstr "Längsta väntetid för batch (minuter)"
+
+#: web/lib/settingLabels.ts:118
+msgid "Batch minimum requests"
+msgstr "Minsta antal förfrågningar per batch"
+
+#: web/lib/settingLabels.ts:117
+msgid "Batch mode"
+msgstr "Batchläge"
 
 #: web/routes/create/+page.svelte:339
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
@@ -249,11 +342,23 @@ msgstr "Suddig bakgrund"
 msgid "Browse the whole pool"
 msgstr "Bläddra bland alla tillgängliga medier"
 
+#: web/lib/stages.ts:12
+msgid "Building editorial cards"
+msgstr "Bygger redigeringskort"
+
+#: web/lib/settingLabels.ts:168
+msgid "Button text"
+msgstr "Knapptext"
+
+#: web/lib/settingLabels.ts:16
+msgid "Cache"
+msgstr "Cache"
+
 #: web/routes/settings/+page.svelte:117 web/routes/settings/+page.svelte:118
 msgid "Caches"
 msgstr "Cachar"
 
-#: web/lib/JobPanel.svelte:138 web/routes/runs/[run_id]/pool/+page.svelte:171
+#: web/lib/JobPanel.svelte:140 web/routes/runs/[run_id]/pool/+page.svelte:171
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -265,9 +370,33 @@ msgstr "Avbruten"
 msgid "Candidate key"
 msgstr "Kandidatnyckel"
 
+#: web/lib/settingLabels.ts:205
+msgid "Caption API key"
+msgstr "API-nyckel för bildtexter"
+
+#: web/lib/settingLabels.ts:203
+msgid "Caption base URL"
+msgstr "Bas-URL för bildtexter"
+
 #: web/lib/RenderPanel.svelte:240
 msgid "Caption clips with their place"
 msgstr "Visa plats på klippen"
+
+#: web/lib/settingLabels.ts:207
+msgid "Caption concurrency"
+msgstr "Samtidighet för bildtexter"
+
+#: web/lib/settingLabels.ts:204
+msgid "Caption model"
+msgstr "Bildtextmodell"
+
+#: web/lib/settingLabels.ts:202
+msgid "Caption provider"
+msgstr "Bildtextleverantör"
+
+#: web/lib/settingLabels.ts:206
+msgid "Caption timeout (seconds)"
+msgstr "Tidsgräns för bildtexter (sekunder)"
 
 #: web/lib/ShotInspector.svelte:152
 msgid "Captions were read; the rules chose this cut."
@@ -277,7 +406,7 @@ msgstr "Beskrivningarna lästes; reglerna valde den här klippningen."
 msgid "Catalogued days"
 msgstr "Katalogiserade dagar"
 
-#: web/routes/runs/[run_id]/+page.svelte:303
+#: web/routes/runs/[run_id]/+page.svelte:305
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "Ändringar: {count}"
@@ -290,39 +419,64 @@ msgstr "Kontrollera lämplighet"
 msgid "Check for updates"
 msgstr "Sök efter uppdateringar"
 
+#: web/lib/settingLabels.ts:156
+msgid "Check for updates daily"
+msgstr "Sök efter uppdateringar varje dag"
+
 #: web/lib/PhaseTimeline.svelte:9
 msgid "Check playback"
 msgstr "Kontrollera uppspelning"
 
-#: web/lib/labels.ts:116
+#: web/lib/stages.ts:102 web/lib/stages.ts:107
 msgid "Checking Live Photo clips"
 msgstr "Kontrollerar Live Photo-klipp"
 
-#: web/lib/labels.ts:118
+#: web/lib/stages.ts:105
 msgid "Checking Live Photo clips for a covered lens"
 msgstr "Kontrollerar Live Photo-klipp för täckt objektiv"
 
-#: web/lib/labels.ts:100
+#: web/lib/stages.ts:100
 msgid "Checking Live Photo frames for the family audience"
 msgstr "Kontrollerar Live Photo-bildrutor för familjepublik"
 
-#: web/lib/labels.ts:109
+#: web/lib/stages.ts:91
 msgid "Checking for a covered lens"
 msgstr "Kontrollerar om objektivet är täckt"
 
-#: web/lib/labels.ts:105
+#: web/lib/stages.ts:75
+msgid "Checking music service"
+msgstr "Kontrollerar musiktjänsten"
+
+#: web/lib/stages.ts:87
 msgid "Checking pictures for the family audience"
 msgstr "Kontrollerar om bilderna passar att visa för familjen"
 
-#: web/lib/labels.ts:111
+#: web/lib/stages.ts:72
+msgid "Checking the downloaded film"
+msgstr "Kontrollerar den hämtade filmen"
+
+#: web/lib/stages.ts:57
+msgid "Checking the finished film"
+msgstr "Kontrollerar den färdiga filmen"
+
+#: web/lib/stages.ts:58
+#, python-brace-format
+msgid "Checking the finished film: {done} of {total} decoded"
+msgstr "Kontrollerar den färdiga filmen: {done} av {total} avkodat"
+
+#: web/lib/stages.ts:67
+msgid "Checking the render worker"
+msgstr "Kontrollerar renderingsservern"
+
+#: web/lib/stages.ts:95 web/lib/stages.ts:106
 msgid "Checking video clips"
 msgstr "Kontrollerar videoklipp"
 
-#: web/lib/labels.ts:114
+#: web/lib/stages.ts:98
 msgid "Checking video clips for a covered lens"
 msgstr "Kontrollerar videoklipp för täckt objektiv"
 
-#: web/lib/labels.ts:98
+#: web/lib/stages.ts:93
 msgid "Checking video frames for the family audience"
 msgstr "Kontrollerar videobildrutor för familjepublik"
 
@@ -363,19 +517,43 @@ msgstr "Ta bort den här spärren?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} poster rensades från {cache}."
 
+#: web/lib/settingLabels.ts:164
+msgid "Client ID"
+msgstr "Klient-ID"
+
+#: web/lib/settingLabels.ts:165
+msgid "Client secret"
+msgstr "Klienthemlighet"
+
 #: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "Urklipp är inte tillgängligt. Markera rapporten nedan och kopiera den."
+
+#: web/lib/stages.ts:39
+msgid "Clips prepared"
+msgstr "Klippen är förberedda"
+
+#: web/lib/settingLabels.ts:72
+msgid "Codec"
+msgstr "Codec"
+
+#: web/lib/settingLabels.ts:73
+msgid "Codec policy"
+msgstr "Codec-policy"
 
 #: web/routes/create/+page.svelte:507
 msgid "Command"
 msgstr "Kommando"
 
+#: web/lib/stages.ts:66
+msgid "Complete!"
+msgstr "Klart!"
+
 #: web/lib/PhaseTimeline.svelte:12 web/lib/labels.ts:29
 msgid "Completed"
 msgstr "Slutfört"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:73
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsfil: {config_path}"
@@ -384,9 +562,19 @@ msgstr "Konfigurationsfil: {config_path}"
 msgid "Config warnings"
 msgstr "Konfigurationsvarningar"
 
-#: web/lib/SettingsEditor.svelte:64 web/lib/SettingsEditor.svelte:66
+#: web/lib/SettingsEditor.svelte:65 web/lib/SettingsEditor.svelte:67
 msgid "Configuration"
 msgstr "Konfiguration"
+
+#: web/lib/people/FamilyTree.svelte:106
+#, python-brace-format
+msgid "Confirm that {name} is {relationship} {other}"
+msgstr "Bekräfta att {name} är {relationship} {other}"
+
+#: web/lib/people/RelationshipRows.svelte:54
+#, python-brace-format
+msgid "Confirm: {statement}"
+msgstr "Bekräfta: {statement}"
 
 #: web/routes/settings/+page.svelte:62
 #, python-brace-format
@@ -397,15 +585,23 @@ msgstr "Ansluten som: {name}"
 msgid "Considered by the model"
 msgstr "Övervägd av modellen"
 
-#: web/routes/runs/[run_id]/+page.svelte:117
+#: web/lib/settingLabels.ts:77
+msgid "Constant rate factor"
+msgstr "Konstant bitratefaktor"
+
+#: web/routes/runs/[run_id]/+page.svelte:118
 msgid "Contact sheet"
 msgstr "Kontaktark"
 
-#: web/lib/JobPanel.svelte:136 web/lib/RunReport.svelte:76
+#: web/lib/settingLabels.ts:176 web/lib/settingLabels.ts:198
+msgid "Cooldown (hours)"
+msgstr "Väntetid (timmar)"
+
+#: web/lib/JobPanel.svelte:138 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "Kopierad"
 
-#: web/lib/JobPanel.svelte:136
+#: web/lib/JobPanel.svelte:138
 msgid "Copy as CLI command"
 msgstr "Kopiera som CLI-kommando"
 
@@ -422,7 +618,11 @@ msgstr "Det gick inte att söka efter uppdateringar."
 msgid "Could not check for updates: {reason}"
 msgstr "Det gick inte att söka efter uppdateringar: {reason}"
 
-#: web/routes/settings/people/+page.svelte:131
+#: web/lib/people/FamilyTree.svelte:65
+msgid "Could not draw the family tree."
+msgstr "Släktträdet kunde inte ritas."
+
+#: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "Det gick inte att läsa in personerna."
 
@@ -430,7 +630,7 @@ msgstr "Det gick inte att läsa in personerna."
 msgid "Crossfade"
 msgstr "Övertoning"
 
-#: web/routes/settings/people/+page.svelte:140 web/routes/settings/people/+page.svelte:141
+#: web/routes/settings/people/+page.svelte:155 web/routes/settings/people/+page.svelte:156
 msgid "Curation"
 msgstr "Personer att granska"
 
@@ -442,9 +642,25 @@ msgstr "Egen period"
 msgid "Cut"
 msgstr "Klipp"
 
-#: web/routes/runs/[run_id]/+page.svelte:240
+#: web/routes/runs/[run_id]/+page.svelte:242
 msgid "Cut contact sheet"
 msgstr "Kontaktkarta för klippningen"
+
+#: web/lib/settingLabels.ts:175
+msgid "Daily at"
+msgstr "Dagligen kl."
+
+#: web/lib/settingLabels.ts:17
+msgid "Database"
+msgstr "Databas"
+
+#: web/lib/settingLabels.ts:90
+msgid "Database URL"
+msgstr "Databas-URL"
+
+#: web/lib/settingLabels.ts:84
+msgid "Database file"
+msgstr "Databasfil"
 
 #: web/routes/create/+page.svelte:336
 msgid "Day"
@@ -458,15 +674,19 @@ msgstr "Dag (MM-DD)"
 msgid "Decided while cutting"
 msgstr "Avgjordes under klippningen"
 
-#: web/lib/SettingsEditor.svelte:41
+#: web/lib/settingLabels.ts:96
+msgid "Decode on the GPU"
+msgstr "Avkoda på GPU:n"
+
+#: web/lib/SettingsEditor.svelte:42
 msgid "Default"
 msgstr "Standard"
 
-#: web/routes/runs/[run_id]/+page.svelte:156
+#: web/routes/runs/[run_id]/+page.svelte:157
 msgid "Delivered to Immich. The local file was removed to save disk space."
 msgstr "Levererad till Immich. Den lokala filen togs bort för att spara diskutrymme."
 
-#: web/routes/+layout.svelte:52 web/routes/+layout.svelte:53
+#: web/lib/settingLabels.ts:43 web/routes/+layout.svelte:64 web/routes/+layout.svelte:65
 msgid "Demo mode"
 msgstr "Demoläge"
 
@@ -478,19 +698,67 @@ msgstr "Beskriv filmen med egna ord"
 msgid "Describe the film you want"
 msgstr "Beskriv filmen du vill ha"
 
-#: web/lib/labels.ts:107
+#: web/lib/stages.ts:89
 msgid "Describing the pictures"
 msgstr "Beskriver bilderna"
 
-#: web/lib/labels.ts:97
+#: web/lib/stages.ts:82
 msgid "Descriptions not requested"
 msgstr "Beskrivningar inte begärda"
+
+#: web/lib/settingLabels.ts:189
+msgid "Detect a person's month"
+msgstr "Upptäck en persons månad"
+
+#: web/lib/settingLabels.ts:188
+msgid "Detect albums"
+msgstr "Upptäck album"
+
+#: web/lib/settingLabels.ts:182
+msgid "Detect bursts of activity"
+msgstr "Upptäck aktivitetstoppar"
+
+#: web/lib/settingLabels.ts:185
+msgid "Detect groups"
+msgstr "Upptäck grupper"
+
+#: web/lib/settingLabels.ts:187
+msgid "Detect holidays"
+msgstr "Upptäck högtider"
+
+#: web/lib/settingLabels.ts:178
+msgid "Detect months"
+msgstr "Upptäck månader"
+
+#: web/lib/settingLabels.ts:181
+msgid "Detect person spotlights"
+msgstr "Upptäck personer i fokus"
+
+#: web/lib/settingLabels.ts:186
+msgid "Detect seasons"
+msgstr "Upptäck årstider"
+
+#: web/lib/settingLabels.ts:180
+msgid "Detect trips"
+msgstr "Upptäck resor"
+
+#: web/lib/settingLabels.ts:179
+msgid "Detect years"
+msgstr "Upptäck år"
 
 #: web/routes/create/+page.svelte:406
 msgid "Detecting trips from GPS data..."
 msgstr "Identifierar resor från GPS-data…"
 
-#: web/routes/runs/[run_id]/+page.svelte:312
+#: web/lib/settingLabels.ts:209
+msgid "Detector Python"
+msgstr "Detektorns Python"
+
+#: web/lib/settingLabels.ts:210
+msgid "Detector cache folder"
+msgstr "Detektorns cachemapp"
+
+#: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Discard changes"
 msgstr "Förkasta ändringar"
 
@@ -503,15 +771,15 @@ msgstr "Sökningen misslyckades: {error}"
 msgid "Dismiss"
 msgstr "Stäng"
 
-#: web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:71
 msgid "Done."
 msgstr "Klart."
 
-#: web/routes/runs/[run_id]/+page.svelte:357
+#: web/routes/runs/[run_id]/+page.svelte:359
 msgid "Download child output"
 msgstr "Ladda ner bearbetningsloggen"
 
-#: web/lib/RenderPanel.svelte:162 web/routes/runs/[run_id]/+page.svelte:170
+#: web/lib/RenderPanel.svelte:162 web/routes/runs/[run_id]/+page.svelte:171
 msgid "Download film"
 msgstr "Ladda ner filmen"
 
@@ -527,7 +795,59 @@ msgstr "Ladda ner modeller"
 msgid "Download report"
 msgstr "Ladda ner rapport"
 
-#: web/routes/settings/people/+page.svelte:158
+#: web/lib/settingLabels.ts:60
+msgid "Download workers"
+msgstr "Nedladdningsarbetare"
+
+#: web/lib/stages.ts:32
+msgid "Downloading pinned models"
+msgstr "Hämtar fastlåsta modeller"
+
+#: web/lib/stages.ts:34
+msgid "Downloading the detector snapshots"
+msgstr "Hämtar detektorernas ögonblicksbilder"
+
+#: web/lib/stages.ts:69
+msgid "Downloading the finished film"
+msgstr "Hämtar den färdiga filmen"
+
+#: web/lib/stages.ts:71
+#, python-brace-format
+msgid "Downloading the finished film: {done} bytes received"
+msgstr "Hämtar den färdiga filmen: {done} byte mottagna"
+
+#: web/lib/stages.ts:70
+#, python-brace-format
+msgid "Downloading the finished film: {done}/{total} bytes"
+msgstr "Hämtar den färdiga filmen: {done}/{total} byte"
+
+#: web/lib/stages.ts:33
+#, python-brace-format
+msgid "Downloading {name}"
+msgstr "Hämtar {name}"
+
+#: web/lib/stages.ts:40
+#, python-brace-format
+msgid "Downloading: {name}"
+msgstr "Hämtar: {name}"
+
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Draw the family tree"
+msgstr "Rita släktträdet"
+
+#: web/lib/people/FamilyTree.svelte:71
+msgid ""
+"Drawn from the relationships you confirmed. A dotted line is a suggestion: its tick confirms "
+"it. Click someone to open their card."
+msgstr ""
+"Ritat utifrån relationerna du har bekräftat. En prickad linje är ett förslag: dess bock "
+"bekräftar det. Klicka på någon för att öppna deras kort."
+
+#: web/lib/settingLabels.ts:147
+msgid "Duration per photo"
+msgstr "Varaktighet per foto"
+
+#: web/routes/settings/people/+page.svelte:175
 msgid ""
 "Each Immich account gives the same person its own id. Under a person, pick who they are in "
 "the other account. Nothing is matched for you: the same name only comes first in the list."
@@ -551,6 +871,45 @@ msgstr ""
 msgid "Edited without descriptions — picture content was classified, not read."
 msgstr "Klippt utan beskrivningar: bildinnehållet har klassificerats men inte analyserats i detalj."
 
+#: web/lib/stages.ts:13
+msgid "Editing the memory"
+msgstr "Redigerar minnet"
+
+#: web/lib/stages.ts:15
+#, python-brace-format
+msgid "Editing the memory: {pictures} pictures after the duplicate review"
+msgstr "Redigerar minnet: {pictures} bilder efter granskningen av dubbletter"
+
+#: web/lib/stages.ts:14
+#, python-brace-format
+msgid "Editing the memory: {pictures} pictures going into the family-viewing check"
+msgstr "Redigerar minnet: {pictures} bilder går vidare till kontrollen för familjevisning"
+
+#: web/lib/stages.ts:16
+#, python-brace-format
+msgid "Editing the memory: {pictures} pictures going into the picture review"
+msgstr "Redigerar minnet: {pictures} bilder går vidare till bildgranskningen"
+
+#: web/lib/settingLabels.ts:33
+msgid "Editorial"
+msgstr "Redaktionellt"
+
+#: web/lib/settingLabels.ts:89
+msgid "Editorial runs size (GB)"
+msgstr "Storlek på redaktionella körningar (GB)"
+
+#: web/lib/stages.ts:21
+msgid "Editorial selection cancelled"
+msgstr "Redigeringsurvalet avbröts"
+
+#: web/lib/stages.ts:20
+msgid "Editorial selection complete"
+msgstr "Redigeringsurvalet är klart"
+
+#: web/lib/stages.ts:22
+msgid "Editorial selection failed"
+msgstr "Redigeringsurvalet misslyckades"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Elegant minimal"
 msgstr "Elegant och avskalat"
@@ -562,6 +921,48 @@ msgstr "Möjliga när den här bilden valdes. Öppna en för att jämföra."
 #: web/routes/suggestions/+page.svelte:65
 msgid "Eligible. No video was generated."
 msgstr "Lämplig. Ingen video skapades."
+
+#: web/lib/settingLabels.ts:172
+msgid "Email header"
+msgstr "E-posthuvud"
+
+#: web/lib/settingLabels.ts:68 web/lib/settingLabels.ts:93 web/lib/settingLabels.ts:97
+#: web/lib/settingLabels.ts:122 web/lib/settingLabels.ts:126 web/lib/settingLabels.ts:135
+#: web/lib/settingLabels.ts:143 web/lib/settingLabels.ts:146 web/lib/settingLabels.ts:157
+#: web/lib/settingLabels.ts:174 web/lib/settingLabels.ts:193
+msgid "Enabled"
+msgstr "Aktiverad"
+
+#: web/lib/settingLabels.ts:199
+msgid "Encoder"
+msgstr "Kodare"
+
+#: web/lib/settingLabels.ts:200
+msgid "Encoder URL"
+msgstr "Kodar-URL"
+
+#: web/lib/settingLabels.ts:95
+msgid "Encoder preset"
+msgstr "Kodarförinställning"
+
+#: web/lib/stages.ts:51
+#, python-brace-format
+msgid "Encoding ({done} / {total}) — {percent}%"
+msgstr "Kodar ({done} / {total}) — {percent} %"
+
+#: web/lib/stages.ts:52
+#, python-brace-format
+msgid "Encoding ({time})"
+msgstr "Kodar ({time})"
+
+#: web/lib/stages.ts:53
+#, python-brace-format
+msgid "Encoding ({time}) @ {speed}x"
+msgstr "Kodar ({time}) i {speed}x"
+
+#: web/lib/stages.ts:50
+msgid "Encoding video..."
+msgstr "Kodar videon …"
 
 #: web/lib/ShotInspector.svelte:68
 msgid "End here"
@@ -606,6 +1007,10 @@ msgstr ""
 msgid "Every trip of the year"
 msgstr "Varje resa under året"
 
+#: web/lib/settingLabels.ts:63
+msgid "Excluded file name patterns"
+msgstr "Uteslutna filnamnsmönster"
+
 #: web/lib/AskPanel.svelte:125
 msgid "Experimental"
 msgstr "Experimentell"
@@ -614,7 +1019,20 @@ msgstr "Experimentell"
 msgid "Expression"
 msgstr "Uttryck"
 
-#: web/routes/settings/people/+page.svelte:76
+#: web/lib/settingLabels.ts:191
+msgid "Extra holidays"
+msgstr "Extra högtider"
+
+#: web/lib/settingLabels.ts:111
+msgid "Extra parameters"
+msgstr "Extra parametrar"
+
+#: web/lib/stages.ts:41
+#, python-brace-format
+msgid "Extracting segment: {name}"
+msgstr "Extraherar avsnitt: {name}"
+
+#: web/routes/settings/people/+page.svelte:90
 msgid ""
 "Face recognition merges identical faces, so one of these records holds nearly all the "
 "pictures and the other almost none. Neither count means anything on its own. Merge them in "
@@ -624,54 +1042,132 @@ msgstr ""
 "bilder och den andra nästan inga. Ingen av siffrorna betyder något på egen hand. Slå ihop dem"
 " i Immich eller håll dem isär."
 
+#: web/lib/settingLabels.ts:219
+msgid "Facts base URL"
+msgstr "Bas-URL för fakta"
+
+#: web/lib/settingLabels.ts:221
+msgid "Facts concurrency"
+msgstr "Samtidighet för fakta"
+
+#: web/lib/settingLabels.ts:137
+msgid "Fade color"
+msgstr "Toningsfärg"
+
 #: web/lib/labels.ts:31
 msgid "Failed"
 msgstr "Misslyckad"
+
+#: web/lib/settingLabels.ts:82 web/lib/settingLabels.ts:223
+msgid "Fall back to this machine"
+msgstr "Falla tillbaka på den här datorn"
 
 #: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:165
 msgid "Family"
 msgstr "Familj"
 
-#: web/lib/labels.ts:99
+#: web/lib/people/FamilyTree.svelte:58 web/lib/people/FamilyTree.svelte:60
+#: web/lib/people/FamilyTree.svelte:74
+msgid "Family tree"
+msgstr "Släktträd"
+
+#: web/lib/stages.ts:99
 msgid "Fetching Live Photo clip previews"
 msgstr "Hämtar förhandsvisningar av Live Photo-klipp"
 
-#: web/lib/labels.ts:101
+#: web/lib/stages.ts:83
 msgid "Fetching picture previews"
 msgstr "Hämtar bildförhandsvisningar"
+
+#: web/lib/stages.ts:92
+msgid "Fetching video clip previews"
+msgstr "Hämtar förhandsvisningar av videoklipp"
 
 #: web/lib/AskPanel.svelte:177
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Färre än 12 bilder passar: filmen blir kort."
 
+#: web/lib/settingLabels.ts:11
+msgid "Film defaults"
+msgstr "Filmstandarder"
+
+#: web/lib/settingLabels.ts:136
+msgid "Film language"
+msgstr "Filmspråk"
+
+#: web/lib/settingLabels.ts:145
+msgid "Film tags"
+msgstr "Filmtaggar"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:163
 msgid "Films that may use it"
 msgstr "Filmer som får använda den"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:164
+#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:181
 msgid "Find a name"
 msgstr "Sök ett namn"
 
-#: web/lib/labels.ts:103
+#: web/lib/stages.ts:85
 msgid "Finding faces"
 msgstr "Söker efter ansikten"
+
+#: web/lib/settingLabels.ts:141
+msgid "First names only"
+msgstr "Bara förnamn"
 
 #: web/lib/RenderPanel.svelte:235
 msgid "Fit with bars"
 msgstr "Anpassa med svarta kanter"
 
-#: web/lib/RenderPanel.svelte:221
+#: web/lib/settingLabels.ts:69 web/lib/settingLabels.ts:83
+msgid "Folder"
+msgstr "Mapp"
+
+#: web/lib/RenderPanel.svelte:221 web/lib/settingLabels.ts:70
 msgid "Format"
 msgstr "Format"
+
+#: web/lib/settingLabels.ts:65
+msgid "Forwarded copies when short"
+msgstr "Vidarebefordrade kopior vid kort film"
+
+#: web/lib/settingLabels.ts:35
+msgid "Free text"
+msgstr "Fri text"
 
 #: web/routes/create/+page.svelte:344
 msgid "From"
 msgstr "Från"
 
-#: web/routes/settings/people/+page.svelte:166
+#: web/routes/settings/people/+page.svelte:183
 msgid "Full name"
 msgstr "Fullständigt namn"
+
+#: web/lib/stages.ts:25
+#, python-brace-format
+msgid "Gave up on the reader after {retries} dropped connections: check that server"
+msgstr "Gav upp läsaren efter {retries} tappade anslutningar: kontrollera servern"
+
+#: web/lib/stages.ts:49
+msgid "Generating ending screen..."
+msgstr "Skapar slutskärmen …"
+
+#: web/lib/stages.ts:76
+msgid "Generating music"
+msgstr "Skapar musik"
+
+#: web/lib/stages.ts:60
+msgid "Generating music..."
+msgstr "Skapar musik …"
+
+#: web/lib/stages.ts:43
+msgid "Generating title screen..."
+msgstr "Skapar titelskärmen …"
+
+#: web/lib/stages.ts:44
+msgid "Generating trip map..."
+msgstr "Skapar resekartan …"
 
 #: web/routes/create/+page.svelte:37
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
@@ -681,9 +1177,21 @@ msgstr "Mor- och farföräldrar, syskon, gruppchatten. Privata ögonblick tas in
 msgid "Grouped condition"
 msgstr "Grupperat villkor"
 
+#: web/lib/settingLabels.ts:74
+msgid "HDR mode"
+msgstr "HDR-läge"
+
 #: web/lib/RenderPanel.svelte:180
 msgid "Hard cut"
 msgstr "Rakt klipp"
+
+#: web/lib/settingLabels.ts:18
+msgid "Hardware"
+msgstr "Hårdvara"
+
+#: web/lib/settingLabels.ts:208
+msgid "Head bundle"
+msgstr "Head-paket"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
@@ -694,6 +1202,10 @@ msgstr "Spärrad: {reasons}."
 msgid "Hemisphere"
 msgstr "Halvklot"
 
+#: web/lib/people/FamilyTree.svelte:61
+msgid "Hide the family tree"
+msgstr "Dölj släktträdet"
+
 #: web/lib/RenderPanel.svelte:229
 msgid "High"
 msgstr "Hög"
@@ -701,6 +1213,18 @@ msgstr "Hög"
 #: web/lib/labels.ts:13 web/routes/create/+page.svelte:353
 msgid "Holiday"
 msgstr "Högtid"
+
+#: web/lib/settingLabels.ts:148
+msgid "Home latitude"
+msgstr "Hemmets latitud"
+
+#: web/lib/settingLabels.ts:149
+msgid "Home longitude"
+msgstr "Hemmets longitud"
+
+#: web/lib/settingLabels.ts:41
+msgid "Host"
+msgstr "Värd"
 
 #: web/lib/AskPanel.svelte:20
 msgid "How it read your words"
@@ -722,6 +1246,10 @@ msgstr "Så uppdaterar du"
 msgid "How to update this install"
 msgstr "Så uppdaterar du den här installationen"
 
+#: web/lib/settingLabels.ts:10
+msgid "Immich"
+msgstr "Immich"
+
 #: web/routes/settings/+page.svelte:87 web/routes/settings/+page.svelte:88
 msgid "Immich Connection"
 msgstr "Immich-anslutning"
@@ -734,12 +1262,16 @@ msgstr "Immich-serverns URL"
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Immich-konton att läsa (endast primärt om inget är valt)"
 
-#: web/routes/runs/[run_id]/+page.svelte:347
+#: web/lib/stages.ts:65
+msgid "Immich delivery incomplete; local film kept"
+msgstr "Leveransen till Immich ofullständig; den lokala filmen sparas"
+
+#: web/routes/runs/[run_id]/+page.svelte:349
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Överföring till Immich: {value}"
 
-#: web/routes/settings/people/+page.svelte:80
+#: web/routes/settings/people/+page.svelte:94
 msgid ""
 "Immich no longer has the face this person was linked to, and more than one person, or nobody,"
 " carries the name there now. Give exactly one person this name in Immich: this page follows "
@@ -753,6 +1285,10 @@ msgstr ""
 msgid "Immich unreachable"
 msgstr "Immich går inte att nå"
 
+#: web/lib/settingLabels.ts:92
+msgid "Import from"
+msgstr "Importera från"
+
 #: web/lib/labels.ts:72
 msgid "Important"
 msgstr "Viktig"
@@ -765,7 +1301,7 @@ msgstr "I klippningen"
 msgid "In the film"
 msgstr "I filmen"
 
-#: web/routes/create/+page.svelte:500
+#: web/lib/settingLabels.ts:66 web/routes/create/+page.svelte:500
 msgid "Include Live Photos"
 msgstr "Ta med Live Photos"
 
@@ -777,7 +1313,15 @@ msgstr "Ta med beskrivningar av flaggade foton"
 msgid "Include photos"
 msgstr "Ta med foton"
 
-#: web/routes/+layout.svelte:46
+#: web/lib/settingLabels.ts:192
+msgid "Include shared albums"
+msgstr "Ta med delade album"
+
+#: web/lib/settingLabels.ts:34
+msgid "Inference"
+msgstr "Inferens"
+
+#: web/routes/+layout.svelte:58
 msgid "Interface language"
 msgstr "Gränssnittets språk"
 
@@ -789,7 +1333,11 @@ msgstr "Avbruten"
 msgid "Invalid username or password"
 msgstr "Ogiltigt användarnamn eller lösenord"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/settingLabels.ts:163
+msgid "Issuer URL"
+msgstr "Utfärdar-URL"
+
+#: web/lib/JobPanel.svelte:73
 msgid "It did not finish."
 msgstr "Blev inte klar."
 
@@ -798,9 +1346,13 @@ msgstr "Blev inte klar."
 msgid "Just us"
 msgstr "Bara vi"
 
-#: web/routes/settings/people/+page.svelte:149
+#: web/routes/settings/people/+page.svelte:164
 msgid "Keep apart"
 msgstr "Håll isär"
+
+#: web/lib/settingLabels.ts:85
+msgid "Keep downloaded videos"
+msgstr "Behåll nedladdade videor"
 
 #: web/lib/RenderPanel.svelte:251
 msgid "Keep original audio"
@@ -827,10 +1379,26 @@ msgstr "Etikett"
 msgid "Landscape"
 msgstr "Liggande"
 
-#: web/lib/JobPanel.svelte:100
+#: web/lib/settingLabels.ts:19
+msgid "Language model"
+msgstr "Språkmodell"
+
+#: web/lib/settingLabels.ts:131
+msgid "Language model size"
+msgstr "Storlek på språkmodell"
+
+#: web/lib/JobPanel.svelte:102
 #, python-brace-format
 msgid "Last measured progress: {amount} ago."
 msgstr "Senaste uppmätta framsteg: för {amount} sedan."
+
+#: web/lib/settingLabels.ts:217
+msgid "Laya checkpoint"
+msgstr "Laya-checkpoint"
+
+#: web/lib/settingLabels.ts:218
+msgid "Laya checkpoint URL"
+msgstr "URL till Laya-checkpoint"
 
 #: web/routes/create/+page.svelte:489
 msgid "Length and pictures"
@@ -849,7 +1417,7 @@ msgstr "Länka"
 msgid "Link a person from {account}"
 msgstr "Länka en person från {account}"
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Linked to"
 msgstr "Länkad till"
 
@@ -857,7 +1425,7 @@ msgstr "Länkad till"
 msgid "Live"
 msgstr "Live"
 
-#: web/lib/JobPanel.svelte:95
+#: web/lib/JobPanel.svelte:97
 msgid "Live updates disconnected. Checking the saved job status."
 msgstr "Liveuppdateringar frånkopplade. Kontrollerar jobbets sparade status."
 
@@ -865,11 +1433,36 @@ msgstr "Liveuppdateringar frånkopplade. Kontrollerar jobbets sparade status."
 msgid "Loading your config warned about these keys:"
 msgstr "När konfigurationen lästes in varnade den för dessa nycklar:"
 
+#: web/lib/settingLabels.ts:103
+msgid "Local context size"
+msgstr "Lokal kontextstorlek"
+
+#: web/lib/settingLabels.ts:121
+msgid "Local music folder"
+msgstr "Lokal musikmapp"
+
+#: web/lib/settingLabels.ts:101
+msgid "Local server"
+msgstr "Lokal server"
+
+#: web/lib/settingLabels.ts:102
+msgid "Local vision projector"
+msgstr "Lokal visionsprojektor"
+
+#: web/lib/stages.ts:48
+#, python-brace-format
+msgid "Location card {index} of {count}"
+msgstr "Platskort {index} av {count}"
+
+#: web/lib/settingLabels.ts:67
+msgid "Longest source video (seconds)"
+msgstr "Längsta källvideo (sekunder)"
+
 #: web/routes/suggestions/+page.svelte:98
 msgid "Looking through your library for memories to suggest..."
 msgstr "Söker igenom ditt bibliotek efter minnen att föreslå..."
 
-#: web/lib/people/RelationshipRows.svelte:61
+#: web/lib/people/RelationshipRows.svelte:62
 msgid "Looks linked to"
 msgstr "Verkar vara länkad till"
 
@@ -877,7 +1470,7 @@ msgstr "Verkar vara länkad till"
 msgid "Low"
 msgstr "Låg"
 
-#: web/routes/+layout.svelte:70 web/routes/+layout.svelte:82
+#: web/routes/+layout.svelte:82 web/routes/+layout.svelte:94
 msgid "Main navigation"
 msgstr "Huvudnavigering"
 
@@ -903,23 +1496,51 @@ msgstr ""
 "Manuella och automatiska körningar, även misslyckade. Öppna en körning för att se klippning "
 "och tider."
 
+#: web/lib/settingLabels.ts:155
+msgid "Map tiles"
+msgstr "Kartrutor"
+
 #: web/routes/runs/[run_id]/pool/+page.svelte:91
 msgid "Marked Never use. Tick it to include it in this revision."
 msgstr "Markerad som ”Använd aldrig”. Kryssa i för att ta med bilden i den här versionen."
+
+#: web/lib/settingLabels.ts:212
+msgid "Marqo ONNX URL"
+msgstr "Marqo ONNX-URL"
+
+#: web/lib/settingLabels.ts:211
+msgid "Marqo ONNX model"
+msgstr "Marqo ONNX-modell"
 
 #: web/lib/RenderPanel.svelte:217
 msgid "Match the sources"
 msgstr "Som källorna"
 
-#: web/lib/labels.ts:106
+#: web/lib/settingLabels.ts:177
+msgid "Maximum delivery attempts"
+msgstr "Högsta antal leveransförsök"
+
+#: web/lib/settingLabels.ts:152
+msgid "Maximum gap (days)"
+msgstr "Största glapp (dagar)"
+
+#: web/lib/settingLabels.ts:109
+msgid "Maximum tokens parameter"
+msgstr "Parameter för max antal tokens"
+
+#: web/lib/stages.ts:104
+msgid "Measuring motion in Live Photo clips"
+msgstr "Mäter rörelse i Live Photo-klipp"
+
+#: web/lib/stages.ts:88
 msgid "Measuring motion in the videos"
 msgstr "Mäter rörelse i videorna"
 
-#: web/lib/labels.ts:113
+#: web/lib/stages.ts:97
 msgid "Measuring motion in video clips"
 msgstr "Mäter rörelse i videoklipp"
 
-#: web/lib/labels.ts:102
+#: web/lib/stages.ts:84
 msgid "Measuring the pictures"
 msgstr "Mäter bildernas egenskaper"
 
@@ -927,7 +1548,7 @@ msgstr "Mäter bildernas egenskaper"
 msgid "Medium"
 msgstr "Medel"
 
-#: web/lib/labels.ts:21 web/routes/+layout.svelte:22
+#: web/lib/labels.ts:21 web/routes/+layout.svelte:34
 msgid "Memory"
 msgstr "Minne"
 
@@ -935,11 +1556,39 @@ msgstr "Minne"
 msgid "Memory type"
 msgstr "Typ av minne"
 
+#: web/lib/settingLabels.ts:150
+msgid "Minimum distance (km)"
+msgstr "Minsta avstånd (km)"
+
+#: web/lib/settingLabels.ts:151
+msgid "Minimum duration (days)"
+msgstr "Minsta varaktighet (dagar)"
+
+#: web/lib/settingLabels.ts:76
+msgid "Minimum free space (GB)"
+msgstr "Minsta lediga utrymme (GB)"
+
 #: web/lib/labels.ts:17
 msgid "Missed month"
 msgstr "Missad månad"
 
-#: web/lib/labels.ts:96
+#: web/lib/stages.ts:55
+msgid "Mixing audio..."
+msgstr "Mixar ljudet …"
+
+#: web/lib/stages.ts:61
+msgid "Mixing music..."
+msgstr "Mixar musiken …"
+
+#: web/lib/settingLabels.ts:127
+msgid "Mode"
+msgstr "Läge"
+
+#: web/lib/settingLabels.ts:100
+msgid "Model"
+msgstr "Modell"
+
+#: web/lib/stages.ts:81
 msgid "Model checks not requested"
 msgstr "Modellkontroller inte begärda"
 
@@ -959,6 +1608,10 @@ msgstr "Modellernas status kunde inte kontrolleras."
 msgid "Model suggestion"
 msgstr "Modellens förslag"
 
+#: web/lib/settingLabels.ts:130
+msgid "Model variant"
+msgstr "Modellvariant"
+
 #: web/lib/RenderPanel.svelte:187
 msgid "Modern warm"
 msgstr "Modernt och varmt"
@@ -967,9 +1620,18 @@ msgstr "Modernt och varmt"
 msgid "Month"
 msgstr "Månad"
 
+#: web/lib/stages.ts:47
+#, python-brace-format
+msgid "Month divider {index} of {count}"
+msgstr "Månadsavdelare {index} av {count}"
+
 #: web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "Månadens höjdpunkter"
+
+#: web/lib/settingLabels.ts:190
+msgid "Months to backfill"
+msgstr "Månader att fylla på"
 
 #: web/lib/labels.ts:8
 msgid "Multi-Person"
@@ -979,13 +1641,49 @@ msgstr "Flera personer"
 msgid "Music"
 msgstr "Musik"
 
+#: web/lib/stages.ts:63
+msgid "Music finished with a warning"
+msgstr "Musiken klar med en varning"
+
+#: web/lib/settingLabels.ts:21
+msgid "Music generation"
+msgstr "Musikgenerering"
+
+#: web/lib/stages.ts:62
+msgid "Music ready"
+msgstr "Musiken är klar"
+
+#: web/lib/stages.ts:77
+msgid "Music service failed; trying the next service"
+msgstr "Musiktjänsten misslyckades; provar nästa tjänst"
+
+#: web/lib/settingLabels.ts:47
+msgid "Music upload quota (MB)"
+msgstr "Kvot för musikuppladdning (MB)"
+
 #: web/lib/RenderPanel.svelte:275
 msgid "Music volume:"
 msgstr "Musikvolym:"
 
+#: web/lib/stages.ts:59
+msgid "Muting original audio..."
+msgstr "Tystar originalljudet …"
+
+#: web/lib/stages.ts:56
+msgid "Muxing final output..."
+msgstr "Sätter ihop slutfilen …"
+
+#: web/lib/settingLabels.ts:51
+msgid "Native sharing"
+msgstr "Inbyggd delning"
+
 #: web/lib/AskPanel.svelte:34
 msgid "Needs preparation"
 msgstr "Behöver förberedas"
+
+#: web/lib/settingLabels.ts:27
+msgid "Network"
+msgstr "Nätverk"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:138
 msgid "Never use"
@@ -995,7 +1693,7 @@ msgstr "Använd aldrig"
 msgid "New memory"
 msgstr "Nytt minne"
 
-#: web/lib/JobPanel.svelte:85
+#: web/lib/JobPanel.svelte:87
 msgid "Next: select pictures and save the cut. More checks may be needed during selection."
 msgstr "Nästa steg: välj bilder och spara klippningen. Fler kontroller kan behövas under urvalet."
 
@@ -1007,9 +1705,17 @@ msgstr ""
 "Inga katalogiserade dagar ännu. Kör immich-memories discover-days för att hitta dem, eller "
 "välj ett datum att skapa en film från."
 
-#: web/routes/runs/[run_id]/+page.svelte:359
+#: web/routes/runs/[run_id]/+page.svelte:361
 msgid "No child output was retained for this run."
 msgstr "Ingen bearbetningslogg sparades för den här körningen."
+
+#: web/lib/people/FamilyTree.svelte:69
+msgid ""
+"No family links confirmed yet. Give someone a parent, a partner or a sibling below and the "
+"tree draws itself."
+msgstr ""
+"Inga familjeband bekräftade än. Ge någon en förälder, en partner eller ett syskon här "
+"nedanför så ritar trädet sig självt."
 
 #: web/lib/AskPanel.svelte:175
 msgid ""
@@ -1023,7 +1729,7 @@ msgstr ""
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Den här klippningen bygger helt på urvalsregler, utan analys av en modell."
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:255 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "Ingen musik"
 
@@ -1035,7 +1741,7 @@ msgstr "Inget namn matchar."
 msgid "No named people in Immich yet."
 msgstr "Inga namngivna personer i Immich ännu."
 
-#: web/lib/JobPanel.svelte:97
+#: web/lib/JobPanel.svelte:99
 #, python-brace-format
 msgid "No new progress for {amount}. The job is still running."
 msgstr "Inga nya framsteg på {amount}. Jobbet pågår fortfarande."
@@ -1044,7 +1750,7 @@ msgstr "Inga nya framsteg på {amount}. Jobbet pågår fortfarande."
 msgid "No outcome recorded."
 msgstr "Inget resultat sparat."
 
-#: web/routes/runs/[run_id]/+page.svelte:270
+#: web/routes/runs/[run_id]/+page.svelte:272
 msgid "No pictures match this filter."
 msgstr "Inga bilder matchar det här filtret."
 
@@ -1060,7 +1766,7 @@ msgstr "Ingen regel som förhandsvisningen kan kontrollera skulle sortera bort e
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Inga körningar matchar den här vyn. Skapa ett minne från Minne eller Förslag."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:339
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:341
 msgid "No saved cut is available for this run."
 msgstr "Ingen sparad klippning finns för den här körningen."
 
@@ -1076,8 +1782,8 @@ msgstr "Inga förslag just nu."
 msgid "No trips detected for this year."
 msgstr "Inga resor hittades för det här året."
 
-#: web/lib/people/RelationshipRows.svelte:54 web/lib/people/RelationshipRows.svelte:58
-#: web/lib/people/RelationshipRows.svelte:74
+#: web/lib/people/RelationshipRows.svelte:55 web/lib/people/RelationshipRows.svelte:59
+#: web/lib/people/RelationshipRows.svelte:75
 msgid "No, they are not"
 msgstr "Nej, det stämmer inte"
 
@@ -1085,7 +1791,7 @@ msgstr "Nej, det stämmer inte"
 msgid "Nobody in this library"
 msgstr "Ingen i det här biblioteket"
 
-#: web/routes/settings/people/+page.svelte:173
+#: web/routes/settings/people/+page.svelte:190
 msgid ""
 "Nobody yet. This list is filled the first time a library is prepared, or when you rescan it. "
 "The person picker on New memory reads Immich directly, so it can show names before this page "
@@ -1111,7 +1817,7 @@ msgstr "Gäller inte en film du bad om"
 msgid "Not possible"
 msgstr "Inte möjligt"
 
-#: web/lib/people/RelationshipRows.svelte:57
+#: web/lib/people/RelationshipRows.svelte:58
 msgid "Not related to"
 msgstr "Inte släkt med"
 
@@ -1119,22 +1825,37 @@ msgstr "Inte släkt med"
 msgid "Not the same person"
 msgstr "Inte samma person"
 
-#: web/lib/people/RelationshipRows.svelte:57
-#, python-brace-format
-msgid "Not {relationship}"
-msgstr "Inte {relationship}"
-
 #: web/lib/people/PersonCard.svelte:32
 msgid "Notes"
 msgstr "Anteckningar"
 
-#: web/lib/people/RelationshipRows.svelte:79
+#: web/lib/people/RelationshipRows.svelte:80
 msgid "Nothing recorded yet."
 msgstr "Inget registrerat ännu."
+
+#: web/lib/settingLabels.ts:194
+msgid "Notification URLs"
+msgstr "Aviserings-URL:er"
+
+#: web/lib/settingLabels.ts:31
+msgid "Notifications"
+msgstr "Aviseringar"
+
+#: web/lib/settingLabels.ts:196
+msgid "Notify on failure"
+msgstr "Avisera vid fel"
+
+#: web/lib/settingLabels.ts:195
+msgid "Notify on success"
+msgstr "Avisera vid lyckad körning"
 
 #: web/lib/SettingsChecks.svelte:19
 msgid "OK"
 msgstr "OK"
+
+#: web/lib/settingLabels.ts:133
+msgid "Offload to the CPU"
+msgstr "Avlasta till CPU:n"
 
 #: web/lib/labels.ts:10
 msgid "On This Day"
@@ -1144,7 +1865,7 @@ msgstr "Den här dagen"
 msgid "On a date"
 msgstr "Ett visst datum"
 
-#: web/routes/settings/people/+page.svelte:78
+#: web/routes/settings/people/+page.svelte:92
 msgid ""
 "One name on two person records: a split face cluster. Merge these records in Immich, the only"
 " place it can be fixed."
@@ -1160,11 +1881,11 @@ msgstr "Bara födelsedagarna, så många år bakåt (tomt: hela året)"
 msgid "Only with (optional)"
 msgstr "Bara med (valfritt)"
 
-#: web/routes/runs/[run_id]/+page.svelte:330
+#: web/routes/runs/[run_id]/+page.svelte:332
 msgid "Open"
 msgstr "Öppna"
 
-#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:146
+#: web/lib/people/AccountLinks.svelte:53 web/routes/settings/people/+page.svelte:161
 msgid "Open in Immich"
 msgstr "Öppna i Immich"
 
@@ -1176,7 +1897,7 @@ msgstr "Öppna körning"
 msgid "Open the film run"
 msgstr "Öppna filmkörningen"
 
-#: web/routes/settings/people/+page.svelte:146
+#: web/routes/settings/people/+page.svelte:161
 #, python-brace-format
 msgid "Open {name} in Immich"
 msgstr "Öppna {name} i Immich"
@@ -1185,7 +1906,7 @@ msgstr "Öppna {name} i Immich"
 msgid "Opening and closing fade"
 msgstr "Toning i början och slutet"
 
-#: web/routes/runs/[run_id]/+page.svelte:205
+#: web/routes/runs/[run_id]/+page.svelte:207
 msgid "Order and timecodes from the saved cut."
 msgstr "Ordning och tidskoder från den sparade klippningen."
 
@@ -1201,7 +1922,11 @@ msgstr "Annan bild från det här ögonblicket"
 msgid "Other pictures of this moment"
 msgstr "Andra bilder från det här ögonblicket"
 
-#: web/lib/JobPanel.svelte:90 web/lib/PhaseTimeline.svelte:26
+#: web/lib/settingLabels.ts:14
+msgid "Output"
+msgstr "Utdata"
+
+#: web/lib/JobPanel.svelte:92 web/lib/PhaseTimeline.svelte:26
 msgid "Overall time remaining is not known yet."
 msgstr "Den totala återstående tiden är ännu inte känd."
 
@@ -1210,12 +1935,20 @@ msgstr "Den totala återstående tiden är ännu inte känd."
 msgid "Owner of {account}"
 msgstr "Ägare av {account}"
 
+#: web/lib/settingLabels.ts:110
+msgid "Parameters to drop"
+msgstr "Parametrar att utelämna"
+
+#: web/lib/settingLabels.ts:108
+msgid "Parameters without thinking"
+msgstr "Parametrar utan tänkande"
+
 #: web/lib/ShotInspector.svelte:108
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "Klarade {stages}"
 
-#: web/routes/login/+page.svelte:69
+#: web/lib/settingLabels.ts:161 web/routes/login/+page.svelte:69
 msgid "Password"
 msgstr "Lösenord"
 
@@ -1223,9 +1956,9 @@ msgstr "Lösenord"
 msgid "Pending"
 msgstr "Väntar"
 
-#: web/routes/+layout.svelte:25 web/routes/create/+page.svelte:431
-#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:115
-#: web/routes/settings/people/+page.svelte:121
+#: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
+#: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:130
+#: web/routes/settings/people/+page.svelte:136
 msgid "People"
 msgstr "Personer"
 
@@ -1258,6 +1991,10 @@ msgstr "Faser"
 msgid "Photo duration (seconds)"
 msgstr "Visningstid för foton (sekunder)"
 
+#: web/lib/settingLabels.ts:25
+msgid "Photos"
+msgstr "Foton"
+
 #: web/lib/people/GroupsSection.svelte:70
 msgid "Pick the people"
 msgstr "Välj personerna"
@@ -1270,7 +2007,7 @@ msgstr "Bildbeskrivning"
 msgid "Picture review"
 msgstr "Bildgranskning"
 
-#: web/lib/JobPanel.svelte:103
+#: web/lib/JobPanel.svelte:105
 msgid "Pictures just read"
 msgstr "Nyligen analyserade bilder"
 
@@ -1283,11 +2020,19 @@ msgid "Pictures with"
 msgstr "Bilder med"
 
 #: web/lib/people/AccountLinks.svelte:63 web/lib/people/PersonCard.svelte:23
-#: web/routes/runs/[run_id]/+page.svelte:144 web/routes/runs/[run_id]/+page.svelte:219
+#: web/routes/runs/[run_id]/+page.svelte:145 web/routes/runs/[run_id]/+page.svelte:221
 #: web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "Bilder: {count}"
+
+#: web/lib/settingLabels.ts:153
+msgid "Place lookup"
+msgstr "Platssökning"
+
+#: web/lib/settingLabels.ts:154
+msgid "Place lookup URL"
+msgstr "URL för platssökning"
 
 #: web/lib/RenderPanel.svelte:188
 msgid "Playful bright"
@@ -1297,10 +2042,14 @@ msgstr "Lekfullt och ljust"
 msgid "Please enter both URL and API key"
 msgstr "Ange både URL och API-nyckel"
 
-#: web/routes/runs/[run_id]/+page.svelte:206 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:208 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "Tillgängliga medier"
+
+#: web/lib/settingLabels.ts:42
+msgid "Port"
+msgstr "Port"
 
 #: web/lib/RenderPanel.svelte:212
 msgid "Portrait"
@@ -1322,9 +2071,42 @@ msgstr "Förbered bilder"
 msgid "Prepare selected clips"
 msgstr "Förbered valda klipp"
 
+#: web/lib/settingLabels.ts:62
+msgid "Prepared source cache size (GB)"
+msgstr "Cachestorlek för förberedda källor (GB)"
+
+#: web/lib/stages.ts:42
+#, python-brace-format
+msgid "Prepared {done}/{total} sources"
+msgstr "{done}/{total} källor förberedda"
+
 #: web/routes/settings/+page.svelte:33
 msgid "Prepared-source cache"
 msgstr "Cache för förberedda källor"
+
+#: web/lib/stages.ts:38
+msgid "Preparing clips..."
+msgstr "Förbereder klipp …"
+
+#: web/lib/stages.ts:8
+msgid "Preparing editorial evidence"
+msgstr "Förbereder underlaget för redigeringen"
+
+#: web/lib/stages.ts:108
+msgid "Preparing the pictures"
+msgstr "Förbereder bilderna"
+
+#: web/lib/stages.ts:30
+msgid "Preparing the pool"
+msgstr "Förbereder bildurvalet"
+
+#: web/lib/stages.ts:31
+msgid "Preparing the render"
+msgstr "Förbereder renderingen"
+
+#: web/lib/settingLabels.ts:7 web/lib/settingLabels.ts:39
+msgid "Preset"
+msgstr "Förinställning"
 
 #: web/lib/AskPanel.svelte:145 web/lib/AskPanel.svelte:155
 msgid "Preview"
@@ -1338,7 +2120,7 @@ msgstr "Förhandslyssna på ett spår"
 msgid "Preview with these choices"
 msgstr "Förhandsvisning med de här valen"
 
-#: web/lib/JobPanel.svelte:115
+#: web/lib/JobPanel.svelte:117
 msgid "Previous stages"
 msgstr "Tidigare steg"
 
@@ -1346,19 +2128,31 @@ msgstr "Tidigare steg"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Sekretessläge: gör alla bilder suddiga och döljer namn"
 
-#: web/lib/JobPanel.svelte:119
+#: web/lib/JobPanel.svelte:121
 msgid "Processed"
 msgstr "Bearbetat"
 
-#: web/lib/JobPanel.svelte:65 web/lib/JobPanel.svelte:79
+#: web/lib/settingLabels.ts:222
+msgid "Producers"
+msgstr "Producenter"
+
+#: web/lib/JobPanel.svelte:67 web/lib/JobPanel.svelte:81
 msgid "Progress"
 msgstr "Förlopp"
+
+#: web/lib/settingLabels.ts:98 web/lib/settingLabels.ts:158 web/lib/settingLabels.ts:201
+msgid "Provider"
+msgstr "Leverantör"
+
+#: web/lib/settingLabels.ts:53 web/lib/settingLabels.ts:162
+msgid "Public URL"
+msgstr "Offentlig URL"
 
 #: web/lib/ShotInspector.svelte:60
 msgid "Put it back"
 msgstr "Lägg tillbaka"
 
-#: web/lib/RenderPanel.svelte:227
+#: web/lib/RenderPanel.svelte:227 web/lib/settingLabels.ts:75
 msgid "Quality"
 msgstr "Kvalitet"
 
@@ -1366,21 +2160,50 @@ msgstr "Kvalitet"
 msgid "Random"
 msgstr "Slumpmässigt"
 
-#: web/lib/labels.ts:108
+#: web/lib/settingLabels.ts:116
+msgid "Reader concurrency"
+msgstr "Samtidighet för läsare"
+
+#: web/lib/stages.ts:9
+msgid "Reading dates, places and people"
+msgstr "Läser datum, platser och personer"
+
+#: web/lib/stages.ts:10 web/lib/stages.ts:11
+msgid "Reading event evidence"
+msgstr "Läser underlaget om händelserna"
+
+#: web/lib/stages.ts:90
 msgid "Reading picture facts"
 msgstr "Läser bildfakta"
 
-#: web/lib/labels.ts:117
+#: web/lib/stages.ts:74
+msgid "Reading the cut for music"
+msgstr "Läser klippet för musiken"
+
+#: web/lib/stages.ts:36
+msgid "Reading the library"
+msgstr "Läser biblioteket"
+
+#: web/lib/stages.ts:18
+#, python-brace-format
+msgid "Reading the period account: {month}"
+msgstr "Läser berättelsen om perioden: {month}"
+
+#: web/lib/stages.ts:103
 msgid "Reading what each Live Photo clip shows"
 msgstr "Analyserar vad varje Live Photo-klipp visar"
 
-#: web/lib/labels.ts:104
+#: web/lib/stages.ts:86
 msgid "Reading what each picture shows"
 msgstr "Analyserar bildernas innehåll"
 
-#: web/lib/labels.ts:112
+#: web/lib/stages.ts:96
 msgid "Reading what each video shows"
 msgstr "Analyserar vad varje video visar"
+
+#: web/lib/stages.ts:35
+msgid "Reading your sentence"
+msgstr "Läser din mening"
 
 #: web/lib/ShotInspector.svelte:168
 msgid "Recorded alternative"
@@ -1398,11 +2221,11 @@ msgstr "Uppdatera förslag"
 msgid "Refreshing..."
 msgstr "Uppdaterar..."
 
-#: web/lib/people/RelationshipRows.svelte:83
+#: web/lib/people/RelationshipRows.svelte:84
 msgid "Relationship"
 msgstr "Relation"
 
-#: web/lib/people/RelationshipRows.svelte:43
+#: web/lib/people/RelationshipRows.svelte:44
 msgid "Relationships"
 msgstr "Relationer"
 
@@ -1410,7 +2233,7 @@ msgstr "Relationer"
 msgid "Release notes"
 msgstr "Versionsanteckningar"
 
-#: web/lib/SettingsEditor.svelte:67
+#: web/lib/SettingsEditor.svelte:68
 msgid "Reload from Disk"
 msgstr "Läs om från disk"
 
@@ -1422,11 +2245,11 @@ msgstr "Ta bort"
 msgid "Remove from this cut"
 msgstr "Ta bort ur den här klippningen"
 
-#: web/lib/people/RelationshipRows.svelte:48
+#: web/lib/people/RelationshipRows.svelte:49
 msgid "Remove this relationship"
 msgstr "Ta bort den här relationen"
 
-#: web/routes/runs/[run_id]/+page.svelte:253
+#: web/routes/runs/[run_id]/+page.svelte:255
 msgid "Removed"
 msgstr "Borttagen"
 
@@ -1438,6 +2261,14 @@ msgstr "Rendera"
 msgid "Render film"
 msgstr "Rendera film"
 
+#: web/lib/settingLabels.ts:15
+msgid "Render worker"
+msgstr "Renderingsarbetare"
+
+#: web/lib/settingLabels.ts:113
+msgid "Repetition penalty"
+msgstr "Upprepningsstraff"
+
 #: web/lib/labels.ts:45
 msgid "Replaced a picture the model doubted."
 msgstr "Ersatte en bild som modellen tvivlade på."
@@ -1446,23 +2277,23 @@ msgstr "Ersatte en bild som modellen tvivlade på."
 msgid "Report preview"
 msgstr "Förhandsvisning av rapporten"
 
-#: web/routes/settings/people/+page.svelte:174
+#: web/routes/settings/people/+page.svelte:191
 msgid "Rescan now"
 msgstr "Läs igenom igen nu"
 
-#: web/routes/settings/people/+page.svelte:124
+#: web/routes/settings/people/+page.svelte:139
 msgid "Rescan the library"
 msgstr "Läs igenom biblioteket igen"
 
-#: web/lib/RenderPanel.svelte:215
+#: web/lib/RenderPanel.svelte:215 web/lib/settingLabels.ts:71
 msgid "Resolution"
 msgstr "Upplösning"
 
-#: web/lib/JobPanel.svelte:119
+#: web/lib/JobPanel.svelte:121
 msgid "Reused"
 msgstr "Återanvänt"
 
-#: web/lib/labels.ts:95
+#: web/lib/stages.ts:80
 msgid "Reusing saved picture checks"
 msgstr "Återanvänder sparade bildkontroller"
 
@@ -1470,12 +2301,12 @@ msgstr "Återanvänder sparade bildkontroller"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "Granska rapporten och kopiera den sedan. Inget skickas automatiskt."
 
-#: web/lib/RenderPanel.svelte:174 web/routes/runs/[run_id]/+page.svelte:327
+#: web/lib/RenderPanel.svelte:174 web/routes/runs/[run_id]/+page.svelte:329
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Version {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:323
+#: web/routes/runs/[run_id]/+page.svelte:325
 msgid "Revisions"
 msgstr "Versioner"
 
@@ -1483,7 +2314,12 @@ msgstr "Versioner"
 msgid "Role (suggestions; type your own)"
 msgstr "Roll (förslag eller egen text)"
 
-#: web/routes/runs/[run_id]/+page.svelte:345
+#: web/lib/people/RelationshipRows.svelte:58
+#, python-brace-format
+msgid "Ruled out: {statement}"
+msgstr "Uteslutet: {statement}"
+
+#: web/routes/runs/[run_id]/+page.svelte:347
 msgid "Run details"
 msgstr "Detaljer om körningen"
 
@@ -1512,12 +2348,16 @@ msgstr "Pågår"
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 
+#: web/lib/stages.ts:17
+msgid "Running the family-viewing check"
+msgstr "Kör kontrollen för familjevisning"
+
 #: web/lib/SettingsChecks.svelte:68
 msgid "Running the preflight checks..."
 msgstr "Förkontrollerna körs..."
 
-#: web/routes/+layout.svelte:24 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:128
+#: web/routes/+layout.svelte:36 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:129
 msgid "Runs"
 msgstr "Körningar"
 
@@ -1526,15 +2366,15 @@ msgstr "Körningar"
 msgid "Same person as {name}?"
 msgstr "Samma person som {name}?"
 
-#: web/lib/labels.ts:115
+#: web/lib/stages.ts:101
 msgid "Sampling Live Photo frames"
 msgstr "Samplar Live Photo-bildrutor"
 
-#: web/lib/labels.ts:110
+#: web/lib/stages.ts:94
 msgid "Sampling video frames"
 msgstr "Samplar videobildrutor"
 
-#: web/lib/SettingsEditor.svelte:120
+#: web/lib/SettingsEditor.svelte:122
 msgid "Save"
 msgstr "Spara"
 
@@ -1542,19 +2382,27 @@ msgstr "Spara"
 msgid "Save Config"
 msgstr "Spara konfiguration"
 
+#: web/lib/people/FamilyTree.svelte:118
+msgid "Save as PNG"
+msgstr "Spara som PNG"
+
+#: web/lib/people/FamilyTree.svelte:117
+msgid "Save as SVG"
+msgstr "Spara som SVG"
+
 #: web/lib/people/GroupsSection.svelte:80
 msgid "Save group"
 msgstr "Spara grupp"
 
-#: web/routes/runs/[run_id]/+page.svelte:314
+#: web/routes/runs/[run_id]/+page.svelte:316
 msgid "Save revision"
 msgstr "Spara version"
 
-#: web/lib/SettingsEditor.svelte:110 web/routes/settings/+page.svelte:95
+#: web/lib/SettingsEditor.svelte:112 web/routes/settings/+page.svelte:95
 msgid "Saved - type a new key to replace it"
 msgstr "Sparad. Skriv en ny nyckel för att ersätta den"
 
-#: web/routes/runs/[run_id]/+page.svelte:317
+#: web/routes/runs/[run_id]/+page.svelte:319
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Sparad som version {number}."
@@ -1564,23 +2412,27 @@ msgstr "Sparad som version {number}."
 msgid "Saved groups"
 msgstr "Sparade grupper"
 
-#: web/lib/SettingsEditor.svelte:40
+#: web/lib/SettingsEditor.svelte:41
 msgid "Saved here"
 msgstr "Sparad här"
 
-#: web/lib/SettingsEditor.svelte:39
+#: web/lib/SettingsEditor.svelte:40
 #, python-brace-format
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet används"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:67
+#: web/lib/SettingsEditor.svelte:58 web/routes/settings/+page.svelte:67
 msgid "Saved to the database"
 msgstr "Sparad i databasen"
 
-#: web/routes/runs/[run_id]/+page.svelte:346
+#: web/routes/runs/[run_id]/+page.svelte:348
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Sparad till: {output_path}"
+
+#: web/lib/settingLabels.ts:54
+msgid "Scale mode"
+msgstr "Skalläge"
 
 #: web/lib/RenderPanel.svelte:233
 msgid "Scaling Mode"
@@ -1590,6 +2442,14 @@ msgstr "Skalningsläge"
 msgid "Scheduled"
 msgstr "Schemalagd"
 
+#: web/lib/settingLabels.ts:91
+msgid "Schema"
+msgstr "Schema"
+
+#: web/lib/settingLabels.ts:166
+msgid "Scope"
+msgstr "Omfång"
+
 #: web/lib/ShotInspector.svelte:72
 msgid "Screen time (seconds)"
 msgstr "Tid i bild (sekunder)"
@@ -1598,7 +2458,7 @@ msgstr "Tid i bild (sekunder)"
 msgid "Season"
 msgstr "Årstid"
 
-#: web/lib/SettingsEditor.svelte:77
+#: web/lib/SettingsEditor.svelte:78
 #, python-brace-format
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
@@ -1607,22 +2467,46 @@ msgstr ""
 "Ställ först in {name} för att spara inloggningsuppgifter här. Du kan också behålla dem i "
 "miljövariablerna eller config.yaml."
 
+#: web/lib/settingLabels.ts:44
+msgid "Secure cookies"
+msgstr "Säkra cookies"
+
 #: web/lib/PhaseTimeline.svelte:8
 msgid "Select pictures"
 msgstr "Välj bilder"
 
-#: web/lib/SettingsEditor.svelte:37
+#: web/lib/settingLabels.ts:115
+msgid "Send image detail"
+msgstr "Skicka bilddetalj"
+
+#: web/lib/stages.ts:78
+msgid "Separating stems"
+msgstr "Separerar stammar"
+
+#: web/lib/settingLabels.ts:9
+msgid "Server"
+msgstr "Server"
+
+#: web/lib/settingLabels.ts:48
+msgid "Server URL"
+msgstr "Server-URL"
+
+#: web/lib/settingLabels.ts:159
+msgid "Session length (hours)"
+msgstr "Sessionslängd (timmar)"
+
+#: web/lib/SettingsEditor.svelte:38
 #, python-brace-format
 msgid "Set by {name} (environment)"
 msgstr "Satt av {name} (miljö)"
 
-#: web/lib/SettingsEditor.svelte:38
+#: web/lib/SettingsEditor.svelte:39
 #, python-brace-format
 msgid "Set in config.yaml as {key}"
 msgstr "Satt i config.yaml som {key}"
 
-#: web/routes/+layout.svelte:26 web/routes/settings/+page.svelte:79
-#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:120
+#: web/routes/+layout.svelte:38 web/routes/settings/+page.svelte:79
+#: web/routes/settings/+page.svelte:83 web/routes/settings/people/+page.svelte:135
 msgid "Settings"
 msgstr "Inställningar"
 
@@ -1630,30 +2514,50 @@ msgstr "Inställningar"
 msgid "Shareable"
 msgstr "Delbar"
 
-#: web/routes/runs/[run_id]/+page.svelte:195
+#: web/lib/settingLabels.ts:57
+msgid "Sharing level"
+msgstr "Delningsnivå"
+
+#: web/routes/runs/[run_id]/+page.svelte:197
 msgid "Show"
 msgstr "Visa"
 
-#: web/routes/settings/people/+page.svelte:183
+#: web/lib/settingLabels.ts:140
+msgid "Show month dividers"
+msgstr "Visa månadsavdelare"
+
+#: web/routes/settings/people/+page.svelte:200
 msgid "Show more"
 msgstr "Visa mer"
 
-#: web/lib/JobPanel.svelte:93 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
+#: web/lib/JobPanel.svelte:95 web/routes/login/+page.svelte:46 web/routes/login/+page.svelte:58
 #: web/routes/login/+page.svelte:72
 msgid "Sign in"
 msgstr "Logga in"
+
+#: web/lib/settingLabels.ts:167
+msgid "Sign in automatically"
+msgstr "Logga in automatiskt"
 
 #: web/routes/login/+page.svelte:75
 msgid "Sign in through the proxy in front of this server."
 msgstr "Logga in via proxyn framför den här servern."
 
-#: web/routes/+layout.svelte:61
+#: web/routes/+layout.svelte:73
 msgid "Sign out"
 msgstr "Logga ut"
+
+#: web/lib/settingLabels.ts:29
+msgid "Sign-in"
+msgstr "Inloggning"
 
 #: web/routes/login/+page.svelte:20
 msgid "Sign-in expired. Try again."
 msgstr "Inloggningen har gått ut. Försök igen."
+
+#: web/lib/settingLabels.ts:64
+msgid "Skip stills without camera data"
+msgstr "Hoppa över stillbilder utan kameradata"
 
 #: web/lib/PhaseTimeline.svelte:12 web/lib/SettingsChecks.svelte:22 web/lib/labels.ts:34
 msgid "Skipped"
@@ -1685,6 +2589,10 @@ msgstr ""
 "Ljud inspelat i videor och Live Photos. Stäng av för enbart musik, eller välj även ”Ingen "
 "musik” för en tyst film."
 
+#: web/lib/settingLabels.ts:61
+msgid "Source preparation workers"
+msgstr "Arbetare för källförberedelse"
+
 #: web/routes/create/+page.svelte:334
 msgid "South"
 msgstr "Söder"
@@ -1692,6 +2600,14 @@ msgstr "Söder"
 #: web/lib/labels.ts:14
 msgid "Special day"
 msgstr "Särskild dag"
+
+#: web/lib/settingLabels.ts:183
+msgid "Special days per year"
+msgstr "Särskilda dagar per år"
+
+#: web/lib/settingLabels.ts:13
+msgid "Speech"
+msgstr "Tal"
 
 #: web/routes/create/+page.svelte:43
 msgid "Spring"
@@ -1705,7 +2621,7 @@ msgstr "Kvadrat"
 msgid "Start here"
 msgstr "Börja här"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:70
 msgid "Starting"
 msgstr "Startar"
 
@@ -1717,33 +2633,49 @@ msgstr "Status"
 msgid "Still"
 msgstr "Stillbild"
 
-#: web/routes/runs/[run_id]/+page.svelte:124
+#: web/routes/runs/[run_id]/+page.svelte:125
 msgid "Stills"
 msgstr "Stillbilder"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:337
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:339
 msgid "Stopped before it saved a film. The cut it came from is under Runs, in its own run."
 msgstr ""
 "Stoppades innan filmen sparades. Den ursprungliga klippningen finns under Körningar, i "
 "körningen där den skapades."
 
-#: web/lib/JobPanel.svelte:70
+#: web/lib/JobPanel.svelte:72
 msgid "Stopped."
 msgstr "Avbruten."
 
-#: web/routes/runs/[run_id]/+page.svelte:118 web/routes/runs/[run_id]/+page.svelte:212
+#: web/routes/runs/[run_id]/+page.svelte:119 web/routes/runs/[run_id]/+page.svelte:214
 msgid "Stories"
 msgstr "Berättelser"
+
+#: web/lib/stages.ts:54
+msgid "Streaming video assembly..."
+msgstr "Sätter ihop videon i ett flöde …"
+
+#: web/lib/settingLabels.ts:215
+msgid "Strict sharing"
+msgstr "Strikt delning"
+
+#: web/lib/settingLabels.ts:112
+msgid "Structured output"
+msgstr "Strukturerad utdata"
+
+#: web/lib/settingLabels.ts:138
+msgid "Style mode"
+msgstr "Stilläge"
 
 #: web/lib/RenderPanel.svelte:199
 msgid "Subtitle"
 msgstr "Undertitel"
 
-#: web/lib/people/RelationshipRows.svelte:50
+#: web/lib/people/RelationshipRows.svelte:51
 msgid "Suggested"
 msgstr "Föreslaget"
 
-#: web/routes/+layout.svelte:23 web/routes/suggestions/+page.svelte:69
+#: web/routes/+layout.svelte:35 web/routes/suggestions/+page.svelte:69
 #: web/routes/suggestions/+page.svelte:74
 msgid "Suggestions"
 msgstr "Förslag"
@@ -1760,11 +2692,11 @@ msgstr "Sommar"
 msgid "Supporting"
 msgstr "Sekundär"
 
-#: web/routes/runs/[run_id]/+page.svelte:255
+#: web/routes/runs/[run_id]/+page.svelte:257
 msgid "Swapped"
 msgstr "Utbytt"
 
-#: web/routes/runs/[run_id]/+page.svelte:293
+#: web/routes/runs/[run_id]/+page.svelte:295
 msgid "Take out"
 msgstr "Ta bort"
 
@@ -1800,6 +2732,14 @@ msgstr ""
 "API-nyckelns kontonamn har inte kopplats till någon namngiven person. Välj ägaren, eller "
 "namnge personer i Immich och skanna igen."
 
+#: web/lib/RelabelFilm.svelte:33
+msgid "The Immich label was already up to date."
+msgstr "Etiketten i Immich var redan aktuell."
+
+#: web/lib/RelabelFilm.svelte:33
+msgid "The Immich label was updated."
+msgstr "Etiketten i Immich har uppdaterats."
+
 #: web/lib/SettingsChecks.svelte:70
 msgid "The checks could not be run."
 msgstr "Kontrollerna kunde inte köras."
@@ -1816,7 +2756,7 @@ msgstr "Den valda klippningen"
 msgid "The cut could not start."
 msgstr "Klippningen kunde inte startas."
 
-#: web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:71
 msgid "The cut is ready."
 msgstr "Klippningen är klar."
 
@@ -1824,7 +2764,7 @@ msgstr "Klippningen är klar."
 msgid "The dates and places, never a model"
 msgstr "Datum och platser, aldrig en modell"
 
-#: web/lib/SettingsEditor.svelte:74
+#: web/lib/SettingsEditor.svelte:75
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
@@ -1833,8 +2773,12 @@ msgstr ""
 "inställning som satts av någon av de två första visas gråtonad: ändra den där etiketten "
 "anger."
 
+#: web/lib/people/FamilyTree.svelte:120
+msgid "The files are made in this browser. Nothing is uploaded."
+msgstr "Filerna skapas i den här webbläsaren. Inget laddas upp."
+
 #: web/lib/AskPanel.svelte:28 web/lib/RenderPanel.svelte:157
-#: web/routes/runs/[run_id]/+page.svelte:152
+#: web/routes/runs/[run_id]/+page.svelte:153
 msgid "The film"
 msgstr "Filmen"
 
@@ -1842,11 +2786,11 @@ msgstr "Filmen"
 msgid "The film file is gone, so there is nothing to upload."
 msgstr "Filmfilen är borta, så det finns inget att ladda upp."
 
-#: web/lib/JobPanel.svelte:69
+#: web/lib/JobPanel.svelte:71
 msgid "The film is ready."
 msgstr "Filmen är klar."
 
-#: web/lib/JobPanel.svelte:87
+#: web/lib/JobPanel.svelte:89
 msgid "The film still needs its playback check before it is ready."
 msgstr "Filmens uppspelning måste fortfarande kontrolleras innan den är klar."
 
@@ -1855,6 +2799,10 @@ msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr ""
 "Hushållet. Även privata ögonblick som nämns i en bildbeskrivning, till exempel ett bad, tas "
 "med."
+
+#: web/lib/RelabelFilm.svelte:22
+msgid "The label could not be updated."
+msgstr "Det gick inte att uppdatera etiketten."
 
 #: web/lib/UploadFilm.svelte:58
 msgid "The local film was removed: Immich holds it now."
@@ -1877,7 +2825,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "Modellen, när en är konfigurerad"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "The people registry: who is close, their roles, and how they relate."
 msgstr "Personregistret: vem som står nära, deras roller och hur de hänger ihop."
 
@@ -1921,7 +2869,7 @@ msgstr "Renderingen kunde inte startas."
 msgid "The report could not be loaded."
 msgstr "Rapporten kunde inte läsas in."
 
-#: web/routes/runs/[run_id]/+page.svelte:72 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/routes/runs/[run_id]/+page.svelte:73 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "Versionen kunde inte sparas."
 
@@ -1933,7 +2881,7 @@ msgstr "Körningarna kunde inte läsas in."
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "Server-URL:en ändrades: ange API-nyckeln för den nya servern."
 
-#: web/lib/SettingsEditor.svelte:52
+#: web/lib/SettingsEditor.svelte:53
 msgid "The settings could not be saved."
 msgstr "Inställningarna kunde inte sparas."
 
@@ -1949,13 +2897,25 @@ msgstr "Orden har ändrats sedan den här förhandsvisningen: förhandsvisa igen
 msgid "These people appear in the last two people memories."
 msgstr "De här personerna förekommer i de två senaste personminnena."
 
-#: web/routes/runs/[run_id]/+page.svelte:288
+#: web/routes/runs/[run_id]/+page.svelte:290
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "De visas i den ordning de togs och förbereds som resten av klippningen."
 
 #: web/lib/AskPanel.svelte:32
 msgid "Thin"
 msgstr "Lite passande material"
+
+#: web/lib/settingLabels.ts:214
+msgid "Thin model layer"
+msgstr "Tunt modelllager"
+
+#: web/lib/settingLabels.ts:106
+msgid "Thinking"
+msgstr "Tänkande"
+
+#: web/lib/settingLabels.ts:107
+msgid "Thinking parameters"
+msgstr "Tänkandeparametrar"
 
 #: web/lib/labels.ts:62
 msgid "This category already appears twice in the last six memories."
@@ -1979,17 +2939,42 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "Miniatyrbildscache"
 
+#: web/lib/settingLabels.ts:88
+msgid "Thumbnail cache size (MB)"
+msgstr "Cachestorlek för miniatyrer (MB)"
+
+#: web/lib/settingLabels.ts:8 web/lib/settingLabels.ts:40
+msgid "Tier"
+msgstr "Nivå"
+
 #: web/lib/PhaseTimeline.svelte:42
 msgid "Time not known yet"
 msgstr "Tiden är ännu inte känd"
+
+#: web/lib/settingLabels.ts:81 web/lib/settingLabels.ts:105 web/lib/settingLabels.ts:125
+#: web/lib/settingLabels.ts:134 web/lib/settingLabels.ts:220
+msgid "Timeout (seconds)"
+msgstr "Tidsgräns (sekunder)"
 
 #: web/lib/RenderPanel.svelte:198
 msgid "Title (decided as generate decides when empty)"
 msgstr "Titel (väljs av generate om fältet är tomt)"
 
+#: web/lib/stages.ts:45
+msgid "Title screen ready"
+msgstr "Titelskärmen är klar"
+
+#: web/lib/settingLabels.ts:23
+msgid "Title screens"
+msgstr "Titelskärmar"
+
 #: web/lib/RenderPanel.svelte:183
 msgid "Title style"
 msgstr "Titelstil"
+
+#: web/lib/settingLabels.ts:142
+msgid "Titles written by the model"
+msgstr "Titlar skrivna av modellen"
 
 #: web/routes/create/+page.svelte:350
 msgid "To"
@@ -2007,9 +2992,25 @@ msgstr "Tog platsen efter en bild som en kontroll avvisade."
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "Tog platsen efter en bild som modellen tog bort ur den här berättelsen."
 
+#: web/lib/settingLabels.ts:55
+msgid "Transition"
+msgstr "Övergång"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Transition Style"
 msgstr "Övergångsstil"
+
+#: web/lib/settingLabels.ts:56
+msgid "Transition duration"
+msgstr "Övergångens längd"
+
+#: web/lib/settingLabels.ts:32
+msgid "Triage"
+msgstr "Gallring"
+
+#: web/lib/settingLabels.ts:45
+msgid "Trigger token"
+msgstr "Utlösartoken"
 
 #: web/lib/labels.ts:12 web/routes/create/+page.svelte:398
 msgid "Trip"
@@ -2019,21 +3020,29 @@ msgstr "Resa"
 msgid "Trip detection failed."
 msgstr "Resedetekteringen misslyckades."
 
-#: web/routes/create/+page.svelte:410
+#: web/lib/settingLabels.ts:26 web/routes/create/+page.svelte:410
 msgid "Trips"
 msgstr "Resor"
 
-#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:132
+#: web/lib/settingLabels.ts:173
+msgid "Trusted proxies"
+msgstr "Betrodda proxyservrar"
+
+#: web/routes/runs/+page.svelte:128 web/routes/settings/people/+page.svelte:147
 msgid "Try again"
 msgstr "Försök igen"
 
-#: web/routes/runs/[run_id]/+page.svelte:311 web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:313 web/routes/runs/[run_id]/pool/+page.svelte:136
 msgid "Undo"
 msgstr "Ångra"
 
 #: web/lib/people/AccountLinks.svelte:54
 msgid "Unlink"
 msgstr "Ta bort länken"
+
+#: web/lib/RelabelFilm.svelte:30
+msgid "Update the Immich label"
+msgstr "Uppdatera etiketten i Immich"
 
 #: web/lib/UpdateCheck.svelte:43
 msgid "Update with:"
@@ -2044,7 +3053,7 @@ msgstr "Uppdatera med:"
 msgid "Updated {when}"
 msgstr "Uppdaterad {when}"
 
-#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26
+#: web/lib/UpdateCheck.svelte:25 web/lib/UpdateCheck.svelte:26 web/lib/settingLabels.ts:28
 msgid "Updates"
 msgstr "Uppdateringar"
 
@@ -2074,7 +3083,7 @@ msgstr "Ladda upp film"
 msgid "Upload the film to Immich"
 msgstr "Ladda upp filmen till Immich"
 
-#: web/lib/UploadFilm.svelte:49
+#: web/lib/UploadFilm.svelte:49 web/lib/settingLabels.ts:24
 msgid "Upload to Immich"
 msgstr "Ladda upp till Immich"
 
@@ -2087,24 +3096,40 @@ msgstr "Uppladdad till Immich, album {album}."
 msgid "Uploaded to Immich."
 msgstr "Uppladdad till Immich."
 
+#: web/lib/stages.ts:64
+msgid "Uploading to Immich..."
+msgstr "Laddar upp till Immich …"
+
 #: web/routes/create/+page.svelte:465
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "Använd exakta namn från biblioteket; varje bild måste matcha. Ersätter namnen ovan."
+
+#: web/lib/settingLabels.ts:132
+msgid "Use the language model"
+msgstr "Använd språkmodellen"
 
 #: web/lib/ShotInspector.svelte:142
 msgid "Use this picture instead"
 msgstr "Använd den här bilden i stället"
 
-#: web/routes/login/+page.svelte:66
+#: web/lib/settingLabels.ts:171
+msgid "User header"
+msgstr "Användarhuvud"
+
+#: web/lib/settingLabels.ts:160 web/routes/login/+page.svelte:66
 msgid "Username"
 msgstr "Användarnamn"
+
+#: web/lib/stages.ts:19
+msgid "Validating selected source timing"
+msgstr "Kontrollerar tidsangivelserna för valda källor"
 
 #: web/lib/AskPanel.svelte:27
 msgid "Verdict"
 msgstr "Utlåtande"
 
-#: web/lib/ShotInspector.svelte:86 web/routes/runs/[run_id]/+page.svelte:229
-#: web/routes/runs/[run_id]/+page.svelte:259 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:86 web/routes/runs/[run_id]/+page.svelte:231
+#: web/routes/runs/[run_id]/+page.svelte:261 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "Video"
 
@@ -2112,26 +3137,48 @@ msgstr "Video"
 msgid "Video cache"
 msgstr "Videocache"
 
-#: web/routes/runs/[run_id]/+page.svelte:123
+#: web/lib/settingLabels.ts:87
+msgid "Video cache age (days)"
+msgstr "Videocachens ålder (dagar)"
+
+#: web/lib/settingLabels.ts:86
+msgid "Video cache size (GB)"
+msgstr "Videocachens storlek (GB)"
+
+#: web/routes/runs/[run_id]/+page.svelte:124
 msgid "Videos"
 msgstr "Videor"
 
-#: web/routes/runs/[run_id]/+page.svelte:145
+#: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "Videor: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:187
+#: web/routes/runs/[run_id]/+page.svelte:189
 msgid "View"
 msgstr "Visa"
 
-#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:158
+#: web/lib/UploadFilm.svelte:56 web/routes/runs/[run_id]/+page.svelte:159
 msgid "View in Immich"
 msgstr "Visa i Immich"
 
 #: web/lib/RenderPanel.svelte:188
 msgid "Vintage charm"
 msgstr "Nostalgisk charm"
+
+#: web/lib/stages.ts:24
+#, python-brace-format
+msgid "Waiting for the reader: connection dropped, retry {attempt} of {retries}"
+msgstr "Väntar på läsaren: anslutningen bröts, försök {attempt} av {retries}"
+
+#: web/lib/stages.ts:68
+msgid "Waiting for the render worker"
+msgstr "Väntar på renderingsservern"
+
+#: web/lib/stages.ts:23
+#, python-brace-format
+msgid "Waiting on the {provider} batch: {count} prompts, submitted {time}"
+msgstr "Väntar på {provider}-batchen: {count} förfrågningar, skickad {time}"
 
 #: web/lib/SettingsChecks.svelte:20
 msgid "Warning"
@@ -2153,7 +3200,7 @@ msgstr ""
 "Vad automatiseringen skulle skapa härnäst, samma lista som `auto suggest` visar. Kör en som "
 "`auto run` skulle göra, eller kontrollera den först utan att rendera."
 
-#: web/lib/people/RelationshipRows.svelte:69 web/lib/people/RelationshipRows.svelte:71
+#: web/lib/people/RelationshipRows.svelte:70 web/lib/people/RelationshipRows.svelte:72
 #, python-brace-format
 msgid "What is {name} to {other}?"
 msgstr "Vad är {name} för {other}?"
@@ -2222,13 +3269,34 @@ msgstr "Varför den här bilden"
 msgid "Winter"
 msgstr "Vinter"
 
-#: web/lib/people/RelationshipRows.svelte:87 web/lib/people/RelationshipRows.svelte:88
+#: web/lib/people/RelationshipRows.svelte:88 web/lib/people/RelationshipRows.svelte:89
 msgid "With"
 msgstr "Med"
+
+#: web/lib/settingLabels.ts:224
+msgid "WordNet"
+msgstr "WordNet"
+
+#: web/lib/settingLabels.ts:225
+msgid "WordNet URL"
+msgstr "WordNet-URL"
+
+#: web/lib/settingLabels.ts:78
+msgid "Worker URL"
+msgstr "Worker-URL"
+
+#: web/lib/settingLabels.ts:79
+msgid "Worker token"
+msgstr "Worker-token"
 
 #: web/routes/create/+page.svelte:324
 msgid "Year"
 msgstr "År"
+
+#: web/lib/stages.ts:46
+#, python-brace-format
+msgid "Year divider {index} of {count}"
+msgstr "Årsavdelare {index} av {count}"
 
 #: web/lib/labels.ts:5
 msgid "Year in Review"
@@ -2241,10 +3309,6 @@ msgstr "År tillbaka (alla om tomt)"
 #: web/routes/create/+page.svelte:342
 msgid "Years to span"
 msgstr "Antal år att spänna över"
-
-#: web/lib/people/RelationshipRows.svelte:53
-msgid "Yes, they are"
-msgstr "Ja, det stämmer"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
@@ -2263,7 +3327,7 @@ msgstr "Du har den senaste versionen."
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "Din första film behöver dessa modellfiler. Ingenting laddas ner förrän du trycker på knappen."
 
-#: web/lib/JobPanel.svelte:93
+#: web/lib/JobPanel.svelte:95
 msgid "Your login expired. Sign in again to see the job’s status."
 msgstr "Din session har gått ut. Logga in igen för att se jobbets status."
 
@@ -2271,7 +3335,7 @@ msgstr "Din session har gått ut. Logga in igen för att se jobbets status."
 msgid "a guess: the longest span and the most pictures"
 msgstr "en gissning: den längsta perioden och flest bilder"
 
-#: web/routes/runs/[run_id]/+page.svelte:147
+#: web/routes/runs/[run_id]/+page.svelte:148
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "ungefär {film} film"
@@ -2284,37 +3348,169 @@ msgstr "alla tillsammans"
 msgid "any of them"
 msgstr "någon av dem"
 
+#: web/lib/people/relationshipLabels.ts:26
+msgid "aunt of"
+msgstr "moster eller faster till"
+
+#: web/lib/people/relationshipLabels.ts:27
+msgid "aunt or uncle of"
+msgstr "faster, moster, farbror eller morbror till"
+
+#: web/lib/people/relationshipLabels.ts:23
+msgid "best friend of"
+msgstr "bästa vän till"
+
+#: web/lib/people/FamilyTree.svelte:100
+msgid "birth year?"
+msgstr "födelseår?"
+
+#: web/lib/people/relationshipLabels.ts:17
+msgid "brother of"
+msgstr "bror till"
+
+#: web/lib/people/relationshipLabels.ts:12
+msgid "child of"
+msgstr "barn till"
+
+#: web/lib/people/relationshipLabels.ts:33
+msgid "child-in-law of"
+msgstr "svärson eller svärdotter till"
+
+#: web/lib/people/relationshipLabels.ts:29
+msgid "cousin of"
+msgstr "kusin till"
+
+#: web/lib/people/relationshipLabels.ts:14
+msgid "daughter of"
+msgstr "dotter till"
+
+#: web/lib/people/relationshipLabels.ts:11
+msgid "father of"
+msgstr "far till"
+
+#: web/lib/people/relationshipLabels.ts:24
+msgid "friend of"
+msgstr "vän till"
+
+#: web/lib/people/relationshipLabels.ts:22
+msgid "godchild of"
+msgstr "gudbarn till"
+
+#: web/lib/people/relationshipLabels.ts:21
+msgid "godfather of"
+msgstr "gudfar till"
+
+#: web/lib/people/relationshipLabels.ts:20
+msgid "godmother of"
+msgstr "gudmor till"
+
+#: web/lib/people/relationshipLabels.ts:19
+msgid "godparent of"
+msgstr "gudförälder till"
+
+#: web/lib/people/relationshipLabels.ts:31
+msgid "grandchild of"
+msgstr "barnbarn till"
+
+#: web/lib/people/relationshipLabels.ts:30
+msgid "grandparent of"
+msgstr "mor- eller farförälder till"
+
 #: web/lib/people/OwnerSection.svelte:26
 msgid "it matches the Immich account name"
 msgstr "stämmer med namnet på Immich-kontot"
+
+#: web/lib/people/relationshipLabels.ts:8
+msgid "married to"
+msgstr "gift med"
+
+#: web/lib/people/relationshipLabels.ts:10
+msgid "mother of"
+msgstr "mor till"
+
+#: web/lib/people/relationshipLabels.ts:28
+msgid "niece or nephew of"
+msgstr "syskonbarn till"
 
 #: web/lib/people/OwnerSection.svelte:28 web/lib/people/OwnerSection.svelte:56
 msgid "not known yet"
 msgstr "inte känt än"
 
+#: web/lib/people/relationshipLabels.ts:77
+msgid "often in the same pictures"
+msgstr "ofta på samma bilder"
+
 #: web/lib/AskPanel.svelte:141
 msgid "our cat along the years"
 msgstr "vår katt genom åren"
 
-#: web/lib/people/RelationshipRows.svelte:64
+#: web/lib/people/relationshipLabels.ts:9
+msgid "parent of"
+msgstr "förälder till"
+
+#: web/lib/people/relationshipLabels.ts:32
+msgid "parent-in-law of"
+msgstr "svärförälder till"
+
+#: web/lib/people/relationshipLabels.ts:7
+msgid "partner of"
+msgstr "partner till"
+
+#: web/lib/people/RelationshipRows.svelte:65
 msgid "relationship not named"
 msgstr "relation utan namn"
+
+#: web/lib/people/relationshipLabels.ts:78
+msgid "same birth date"
+msgstr "samma födelsedatum"
+
+#: web/lib/people/relationshipLabels.ts:79
+msgid "same name"
+msgstr "samma namn"
+
+#: web/lib/people/relationshipLabels.ts:15
+msgid "sibling of"
+msgstr "syskon till"
+
+#: web/lib/people/relationshipLabels.ts:34
+msgid "sibling-in-law of"
+msgstr "svåger eller svägerska till"
+
+#: web/lib/people/relationshipLabels.ts:16
+msgid "sister of"
+msgstr "syster till"
+
+#: web/lib/people/relationshipLabels.ts:13
+msgid "son of"
+msgstr "son till"
 
 #: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "startar"
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/lib/people/relationshipLabels.ts:18
+msgid "twin of"
+msgstr "tvilling till"
+
+#: web/lib/people/relationshipLabels.ts:25
+msgid "uncle of"
+msgstr "farbror eller morbror till"
+
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes it out as YAML."
 msgstr "skriver ut det som YAML."
 
-#: web/routes/settings/people/+page.svelte:122
+#: web/routes/settings/people/+page.svelte:137
 msgid "writes the guesses; your answers stay across scans."
 msgstr "skriver gissningarna; dina svar finns kvar mellan skanningar."
 
 #: web/lib/people/OwnerSection.svelte:24
 msgid "you confirmed it"
 msgstr "du bekräftade det"
+
+#: web/lib/people/relationshipLabels.ts:80
+msgid "you said so"
+msgstr "du sa det själv"
 
 #: web/lib/people/OwnerSection.svelte:25
 msgid "you told the scan"
@@ -2325,15 +3521,169 @@ msgstr "du sa det till genomläsningen"
 msgid "{amount} elapsed"
 msgstr "{amount} har gått"
 
-#: web/routes/runs/[run_id]/+page.svelte:146
+#: web/lib/people/relationshipLabels.ts:57
+#, python-brace-format
+msgid "{a} is {b}'s aunt"
+msgstr "{a} är moster eller faster till {b}"
+
+#: web/lib/people/relationshipLabels.ts:58
+#, python-brace-format
+msgid "{a} is {b}'s aunt or uncle"
+msgstr "{a} är faster, moster, farbror eller morbror till {b}"
+
+#: web/lib/people/relationshipLabels.ts:54
+#, python-brace-format
+msgid "{a} is {b}'s best friend"
+msgstr "{a} är bästa vän till {b}"
+
+#: web/lib/people/relationshipLabels.ts:48
+#, python-brace-format
+msgid "{a} is {b}'s brother"
+msgstr "{a} är bror till {b}"
+
+#: web/lib/people/relationshipLabels.ts:43
+#, python-brace-format
+msgid "{a} is {b}'s child"
+msgstr "{a} är barn till {b}"
+
+#: web/lib/people/relationshipLabels.ts:64
+#, python-brace-format
+msgid "{a} is {b}'s child-in-law"
+msgstr "{a} är svärson eller svärdotter till {b}"
+
+#: web/lib/people/relationshipLabels.ts:60
+#, python-brace-format
+msgid "{a} is {b}'s cousin"
+msgstr "{a} är kusin till {b}"
+
+#: web/lib/people/relationshipLabels.ts:45
+#, python-brace-format
+msgid "{a} is {b}'s daughter"
+msgstr "{a} är dotter till {b}"
+
+#: web/lib/people/relationshipLabels.ts:42
+#, python-brace-format
+msgid "{a} is {b}'s father"
+msgstr "{a} är far till {b}"
+
+#: web/lib/people/relationshipLabels.ts:55
+#, python-brace-format
+msgid "{a} is {b}'s friend"
+msgstr "{a} är vän till {b}"
+
+#: web/lib/people/relationshipLabels.ts:53
+#, python-brace-format
+msgid "{a} is {b}'s godchild"
+msgstr "{a} är gudbarn till {b}"
+
+#: web/lib/people/relationshipLabels.ts:52
+#, python-brace-format
+msgid "{a} is {b}'s godfather"
+msgstr "{a} är gudfar till {b}"
+
+#: web/lib/people/relationshipLabels.ts:51
+#, python-brace-format
+msgid "{a} is {b}'s godmother"
+msgstr "{a} är gudmor till {b}"
+
+#: web/lib/people/relationshipLabels.ts:50
+#, python-brace-format
+msgid "{a} is {b}'s godparent"
+msgstr "{a} är gudförälder till {b}"
+
+#: web/lib/people/relationshipLabels.ts:62
+#, python-brace-format
+msgid "{a} is {b}'s grandchild"
+msgstr "{a} är barnbarn till {b}"
+
+#: web/lib/people/relationshipLabels.ts:61
+#, python-brace-format
+msgid "{a} is {b}'s grandparent"
+msgstr "{a} är mor- eller farförälder till {b}"
+
+#: web/lib/people/relationshipLabels.ts:41
+#, python-brace-format
+msgid "{a} is {b}'s mother"
+msgstr "{a} är mor till {b}"
+
+#: web/lib/people/relationshipLabels.ts:59
+#, python-brace-format
+msgid "{a} is {b}'s niece or nephew"
+msgstr "{a} är syskonbarn till {b}"
+
+#: web/lib/people/relationshipLabels.ts:40
+#, python-brace-format
+msgid "{a} is {b}'s parent"
+msgstr "{a} är förälder till {b}"
+
+#: web/lib/people/relationshipLabels.ts:63
+#, python-brace-format
+msgid "{a} is {b}'s parent-in-law"
+msgstr "{a} är svärförälder till {b}"
+
+#: web/lib/people/relationshipLabels.ts:38
+#, python-brace-format
+msgid "{a} is {b}'s partner"
+msgstr "{a} är partner till {b}"
+
+#: web/lib/people/relationshipLabels.ts:46
+#, python-brace-format
+msgid "{a} is {b}'s sibling"
+msgstr "{a} är syskon till {b}"
+
+#: web/lib/people/relationshipLabels.ts:65
+#, python-brace-format
+msgid "{a} is {b}'s sibling-in-law"
+msgstr "{a} är svåger eller svägerska till {b}"
+
+#: web/lib/people/relationshipLabels.ts:47
+#, python-brace-format
+msgid "{a} is {b}'s sister"
+msgstr "{a} är syster till {b}"
+
+#: web/lib/people/relationshipLabels.ts:44
+#, python-brace-format
+msgid "{a} is {b}'s son"
+msgstr "{a} är son till {b}"
+
+#: web/lib/people/relationshipLabels.ts:39
+#, python-brace-format
+msgid "{a} is {b}'s spouse"
+msgstr "{a} är gift med {b}"
+
+#: web/lib/people/relationshipLabels.ts:49
+#, python-brace-format
+msgid "{a} is {b}'s twin"
+msgstr "{a} är tvilling till {b}"
+
+#: web/lib/people/relationshipLabels.ts:56
+#, python-brace-format
+msgid "{a} is {b}'s uncle"
+msgstr "{a} är farbror eller morbror till {b}"
+
+#: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "{content} bilder och video"
 
-#: web/routes/runs/[run_id]/+page.svelte:306
+#: web/routes/runs/[run_id]/+page.svelte:308
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}: filmen blir längre än planerade {budget} för att få med allt"
+
+#: web/lib/stages.ts:27
+#, python-brace-format
+msgid ""
+"{count} pictures in this period aren't prepared yet; preparing them first takes about "
+"{duration}"
+msgstr ""
+"{count} bilder i den här perioden är inte förberedda än; att förbereda dem först tar ungefär "
+"{duration}"
+
+#: web/lib/stages.ts:28
+#, python-brace-format
+msgid "{count} pictures prepared"
+msgstr "{count} bilder förberedda"
 
 #: web/routes/runs/+page.svelte:72
 #, python-brace-format
@@ -2345,30 +3695,42 @@ msgstr "{date_range_start} till {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} dagar · {count} bilder"
 
-#: web/lib/labels.ts:130
+#: web/lib/labels.ts:100
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} av {total}"
 
-#: web/lib/labels.ts:127
+#: web/lib/labels.ts:97
 #, python-brace-format
 msgid "{done} of {total} bytes"
 msgstr "{done} av {total} byte"
 
-#: web/lib/labels.ts:126
+#: web/lib/labels.ts:96
 #, python-brace-format
 msgid "{done} of {total} checks"
 msgstr "{done} av {total} kontroller"
 
-#: web/lib/labels.ts:124
+#: web/lib/labels.ts:94
 #, python-brace-format
 msgid "{done} of {total} clips"
 msgstr "{done} av {total} klipp"
 
-#: web/lib/labels.ts:125
+#: web/lib/labels.ts:95
 #, python-brace-format
 msgid "{done} of {total} pictures"
 msgstr "{done} av {total} bilder"
+
+#: web/lib/people/relationshipLabels.ts:89
+#, python-brace-format
+msgid "{first}; {second}"
+msgstr "{first}; {second}"
+
+#: web/lib/people/FamilyTree.svelte:72
+#, python-brace-format
+msgid "{n} person with no family link is left out."
+msgid_plural "{n} people with no family link are left out."
+msgstr[0] "{n} person utan familjeband är utelämnad."
+msgstr[1] "{n} personer utan familjeband är utelämnade."
 
 #: web/lib/AskPanel.svelte:162
 #, python-brace-format
@@ -2412,7 +3774,7 @@ msgstr ""
 "{passed} av {checked} förberedda bilder klarar reglerna som kontrolleras före klippningen; "
 "{unread} är inte förberedda än."
 
-#: web/lib/JobPanel.svelte:40
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format, python-format
 msgid "{percent}% of this stage"
 msgstr "{percent}% av detta steg"
@@ -2426,6 +3788,11 @@ msgstr "{pictures}: {photos}, {videos}"
 #, python-brace-format
 msgid "{seconds} on screen"
 msgstr "{seconds} i bild"
+
+#: web/lib/stages.ts:117
+#, python-brace-format
+msgid "{stage} (frame {frame}/{frames})"
+msgstr "{stage} (bildruta {frame}/{frames})"
 
 #: web/lib/UpdateBanner.svelte:31 web/lib/UpdateCheck.svelte:40
 #, python-brace-format
@@ -2447,7 +3814,7 @@ msgstr "~{amount} uppskattat, plus ej uppmätt arbete"
 msgid "~{amount} left"
 msgstr "~{amount} kvar"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:56
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "~{amount} kvar i detta steg"

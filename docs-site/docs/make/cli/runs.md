@@ -55,6 +55,27 @@ immich-memories music preview RUN_ID
 immich-memories runs render RUN_ID --music TRACK_PATH
 ```
 
+## Re-label a film already in Immich
+
+A film in Immich can lose its description (a slow metadata read took it back), or the label format can change between releases. Rendering it again for a few bytes of text costs about 30 minutes per 10-minute film and leaves a second copy in Immich. `runs label` writes the label again instead:
+
+```bash
+immich-memories runs label RUN_ID
+immich-memories runs label --all
+```
+
+`RUN_ID` is the render run's id, the one `runs upload` or the delivery recorded the Immich asset on. The label is rebuilt from the stored run with the same code the upload uses, written to the asset it was delivered as, then read back after Immich settles. The settle window grows with the film's stored size, so a long film's slow re-read does not take the new label back.
+
+What it does to tags:
+
+- It adds the description, the `immich-memories/generated` tag, the release and day tags, and with `upload.film_tags: true` the type, year and story tags.
+- It removes the app's own `version/`, `generated-on/`, `type/`, `year/` and `story/` tags under `immich-memories/` that the current label no longer has. With `upload.film_tags` off, a film's old type, year and story tags go too.
+- It never touches a tag outside those: yours, or anything else under `immich-memories/`.
+
+Each run is reported as one of: `written`, `unchanged` (the label already matches, nothing is sent), `asset gone from Immich`, or `rights missing` (the key needs `tag.create`, `tag.asset` and, for the description, `asset.update`). `--all` goes through every run with a recorded Immich asset and keeps going when one fails. The exit code is 1 when a run's key lacks the rights, a write failed or did not stay, or a single named run's film is gone.
+
+The run page has the same action: **Update the Immich label**, for a delivered run.
+
 ## Storage and deletion
 
 ```bash

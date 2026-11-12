@@ -43,7 +43,7 @@ def test_saved_cut_sends_one_success_message_after_the_film_is_written(cut, monk
     assert result == film and film.is_file()
     apprise.Apprise.return_value.notify.assert_called_once()
     sent = apprise.Apprise.return_value.notify.call_args.kwargs
-    assert sent["title"] == "Memory Generated: Monthly Highlights"
+    assert sent["title"] == "Film ready: Monthly highlights"
     assert f"Output: {film}" in sent["body"]
     health = NotificationStateStore(open_store(params.config)).get()
     assert health is not None and health.last_success_at is not None

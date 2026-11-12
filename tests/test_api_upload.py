@@ -489,7 +489,9 @@ class TestUploadMemory:
 
         assert result["asset_id"] == "asset-999"
         assert result["album_id"] == "album-new"
-        client.albums.upload_asset.assert_awaited_once_with(video, captured_at=None)
+        client.albums.upload_asset.assert_awaited_once_with(
+            video, captured_at=None, shown_name=None
+        )
         client.albums.create_album.assert_awaited_once_with("2024 Memories")
         client.albums.add_assets_to_album.assert_awaited_once_with("album-new", ["asset-999"])
 

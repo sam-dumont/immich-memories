@@ -802,6 +802,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roster/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tree
+         * @description The family tree the confirmed relationships draw, laid out row by row.
+         *
+         *     Parents, children, partners and siblings draw it; everyone else is counted in `left_out`.
+         *     The page draws it from this, in the browser; nothing about it leaves the app's server.
+         */
+        get: operations["tree_api_v1_roster_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roster/{person_id}": {
         parameters: {
             query?: never;
@@ -1032,6 +1055,27 @@ export interface paths {
         get: operations["film_api_v1_runs__run_id__film_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relabel Run Film
+         * @description Write this run's current description and tags to the film Immich holds, and take off
+         *     the app's own tags the label no longer has.
+         */
+        post: operations["relabel_run_film_api_v1_runs__run_id__label_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1842,6 +1886,22 @@ export interface components {
              */
             level: "anyone" | "family" | "just-us";
         };
+        /** FamilyTree */
+        FamilyTree: {
+            /** Couples */
+            couples: [
+                string,
+                string
+            ][];
+            /** Families */
+            families: components["schemas"]["TreeFamily"][];
+            /** Left Out */
+            left_out: number;
+            /** People */
+            people: components["schemas"]["TreePerson"][];
+            /** Suggestions */
+            suggestions: components["schemas"]["TreeSuggestion"][];
+        };
         /** FlagAnswer */
         FlagAnswer: {
             /** Kind */
@@ -1934,12 +1994,24 @@ export interface components {
              */
             history: components["schemas"]["JobStage"][];
             /**
+             * Key
+             * @default
+             */
+            key: string;
+            /**
              * Label
              * @default
              */
             label: string;
             /** Last Completed At */
             last_completed_at?: number | null;
+            /**
+             * Params
+             * @default {}
+             */
+            params: {
+                [key: string]: string | number;
+            };
             /**
              * Pass Id
              * @default 0
@@ -1985,8 +2057,20 @@ export interface components {
         JobStage: {
             /** Done */
             done?: number | null;
+            /**
+             * Key
+             * @default
+             */
+            key: string;
             /** Label */
             label: string;
+            /**
+             * Params
+             * @default {}
+             */
+            params: {
+                [key: string]: string | number;
+            };
             /**
              * Pass Id
              * @default 0
@@ -2282,6 +2366,23 @@ export interface components {
              */
             status: "ok" | "warning" | "error" | "skipped";
         };
+        /**
+         * RelabelAnswer
+         * @description What re-labelling a delivered film in Immich did.
+         */
+        RelabelAnswer: {
+            /** Detail */
+            detail: string;
+            /** Removed Tags */
+            removed_tags: string[];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "written" | "unchanged" | "asset_gone" | "rights_missing" | "failed";
+            /** Warnings */
+            warnings: string[];
+        };
         /** Relationship */
         Relationship: {
             /** Kind */
@@ -2440,6 +2541,15 @@ export interface components {
             /** Roles */
             roles: string[];
         };
+        /** RosterChainStep */
+        RosterChainStep: {
+            /** Kind */
+            kind: string;
+            /** Other */
+            other: string;
+            /** Person */
+            person: string;
+        };
         /** RosterFlag */
         RosterFlag: {
             /** Kind */
@@ -2453,6 +2563,11 @@ export interface components {
         };
         /** RosterLink */
         RosterLink: {
+            /**
+             * Chain
+             * @default []
+             */
+            chain: components["schemas"]["RosterChainStep"][];
             /** Confidence */
             confidence: number;
             /** Decision */
@@ -2921,6 +3036,44 @@ export interface components {
             head: string;
             /** Lines */
             lines: string[];
+        };
+        /** TreeChild */
+        TreeChild: {
+            /** Person Id */
+            person_id: string;
+            /** Through Sibling */
+            through_sibling: boolean;
+        };
+        /** TreeFamily */
+        TreeFamily: {
+            /** Children */
+            children: components["schemas"]["TreeChild"][];
+            /** Parents */
+            parents: string[];
+        };
+        /** TreePerson */
+        TreePerson: {
+            /** Birth Year */
+            birth_year: number | null;
+            /** Generation */
+            generation: number;
+            /** Name */
+            name: string;
+            /** Owner */
+            owner: boolean;
+            /** Person Id */
+            person_id: string;
+            /** X */
+            x: number;
+        };
+        /** TreeSuggestion */
+        TreeSuggestion: {
+            /** Kind */
+            kind: string;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
         };
         /** TripChoice */
         TripChoice: {
@@ -4198,6 +4351,26 @@ export interface operations {
             };
         };
     };
+    tree_api_v1_roster_tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyTree"];
+                };
+            };
+        };
+    };
     answer_api_v1_roster__person_id__put: {
         parameters: {
             query?: never;
@@ -4609,6 +4782,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    relabel_run_film_api_v1_runs__run_id__label_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelabelAnswer"];
+                };
             };
             /** @description Validation Error */
             422: {

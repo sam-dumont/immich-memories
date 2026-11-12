@@ -8,7 +8,6 @@ from immich_memories.analysis.llm.provider_status import watch_provider
 from immich_memories.analysis.llm.wire import TRANSPORT_RETRIES, LLMTransportAttempt
 from immich_memories.cli import main
 from immich_memories.cli._generate_display import saved_path_line
-from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cut_progress import announcing_stages
 from immich_memories.operations.storyboard import Shot, Storyboard
 
@@ -37,18 +36,15 @@ def test_the_storyboard_header_counts_pictures_and_says_what_the_seconds_are() -
 
 def test_the_last_dropped_connection_tells_the_person_what_to_do() -> None:
     seen = []
-    observe = watch_provider(
-        "reader", LLMConfig(enabled=True, base_url="http://reader.local:9999/v1")
-    )
+    observe = watch_provider()
     with announcing_stages(seen.append):
         observe(
             LLMTransportAttempt(
                 attempt=TRANSPORT_RETRIES, outcome="connection_error", status_code=None
             )
         )
-    assert seen[-1].label == (
-        f"Gave up on the reader at reader.local:9999 after {TRANSPORT_RETRIES} dropped "
-        "connections: check that server"
+    assert seen[-1].stage_label == (
+        f"Gave up on the reader after {TRANSPORT_RETRIES} dropped connections: check that server"
     )
 
 

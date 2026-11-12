@@ -215,7 +215,9 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   draft's Basic line so the model writes the summary. A list of places the model repeats is
   said once (`one_place_once`), and the plan records the summary's language as
   `story.thesis_locale`: the Immich label (`operations/film_labelling.py`) uses the summary
-  only when the render is in that language.
+  only when the render is in that language. The file keeps its English name on disk; the
+  name Immich and a web download show is built in the film's language
+  (`operations/shown_film_name.py`).
 - **Notable record**: a picture an episode reading named as a moment worth a place of its own,
   with the reason (`banked_notable_records` in `runtime/period_accounts.py`). Only a story holding one
   can earn an N seat.
@@ -640,6 +642,7 @@ src/immich_memories/
 │   ├── asset_service.py        # AssetService: asset/video download
 │   ├── person_service.py       # PersonService: person/face operations
 │   ├── album_service.py        # AlbumService: album operations
+│   ├── film_relabel.py         # FilmRelabeler: re-write a delivered film's label, drop stale app tags
 │   ├── permissions.py          # API-key read/upload capabilities; missing read rights stop a cut
 │   ├── sync_client.py          # Sync wrapper for async client
 │   ├── accounts.py             # open_accounts: one /users/me-verified client per selected account (#1500)
@@ -1171,6 +1174,7 @@ src/immich_memories/
 │   ├── request_checks.py       # Host allow-list, cross-site writes, body caps and CSP with built-client hashes
 │   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
 │   ├── run_upload.py           # POST /api/v1/runs/{id}/upload: a finished film to Immich, capability-checked
+│   ├── run_label.py            # POST /api/v1/runs/{id}/label: re-label a delivered film in Immich
 │   ├── cut.py                  # /runs/{id}/cut (storyboard + trace + polish + siblings), /story, /revisions
 │   ├── pool.py                 # /runs/{id}/pool and /pictures/{id}/decision (Never use, Clear hold)
 │   ├── media.py                # /assets/{id}/thumbnail (shared cache), /video (Range-streamed), /people/{id}/face
@@ -1189,7 +1193,8 @@ src/immich_memories/
 │   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
 │   ├── telemetry.py            # /api/v1/telemetry: is tracing on; the client's spans forwarded to the collector, scrubbed
 │   ├── updates.py              # /api/v1/updates (the button) and /updates/daily (the banner)
-│   ├── roster.py               # /roster: the store's people registry (roles, relationships, alias link/unlink) for People
+│   ├── roster.py               # /roster: the store's people registry (roles, relationships, alias link/unlink) for People;
+│   │                           #   /roster/tree, the family tree the page draws in the browser
 │   ├── people_accounts.py      # /roster/owners (who owns each account) and /accounts/{name}/people (pick a person to link)
 │   ├── settings.py             # /settings: every setting + its source, saved to the database; /caches
 │   ├── setting_inputs.py       # What each setting accepts (choices, bounds, secret) read from the config schema
@@ -1321,6 +1326,10 @@ src/immich_memories/
 │   ├── kinship.py              # suggest_relationships(): what the confirmed tree implies (grandparents,
 │   │                           # aunts/uncles, cousins, in-laws, shared-parent siblings), with the chain;
 │   │                           # pure, never stored until somebody accepts one (#2795)
+│   ├── family_tree.py          # family_tree(): the People page's tree from the confirmed close ties
+│   │                           # (rows, couples, families, parentless sibling groups, dotted suggestions,
+│   │                           # the count left out); pure, deterministic (#2797)
+│   ├── family_tree_layout.py   # place(): x along each row by down/up sweeps and pooled adjacent violators
 │   └── editor.py               # The companion editor's model: the registry as rows, and back; one row per
 │                               # pair (a detected link hides once the pair has a real relationship), plus
 │                               # kinship's suggestions, computed at read time so the page refreshes them live
@@ -1449,7 +1458,7 @@ src/immich_memories/
 │   ├── notification_state.py   # Durable, sanitized notification delivery health (store row id 1)
 │   ├── catalogue.py            # The special-days catalogue in the store: load/save, entries, scope
 │   ├── trip_input_cache.py     # Durable, identity-checked inputs for auto trip discovery
-│   ├── notifications.py        # Apprise notification integration
+│   ├── notifications.py        # Apprise notifications, titled and worded in the film's language
 │   ├── runner.py               # Auto-run orchestrator (lease, subprocess, attempt record)
 │   ├── in_process_scheduler.py # Daily timer inside the UI/Docker process
 │   ├── runtime_provenance.py   # Which code a scheduled job actually ran: version, commit, checkout age
@@ -1541,6 +1550,9 @@ src/immich_memories/
 ├── locked_file.py              # file_lock(): one writer at a time on a file several processes rewrite
 │                               # (the SQLite migration lock, the place-name cache)
 ├── i18n.py                     # Internationalization
+├── operational_warnings.py     # Warnings as `warn.<code>?params`, worded in the film's language where read
+├── progress_text.py            # Progress headings as a stage key + params (`stage.<key>?params` as one string),
+│                               #   worded by the web client (web/src/lib/stages.ts) and in English for the CLI
 ├── i18n_places.py              # Country names in the film's language (CLDR, offline)
 ├── place_names.py              # Offline island boxes and short island/region names
 ├── place_name_translations.py  # Island and region names for the languages whose titles take no preposition

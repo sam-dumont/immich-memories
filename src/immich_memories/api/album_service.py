@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.film_label import FilmLabel
 from immich_memories.api.generated_asset_tags import GENERATED_MEMORY_TAG, generated_asset_ids
+from immich_memories.operational_warnings import coded, render_warning
 
 RequestFn = Callable[..., Any]
 ApiVersionFn = Callable[[], Awaitable[ResolvedApiVersion]]
@@ -146,8 +147,11 @@ def build_upload_fields(
     file_path: Path,
     modified_at: datetime,
     captured_at: datetime | None = None,
+    shown_name: str | None = None,
 ) -> dict[str, str]:
     """Build deterministic request fields without opening or reading file contents.
+
+    ``shown_name`` is the file name Immich should show; the file on disk keeps its own.
 
     ``captured_at`` is when the content itself happened, offset included; it is
     what files the asset in the Immich timeline. Without one the file's own
@@ -159,14 +163,16 @@ def build_upload_fields(
         "fileModifiedAt": modified_at.isoformat(),
     }
     if version is ResolvedApiVersion.V3:
-        return {"filename": file_path.name} | common_fields
+        return {"filename": shown_name or file_path.name} | common_fields
 
     file_hash = hashlib.sha256(file_path.name.encode() + str(file_path.stat().st_size).encode())
     identity_fields = {
         "deviceAssetId": f"{_UPLOAD_DEVICE_ID}-{file_hash.hexdigest()[:16]}",
         "deviceId": _UPLOAD_DEVICE_ID,
     }
-    return identity_fields | common_fields
+    # Both releases take `filename` and show it as the original file name.
+    named = {"filename": shown_name} if shown_name else {}
+    return identity_fields | named | common_fields
 
 
 def _file_sha1(file_path: Path) -> str:
@@ -237,7 +243,7 @@ def _album_ref(album: dict) -> AlbumRef:
     )
 
 
-def _tag_rights_missing(allows: Callable[[str], bool]) -> list[str]:
+def tag_rights_missing(allows: Callable[[str], bool]) -> list[str]:
     """The tag rights this key lacks to file a film under a tag."""
     return [permission for permission in ("tag.create", "tag.asset") if not allows(permission)]
 
@@ -255,11 +261,18 @@ class AlbumService:
         self._get_api_version = api_version_fn
         self._get_key_capabilities = key_capabilities_fn
 
-    async def upload_asset(self, file_path: Path, *, captured_at: datetime | None = None) -> str:
+    async def upload_asset(
+        self,
+        file_path: Path,
+        *,
+        captured_at: datetime | None = None,
+        shown_name: str | None = None,
+    ) -> str:
         """Upload a file to Immich. Returns the asset ID.
 
         ``captured_at`` files the asset on the day its content happened; without
-        one it lands on the day the file was written.
+        one it lands on the day the file was written. ``shown_name`` is the file
+        name Immich shows (the film's language); the local file is not renamed.
         """
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -268,7 +281,7 @@ class AlbumService:
         version = await self._get_api_version()
         stat = file_path.stat()
         modified_at = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
-        fields = build_upload_fields(version, file_path, modified_at, captured_at)
+        fields = build_upload_fields(version, file_path, modified_at, captured_at, shown_name)
 
         checksum = _file_sha1(file_path)
 
@@ -277,7 +290,7 @@ class AlbumService:
                 "POST",
                 "/assets",
                 data=fields,
-                files={"assetData": (file_path.name, f, content_type)},
+                files={"assetData": (shown_name or file_path.name, f, content_type)},
                 # WHY: Immich answers "duplicate" instead of storing a second copy
                 # of a file whose SHA-1 it already holds for this user.
                 headers={"x-immich-checksum": checksum},
@@ -505,7 +518,7 @@ class AlbumService:
             return False
         for _ in range(_TAG_ATTEMPTS):
             await self.tag_as_generated(asset_id)
-            await self._settled(asset_id, waits.quiet_polls)
+            await self.settled(asset_id, waits.quiet_polls)
             if await self._carries_generated_tag(asset_id):
                 return True
         logger.warning("The provenance tag did not stay on the uploaded film")
@@ -519,6 +532,7 @@ class AlbumService:
         description: bool = True,
         tags: bool = True,
         waits: UploadWaits = UploadWaits(),
+        already_read: bool = False,
     ) -> list[str]:
         """Give a fresh upload its description and tags once Immich has read it (#2505).
 
@@ -526,6 +540,8 @@ class AlbumService:
         overwrites both. Reads them back and applies them again if they did not stick;
         returns what still did not stay, as "description" and "tags". Written before
         Immich's read, both are returned as not kept: the read can still take them back.
+        `already_read` is for a film Immich read long ago (a re-label, #2627): there is no first
+        read to wait for, so nothing is held back as unverified.
         """
         wanted = {
             "description": description and bool(label.description),
@@ -533,7 +549,7 @@ class AlbumService:
         }
         if not any(wanted.values()):
             return []
-        read = await self._read_by_immich(asset_id, waits.read_polls)
+        read = already_read or await self._read_by_immich(asset_id, waits.read_polls)
         if not read:
             logger.warning("Immich had not read the uploaded film yet; describing it anyway")
         missing = [name for name, needed in wanted.items() if needed]
@@ -542,12 +558,12 @@ class AlbumService:
             # write, and two rewrites that overlap lose one of them.
             if wanted["tags"]:
                 await self._put_tags(asset_id, label.tags)
-                await self._settled(asset_id, waits.quiet_polls)
+                await self.settled(asset_id, waits.quiet_polls)
             if wanted["description"]:
                 await self._request(
                     "PUT", f"/assets/{asset_id}", json={"description": label.description}
                 )
-                await self._settled(asset_id, waits.quiet_polls)
+                await self.settled(asset_id, waits.quiet_polls)
             missing = await self._label_not_kept(asset_id, label, wanted)
             if not read:
                 return [name for name, needed in wanted.items() if needed]
@@ -563,7 +579,7 @@ class AlbumService:
             # the rewrites collided (#2505 on a real server: the story tag was lost).
             await self._request("PUT", "/tags/assets", json={"tagIds": ids, "assetIds": [asset_id]})
 
-    async def _settled(self, asset_id: str, quiet_polls: int) -> None:
+    async def settled(self, asset_id: str, quiet_polls: int) -> None:
         """Wait until Immich has stopped rewriting the asset: `quiet_polls` reads unchanged,
         within a minute or three quiet windows, whichever is longer.
 
@@ -654,13 +670,16 @@ class AlbumService:
                 "album_id": None,
                 "delivery_complete": False,
                 "missing_permissions": missing + label_missing,
-                "warnings": ["not uploaded: the key lacks " + ", ".join(missing + label_missing)],
+                "warnings": [coded("not_uploaded", permissions=", ".join(missing + label_missing))],
             }
-        asset_id = await self.upload_asset(video_path, captured_at=captured_at)
+        shown_name = label.file_name if label else None
+        asset_id = await self.upload_asset(
+            video_path, captured_at=captured_at, shown_name=shown_name
+        )
         waits = upload_waits(video_path.stat().st_size)
         warnings: list[str] = []
         if missing:
-            warnings.append("delivery incomplete: the key lacks " + ", ".join(missing))
+            warnings.append(coded("delivery_incomplete", permissions=", ".join(missing)))
         allows = capabilities.allows if capabilities else lambda _permission: True
         # A key that cannot label is reported, never an incomplete delivery: keys made
         # before films had labels lack `asset.update`, and treating that as incomplete
@@ -672,18 +691,22 @@ class AlbumService:
         complete = not warnings
         warnings.extend(label_notes)
         if not allows("asset.delete"):
-            warnings.append("previous version kept: the key lacks asset.delete")
+            warnings.append(coded("previous_kept_key", permission="asset.delete"))
         elif not complete:
-            warnings.append("previous version kept: delivery incomplete")
+            warnings.append(coded("previous_kept_incomplete"))
         else:
             try:
                 await supersede_previous_renders(
-                    self, album_id=album_id, filename=video_path.name, keep_asset_id=asset_id
+                    self,
+                    album_id=album_id,
+                    filename=video_path.name,
+                    keep_asset_id=asset_id,
+                    shown_name=shown_name,
                 )
             except (OSError, RuntimeError, ValueError, KeyError) as exc:
-                warnings.append(f"previous version kept: {exc}")
+                warnings.append(coded("previous_kept_error", detail=exc))
         for warning in warnings:
-            logger.warning("%s", warning)
+            logger.warning("%s", render_warning(warning))
         return {
             "asset_id": asset_id,
             "album_id": album_id,
@@ -706,10 +729,10 @@ class AlbumService:
         write makes Immich rewrite the film's sidecar, and each is waited out on its own
         (#2711). Otherwise it goes on alone.
         """
-        carried = bool(label and label.tags) and not _tag_rights_missing(allows)
+        carried = bool(label and label.tags) and not tag_rights_missing(allows)
         if not carried:
             await self._tag_delivery(asset_id, allows, reports[1], waits)
-        if label:
+        if label and (label.description or label.tags):
             await self._label_delivery(asset_id, label, allows, reports, waits, provenance=carried)
 
     async def _tag_delivery(
@@ -719,14 +742,14 @@ class AlbumService:
         warnings: list[str],
         waits: UploadWaits,
     ) -> None:
-        if tag_missing := _tag_rights_missing(allows):
-            warnings.append("uploaded without provenance: the key lacks " + ", ".join(tag_missing))
+        if tag_missing := tag_rights_missing(allows):
+            warnings.append(coded("no_provenance_key", permissions=", ".join(tag_missing)))
             return
         try:
             if not await self.tag_as_generated_once_read(asset_id, waits=waits):
-                warnings.append("uploaded without verified provenance: the tag did not stay")
+                warnings.append(coded("provenance_unverified"))
         except Exception as exc:
-            warnings.append(f"uploaded without verified provenance: {exc}")
+            warnings.append(coded("provenance_error", detail=exc))
 
     async def _label_delivery(
         self,
@@ -742,11 +765,11 @@ class AlbumService:
         note, a label that did not stay is a warning that leaves the delivery pending.
         `provenance` writes the provenance tag with the label's tags, in the same write."""
         notes, warnings = reports
-        tag_missing = _tag_rights_missing(allows)
+        tag_missing = tag_rights_missing(allows)
         if label.tags and tag_missing:
-            notes.append("uploaded without story tags: the key lacks " + ", ".join(tag_missing))
+            notes.append(coded("no_story_tags_key", permissions=", ".join(tag_missing)))
         if label.description and not allows(DESCRIBE):
-            notes.append(f"uploaded without description: the key lacks {DESCRIBE}")
+            notes.append(coded("no_description_key", permission=DESCRIBE))
         written = replace(label, tags=(GENERATED_MEMORY_TAG, *label.tags)) if provenance else label
         try:
             not_kept = await self.apply_label_once_read(
@@ -758,12 +781,12 @@ class AlbumService:
             )
         except Exception as exc:
             if provenance:
-                warnings.append(f"uploaded without verified provenance: {exc}")
-            warnings.append(f"uploaded without a verified description and tags: {exc}")
+                warnings.append(coded("provenance_error", detail=exc))
+            warnings.append(coded("label_unverified_error", detail=exc))
             return
         if provenance and "tags" in not_kept:
-            warnings.append("uploaded without verified provenance: the tag did not stay")
-        warnings.extend(f"uploaded film's {name} did not stay" for name in not_kept)
+            warnings.append(coded("provenance_unverified"))
+        warnings.extend(coded(f"{name}_not_kept") for name in not_kept)
 
     async def _album_delivery(
         self,
@@ -779,15 +802,15 @@ class AlbumService:
             album_id = await self.find_album_by_name(album_name)
             if album_id is None:
                 if not allows("album.create"):
-                    warnings.append("album not created: the key lacks album.create")
+                    warnings.append(coded("album_not_created_key", permission="album.create"))
                     return None
                 album_id = await self.create_album(album_name)
             if allows("albumAsset.create"):
                 await self.add_assets_to_album(album_id, [asset_id])
             else:
-                warnings.append("film not added to album: the key lacks albumAsset.create")
+                warnings.append(coded("album_not_added_key", permission="albumAsset.create"))
         except Exception as exc:
-            warnings.append(f"film not added to album: {exc}")
+            warnings.append(coded("album_not_added_error", detail=exc))
         return album_id
 
 
@@ -812,6 +835,7 @@ async def supersede_previous_renders(
     album_id: str | None,
     filename: str,
     keep_asset_id: str,
+    shown_name: str | None = None,
 ) -> list[str]:
     """Trash earlier uploads of the same recipe, keeping the one just uploaded.
 
@@ -829,15 +853,19 @@ async def supersede_previous_renders(
     identity or the provenance tag; v3 keeps no device identity, so there the
     tag alone decides, and a v3 render uploaded before tagging is kept. Immich's
     trash is recoverable, so this is reversible by the user.
+
+    A film uploaded under its shown name (`shown_name`) or under its disk name, as
+    earlier releases sent it, is the same recipe.
     """
     if not album_id:
         return []
 
     assets = await client.list_album_assets(album_id)
+    names = {filename, shown_name} - {None}
     same_recipe = [
         asset
         for asset in assets
-        if asset.get("originalFileName") == filename and asset.get("id") != keep_asset_id
+        if asset.get("originalFileName") in names and asset.get("id") != keep_asset_id
     ]
     tagged = (
         await _tagged_ids(client)

@@ -15,10 +15,16 @@ from typing import TYPE_CHECKING, NoReturn
 from immich_memories.delivery_timestamp import film_capture_instant
 from immich_memories.generate_progress import report_progress
 from immich_memories.generate_settings import upload_to_immich
+from immich_memories.operational_warnings import (
+    JOINER,
+    render_warning,
+    scrub_warning,
+)
 from immich_memories.operations.film_labelling import label_for_params
 from immich_memories.operations.local_output_cleanup import remove_after_confirmed_upload
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.processing.output_contract import InvalidOutputArtifact
+from immich_memories.progress_text import Stage, coded
 from immich_memories.security import configured_secret_values, sanitize_error_message
 
 if TYPE_CHECKING:
@@ -42,10 +48,16 @@ def _delivery_error(message: str) -> DeliveryError:
 
 def safe_delivery_message(exc: Exception | str, config: Config) -> str:
     """Sanitize one delivery error, including unlabelled configured secrets."""
-    safe_message = sanitize_error_message(str(exc))
-    for secret in configured_secret_values(config):
-        safe_message = safe_message.replace(secret, "***")
-    return safe_message
+    secrets = configured_secret_values(config)
+
+    def scrub(text: str) -> str:
+        safe_message = sanitize_error_message(text)
+        for secret in secrets:
+            safe_message = safe_message.replace(secret, "***")
+        return safe_message
+
+    # A coded warning is scrubbed value by value: its encoding would hide a secret from replace().
+    return scrub_warning(str(exc), scrub)
 
 
 def _pending_delivery_error(
@@ -100,7 +112,7 @@ def deliver_completed_artifact(
                 run_tracker, safe_delivery_message(exc, params.config), attempted=False
             )
 
-    report_progress(params, "upload", 0.95, "Uploading to Immich...")
+    report_progress(params, "upload", 0.95, coded(Stage.RENDER_UPLOAD))
     delivery_error: DeliveryError | None = None
     asset_id: str | None = None
     try:
@@ -109,15 +121,16 @@ def deliver_completed_artifact(
             result_path,
             params.upload_album,
             film_capture_instant(clip.asset for clip in params.clips),
-            label_for_params(params),
+            label_for_params(params, result_path),
         )
         asset_id = result.get("asset_id")
         if result.get("delivery_complete") is False:
             warnings = [safe_delivery_message(w, params.config) for w in result.get("warnings", [])]
-            reason = "; ".join(warnings) or "Immich delivery incomplete; local film kept"
+            reason = JOINER.join(warnings) or "Immich delivery incomplete; local film kept"
             _record_incomplete_delivery(run_tracker, result, reason, warnings)
-            logger.warning("%s; local film kept at %s", reason, result_path)
-            report_progress(params, "upload", 1.0, f"{reason}; local film kept")
+            logger.warning("%s; local film kept at %s", render_warning(reason), result_path)
+            # The reason is on the run's warnings; the heading says what happened to the film.
+            report_progress(params, "upload", 1.0, coded(Stage.RENDER_UPLOAD_INCOMPLETE))
             return result
         if not isinstance(asset_id, str) or not asset_id.strip():
             raise ValueError("Immich upload returned no asset ID")

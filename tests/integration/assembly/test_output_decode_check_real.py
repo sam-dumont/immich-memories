@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
+from immich_memories.progress_text import stage_text
 from tests.integration.conftest import ffprobe_json, requires_ffmpeg
 
 pytestmark = [pytest.mark.integration, requires_ffmpeg]
@@ -78,7 +79,9 @@ def test_a_real_two_second_film_passes_both_probes_and_reports_progress(
         staged,
         final,
         _h264_plan(),
-        decode_check=DecodeCheck(encode_seconds=1.0, progress=heard.append),
+        decode_check=DecodeCheck(
+            encode_seconds=1.0, progress=lambda message: heard.append(stage_text(message))
+        ),
     )
 
     assert final.is_file()

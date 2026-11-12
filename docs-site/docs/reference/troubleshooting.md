@@ -42,7 +42,7 @@ Read it before you attach it to an issue. [Report details](../make/cli/report.md
 | `IMMICH_MEMORIES_OUTPUT__DIRECTORY=… overrides config.yaml's output.directory` | The image sets this variable, and environment variables win over the file. Unset it, or point it at the directory you mounted |
 | `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check the store named by `database.url` or the environment. Both `IMMICH_MEMORIES_DATABASE__URL` and `IMMICH_MEMORIES_DATABASE_URL` work. If the store is correct, run `prepare` |
 | `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. For a native install, leave `base_url` empty for the owned local model and install its weights/server. Docker and Kubernetes need an external reader endpoint; `tier: gpu` uses the rules reader |
-| `Waiting for the reader at host:port: connection dropped, retry 1 of 3`, then `Gave up on the reader at …` | A configured model server stopped answering. The film goes on with the rules. See [below](#waiting-for-a-model-server) |
+| `Waiting for the reader: connection dropped, retry 1 of 3`, then `Gave up on the reader after 3 dropped connections` | A configured model server stopped answering. The film goes on with the rules. See [below](#waiting-for-a-model-server) |
 | `caption endpoint must advertise smolvlm2-500m-base-public` | Right weights, wrong name: alias it. See [Add captions](../better/captions.md) |
 | `caption endpoint failed the compact-v3 schema control` | A captioner that just started can take minutes to answer its first request, so the app retries that check once with more time. If it fails again, the server ignores the JSON schema, or it runs the wrong model |
 | `Waiting for the inference worker (busy with another job, … s so far)` | Another run's render or music holds the worker's GPU. Captions wait, up to 25 minutes, and go on once it's free. Nothing to do |
@@ -172,9 +172,11 @@ moment isn't stuck.
 
 ## Waiting for a model server
 
-`Waiting for the reader at host:port: connection dropped, retry 1 of 3` means the text model server (normally
-on the `full` tier) dropped the connection. The run tries three times, two then four seconds apart, then logs
-`Gave up on the reader at host:port after 3 dropped connections: check that server`. For the rest of that run
+`Waiting for the reader: connection dropped, retry 1 of 3` means the text model server (normally on the
+`full` tier) dropped the connection. The run tries three times, two then four seconds apart, then logs
+`Gave up on the reader after 3 dropped connections: check that server`. The line doesn't print the server's
+address, since progress text never shows config values: the server is the one `advanced.llm.base_url` names,
+or the app's own when that's empty. For the rest of that run
 it doesn't ask the server again: the film ships the rules draft with default wording, plus any answers the
 reader already gave.
 

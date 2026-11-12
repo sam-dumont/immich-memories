@@ -16,6 +16,7 @@ from threading import Event, Thread, Timer
 from typing import IO, Any
 
 from immich_memories.processing.render_control import owned_child
+from immich_memories.progress_text import Stage, coded
 
 logger = logging.getLogger(__name__)
 
@@ -395,10 +396,9 @@ def _find_buffer_split_pos(buffer: str) -> int:
 
 def _build_progress_status(progress: FFmpegProgress) -> str:
     time_str = f"{int(progress.time_seconds // 60)}:{int(progress.time_seconds % 60):02d}"
-    status = f"Encoding ({time_str})"
     if progress.speed > 0:
-        status += f" @ {progress.speed:.1f}x"
-    return status
+        return coded(Stage.RENDER_ENCODING_SPEED, time=time_str, speed=f"{progress.speed:.1f}")
+    return coded(Stage.RENDER_ENCODING_TIME, time=time_str)
 
 
 def _try_report_line(
