@@ -27,13 +27,21 @@
   // The preview opens on the stretch the film plays and loops it while it plays through. A seek
   // outside it is the reader looking for a new edge, so it is never pulled back.
   let last = 0;
+  let seeking = false;
+  function seekStarted() {
+    seeking = true;
+  }
+  function seekFinished() {
+    if (player) last = player.currentTime;
+    seeking = false;
+  }
   function start() {
     if (!player || !interval) return;
     player.currentTime = interval[0];
     last = interval[0];
   }
   function hold() {
-    if (!player || !interval || player.seeking) return;
+    if (!player || !interval || seeking || player.seeking) return;
     const playedOut = last >= interval[0] && last < interval[1] && player.currentTime >= interval[1];
     if (playedOut) player.currentTime = interval[0];
     last = player.currentTime;
@@ -46,8 +54,8 @@
       {#key shot.asset_id}
         <video bind:this={player} class="aspect-[4/3] w-full object-contain" controls muted playsinline autoplay
           preload="metadata" poster={thumbnail(shot.asset_id, 'preview')}
-          src={`${video(shot.asset_id)}#t=${interval[0]},${interval[1]}`}
-          ontimeupdate={hold} onloadedmetadata={start}></video>
+          src={video(shot.asset_id)}
+          ontimeupdate={hold} onloadedmetadata={start} onseeking={seekStarted} onseeked={seekFinished}></video>
       {/key}
     {:else}
       <img class={['aspect-[4/3] w-full object-contain', removed && 'opacity-40']} src={thumbnail(playing, 'preview')} alt={shot.reason || shot.story_title} />

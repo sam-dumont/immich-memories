@@ -346,6 +346,12 @@ def test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen(
     player = inspector.locator("video")
     page.wait_for_function("video => video.readyState >= 2", arg=player.element_handle())
 
+    # Seeking past the selected end must not look like playback crossing that end.
+    player.evaluate("video => { video.pause(); video.currentTime = video.duration - 0.2; }")
+    page.wait_for_function("video => !video.seeking", arg=player.element_handle())
+    page.wait_for_timeout(300)
+    assert player.evaluate("video => Math.abs(video.currentTime - (video.duration - 0.2)) < 0.05")
+
     player.evaluate("video => { video.pause(); video.currentTime = 0.4; }")
     page.wait_for_function(
         "video => !video.seeking && Math.abs(video.currentTime - 0.4) < 0.05",
