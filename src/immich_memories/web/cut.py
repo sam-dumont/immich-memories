@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.api.models import AssetType
 from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import CandidateFates
@@ -18,6 +19,7 @@ from immich_memories.operations.cut_revisions import (
     CutEdits,
     CutRevision,
     RevisionRefused,
+    pool_assets,
     read_revisions,
     save_revision,
 )
@@ -79,7 +81,9 @@ def _recorded(interval: tuple[float, float] | None, fallback: float) -> float:
     return round(interval[1] - interval[0], 2) if interval else fallback
 
 
-def _shot(position: int, shot: Shot, evidence: _Evidence) -> CutShot:
+def _shot(
+    position: int, shot: Shot, evidence: _Evidence, source_duration: float | None = None
+) -> CutShot:
     decision = evidence.decisions.get(shot.asset_id)
     return CutShot(
         asset_id=shot.asset_id,
@@ -98,6 +102,7 @@ def _shot(position: int, shot: Shot, evidence: _Evidence) -> CutShot:
         motion=shot.motion,
         recorded_seconds=_recorded(evidence.intervals.get(shot.asset_id), shot.seconds),
         source_interval=evidence.intervals.get(shot.asset_id) if shot.motion else None,
+        source_duration=source_duration,
         selection=_selection(evidence.fates.trace, shot.asset_id),
         model=ModelDecision.model_validate(decision) if decision else None,
         alternatives=[
@@ -123,6 +128,12 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         siblings=moment_alternatives(attempt),
         captions=read_captions(attempt, [shot.asset_id for shot in board.shots]),
     )
+    sources = pool_assets(attempt)
+    durations = {
+        asset_id: asset.duration_seconds
+        for asset_id, asset in sources.items()
+        if asset.type == AssetType.VIDEO
+    }
     return Cut(
         run_id=run_id,
         thesis=board.thesis,
@@ -131,7 +142,10 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         film_seconds=board.film_seconds,
         model_polish=model_polish_ran(attempt),
         captions_read=bool(evidence.captions),
-        shots=[_shot(index, shot, evidence) for index, shot in enumerate(board.shots, 1)],
+        shots=[
+            _shot(index, shot, evidence, durations.get(shot.asset_id))
+            for index, shot in enumerate(board.shots, 1)
+        ],
     )
 
 

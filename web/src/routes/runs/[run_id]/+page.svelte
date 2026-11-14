@@ -11,6 +11,7 @@
   import { locale, N_, t } from '$lib/i18n.svelte';
   import { clock, memoryTypeLabel, sourceLabel, statusLabel, weightLabel } from '$lib/labels';
   import ShotInspector from '$lib/ShotInspector.svelte';
+  import {rangeText} from '$lib/range-labels';
 
   let { data } = $props();
   const run = $derived(data.run);
@@ -75,6 +76,13 @@
     }
   }
 
+  function openRevision(revision: Revision) {
+    if (!editor) return;
+    editor.load(revision);
+    saved = {number: revision.number, edits: JSON.stringify(editor.edits)};
+    refusal = '';
+  }
+
   let view = $state<'sheet' | 'stories'>('sheet');
   let filter = $state<'all' | 'videos' | 'stills'>('all');
   let selectedId = $state<string | null>(null);
@@ -85,6 +93,9 @@
   );
   const selected = $derived(shots.find((shot) => shot.asset_id === selectedId) ?? shots[0]);
   const videos = $derived((cut?.shots ?? []).filter((shot) => shot.motion).length);
+  const fullVideosAvailable = $derived(!!editor && (cut?.shots ?? []).some(
+    (shot) => !editor.isRemoved(shot) && editor.playing(shot) === shot.asset_id && !!editor.fullInterval(shot),
+  ));
 
   function chooseCarrier(assetId: string) {
     filter = 'all';
@@ -143,8 +154,8 @@
       {#if cut}
         <span>{t('Pictures: {count}', { count: cut.shots.length })}</span>
         <span>{t('Videos: {count}', { count: videos })}</span>
-        <span>{t('{content} of pictures and video', { content: clock(cut.content_seconds) })}</span>
-        {#if cut.film_seconds}<span>{t('about {film} of film', { film: clock(cut.film_seconds) })}</span>{/if}
+        <span>{t('{content} of pictures and video', { content: clock(editor?.contentSeconds ?? cut.content_seconds) })}</span>
+        {#if cut.film_seconds && !editor?.count}<span>{t('about {film} of film', { film: clock(cut.film_seconds) })}</span>{/if}
       {/if}
     </p>
     {#if run.film_available}
@@ -181,6 +192,15 @@
   </div>
 
   {#if cut}
+    {#if editor && fullVideosAvailable}
+      <section class="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+        <Button size="small" variant="outline" onclick={() => editor.useFullVideos()}>{rangeText('Use full videos')}</Button>
+        <div class="flex flex-col gap-1 text-sm">
+          <p>{rangeText('Expand the videos in this plan, then choose their start and end.')}</p>
+          <p class="text-gray-600 dark:text-gray-400">{rangeText('The film follows your ranges, with no total duration limit.')}</p>
+        </div>
+      </section>
+    {/if}
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-4">
         {#if story?.stories.length}
@@ -301,11 +321,7 @@
       <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
         <p class="text-sm tabular-nums">
           {t('Changes: {count}', { count: editor.count })} ·
-          <span>
-            {editor.grows && cut.content_budget_seconds != null
-              ? t('{content}: the film grows past its {budget} to hold them', { content: clock(editor.contentSeconds), budget: clock(cut.content_budget_seconds) })
-              : clock(editor.contentSeconds)}
-          </span>
+          <span>{clock(editor.contentSeconds)}</span>
         </p>
         <div class="ml-auto flex gap-2">
           <Button size="small" variant="ghost" leadingIcon={mdiUndo} disabled={!editor.history.length} onclick={() => editor.undo()}>{t('Undo')}</Button>
@@ -327,7 +343,7 @@
               <span class="font-medium">{t('Revision {number}', { number: revision.number })}</span>
               <span class="text-gray-600 dark:text-gray-400">{new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(revision.created_at))}</span>
               <span>{clock(revision.content_seconds)}</span>
-              <Button size="tiny" variant="ghost" onclick={() => editor?.load(revision)}>{t('Open')}</Button>
+              <Button size="tiny" variant="ghost" onclick={() => openRevision(revision)}>{t('Open')}</Button>
             </li>
           {/each}
         </ul>
@@ -339,7 +355,7 @@
     <Text color="muted">{t('No saved cut is available for this run.')}</Text>
   {/if}
 
-  {#if cut}<RenderPanel runId={run.run_id} {revisions} current={saved?.number ?? null} />{/if}
+  {#if cut}<RenderPanel runId={run.run_id} {revisions} current={saved?.number ?? null} unsaved={!!editor?.count && unsaved} />{/if}
 
   <section class="flex flex-col gap-3 border-t border-gray-200 pt-6 dark:border-gray-800">
     <Heading size="tiny" tag="h2">{t('Run details')}</Heading>

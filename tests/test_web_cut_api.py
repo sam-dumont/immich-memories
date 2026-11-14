@@ -270,3 +270,30 @@ def test_older_refinement_records_prove_caption_reads_without_inventing_text(cli
     cut = client.get(f"/api/v1/runs/{RUN}/cut").json()
     assert cut["captions_read"] is True
     assert all(shot["caption"] == "" for shot in cut["shots"])
+
+
+def test_the_cut_exposes_full_video_bounds_and_accepts_a_long_manual_range(tmp_path):
+    import json
+
+    from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, source_payload
+    from immich_memories.api.models import AssetType
+    from tests.conftest import make_asset
+
+    config = config_in(tmp_path)
+    attempt = save_run(config, RUN)
+    source = make_asset("lake-1", duration="00:30:00")
+    photo = make_asset("garden-1").model_copy(update={"type": AssetType.IMAGE})
+    (attempt / SNAPSHOT_NAME).write_text(json.dumps(source_payload([source, photo]), default=str))
+    client = api_client(config)
+
+    cut = client.get(f"/api/v1/runs/{RUN}/cut").json()
+    video = next(shot for shot in cut["shots"] if shot["asset_id"] == "lake-1")
+    still = next(shot for shot in cut["shots"] if shot["asset_id"] == "garden-1")
+    assert video["source_duration"] == 1800
+    assert still["source_duration"] is None
+    assert video["source_interval"] == [12.5, 16.5]
+
+    saved = client.post(f"/api/v1/runs/{RUN}/revisions", json={"segments": {"lake-1": [0, 1800]}})
+    assert saved.status_code == 201
+    assert saved.json()["segments"]["lake-1"] == [0, 1800]
+    assert saved.json()["content_seconds"] >= 1800

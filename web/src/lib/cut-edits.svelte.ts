@@ -25,6 +25,7 @@ export class CutEditor {
   #cut: Cut;
   current = $state<Snapshot>(empty());
   history = $state<Snapshot[]>([]);
+  fullVideoReset = $state(0);
 
   constructor(cut: Cut) {
     this.#cut = cut;
@@ -95,6 +96,27 @@ export class CutEditor {
     this.trim(shot, [0, seconds]);
   }
 
+  fullInterval(shot: CutShot): [number, number] | null {
+    const duration = shot.source_duration;
+    if (!shot.motion || duration == null || !Number.isFinite(duration) || duration < 0.01) return null;
+    // Floor, as the renderer does, so rounding never puts the end beyond the source.
+    return [0, Math.floor(duration * 100) / 100];
+  }
+
+  useFullVideos(shots: CutShot[] = this.#cut.shots) {
+    const ranges = shots.flatMap((shot) => {
+      if (this.isRemoved(shot) || this.playing(shot) !== shot.asset_id) return [];
+      const interval = this.fullInterval(shot);
+      const previous = this.interval(shot);
+      if (!interval || (previous?.[0] === 0 && previous?.[1] === interval[1])) return [];
+      return [{id: shot.asset_id, interval}];
+    });
+    if (ranges.length) this.#change((next) => {
+      for (const {id, interval} of ranges) next.segments[id] = interval;
+    });
+    this.fullVideoReset += 1;
+  }
+
   swap(shot: CutShot, replacement: string | null) {
     this.#change((next) => {
       const previous = next.swaps[shot.asset_id] ?? shot.asset_id;
@@ -124,6 +146,14 @@ export class CutEditor {
   }
 
   get edits(): RevisionEdits {
-    return this.current;
+    // Keep a removed shot's local range for Undo/Put it back, but do not send a
+    // range for material the renderer is not going to play.
+    const playing = new Set([
+      ...this.#cut.shots.filter((shot) => !this.isRemoved(shot)).map(this.playing),
+      ...this.current.added,
+    ]);
+    return {...this.current, segments: Object.fromEntries(
+      Object.entries(this.current.segments).filter(([assetId]) => playing.has(assetId)),
+    )};
   }
 }

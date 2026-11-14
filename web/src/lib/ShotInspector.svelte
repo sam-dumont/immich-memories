@@ -6,6 +6,7 @@
   import { seconds, tenths } from './format';
   import { t } from './i18n.svelte';
   import { clock, seatLabel } from './labels';
+  import {rangeText} from './range-labels';
 
   let { shot, modelPolish, captionsRead, editor, runId }: { shot: CutShot; modelPolish: boolean; captionsRead: boolean; editor: CutEditor; runId: string } = $props();
 
@@ -16,12 +17,35 @@
   const swapped = $derived(playing !== shot.asset_id);
   const interval = $derived(swapped ? null : editor.interval(shot));
   const removed = $derived(editor.isRemoved(shot));
+  let rangeProblem = $state('');
+  const fullInterval = $derived(editor.fullInterval(shot));
+
+  $effect(() => { void shot.asset_id; void editor.fullVideoReset; rangeProblem = ''; });
+
+  function setRange(edge: 0 | 1, input: HTMLInputElement) {
+    if (!interval) return;
+    const value = Math.round(input.valueAsNumber * 100) / 100;
+    const next: [number, number] = [...interval];
+    next[edge] = value;
+    if (!Number.isFinite(value)) rangeProblem = rangeText('Enter a valid time.');
+    else if (next[1] <= next[0]) rangeProblem = rangeText('End must be after start.');
+    else if (next[0] < 0 || (fullInterval && next[1] > fullInterval[1]))
+      rangeProblem = rangeText('The range must fit inside the source video.');
+    else {
+      rangeProblem = '';
+      editor.trim(shot, next);
+    }
+    input.value = String(editor.interval(shot)?.[edge] ?? interval[edge]);
+  }
 
   function mark(edge: 0 | 1) {
     if (!player || !interval) return;
     const next: [number, number] = [...interval];
     next[edge] = player.currentTime;
-    if (next[1] > next[0]) editor.trim(shot, next);
+    if (next[1] > next[0]) {
+      rangeProblem = '';
+      editor.trim(shot, next);
+    }
   }
 
   // The preview opens on the stretch the film plays and loops it while it plays through. A seek
@@ -51,7 +75,7 @@
 <article class="flex flex-col gap-5" aria-label={t('Picture review')}>
   <div class="overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-900">
     {#if shot.motion && interval}
-      {#key shot.asset_id}
+      {#key `${shot.asset_id}:${editor.fullVideoReset}`}
         <video bind:this={player} class="aspect-[4/3] w-full object-contain" controls muted playsinline autoplay
           preload="metadata" poster={thumbnail(shot.asset_id, 'preview')}
           src={video(shot.asset_id)}
@@ -71,6 +95,24 @@
       {/if}
     </div>
     {#if !removed && interval && shot.motion && !swapped}
+      {#if fullInterval}
+        <div class="grid grid-cols-2 gap-3 text-sm tabular-nums">
+          <label class="flex flex-col gap-1">{rangeText('Start (seconds)')}
+            <input type="number" min="0" max={fullInterval[1]} step="0.01" value={interval[0]}
+              class="w-full rounded-md border border-gray-300 bg-light px-2 py-1 dark:border-gray-700"
+              onchange={(event) => setRange(0, event.currentTarget)} />
+          </label>
+          <label class="flex flex-col gap-1">{rangeText('End (seconds)')}
+            <input type="number" min="0.01" max={fullInterval[1]} step="0.01" value={interval[1]}
+              class="w-full rounded-md border border-gray-300 bg-light px-2 py-1 dark:border-gray-700"
+              onchange={(event) => setRange(1, event.currentTarget)} />
+          </label>
+        </div>
+        <Button size="small" variant="outline" class="w-fit" onclick={() => { rangeProblem = ''; editor.useFullVideos([shot]); }}>
+          {rangeText('Use full video')}
+        </Button>
+      {/if}
+      {#if rangeProblem}<p role="alert" class="text-sm text-danger">{rangeProblem}</p>{/if}
       <div class="flex flex-wrap items-center gap-2 text-sm tabular-nums">
         <Button size="small" variant="ghost" leadingIcon={mdiContentCut} onclick={() => mark(0)}>{t('Start here')}</Button>
         <Button size="small" variant="ghost" leadingIcon={mdiContentCut} onclick={() => mark(1)}>{t('End here')}</Button>

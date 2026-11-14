@@ -8,12 +8,13 @@
   import { t } from './i18n.svelte';
   import { followJob } from './job.svelte';
   import JobPanel from './JobPanel.svelte';
+  import {rangeText} from './range-labels';
 
   type Revision = components['schemas']['Revision'];
   type RenderCapabilities = components['schemas']['RenderCapabilities'];
   let uploadCapability = $state<RenderCapabilities | null>(null);
 
-  let { runId, revisions, current = null }: { runId: string; revisions: Revision[]; current?: number | null } = $props();
+  let { runId, revisions, current = null, unsaved = false }: { runId: string; revisions: Revision[]; current?: number | null; unsaved?: boolean } = $props();
 
   let from = $state<number | null>(null);
   // The revision just saved or opened is the one the owner means to render.
@@ -87,6 +88,7 @@
   }
 
   async function render() {
+    if (unsaved) return;
     problem = '';
     const { status, body } = await post<JobView>(`/runs/${encodeURIComponent(runId)}/renders`, {
       revision: from,
@@ -284,7 +286,8 @@
         {#if upload}<label class={label}>{t('Album name')}<input class={field} bind:value={album} placeholder={t('As configured')} /></label>{/if}
       </div>
       {#if problem}<p class="text-sm text-danger sm:col-span-2" role="alert">{problem}</p>{/if}
-      <Button type="submit" class="w-fit">{t('Render')}</Button>
+      {#if unsaved}<p class="text-sm text-gray-600 sm:col-span-2 dark:text-gray-400">{rangeText('Save the revision before rendering your ranges.')}</p>{/if}
+      <Button type="submit" class="w-fit" disabled={unsaved}>{t('Render')}</Button>
     </form>
   {/if}
 </section>

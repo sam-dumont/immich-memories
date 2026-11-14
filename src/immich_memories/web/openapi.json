@@ -1085,6 +1085,17 @@
               }
             ]
           },
+          "source_duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Duration"
+          },
           "source_interval": {
             "anyOf": [
               {

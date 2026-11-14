@@ -1774,6 +1774,8 @@ export interface components {
             /** Seconds */
             seconds: number;
             selection: components["schemas"]["SelectionPath"] | null;
+            /** Source Duration */
+            source_duration?: number | null;
             /** Source Interval */
             source_interval: [
                 number,

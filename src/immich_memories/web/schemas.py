@@ -87,6 +87,7 @@ class CutShot(BaseModel):
     # storyboard's display length, squeezed when a cut runs long.
     recorded_seconds: float
     source_interval: tuple[float, float] | None
+    source_duration: float | None = None
     selection: SelectionPath | None
     model: ModelDecision | None
     alternatives: list[Alternative]
