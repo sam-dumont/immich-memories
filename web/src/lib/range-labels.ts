@@ -11,6 +11,7 @@ const russian = {
   'End must be after start.': 'Конец должен быть позже начала.',
   'The range must fit inside the source video.': 'Диапазон должен находиться в пределах исходного видео.',
   'Save the revision before rendering your ranges.': 'Сохраните версию, чтобы собрать видео с выбранными границами.',
+  'Save the revision before choosing more media.': 'Сохраните версию перед выбором дополнительных медиафайлов.',
 };
 
 export const rangeText = (message: keyof typeof russian) => locale().startsWith('ru') ? russian[message] : t(message);

@@ -501,6 +501,8 @@ def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
     boxes = [tiles.nth(i).get_by_role("checkbox") for i in range(tiles.count())]
     kept_at = next(i for i, box in enumerate(boxes) if box.is_checked())
     left_at = next(i for i, box in enumerate(boxes) if not box.is_checked())
+    added_src = tiles.nth(left_at).get_by_role("img").get_attribute("src")
+    added_id = added_src.split("/assets/", 1)[1].split("/", 1)[0]
     tiles.nth(kept_at).get_by_role("button", name="Never use").click()
     expect(
         tiles.nth(kept_at).get_by_text("Marked Never use. Tick it to include it in this revision.")
@@ -518,7 +520,10 @@ def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
     page.get_by_role("button", name="Preview with these choices").click()
     # The same run, with the ticks opened as its first revision: nothing was cut again.
     page.wait_for_url(f"**/app/runs/{run}?revision=1", timeout=30_000)
-    expect(page.get_by_role("list", name="Added from the pool").get_by_role("img")).to_have_count(1)
+    added = page.locator(f"[id='shot-{added_id}']")
+    expect(added).to_be_visible()
+    added.click()
+    expect(added).to_have_attribute("aria-pressed", "true")
     expect(contact_sheet(page).get_by_text("Removed", exact=True)).to_have_count(1)
     panel = page.get_by_role("region", name="Render")
     expect(panel.get_by_label("What to render")).to_have_value("1")

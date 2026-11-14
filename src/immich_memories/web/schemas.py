@@ -102,6 +102,7 @@ class Cut(BaseModel):
     model_polish: bool
     captions_read: bool = False
     shots: list[CutShot]
+    pool_shots: list[CutShot] = []
 
 
 class StoryCarrier(BaseModel):
@@ -186,6 +187,7 @@ class Hold(BaseModel):
 
 class PoolItem(BaseModel):
     asset_id: str
+    source_duration: float | None = None
     taken: str
     kind: Literal["photo", "video", "live"]
     favourite: bool

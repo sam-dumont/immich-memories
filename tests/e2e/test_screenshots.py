@@ -374,8 +374,8 @@ def test_capture_the_pool_and_picture_decisions(
         held.get_by_role("checkbox", name="In the film").check()
         expect(page.get_by_text(re.compile(r"^Add: 1"))).to_be_visible()
         page.get_by_role("button", name="Preview with these choices").click()
-        added = page.get_by_role("list", name="Added from the pool")
-        expect(added.get_by_role("img")).to_have_count(1, timeout=30_000)
+        added = page.locator(f"[id='shot-{_HELD}']")
+        expect(added).to_be_visible(timeout=30_000)
     finally:
         for asset_id in (_HELD, ticked):
             owner_decisions.forget(store, asset_id)

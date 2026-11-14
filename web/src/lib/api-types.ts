@@ -1650,6 +1650,11 @@ export interface components {
             film_seconds: number | null;
             /** Model Polish */
             model_polish: boolean;
+            /**
+             * Pool Shots
+             * @default []
+             */
+            pool_shots: components["schemas"]["CutShot"][];
             /** Run Id */
             run_id: string;
             /** Shots */
@@ -2224,6 +2229,8 @@ export interface components {
             kind: "photo" | "video" | "live";
             /** Reachable */
             reachable: boolean;
+            /** Source Duration */
+            source_duration?: number | null;
             /** Taken */
             taken: string;
         };

@@ -635,6 +635,14 @@
             "title": "Model Polish",
             "type": "boolean"
           },
+          "pool_shots": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CutShot"
+            },
+            "title": "Pool Shots",
+            "type": "array"
+          },
           "run_id": {
             "title": "Run Id",
             "type": "string"
@@ -2271,6 +2279,17 @@
           "reachable": {
             "title": "Reachable",
             "type": "boolean"
+          },
+          "source_duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Duration"
           },
           "taken": {
             "title": "Taken",

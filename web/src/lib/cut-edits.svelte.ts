@@ -31,6 +31,18 @@ export class CutEditor {
     this.#cut = cut;
   }
 
+  get shots(): CutShot[] {
+    const added = new Set(this.current.added);
+    const rows = [...this.#cut.shots, ...(this.#cut.pool_shots ?? []).filter((shot) => added.has(shot.asset_id))];
+    rows.sort((a, b) => Date.parse(a.taken) - Date.parse(b.taken) || a.position - b.position);
+    let start = this.#cut.shots[0]?.start ?? 0;
+    return rows.map((shot, index) => {
+      const row = {...shot, position: index + 1, start};
+      if (!this.isRemoved(shot)) start += this.seconds(shot);
+      return row;
+    });
+  }
+
   get count() {
     const { removed, segments, swaps, added } = this.current;
     return removed.length + Object.keys(segments).length + Object.keys(swaps).length + added.length;
@@ -79,6 +91,10 @@ export class CutEditor {
   };
 
   toggleRemoved(shot: CutShot) {
+    if (this.current.added.includes(shot.asset_id)) {
+      this.unadd(shot.asset_id);
+      return;
+    }
     this.#change((next) => {
       next.removed = next.removed.includes(shot.asset_id)
         ? next.removed.filter((id) => id !== shot.asset_id)
@@ -103,7 +119,7 @@ export class CutEditor {
     return [0, Math.floor(duration * 100) / 100];
   }
 
-  useFullVideos(shots: CutShot[] = this.#cut.shots) {
+  useFullVideos(shots: CutShot[] = this.shots) {
     const ranges = shots.flatMap((shot) => {
       if (this.isRemoved(shot) || this.playing(shot) !== shot.asset_id) return [];
       const interval = this.fullInterval(shot);
@@ -133,11 +149,9 @@ export class CutEditor {
     });
   }
 
-  /** Seconds of pictures and video the edited cut plays; an added picture counts as a typical shot. */
+  /** Seconds of pictures and video the edited cut plays, including added shots. */
   get contentSeconds() {
-    const kept = this.#cut.shots.filter((shot) => !this.isRemoved(shot));
-    const typical = kept.length ? kept.reduce((sum, shot) => sum + this.seconds(shot), 0) / kept.length : 3;
-    return kept.reduce((sum, shot) => sum + this.seconds(shot), 0) + this.current.added.length * typical;
+    return this.shots.filter((shot) => !this.isRemoved(shot)).reduce((sum, shot) => sum + this.seconds(shot), 0);
   }
 
   /** Whether the film grows past the length the cut was made for: the owner's call, never refused. */
@@ -149,7 +163,7 @@ export class CutEditor {
     // Keep a removed shot's local range for Undo/Put it back, but do not send a
     // range for material the renderer is not going to play.
     const playing = new Set([
-      ...this.#cut.shots.filter((shot) => !this.isRemoved(shot)).map(this.playing),
+      ...this.shots.filter((shot) => !this.isRemoved(shot)).map(this.playing),
       ...this.current.added,
     ]);
     return {...this.current, segments: Object.fromEntries(

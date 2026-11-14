@@ -121,3 +121,35 @@ def test_an_explicit_pool_tick_overrides_never_use_for_a_revision_without_forget
         next(item for item in pool if item["asset_id"] == "woods-9")["hold"]["decision"]
         == "never_use"
     )
+
+
+def test_pool_additions_have_editable_ranges_and_save_the_owners_trim(tmp_path):
+    config = config_in(tmp_path)
+    attempt = save_run(config, RUN)
+    sources = [
+        make_asset("lake-1", duration="00:01:00"),
+        make_asset("added-video", duration="00:00:20"),
+    ]
+    (attempt / SNAPSHOT_NAME).write_text(json.dumps(source_payload(sources), default=str))
+    client = api_client(config)
+
+    cut = client.get(f"/api/v1/runs/{RUN}/cut").json()
+    assert [shot["asset_id"] for shot in cut["pool_shots"]] == ["added-video"]
+    added = cut["pool_shots"][0]
+    assert added["motion"] is True
+    assert added["source_duration"] == 20
+    assert added["source_interval"][0] == 0
+    assert added["source_interval"][1] > 0
+    items = client.get(f"/api/v1/runs/{RUN}/pool").json()["items"]
+    assert (
+        next(item for item in items if item["asset_id"] == "added-video")["source_duration"] == 20
+    )
+
+    saved = client.post(
+        f"/api/v1/runs/{RUN}/revisions",
+        json={"added": ["added-video"], "segments": {"added-video": [3, 17]}},
+    )
+    assert saved.status_code == 201
+    reopened = client.get(f"/api/v1/runs/{RUN}/revisions").json()[-1]
+    assert reopened["added"] == ["added-video"]
+    assert reopened["segments"]["added-video"] == [3, 17]

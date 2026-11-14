@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from immich_memories.analysis.corpus.trace import Trace
-from immich_memories.api.models import AssetType
+from immich_memories.api.models import Asset, AssetType
 from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import CandidateFates
@@ -19,6 +19,7 @@ from immich_memories.operations.cut_revisions import (
     CutEdits,
     CutRevision,
     RevisionRefused,
+    added_hold,
     pool_assets,
     read_revisions,
     save_revision,
@@ -28,6 +29,7 @@ from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.story_view import StoryEntry, read_story_view
 from immich_memories.operations.storyboard import (
     Shot,
+    Storyboard,
     moment_alternatives,
     read_storyboard,
     source_intervals,
@@ -48,6 +50,40 @@ from immich_memories.web.schemas import (
 )
 
 router = APIRouter(prefix="/api/v1/runs", tags=["cut"])
+
+
+def _pool_shots(board: Storyboard, sources: dict[str, Asset]) -> list[CutShot]:
+    """Editable rows for additions, with the same default hold the renderer uses."""
+    chosen = {shot.asset_id for shot in board.shots}
+    rows: list[CutShot] = []
+    for asset in sorted(sources.values(), key=lambda item: (item.file_created_at, item.id)):
+        if asset.id in chosen:
+            continue
+        duration, motion = added_hold(((s.seconds, s.motion) for s in board.shots), asset)
+        rows.append(
+            CutShot(
+                asset_id=asset.id,
+                position=len(board.shots) + len(rows) + 1,
+                start=0,
+                seconds=duration,
+                recorded_seconds=duration,
+                source_interval=(0, duration) if motion else None,
+                source_duration=asset.duration_seconds if asset.type == AssetType.VIDEO else None,
+                taken=asset.local_taken_at.isoformat(),
+                day=asset.local_taken_at.date().isoformat(),
+                new_day=True,
+                chapter="",
+                story_key="",
+                story_title="",
+                moment="pool:" + asset.id,
+                reason=asset.original_file_name,
+                motion=motion,
+                selection=None,
+                model=None,
+                alternatives=[],
+            )
+        )
+    return rows
 
 
 def _selection(trace: Trace | None, asset_id: str) -> SelectionPath | None:
@@ -142,6 +178,7 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         film_seconds=board.film_seconds,
         model_polish=model_polish_ran(attempt),
         captions_read=bool(evidence.captions),
+        pool_shots=_pool_shots(board, sources),
         shots=[
             _shot(index, shot, evidence, durations.get(shot.asset_id))
             for index, shot in enumerate(board.shots, 1)

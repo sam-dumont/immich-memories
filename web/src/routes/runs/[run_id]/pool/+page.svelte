@@ -26,6 +26,24 @@
   let previewing = $state(false);
   let refusal = $state('');
   let sentinel = $state<HTMLElement>();
+  let baseline = $state<Revision | null>(null);
+  let baselineReady = $state(false);
+
+  $effect(() => {
+    const id = runId;
+    const number = Number(page.url.searchParams.get('revision'));
+    baseline = null;
+    baselineReady = !number;
+    if (!number) return;
+    let cancelled = false;
+    void api<Revision[]>(`/runs/${encodeURIComponent(id)}/revisions`).then((revisions) => {
+      if (cancelled) return;
+      baseline = revisions.find((revision) => revision.number === number) ?? null;
+      baselineReady = !!baseline;
+      if (!baseline) refusal = t('The revision could not be loaded.');
+    }).catch(() => { if (!cancelled) refusal = t('The revision could not be loaded.'); });
+    return () => { cancelled = true; };
+  });
 
   async function more() {
     if (loading || (total !== null && items.length >= total)) return;
@@ -60,9 +78,15 @@
     return () => observer.disconnect();
   });
 
-  const ticked = (item: Item) => ticks[item.asset_id] ?? item.in_cut;
-  const include = $derived(items.filter((item) => !item.in_cut && ticks[item.asset_id] === true).map((i) => i.asset_id));
-  const exclude = $derived(items.filter((item) => item.in_cut && ticks[item.asset_id] === false).map((i) => i.asset_id));
+  const ticked = (item: Item) => ticks[item.asset_id] ?? (
+    !!baseline?.added.includes(item.asset_id) || (item.in_cut && !baseline?.removed.includes(item.asset_id))
+  );
+  const include = $derived([...new Set([
+    ...(baseline?.added ?? []), ...items.filter((item) => !item.in_cut && ticked(item)).map((i) => i.asset_id),
+  ])].filter((id) => ticks[id] !== false));
+  const exclude = $derived([...new Set([
+    ...(baseline?.removed ?? []), ...items.filter((item) => item.in_cut && !ticked(item)).map((i) => i.asset_id),
+  ])].filter((id) => ticks[id] !== true));
 
   async function decide(item: Item, action: 'never_use' | 'clear' | 'forget') {
     const { body } = await post<Hold>(`/pictures/${encodeURIComponent(item.asset_id)}/decision`, { action, level });
@@ -73,9 +97,22 @@
 
   // The ticks are the owner's last pass over this cut: saved as a revision, never a recut.
   async function preview() {
+    if (!baselineReady) return;
     previewing = true;
     refusal = '';
-    const { status, body } = await post<Revision>(`/runs/${encodeURIComponent(runId)}/revisions`, { added: include, removed: exclude });
+    const segments = {...(baseline?.segments ?? {})};
+    const swaps = {...(baseline?.swaps ?? {})};
+    for (const id of [...exclude, ...(baseline?.added ?? []).filter((id) => !include.includes(id))]) {
+      delete segments[id];
+      if (swaps[id]) delete segments[swaps[id]];
+      delete swaps[id];
+    }
+    for (const id of include) {
+      const duration = items.find((item) => item.asset_id === id)?.source_duration;
+      if (!baseline?.added.includes(id) && !segments[id] && duration != null && Number.isFinite(duration) && duration >= 0.01)
+        segments[id] = [0, Math.floor(duration * 100) / 100];
+    }
+    const { status, body } = await post<Revision>(`/runs/${encodeURIComponent(runId)}/revisions`, { added: include, removed: exclude, segments, swaps });
     previewing = false;
     if (status !== 201) {
       refusal = body.detail ?? t('The revision could not be saved.');
@@ -100,7 +137,7 @@
 
 <div class="flex flex-col gap-6">
   <div class="flex flex-col gap-2">
-    <a href={`/app/runs/${encodeURIComponent(runId)}`} class="flex w-fit items-center gap-1 text-sm text-gray-600 hover:text-primary dark:text-gray-400">
+    <a href={`/app/runs/${encodeURIComponent(runId)}${baseline ? `?revision=${baseline.number}` : ''}`} class="flex w-fit items-center gap-1 text-sm text-gray-600 hover:text-primary dark:text-gray-400">
       <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={mdiArrowLeft} /></svg>{t('Back to the cut')}
     </a>
     <Heading size="large" tag="h1">{t('Pool')}</Heading>
@@ -123,7 +160,7 @@
           <label class={['relative block cursor-pointer overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900', ticked(item) ? 'ring-2 ring-primary' : 'opacity-70']}>
             <img src={thumbnail(item.asset_id)} alt={item.fate} loading="lazy" decoding="async" class="aspect-[4/3] w-full object-contain" />
             <input type="checkbox" class="absolute top-2 left-2 size-5 accent-[var(--color-primary)]" checked={ticked(item)}
-              aria-label={t('In the film')} onchange={(event) => (ticks = { ...ticks, [item.asset_id]: event.currentTarget.checked })} />
+              aria-label={t('In the film')} disabled={!baselineReady} onchange={(event) => (ticks = { ...ticks, [item.asset_id]: event.currentTarget.checked })} />
             {#if item.kind !== 'photo'}<span class="absolute right-1 bottom-1 rounded bg-black/60 px-1.5 text-[11px] text-white">{item.kind === 'video' ? t('Video') : t('Live')}</span>{/if}
           </label>
           <p class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600 tabular-nums dark:text-gray-400">
@@ -147,7 +184,7 @@
     {#if include.length || exclude.length}
       <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
         <p class="text-sm">{t('Add: {include} · Take out: {exclude}', { include: include.length, exclude: exclude.length })}</p>
-        <Button size="small" class="ml-auto" leadingIcon={mdiEyeOutline} loading={previewing} onclick={preview}>{t('Preview with these choices')}</Button>
+        <Button size="small" class="ml-auto" leadingIcon={mdiEyeOutline} loading={previewing} disabled={!baselineReady} onclick={preview}>{t('Preview with these choices')}</Button>
         {#if refusal}<p class="w-full text-sm text-danger" role="alert">{refusal}</p>{/if}
       </div>
     {/if}

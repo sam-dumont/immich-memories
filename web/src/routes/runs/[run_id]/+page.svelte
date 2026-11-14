@@ -89,11 +89,11 @@
   let inspecting = $state(false);
 
   const shots = $derived(
-    (cut?.shots ?? []).filter((shot) => filter === 'all' || (filter === 'videos') === shot.motion),
+    (editor?.shots ?? cut?.shots ?? []).filter((shot) => filter === 'all' || (filter === 'videos') === shot.motion),
   );
   const selected = $derived(shots.find((shot) => shot.asset_id === selectedId) ?? shots[0]);
-  const videos = $derived((cut?.shots ?? []).filter((shot) => shot.motion).length);
-  const fullVideosAvailable = $derived(!!editor && (cut?.shots ?? []).some(
+  const videos = $derived((editor?.shots ?? cut?.shots ?? []).filter((shot) => shot.motion).length);
+  const fullVideosAvailable = $derived(!!editor && editor.shots.some(
     (shot) => !editor.isRemoved(shot) && editor.playing(shot) === shot.asset_id && !!editor.fullInterval(shot),
   ));
 
@@ -152,7 +152,7 @@
       <span>{run.run_id}</span>
       <span>{sourceLabel(run.source)}</span>
       {#if cut}
-        <span>{t('Pictures: {count}', { count: cut.shots.length })}</span>
+        <span>{t('Pictures: {count}', { count: editor?.shots.length ?? cut.shots.length })}</span>
         <span>{t('Videos: {count}', { count: videos })}</span>
         <span>{t('{content} of pictures and video', { content: clock(editor?.contentSeconds ?? cut.content_seconds) })}</span>
         {#if cut.film_seconds && !editor?.count}<span>{t('about {film} of film', { film: clock(cut.film_seconds) })}</span>{/if}
@@ -223,7 +223,12 @@
       </div>
       <div class="flex items-center gap-3">
         <Text size="small" color="muted">{t('Order and timecodes from the saved cut.')}</Text>
-        <Button size="small" variant="outline" href={`/app/runs/${encodeURIComponent(run.run_id)}/pool`}>{t('Pool')}</Button>
+        {#if editor?.count && unsaved}
+          <Button size="small" variant="outline" disabled title={rangeText('Save the revision before choosing more media.')}>{t('Pool')}</Button>
+        {:else}
+          <Button size="small" variant="outline"
+            href={`/app/runs/${encodeURIComponent(run.run_id)}/pool${saved ? `?revision=${saved.number}` : ''}`}>{t('Pool')}</Button>
+        {/if}
       </div>
     </div>
 
@@ -302,21 +307,6 @@
         </div>
       {/if}
     </div>
-    {#if editor?.current.added.length}
-      <section class="flex flex-col gap-2">
-        <Heading size="tiny" tag="h2">{t('Added from the pool')}</Heading>
-        <Text size="small" color="muted">{t('They play in the order they were taken, prepared like the rest of the cut.')}</Text>
-        <ul class="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3" aria-label={t('Added from the pool')}>
-          {#each editor.current.added as assetId (assetId)}
-            <li class="flex flex-col gap-1.5">
-              <img src={thumbnail(assetId)} alt={t('Added from the pool')} loading="lazy" decoding="async" class="aspect-[4/3] w-full rounded-lg bg-gray-100 object-contain dark:bg-gray-900" />
-              <Button size="tiny" variant="ghost" onclick={() => editor?.unadd(assetId)}>{t('Take out')}</Button>
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/if}
-
     {#if editor && (editor.count || editor.history.length)}
       <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
         <p class="text-sm tabular-nums">

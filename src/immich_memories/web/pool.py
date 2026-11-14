@@ -141,6 +141,7 @@ def read_pool(
         items=[
             PoolItem(
                 asset_id=asset.id,
+                source_duration=asset.duration_seconds if asset.type == AssetType.VIDEO else None,
                 taken=asset.local_taken_at.isoformat(),
                 kind=_kind(asset),
                 favourite=asset.is_favorite,
