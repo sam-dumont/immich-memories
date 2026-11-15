@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import threading
@@ -11,6 +12,7 @@ import pytest
 import sqlalchemy as sa
 
 from immich_memories.tracking import otel, timing
+from tests import ci_parity
 from tests.otel_receiver import receiving
 
 _SERVER = 2
@@ -150,3 +152,31 @@ def test_a_store_query_or_program_outside_any_span_is_not_its_own_trace(collecto
     subprocess.run([sys.executable, "-c", "pass"], check=True)
 
     assert collector.spans() == []
+
+
+def test_tracing_starts_with_only_the_packages_a_plain_install_ships():
+    # WHY a fresh interpreter with the dev-only packages hidden: the test venv gets greenlet
+    # from playwright, the image does not, and the SQLAlchemy instrumentation imports
+    # sqlalchemy.ext.asyncio, which refuses to load without it. The app exited at start on
+    # every image with an OTLP endpoint set while this suite stayed green.
+    probe = (
+        "from tests import ci_parity\n"
+        "ci_parity.hide(ci_parity.blocked_modules_for_environment(extras=()))\n"
+        "from immich_memories.tracking import otel\n"
+        "otel.setup()\n"
+        "print(otel.tracing())\n"
+        "otel.shutdown()\n"
+    )
+    env = {key: value for key, value in os.environ.items() if not key.startswith("OTEL_")}
+    env["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://127.0.0.1:9"
+    result = subprocess.run(
+        [sys.executable, "-c", probe],
+        cwd=ci_parity.REPO,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    assert result.stdout.strip() == "True"
