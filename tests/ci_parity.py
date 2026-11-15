@@ -91,14 +91,15 @@ def blocked_modules(
     }
 
 
-def blocked_modules_for_environment() -> set[str]:
+def blocked_modules_for_environment(extras: Sequence[str] = CI_UNIT_EXTRAS) -> set[str]:
+    """What `blocked_modules` hides here; `extras=()` leaves only what a plain install ships."""
     owners = metadata.packages_distributions()
     requires = {
         dist.metadata["Name"]: list(dist.requires or ())
         for dist in metadata.distributions()
         if dist.metadata["Name"]
     }
-    return blocked_modules((PROJECT,), CI_UNIT_EXTRAS, owners, requires) - own_modules()
+    return blocked_modules((PROJECT,), extras, owners, requires) - own_modules()
 
 
 class _Hider(importlib.abc.MetaPathFinder):

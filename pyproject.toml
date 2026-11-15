@@ -68,7 +68,9 @@ dependencies = [
     # whether they were the holiday itself. The country is the home base's.
     "holidays>=0.107",
     # The store (#871): one Alembic history on SQLite (default) or PostgreSQL.
-    "sqlalchemy>=2.1.5",
+    # `asyncio`: greenlet, which SQLAlchemy 2.1 no longer installs by default. The OpenTelemetry
+    # instrumentation imports sqlalchemy.ext.asyncio, and that refuses to load without it.
+    "sqlalchemy[asyncio]>=2.1.5",
     "alembic>=1.13",
     "psycopg[binary]>=3.3.6",  # PostgreSQL driver, loaded by SQLAlchemy's postgresql+psycopg dialect
     "cryptography>=50.0.2",  # Fernet for secrets the settings layer keeps in the store
