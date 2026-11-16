@@ -21,6 +21,8 @@ _UNSAFE = re.compile(r'[/\\:*?"<>|]')
 # Filesystems cap a name at 255 bytes; a CJK letter takes three of them.
 _MAX_NAME_BYTES = 200
 _SEPARATOR = " "
+# The type part of a file name the builder gives a film with no memory type.
+_DATE_RANGE_SLUG = "memories"
 
 
 def safe_display_name(text: str, *, max_bytes: int = _MAX_NAME_BYTES) -> str:
@@ -51,11 +53,12 @@ def shown_film_name(
     """The disk name's own parts with the type and the people in the film's language.
 
     `camille_year_in_review_2024_a1b2c3d4.mp4` shows as `Camille Année en revue 2024 a1b2c3d4.mp4`.
-    English, a custom file name and a name the builder did not make come back unchanged, and
-    the recipe hash that ends a name always survives a cap.
+    A film with no memory type (`all_memories_20250101-20250331.mp4`) is shown under
+    `type_label` too. English, a custom file name and a name the builder did not make come
+    back unchanged, and the recipe hash that ends a name always survives a cap.
     """
     stem, dot, suffix = disk_name.rpartition(".")
-    if not dot or locale == "en" or not memory_type or not type_label:
+    if not dot or locale == "en" or not type_label:
         return disk_name
     album = re.fullmatch(r"album(?:_(?P<slug>.+))?", stem) if memory_type == "album" else None
     if album:
@@ -63,7 +66,9 @@ def shown_film_name(
         head, tail = [type_label, slug], ""
     else:
         built = re.fullmatch(
-            rf"(?P<who>.+?)_(?P<type>{re.escape(memory_type)}(?:_or)?)_(?P<rest>.+)", stem
+            rf"(?P<who>.+?)_(?P<type>{re.escape(memory_type or _DATE_RANGE_SLUG)}(?:_or)?)"
+            r"_(?P<rest>.+)",
+            stem,
         )
         if built is None:
             return disk_name
@@ -85,14 +90,18 @@ def shown_film_name_for(
     """`shown_film_name` for a film made under this config: its language, its cast."""
     from immich_memories.filename_builder import build_title_person_name
     from immich_memories.i18n import resolve_film_locale
-    from immich_memories.operations.film_labelling import film_type_label
+    from immich_memories.operations.film_labelling import date_range_film_label, film_type_label
 
     locale = resolve_film_locale(config.title_screens.locale)
     params = dict(preset_params or {})
     return shown_film_name(
         disk_name,
         memory_type=memory_type,
-        type_label=film_type_label(memory_type, params, locale),
+        type_label=(
+            film_type_label(memory_type, params, locale)
+            if memory_type
+            else date_range_film_label(locale)
+        ),
         people=build_title_person_name(
             memory_type, params, person_name, use_first_name_only=False, locale=locale
         ),

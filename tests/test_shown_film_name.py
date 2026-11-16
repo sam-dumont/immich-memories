@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime
 from email import message_from_bytes
 from pathlib import Path
 from urllib.parse import unquote
@@ -21,7 +22,7 @@ from immich_memories.operations.shown_film_name import (
     shown_film_name,
     shown_film_name_for,
 )
-from immich_memories.timeperiod import calendar_year
+from immich_memories.timeperiod import DateRange, calendar_year
 from tests.immich_fakes import ImmichWire, request_problems
 from tests.web_api_fixtures import api_client, config_in, save_run
 
@@ -73,6 +74,45 @@ def test_the_name_on_disk_never_depends_on_the_film_language(locale, tmp_path):
     assert path.name == "camille_year_in_review_2025.mp4"
     assert album_film_path(tmp_path, "Summer 2025", "mp4").name == "album_summer_2025.mp4"
     assert _shown(locale, path.name, memory_type="year_in_review") != path.name
+
+
+def _date_range_film(tmp_path, people: list[str]) -> str:
+    """A film made from a date range and no memory type, named as the CLI names it."""
+    return build_memory_output_path(
+        output_dir=tmp_path,
+        person_names=people,
+        memory_type=None,
+        date_range=DateRange(start=datetime(2025, 1, 1), end=datetime(2025, 3, 31, 23, 59, 59)),
+        container="mp4",
+    ).name
+
+
+def test_a_french_date_range_film_is_shown_under_the_ui_name_for_its_kind(tmp_path):
+    disk = _date_range_film(tmp_path, [])
+    assert disk == "all_memories_20250101-20250331.mp4"
+
+    shown = _shown("fr", disk, memory_type=None, person_name=None)
+
+    assert shown == "Période personnalisée 20250101-20250331.mp4"
+
+
+def test_a_date_range_film_of_one_person_starts_with_their_name(tmp_path):
+    disk = _date_range_film(tmp_path, ["Camille"]).replace(".mp4", "_a1b2c3d4.mp4")
+
+    shown = _shown("fr", disk, memory_type=None, person_name="Camille")
+
+    assert shown == "Camille Période personnalisée 20250101-20250331 a1b2c3d4.mp4"
+
+
+def test_an_english_date_range_film_is_shown_as_it_is_named_on_disk(tmp_path):
+    disk = _date_range_film(tmp_path, [])
+
+    assert _shown("en", disk, memory_type=None, person_name=None) == disk
+
+
+def test_a_typed_name_given_no_type_is_left_alone():
+    # Only the builder's own untyped pattern is renamed, not any film that lost its type.
+    assert _shown("fr", DISK, memory_type=None) == DISK
 
 
 def test_a_japanese_film_keeps_its_letters_and_is_filesystem_safe():
