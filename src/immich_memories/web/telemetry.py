@@ -33,16 +33,23 @@ async def traces(request: Request) -> Response:
     """Forward the client's OTLP/JSON batch to the collector, scrubbed."""
     if not otel.tracing():
         raise HTTPException(404, "Tracing is off")
+    media_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+    if media_type != "application/json" and not media_type.endswith("+json"):
+        raise HTTPException(415, "Send the batch as application/json")
     body = await request.body()
     if len(body) > MAX_BATCH_BYTES:
         raise HTTPException(413, "Too many spans in one batch")
     try:
         batch = json.loads(body)
-    except ValueError as error:
+    except (ValueError, RecursionError) as error:
         raise HTTPException(400, "Not an OTLP/JSON batch") from error
     if not isinstance(batch, dict) or not isinstance(batch.get("resourceSpans"), list):
         raise HTTPException(400, "Not an OTLP/JSON batch")
-    if not otel.forward(_scrubbed(batch)):
+    try:
+        scrubbed = _scrubbed(batch)
+    except RecursionError as error:
+        raise HTTPException(400, "Not an OTLP/JSON batch") from error
+    if not otel.forward(scrubbed):
         raise HTTPException(502, "The collector did not take the spans")
     return Response(status_code=202)
 

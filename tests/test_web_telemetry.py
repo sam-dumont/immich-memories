@@ -127,3 +127,30 @@ def test_what_is_not_a_modest_otlp_batch_is_refused(collector, body, status):
     )
     assert answer.status_code == status
     assert [request for request in collector.requests if "json" in request[1]["Content-Type"]] == []
+
+
+def test_a_body_that_is_not_json_is_refused_with_415(collector):
+    answer = _client().post(
+        "/api/v1/telemetry/traces", content=b"{}", headers={"content-type": "text/plain"}
+    )
+    assert answer.status_code == 415
+
+
+@pytest.mark.parametrize("content_type", ["application/json", "application/x-protobuf"])
+def test_a_deeply_nested_body_is_a_400_never_a_500(collector, content_type):
+    body = b"[" * 100_000 + b"]" * 100_000
+    answer = _client().post(
+        "/api/v1/telemetry/traces", content=body, headers={"content-type": content_type}
+    )
+    assert answer.status_code in (400, 415)
+
+
+def test_a_batch_that_overflows_the_scrub_is_a_400(collector, monkeypatch):
+    from immich_memories.web import telemetry
+
+    def too_deep(_value):
+        raise RecursionError
+
+    monkeypatch.setattr(telemetry, "_scrubbed", too_deep)
+    answer = _client().post("/api/v1/telemetry/traces", json=_browser_spans())
+    assert answer.status_code == 400

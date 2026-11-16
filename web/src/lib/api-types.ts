@@ -662,6 +662,7 @@ export interface paths {
          * @description Everyone in the people registry, inner circle first, with what needs curating.
          *
          *     A person whose face Immich merged away is followed to their new one first, and saved.
+         *     A request another site sent gets the roster as saved: no Immich call, no write.
          */
         get: operations["roster_api_v1_roster_get"];
         put?: never;
@@ -1456,6 +1457,9 @@ export interface paths {
         /**
          * Check
          * @description Ask GitHub now. Only the button calls this: nothing goes out until somebody asks.
+         *
+         *     A request another site sent (an image tag, a top-level navigation) is refused, so a
+         *     visited page cannot make this server call out.
          */
         get: operations["check_api_v1_updates_get"];
         put?: never;

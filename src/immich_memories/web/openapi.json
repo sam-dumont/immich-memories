@@ -5946,7 +5946,7 @@
     },
     "/api/v1/roster": {
       "get": {
-        "description": "Everyone in the people registry, inner circle first, with what needs curating.\n\nA person whose face Immich merged away is followed to their new one first, and saved.",
+        "description": "Everyone in the people registry, inner circle first, with what needs curating.\n\nA person whose face Immich merged away is followed to their new one first, and saved.\nA request another site sent gets the roster as saved: no Immich call, no write.",
         "operationId": "roster_api_v1_roster_get",
         "responses": {
           "200": {
@@ -7750,7 +7750,7 @@
     },
     "/api/v1/updates": {
       "get": {
-        "description": "Ask GitHub now. Only the button calls this: nothing goes out until somebody asks.",
+        "description": "Ask GitHub now. Only the button calls this: nothing goes out until somebody asks.\n\nA request another site sent (an image tag, a top-level navigation) is refused, so a\nvisited page cannot make this server call out.",
         "operationId": "check_api_v1_updates_get",
         "responses": {
           "200": {
