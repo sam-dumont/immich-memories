@@ -1,8 +1,8 @@
 version: 2
 # Minor and patch updates arrive as one pull request per ecosystem per week; a major
 # stays its own pull request. The majors ignored so far with `@dependabot ignore this
-# major version` (huggingface-hub) are listed here too, so the rule lives in the repository
-# and not only in a closed PR's comment.
+# major version`, if any, are listed here too, so the rule lives in the repository and not
+# only in a closed PR's comment.
 # A Python bump also needs THIRD_PARTY_NOTICES regenerated: dependabot-notices.yml does it.
 updates:
   - package-ecosystem: uv
@@ -17,8 +17,6 @@ updates:
       python-minor-patch:
         update-types: [minor, patch]
     ignore:
-      - dependency-name: "huggingface-hub"
-        update-types: ["version-update:semver-major"]
       # 1.27+ needs CUDA 13; the CUDA image stays on CUDA 12 / cuDNN 9 (pyproject's
       # editorial-cuda pin, guarded by test_cuda_dependency_stays_compatible_with_cuda12).
       - dependency-name: "onnxruntime-gpu"

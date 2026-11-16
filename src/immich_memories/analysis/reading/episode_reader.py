@@ -42,6 +42,7 @@ from immich_memories.analysis.reading.episode_prompt import (
 from immich_memories.analysis.reading.evidence_provenance import EpisodeEvidenceLines
 from immich_memories.analysis.reading.prose_shapes import episode_reading_shape
 from immich_memories.operations.cut_progress import StageUpdate, announce_stage
+from immich_memories.progress_text import Stage
 from immich_memories.store.episode_readings import (
     BankedEpisodeReading,
     EpisodeCullDecision,
@@ -431,9 +432,7 @@ class CachedTextEpisodeReader:
         _offer_batch(self._requester, packs, facts, self._limits)
         for pack, response in self._read_packs(packs, facts):
             calls += 1
-            announce_stage(
-                StageUpdate("event evidence", done=calls, total=len(packs), verb="Reading")
-            )
+            announce_stage(StageUpdate(Stage.CUT_EVENT_PACKS, done=calls, total=len(packs)))
             fresh = self._record_response(
                 pack, response, diagnostics, unavailable_by_group, failed, unread_answers
             )

@@ -2,6 +2,7 @@
   import { Button } from '@immich/ui';
   import { mdiCheck, mdiClose } from '@mdi/js';
   import { t } from '#lib/i18n.svelte.ts';
+  import { chainStatement, kindLabel, kindStatement, viaLabel } from './relationshipLabels';
   import { personPath, savePerson, sendPerson } from './rosterApi';
   import type { Link, Person, Roster } from './types';
 
@@ -10,7 +11,7 @@
   let kind = $state('');
   let target = $state('');
 
-  const label = (value: string) => roster.relationships.find((c) => c.kind === value)?.label ?? value.replaceAll('-', ' ');
+  const statement = (link: Link) => kindStatement(link.kind, person.name, link.target_name);
 
   async function relate(withId: string, relation: string) {
     const saved = await sendPerson('POST', personPath(person, '/relationships'), { kind: relation, target_id: withId });
@@ -44,17 +45,17 @@
   {#each person.links as link (`${link.kind}:${link.target_id}`)}
     <div class="flex flex-wrap items-center gap-2 text-sm" data-testid="relationship-row" data-status={link.status}>
       {#if link.status === 'named'}
-        <span>{label(link.kind)} <span class="font-medium">{link.target_name}</span></span>
+        <span>{statement(link)}</span>
         <Button size="tiny" variant="ghost" onclick={() => remove(link)}>{t('Remove this relationship')}</Button>
       {:else if link.status === 'suggested'}
-        <span><span class="text-xs text-gray-600 dark:text-gray-400">{t('Suggested')}:</span> {label(link.kind)} <span class="font-medium">{link.target_name}</span></span>
-        <span class="text-xs text-gray-600 dark:text-gray-400" data-testid="suggestion-reason">({link.via})</span>
+        <span><span class="text-xs text-gray-600 dark:text-gray-400">{t('Suggested')}:</span> {statement(link)}</span>
+        <span class="text-xs text-gray-600 dark:text-gray-400" data-testid="suggestion-reason">({link.chain.length ? chainStatement(link.chain) : viaLabel(link.via)})</span>
         <span class="inline-flex items-center gap-1">
-          <button type="button" aria-label={t('Yes, they are')} onclick={() => relate(link.target_id, link.kind)} class="rounded-full p-1 text-gray-500 hover:text-primary"><svg viewBox="0 0 24 24" class="size-4 fill-current"><path d={mdiCheck} /></svg></button>
+          <button type="button" aria-label={t('Confirm: {statement}', { statement: statement(link) })} onclick={() => relate(link.target_id, link.kind)} class="rounded-full p-1 text-gray-500 hover:text-primary"><svg viewBox="0 0 24 24" class="size-4 fill-current"><path d={mdiCheck} /></svg></button>
           <button type="button" aria-label={t('No, they are not')} aria-pressed="false" onclick={() => reject(link)} class="rounded-full p-1 text-gray-500"><svg viewBox="0 0 24 24" class="size-4 fill-current"><path d={mdiClose} /></svg></button>
         </span>
       {:else if link.status === 'rejected'}
-        <span class="text-gray-600 dark:text-gray-400">{#if detected.has(link.kind)}{t('Not related to')}{:else}{t('Not {relationship}', { relationship: label(link.kind) })}{/if} <span class="font-medium">{link.target_name}</span></span>
+        <span class="text-gray-600 dark:text-gray-400">{#if detected.has(link.kind)}{t('Not related to')} <span class="font-medium">{link.target_name}</span>{:else}{t('Ruled out: {statement}', { statement: statement(link) })}{/if}</span>
         <button type="button" aria-label={t('No, they are not')} aria-pressed="true" onclick={() => reject(link)} class="rounded-full bg-danger/20 p-1 text-danger"><svg viewBox="0 0 24 24" class="size-4 fill-current"><path d={mdiClose} /></svg></button>
       {:else}
         <span>
@@ -63,13 +64,13 @@
         {#if link.status === 'unnamed'}
           <span class="text-xs text-gray-600 dark:text-gray-400">({t('relationship not named')})</span>
         {:else}
-          <span class="text-xs text-gray-600 dark:text-gray-400">({link.via}, {Math.round(link.confidence * 100)}%)</span>
+          <span class="text-xs text-gray-600 dark:text-gray-400">({viaLabel(link.via)}, {Math.round(link.confidence * 100)}%)</span>
         {/if}
         <span class="inline-flex items-center gap-1">
           <select class="rounded-lg border border-gray-300 bg-light px-2 py-1 text-sm dark:border-gray-700" aria-label={t('What is {name} to {other}?', { name: person.name, other: link.target_name })}
             onchange={(event) => event.currentTarget.value && relate(link.target_id, event.currentTarget.value)}>
             <option value="">{t('What is {name} to {other}?', { name: person.name, other: link.target_name })}</option>
-            {#each roster.relationships as choice (choice.kind)}<option value={choice.kind}>{choice.label}</option>{/each}
+            {#each roster.relationships as choice (choice.kind)}<option value={choice.kind}>{kindLabel(choice.kind)}</option>{/each}
           </select>
           <button type="button" aria-label={t('No, they are not')} aria-pressed="false" onclick={() => reject(link)} class="rounded-full p-1 text-gray-500"><svg viewBox="0 0 24 24" class="size-4 fill-current"><path d={mdiClose} /></svg></button>
         </span>
@@ -82,7 +83,7 @@
   <form class="mt-1 flex flex-wrap gap-2" onsubmit={(event) => { event.preventDefault(); if (kind && target) void relate(target, kind); }}>
     <select class="rounded-lg border border-gray-300 bg-light px-2 py-1 text-sm dark:border-gray-700" aria-label={t('Relationship')} bind:value={kind}>
       <option value="">{t('Add a relationship')}</option>
-      {#each roster.relationships as choice (choice.kind)}<option value={choice.kind}>{choice.label}</option>{/each}
+      {#each roster.relationships as choice (choice.kind)}<option value={choice.kind}>{kindLabel(choice.kind)}</option>{/each}
     </select>
     <select class="rounded-lg border border-gray-300 bg-light px-2 py-1 text-sm dark:border-gray-700" aria-label={t('With')} bind:value={target}>
       <option value="">{t('With')}</option>

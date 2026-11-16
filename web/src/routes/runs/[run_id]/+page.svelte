@@ -4,6 +4,7 @@
   import { api, ApiError, thumbnail, type CutShot } from '#lib/api.ts';
   import RenderPanel from '#lib/RenderPanel.svelte';
   import UploadFilm from '#lib/UploadFilm.svelte';
+  import RelabelFilm from '#lib/RelabelFilm.svelte';
   import RunReport from '#lib/RunReport.svelte';
   import type { components } from '#lib/api-types.ts';
   import { CutEditor } from '#lib/cut-edits.svelte.ts';
@@ -172,6 +173,7 @@
       </div>
     {/if}
     {#if run.film && run.status === 'completed'}<UploadFilm runId={run.run_id} filmAvailable={run.film_available} />{/if}
+    {#if run.immich_asset_id && run.status === 'completed'}<RelabelFilm runId={run.run_id} />{/if}
     {#if cut?.thesis}<p class="max-w-4xl text-lg">{cut.thesis}</p>{/if}
     {#if story?.preparation}<Text size="small" color="muted">{t(story.preparation)}</Text>{/if}
     {#each run.warnings as warning, index (index)}

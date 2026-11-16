@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 import httpx
 from pydantic import ValidationError
 
-from immich_memories.api.album_service import AlbumRef, AlbumService, FilmScope
+from immich_memories.api.album_service import AlbumRef, AlbumService, FilmScope, UploadWaits
 from immich_memories.api.all_assets_service import AllAssetsService
 from immich_memories.api.asset_service import READ_RETRY_DELAYS, TRANSIENT_STATUS, AssetService
 from immich_memories.api.compatibility import (
@@ -23,6 +23,7 @@ from immich_memories.api.compatibility import (
     resolve_api_version,
 )
 from immich_memories.api.film_label import FilmLabel
+from immich_memories.api.film_relabel import FilmRelabeler, RelabelOutcome
 from immich_memories.api.local_network import local_network_hint
 from immich_memories.api.models import (
     Asset,
@@ -188,6 +189,7 @@ class ImmichClient:
         self.assets = AssetService(self._request, self.base_url, lambda: self.client)
         self.people = PersonService(self._request)
         self.albums = AlbumService(self._request, self.get_api_version, self.get_key_capabilities)
+        self.film_relabeler = FilmRelabeler(self.albums, self._request, self.get_key_capabilities)
 
     @property
     def api_version_policy(self) -> ApiVersionPolicy:
@@ -720,6 +722,11 @@ class ImmichClient:
         return await self.albums.upload_memory(
             video_path, album_name, captured_at=captured_at, label=label
         )
+
+    async def relabel_film(
+        self, asset_id: str, label: FilmLabel, *, waits: UploadWaits = UploadWaits()
+    ) -> RelabelOutcome:
+        return await self.film_relabeler.relabel(asset_id, label, waits=waits)
 
 
 # Re-export SyncImmichClient — bottom import avoids circular dependency

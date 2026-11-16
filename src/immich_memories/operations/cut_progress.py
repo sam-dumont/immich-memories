@@ -19,12 +19,13 @@ from collections import deque
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from math import ceil
 from pathlib import Path
 from typing import Any
 
+from immich_memories.progress_text import Params, Stage, catalogue_key, words
 from immich_memories.security import write_secret_file
 from immich_memories.tracking import timing
 from immich_memories.tracking.phase_forecast import PhaseForecast
@@ -42,11 +43,17 @@ ANALYSIS_PHASE = "analysis"
 SELECTION_PHASE = "selection"
 
 _COUNTS = re.compile(r"\d+")
+# The stages announced by key rather than as a preparation pass's engine name.
+_KEYED = frozenset(Stage)
 
 
 @dataclass(frozen=True, slots=True)
 class StageUpdate:
-    """One position in a run: phase, stage, and counts when the stage has them."""
+    """One position in a run: phase, stage, and counts when the stage has them.
+
+    `label` is a stage key (`progress_text.Stage`) or a preparation pass's engine name, and
+    `params` the values its heading needs; the reader words them (`progress_text.words`).
+    """
 
     label: str
     phase: str = SELECTION_PHASE
@@ -67,14 +74,21 @@ class StageUpdate:
     updated_at: float | None = None
     last_completed_at: float | None = None
     forecast: dict[str, Any] | None = None
+    params: Params = field(default_factory=dict)
 
     @property
     def stage_key(self) -> str:
         return self.key or _COUNTS.sub("#", self.label.split(":", 1)[0]).strip()
 
     @property
-    def identity(self) -> tuple[str, str, str, int | None, str]:
-        return self.phase, self.label, self.verb, self.total, self.scope
+    def identity(self) -> tuple[str, str, str, int | None, str, tuple[tuple[str, str], ...]]:
+        params = tuple(sorted((name, str(value)) for name, value in self.params.items()))
+        return self.phase, self.label, self.verb, self.total, self.scope, params
+
+    @property
+    def catalogue_key(self) -> str:
+        """The key the reader words this stage under; "" for an English label from before keys."""
+        return catalogue_key(self.label)
 
     @property
     def unit(self) -> str:
@@ -120,7 +134,10 @@ class StageUpdate:
 
     @property
     def stage_label(self) -> str:
-        """The sentence a phase row shows for this position."""
+        """The English sentence the terminal and the run record show for this position."""
+        if self.label in _KEYED:
+            text = words(self.label, self.params)
+            return text + (f": {self.done}/{self.total}" if self.counted else "")
         names = {
             "reused": "Reusing saved picture checks",
             "skipped_models": "Model checks not requested",
@@ -156,6 +173,8 @@ class StageUpdate:
         """A finished processing count is not a promise that every input produced a fact."""
         return {
             "label": self.label,
+            "key": self.catalogue_key,
+            "params": dict(self.params),
             "done": self.done,
             "total": self.total,
             "unit": self.unit,
@@ -178,6 +197,7 @@ class StageUpdate:
             "last_completed_at": self.last_completed_at,
             "forecast": self.forecast,
             "label": self.label,
+            "params": dict(self.params),
             "done": self.done,
             "total": self.total,
             "verb": self.verb,
@@ -195,6 +215,7 @@ class StageUpdate:
             total = record.get("total")
             return cls(
                 label=str(record["label"]),
+                params=_params(record.get("params")),
                 key=str(record.get("key") or ""),
                 scope=str(record.get("scope") or ""),
                 pass_id=int(record.get("pass_id") or 0),
@@ -212,6 +233,12 @@ class StageUpdate:
             )
         except (ValueError, TypeError):
             return None
+
+
+def _params(value: object) -> dict[str, str | int]:
+    if not isinstance(value, Mapping):
+        return {}
+    return {str(k): v for k, v in value.items() if isinstance(v, (str, int))}
 
 
 class StageClock:

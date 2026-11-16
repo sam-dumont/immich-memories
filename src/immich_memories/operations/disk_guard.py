@@ -14,6 +14,8 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+from immich_memories.operational_warnings import coded
+
 # The two anchors `rate_control.py` measured on real 1080p60 footage: CRF 18
 # ("high") at 4.6 Mbps, CRF 24 ("balanced"/"fast") at 1.6 Mbps. Interpolating
 # (or extrapolating) linearly in log-bitrate against CRF reuses that same
@@ -81,12 +83,14 @@ class InsufficientDiskSpace(RuntimeError):
 
 
 def low_space_warning(volume: VolumeSpace, *, min_free_gb: float) -> str | None:
-    """A warning naming the volume, its free space, and what to do -- or None."""
+    """A coded warning naming the volume and its free space -- or None. The wording says what
+    to do, and never prints the path the config gave."""
     if volume.free_gb >= min_free_gb:
         return None
-    return (
-        f"Low disk space on {volume.label} ({volume.path}): {volume.free_gb:.1f} GB free, "
-        f"below the {min_free_gb:.0f} GB warning threshold. {_WHAT_TO_DO}"
+    return coded(
+        f"low_space_{volume.label}",
+        free_gb=f"{volume.free_gb:.1f}",
+        min_gb=f"{min_free_gb:.0f}",
     )
 
 
@@ -96,6 +100,6 @@ def require_room_for_film(volume: VolumeSpace, *, estimated_bytes: int) -> None:
         return
     estimated_gb = estimated_bytes / (1024**3)
     raise InsufficientDiskSpace(
-        f"Not enough free space on {volume.label} ({volume.path}) for this film: "
+        f"Not enough free space on {volume.label} for this film: "
         f"{volume.free_gb:.1f} GB free, need about {estimated_gb:.1f} GB. {_WHAT_TO_DO}"
     )

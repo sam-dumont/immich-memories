@@ -9,6 +9,7 @@ import pytest
 
 from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationError, check_disk_space
+from immich_memories.operational_warnings import render_warnings
 from tests.conftest import make_clip
 
 
@@ -49,8 +50,11 @@ class TestCheckDiskSpace:
         ):
             warnings = check_disk_space(config, tmp_path, estimated_duration_seconds=10)
 
-        assert any("Low disk space" in warning for warning in warnings)
-        assert any(str(tmp_path) in warning for warning in warnings)
+        worded = render_warnings(warnings)
+        assert any("Low disk space on output" in warning for warning in worded)
+        assert any("2.0 GB free, below the 5 GB" in warning for warning in worded)
+        # The volume is named, never the path the config gave.
+        assert not any(str(tmp_path) in warning for warning in worded)
 
     def test_error_names_the_volume_the_free_space_and_the_estimate(self, tmp_path: Path):
         with (
@@ -63,7 +67,8 @@ class TestCheckDiskSpace:
             check_disk_space(Config(), tmp_path, estimated_duration_seconds=600)
 
         message = str(caught.value)
-        assert str(tmp_path) in message
+        assert "Not enough free space on output" in message
+        assert str(tmp_path) not in message
         assert "runs delete" in message
 
 

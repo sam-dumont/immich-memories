@@ -1,11 +1,12 @@
 <script lang="ts">
   import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
   import { mdiAccountPlusOutline, mdiRefresh } from '@mdi/js';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { api, post, type AccountChoice, type JobView } from '#lib/api.ts';
   import { t } from '#lib/i18n.svelte.ts';
   import { followJob } from '#lib/job.svelte.ts';
   import JobPanel from '#lib/JobPanel.svelte';
+  import FamilyTree from '#lib/people/FamilyTree.svelte';
   import GroupsSection from '#lib/people/GroupsSection.svelte';
   import OwnerSection from '#lib/people/OwnerSection.svelte';
   import PersonCard from '#lib/people/PersonCard.svelte';
@@ -19,6 +20,7 @@
   let newName = $state('');
   let scan = $state<JobView | null>(null);
   let ownerRefresh = $state(0);
+  let treeRefresh = $state(0);
   let accounts = $state<AccountChoice[]>([]);
   // Who each other account holds, so a linked id reads as a name.
   let known = $state<Record<string, AccountPerson[]>>({});
@@ -68,6 +70,18 @@
     if (roster) roster = { ...roster, people: roster.people.map((p) => (p.person_id === person.person_id ? person : p)) };
     // Relationship and account-link writes also change other cards in the registry.
     void load();
+    treeRefresh += 1;
+  }
+
+  // A person on the family tree opens their card: find them by name, then bring the card up.
+  async function openCard(personId: string) {
+    const person = roster?.people.find((p) => p.person_id === personId);
+    if (!person) return;
+    query = person.name;
+    await tick();
+    const card = document.getElementById(`person-${personId}`);
+    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card?.focus({ preventScroll: true });
   }
 
   // The server sends a stable kind; the sentence is the catalogue's, in the reader's language.
@@ -106,6 +120,7 @@
       scan = update;
       if (update.status === 'succeeded') {
         ownerRefresh += 1;
+        treeRefresh += 1;
         void load();
       }
     });
@@ -153,6 +168,8 @@
     {/if}
 
     <OwnerSection refresh={ownerRefresh} />
+
+    <FamilyTree {roster} refresh={treeRefresh} onOpen={openCard} onChanged={() => { void load(); treeRefresh += 1; }} />
 
     {#if accounts.length > 1}
       <Text size="small" color="muted">{t('Each Immich account gives the same person its own id. Under a person, pick who they are in the other account. Nothing is matched for you: the same name only comes first in the list.')}</Text>

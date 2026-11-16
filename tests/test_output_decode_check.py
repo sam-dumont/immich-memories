@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
+from immich_memories.progress_text import stage_text
 from tests.output_tools_fake import (
     is_decode_check,
     output_tools,
@@ -257,6 +258,7 @@ def test_a_long_decode_check_reports_how_far_it_got(
     expected = "Checking the finished film: 12:34 of 1:14:46 decoded"
 
     def hear(message: str) -> None:
+        message = stage_text(message)
         heard.append(message)
         if message == expected:
             reported.set()

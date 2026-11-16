@@ -89,9 +89,6 @@ def create_preset(memory_type: MemoryType, **kwargs) -> MemoryPreset:
     preset = factory(**kwargs)
     if expression is not None:
         preset.person_filter = person_filter
-        if memory_type == MemoryType.MULTI_PERSON:
-            preset.name = f"Together: {expression.display_label}"
-            preset.description = f"Memories matching {expression.display_label} in each picture"
     return preset
 
 
@@ -123,8 +120,6 @@ def _year_in_review(
 ) -> MemoryPreset:
     return MemoryPreset(
         memory_type=MemoryType.YEAR_IN_REVIEW,
-        name=f"{year} Memories",
-        description=f"A look back at your best moments of {year}",
         date_ranges=[calendar_year(year)],
         person_filter=person_filter_for(person_names, person_match=person_match),
         default_duration_seconds=600,  # ~50s per month × 12
@@ -147,11 +142,8 @@ def _season(
     if season is None:
         raise ValueError("season is required for SEASON memory type")
     date_range = build_season(season, year, hemisphere)
-    season_cap = season.capitalize()
     return MemoryPreset(
         memory_type=MemoryType.SEASON,
-        name=f"{season_cap} {year}",
-        description=f"{season_cap} highlights of {year}",
         date_ranges=[date_range],
         person_filter=person_filter_for(person_names, person_match=person_match),
         # No default length: planning.memory_length fits the date-range curve (~195 s for a
@@ -187,16 +179,12 @@ def _person_spotlight(
         if len(windows) > 1:
             return MemoryPreset(
                 memory_type=MemoryType.PERSON_SPOTLIGHT,
-                name=f"{name}'s Birthdays",
-                description=f"{name}'s birthdays across the years",
                 date_ranges=windows,
                 person_filter=person_filter_for([name]),
                 default_duration_seconds=BIRTHDAYS_FILM_SECONDS,
             )
         return MemoryPreset(
             memory_type=MemoryType.PERSON_SPOTLIGHT,
-            name=f"{name}'s Year",
-            description=f"A year with {name}, birthday to birthday",
             date_ranges=windows,
             person_filter=person_filter_for([name]),
             default_duration_seconds=BIRTHDAY_MEMORY_SECONDS,
@@ -205,8 +193,6 @@ def _person_spotlight(
         raise ValueError("year is required for a PERSON_SPOTLIGHT that is not birthday-anchored")
     return MemoryPreset(
         memory_type=MemoryType.PERSON_SPOTLIGHT,
-        name=f"Your Year with {name}",
-        description=f"Best moments with {name} in {year}",
         date_ranges=[calendar_year(year)],
         # A spotlight is one person by definition, so extra names name a
         # different memory -- Multi-Person -- rather than narrowing this one.
@@ -232,11 +218,8 @@ def _multi_person(
     if require_co_occurrence is not None:
         person_match = "and" if require_co_occurrence else "or"
     person_filter = person_filter_for(person_names, person_match=person_match)
-    joined = (" & " if person_match == "and" else " or ").join(person_names)
     return MemoryPreset(
         memory_type=MemoryType.MULTI_PERSON,
-        name=joined,
-        description=f"Moments with {joined} in {year}",
         date_ranges=[calendar_year(year)],
         person_filter=person_filter,
         default_duration_seconds=600,
@@ -257,14 +240,9 @@ def _monthly_highlights(
 ) -> MemoryPreset:
     if month is None:
         raise ValueError("month is required for MONTHLY_HIGHLIGHTS memory type")
-    import calendar as cal
-
-    month_name = cal.month_name[month]
     date_range = build_month(month, year)
     return MemoryPreset(
         memory_type=MemoryType.MONTHLY_HIGHLIGHTS,
-        name=f"{month_name} {year}",
-        description=f"Highlights from {month_name} {year}",
         date_ranges=[date_range],
         person_filter=person_filter_for(person_names, person_match=person_match),
         default_duration_seconds=60,
@@ -286,13 +264,8 @@ def _on_this_day(
     if target_date is None:
         target_date = date.today()
     date_ranges = build_on_this_day(target_date, years_back)
-    import calendar
-
-    month_name = calendar.month_name[target_date.month]
     return MemoryPreset(
         memory_type=MemoryType.ON_THIS_DAY,
-        name=f"{month_name} {target_date.day} Through the Years",
-        description=f"Memories from {month_name} {target_date.day} across previous years",
         date_ranges=date_ranges,
         person_filter=person_filter_for(person_names, person_match=person_match),
         default_duration_seconds=45,  # ~30-45s — it's a single date across years
@@ -316,7 +289,6 @@ def _trip(
     if trip_start is None or trip_end is None:
         raise ValueError("trip_start and trip_end are required for TRIP memory type")
 
-    location = location_name or "Unknown Location"
     date_range = build_trip(trip_start, trip_end)
     # Start with a modest editorial curve. Auto mode adjusts this downward
     # after discovery when the selected media cannot support the full story.
@@ -327,8 +299,6 @@ def _trip(
 
     return MemoryPreset(
         memory_type=MemoryType.TRIP,
-        name=location,
-        description=f"Trip to {location}",
         date_ranges=[date_range],
         person_filter=person_filter_for(person_names),
         default_duration_seconds=duration,
@@ -410,12 +380,8 @@ def _holiday(
     # Both surfaces default the year here, so both get the guard from here.
     today = None if year else date.today()
     year = year or date.today().year
-    label = holiday_label(holiday, year, country=country)
-
     return MemoryPreset(
         memory_type=MemoryType.HOLIDAY,
-        name=f"{label} Through the Years",
-        description=f"{label} across the years",
         date_ranges=build_holiday(
             holiday, year, years_back, window_days, today=today, country=country
         ),
@@ -433,31 +399,16 @@ def _special_day(
     day: date | None = None,
     window: tuple[datetime, datetime] | None = None,
     run: tuple[datetime, datetime] | None = None,
-    title: str | None = None,
-    subtitle: str | None = None,
-    what: str | None = None,
     **kwargs,  # noqa: ARG001
 ) -> MemoryPreset:
-    """One occasion, named by the catalogue that found it, or by its own date.
-
-    Refuse over fake still holds, and the date is not a fake: it names no event
-    and claims nothing the day does not carry. It is the last rung of a ladder
-    the layer above walks first — an explicit title, the catalogue's, then the
-    model writing an occasion title from the day's own facts — so it is only
-    reached when no reader is configured and the catalogue has nothing. That
-    ladder is why a day the scan never found can be filmed at all (#1067).
-    """
+    """One occasion: the day, and the window and run the catalogue found for it."""
     if day is None:
         raise ValueError("day is required for SPECIAL_DAY memory type")
-
-    name = (title or "").strip() or (what or "").strip() or f"{day.day} {day:%B %Y}"
 
     from immich_memories.planning.auto_duration import SPECIAL_DAY_MAX_SECONDS
 
     return MemoryPreset(
         memory_type=MemoryType.SPECIAL_DAY,
-        name=name,
-        description=(subtitle or "").strip() or name,
         date_ranges=[build_special_day(day, window, run)],
         # Not person-filtered on purpose: the memory is the occasion, and real
         # names would reach durable run history through it.

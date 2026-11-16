@@ -206,3 +206,89 @@ msgstr "anniversaire"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "Anniversaire"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "non envoyé : la clé d'API n'a pas le droit {permissions}"
+
+msgid "warning.delivery_incomplete"
+msgstr "livraison incomplète : la clé d'API n'a pas le droit {permissions}"
+
+msgid "warning.previous_kept_key"
+msgstr "version précédente conservée : la clé d'API n'a pas le droit {permission}"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "version précédente conservée : livraison incomplète"
+
+msgid "warning.previous_kept_error"
+msgstr "version précédente conservée : {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "envoyé sans provenance : la clé d'API n'a pas le droit {permissions}"
+
+msgid "warning.provenance_unverified"
+msgstr "envoyé sans provenance vérifiée : l'étiquette n'a pas été conservée"
+
+msgid "warning.provenance_error"
+msgstr "envoyé sans provenance vérifiée : {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "envoyé sans description ni étiquettes vérifiées : {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "envoyé sans étiquettes d'histoire : la clé d'API n'a pas le droit {permissions}"
+
+msgid "warning.no_description_key"
+msgstr "envoyé sans description : la clé d'API n'a pas le droit {permission}"
+
+msgid "warning.album_not_created_key"
+msgstr "album non créé : la clé d'API n'a pas le droit {permission}"
+
+msgid "warning.album_not_added_key"
+msgstr "film non ajouté à l'album : la clé d'API n'a pas le droit {permission}"
+
+msgid "warning.album_not_added_error"
+msgstr "film non ajouté à l'album : {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "la description du film envoyé n'a pas été conservée"
+
+msgid "warning.tags_not_kept"
+msgstr "les étiquettes du film envoyé n'ont pas été conservées"
+
+msgid "warning.gave_up"
+msgstr "Livraison à Immich abandonnée après {attempts} tentatives : {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Livraison à Immich abandonnée après {attempts} tentatives : aucune erreur enregistrée"
+
+msgid "warning.low_space_output"
+msgstr "Espace disque faible sur le volume de sortie : {free_gb} Go libres, sous le seuil d'alerte de {min_gb} Go. Lancez `immich-memories runs delete` pour libérer de la place, ou activez l'envoi pour que les films terminés soient supprimés automatiquement."
+
+msgid "warning.low_space_cache"
+msgstr "Espace disque faible sur le volume du cache : {free_gb} Go libres, sous le seuil d'alerte de {min_gb} Go. Lancez `immich-memories runs delete` pour libérer de la place, ou activez l'envoi pour que les films terminés soient supprimés automatiquement."
+
+msgid "notify.title.ready"
+msgstr "Film prêt : {name}"
+
+msgid "notify.title.failed"
+msgstr "Échec du film : {name}"
+
+msgid "notify.body.type"
+msgstr "Type : {type}"
+
+msgid "notify.body.duration"
+msgstr "Durée du traitement : {minutes} min {seconds:02d} s"
+
+msgid "notify.body.output"
+msgstr "Fichier : {path}"
+
+msgid "notify.body.watch"
+msgstr "À voir dans Immich : {url}"
+
+msgid "notify.body.error"
+msgstr "Erreur : {error}"
+
+msgid "notify.body.warning"
+msgstr "Attention : {warning}"

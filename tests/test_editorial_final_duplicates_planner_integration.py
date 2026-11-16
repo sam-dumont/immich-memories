@@ -136,7 +136,7 @@ def test_a_film_loses_its_hash_twin_without_a_pair_read(tmp_path):
         "picture-003": "0000000000ff0000",
     }
     announced: list[str] = []
-    with announcing_stages(lambda update: announced.append(update.label)):
+    with announcing_stages(lambda update: announced.append(update.stage_label)):
         plan = plan_structure(
             captured,
             StructurePlannerPorts(

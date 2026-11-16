@@ -50,6 +50,7 @@ from immich_memories.analysis.llm.wire import (
 from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cancellation import check_cancelled
 from immich_memories.operations.cut_progress import StageUpdate, announce_stage
+from immich_memories.progress_text import Stage
 from immich_memories.tracking import otel
 
 logger = logging.getLogger(__name__)
@@ -246,8 +247,12 @@ class BatchCoordinator:
             check_cancelled()
             announce_stage(
                 StageUpdate(
-                    _waiting_line(adapter.name, count, submitted),
-                    key=f"waiting on {adapter.name} batch",
+                    Stage.CUT_BATCH_WAITING,
+                    params={
+                        "provider": adapter.name,
+                        "count": count,
+                        "time": f"{submitted:%H:%M}",
+                    },
                 )
             )
             if await adapter.ended(client, handle):
@@ -261,10 +266,6 @@ class BatchCoordinator:
                 return False
             await self._sleep(delay)
             delay = min(delay * POLL_BACKOFF, MAX_POLL_SECONDS)
-
-
-def _waiting_line(provider: str, count: int, submitted: datetime) -> str:
-    return f"waiting on {provider} batch: {count} prompts, submitted {submitted:%H:%M}"
 
 
 class BatchRoute(Protocol):

@@ -230,6 +230,11 @@ def _links(entry: dict[str, Any]) -> list[dict[str, Any]]:
     return [link for link in links if isinstance(link, dict) and link.get("with")]
 
 
+def close_relation(kind: str) -> str | None:
+    """The close tie a kind records (parent, child, sibling or partner), or None for any other."""
+    return next((relation for relation, kinds in _RELATION_KINDS.items() if kind in kinds), None)
+
+
 def suggest_relationships(facts: Iterable[Fact], declined: Iterable[Fact] = ()) -> list[Suggestion]:
     """Every relationship `facts` imply that nobody recorded or declined, sorted.
 

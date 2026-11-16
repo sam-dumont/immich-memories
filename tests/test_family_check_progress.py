@@ -28,7 +28,7 @@ def test_each_picture_checked_moves_a_counted_stage_at_most_every_few_seconds() 
     assert all(update.counted and update.total == 149 for update in heard)
     assert [u.done for u in heard] == sorted(u.done for u in heard)
     assert heard[-1].done == 149
-    assert "family-viewing check" in heard[0].label
+    assert heard[0].stage_label == "Running the family-viewing check: 1/149"
 
 
 def test_checks_past_the_total_never_overflow_the_count() -> None:

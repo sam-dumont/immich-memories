@@ -47,6 +47,7 @@ from immich_memories.operations.phases import OperationalPhase
 from immich_memories.processing.clip_validation import validate_clips
 from immich_memories.processing.encoding_plan import HdrTransfer
 from immich_memories.processing.probe_cache import ProbeCache
+from immich_memories.progress_text import Stage, coded
 from immich_memories.tracking.timed import timed
 from immich_memories.tracking.timing import span
 
@@ -377,7 +378,7 @@ def render_local(
     try:
         with span("render.clip_extraction", items=len(params.clips)) as extraction:
             # Phase 1: Download and extract clips
-            pp.report("download", 0.0, "Preparing clips...")
+            pp.report("download", 0.0, coded(Stage.RENDER_PREPARING_CLIPS))
             run_tracker.start_phase("clip_extraction", len(params.clips))
             _emit_download_phase(
                 operational,
@@ -404,7 +405,7 @@ def render_local(
             operational.emit_unperformed_prerequisites(OperationalPhase.SELECTION)
             operational.emit(OperationalPhase.RENDER, 0, len(params.clips), "Rendering memory")
         phase_times["prepare"] = extraction.duration
-        pp.report("download", 1.0, "Clips prepared")
+        pp.report("download", 1.0, coded(Stage.RENDER_CLIPS_PREPARED))
 
         # Pre-assembly validation: skip clips with missing/empty files
         assembly_clips, skipped = validate_clips(assembly_clips)

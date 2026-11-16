@@ -80,6 +80,7 @@ from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageUpdate, announcing_stages
 from immich_memories.planning.auto_duration import DURATION_FROM_DURATION_FLAG
 from immich_memories.processing.editorial_timing import EditorialTimingPolicy
+from immich_memories.progress_text import Stage
 from immich_memories.security import write_secret_file
 from immich_memories.store.episode_readings import EpisodeReadingProducer
 from immich_memories.timeperiod import DateRange
@@ -402,7 +403,7 @@ class RuntimeEditorialPlanner:
         try:
             sources = self._narrowed(sources, _asset)
             if on_stage is not None:
-                on_stage(StageUpdate("Reading dates, places and people", ANALYSIS_PHASE))
+                on_stage(StageUpdate(Stage.CUT_METADATA, ANALYSIS_PHASE))
             # The readers and the structure planner announce through the
             # context, since the callback never reaches that deep.
             with announcing_stages(on_stage):
@@ -441,7 +442,7 @@ class RuntimeEditorialPlanner:
             if result is None:
                 raise RuntimeError("editorial source route has no completed structure result")
             if on_stage is not None:
-                on_stage(StageUpdate("Validating selected source timing"))
+                on_stage(StageUpdate(Stage.CUT_TIMING))
             return _projected_rendering(
                 result,
                 candidates,

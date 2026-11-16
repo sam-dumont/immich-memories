@@ -13,6 +13,7 @@ from starlette.background import BackgroundTask
 
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.config.loader import Config
+from immich_memories.operations.shown_film_name import content_disposition
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.film_files import FILM_TYPES, local_film
@@ -34,6 +35,18 @@ def immich_finished_film(config: Annotated[Config, Depends(current_config)]) -> 
             return client.download_asset(asset_id, target, expected_size_bytes=size)
 
     return fetch
+
+
+def _shown_name(config: Config, record: RunMetadata, disk_name: str) -> str:
+    """The name the browser saves: the film's language, falling back to the disk name."""
+    from immich_memories.operations.shown_film_name import shown_film_name_for
+
+    try:
+        return shown_film_name_for(
+            config, disk_name, memory_type=record.memory_type, person_name=record.person_name
+        )
+    except Exception:  # WHY: a download is never worth failing over its name
+        return disk_name
 
 
 def finished_film(config: Config, record: RunMetadata, fetch: FinishedFilmFetcher) -> FileResponse:
@@ -63,10 +76,14 @@ def finished_film(config: Config, record: RunMetadata, fetch: FinishedFilmFetche
                 502, "Immich could not provide this film. Retry or check the connection."
             ) from None
         cleanup = BackgroundTask(path.unlink, missing_ok=True)
+    shown = _shown_name(config, record, name)
     return FileResponse(
         path,
-        filename=name,
         media_type=FILM_TYPES[path.suffix.lower()],
-        headers={"cache-control": "private, no-store"},
+        # Starlette's own header drops the ASCII fallback for a name that is not ASCII.
+        headers={
+            "cache-control": "private, no-store",
+            "content-disposition": content_disposition(shown, name),
+        },
         background=cleanup,
     )

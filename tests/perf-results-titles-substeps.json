@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-10-20T17:45:31",
+  "timestamp": "2026-11-11T01:47:09",
   "substeps": {
-    "content_backed__slowmo_init": 0.0961302500218153,
-    "content_backed__catmull_rom": 0.773595874896273,
-    "content_backed__catmull_rom_avg_ms": 7.362213156496486,
-    "content_backed__catmull_rom_p95_ms": 11.780500179156661,
-    "content_backed__kernel_render": 3.8455747079569846,
-    "content_backed__kernel_avg_ms": 36.61558493262246,
-    "content_backed__kernel_p95_ms": 16.122542088851333,
-    "content_backed__kernel_first_ms": 2309.524916112423,
-    "content_backed__full_title": 3.9959860830567777,
-    "content_backed__output_mb": 7.710866928100586,
-    "gradient__kernel_render": 1.0467465000692755,
-    "gradient__kernel_avg_ms": 9.959144797176123,
-    "gradient__kernel_p95_ms": 10.47650002874434,
-    "gradient__kernel_first_ms": 125.93062501400709,
-    "gradient__full_title": 1.794096624944359,
-    "gradient__output_mb": 10.99642562866211
+    "content_backed__slowmo_init": 0.1633812499931082,
+    "content_backed__catmull_rom": 1.002521749935113,
+    "content_backed__catmull_rom_avg_ms": 9.540799624907473,
+    "content_backed__catmull_rom_p95_ms": 15.424665994942188,
+    "content_backed__kernel_render": 4.2024949580663815,
+    "content_backed__kernel_avg_ms": 40.01043017709716,
+    "content_backed__kernel_p95_ms": 25.268625002354383,
+    "content_backed__kernel_first_ms": 2371.868541929871,
+    "content_backed__full_title": 5.759872458991595,
+    "content_backed__output_mb": 7.710864067077637,
+    "gradient__kernel_render": 1.3562254579737782,
+    "gradient__kernel_avg_ms": 12.90023570237238,
+    "gradient__kernel_p95_ms": 13.139332993887365,
+    "gradient__kernel_first_ms": 160.85333295632154,
+    "gradient__full_title": 1.467325916979462,
+    "gradient__output_mb": 10.990049362182617
   }
 }

@@ -98,11 +98,11 @@ def test_a_detected_link_is_one_row_and_naming_it_leaves_one_row_on_each_side(
     row = ana.get_by_test_id("relationship-row")
     expect(row).to_have_count(1)
     expect(row).to_have_attribute("data-status", "named")
-    expect(row).to_contain_text("parent of")
+    expect(row).to_contain_text("Ana Example is Luc Sample's parent")
     page.get_by_role("button", name="Show more").click()
     luc = _card(page, "Luc Sample").get_by_test_id("relationship-row")
     expect(luc).to_have_count(1)
-    expect(luc).to_contain_text("child of")
+    expect(luc).to_contain_text("Luc Sample is Ana Example's child")
     expect(page.get_by_role("combobox", name="What is", exact=False)).to_have_count(0)
 
     luc.get_by_role("button", name="Remove this relationship").click()
@@ -243,12 +243,14 @@ def test_the_family_tree_suggests_what_it_implies_live_and_a_tick_or_accept_all_
 
     suggested = gran_rows.filter(has_text="Riley Example")
     expect(suggested).to_have_attribute("data-status", "suggested", timeout=15_000)
-    expect(suggested).to_contain_text("grandparent of")
+    expect(suggested).to_contain_text("Gran Example is Riley Example's grandparent")
     expect(suggested.get_by_test_id("suggestion-reason")).to_have_text(
-        "(parent of Bob Example, who is a parent of Riley Example)"
+        "(Gran Example is Bob Example's parent; Bob Example is Riley Example's parent)"
     )
     evidence(page, "family-tree-suggestions")
-    suggested.get_by_role("button", name="Yes, they are").click()
+    suggested.get_by_role(
+        "button", name="Confirm: Gran Example is Riley Example's grandparent"
+    ).click()
     expect(suggested).to_have_attribute("data-status", "named")
 
     riley_card = _card(page, "Riley Example")
@@ -260,5 +262,5 @@ def test_the_family_tree_suggests_what_it_implies_live_and_a_tick_or_accept_all_
     expect(riley_suggested).to_have_count(0)
     expect(
         riley_card.get_by_test_id("relationship-row").filter(has_text="Alex Example")
-    ).to_contain_text("niece or nephew of")
+    ).to_contain_text("Riley Example is Alex Example's niece or nephew")
     assert page.evaluate("window.__suggestions_same_document") is True

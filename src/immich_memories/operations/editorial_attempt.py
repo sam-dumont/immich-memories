@@ -6,6 +6,7 @@ import json
 import time
 from collections.abc import Mapping
 from contextlib import ExitStack
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -17,6 +18,7 @@ from immich_memories.db.leases import Lease
 from immich_memories.operations.attempt_size import record_attempt_size
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageClock, StageUpdate
+from immich_memories.progress_text import Stage, current_span_name
 from immich_memories.security import write_secret_file
 
 # Beside a cut key's attempts: which attempt is the newest, for a reader in another process.
@@ -29,7 +31,7 @@ REQUESTED_ASSETS = "requested-assets.private.json"
 if TYPE_CHECKING:
     from immich_memories.db import Store
 
-_FIRST_STAGE = StageUpdate("Preparing editorial evidence", ANALYSIS_PHASE)
+_FIRST_STAGE = StageUpdate(Stage.CUT_EVIDENCE, ANALYSIS_PHASE)
 
 
 def _now() -> str:
@@ -81,8 +83,13 @@ class EditorialAttempt:
                 tracker.current_run.source, prefix="stage.", profile=profile
             )
             if history:
+                # A run measured before stages had keys still estimates this one.
                 plan = SpanPlan(
-                    [span for span in history.spans if span.name.startswith("stage.")],
+                    [
+                        replace(span, name=current_span_name(span.name))
+                        for span in history.spans
+                        if span.name.startswith("stage.")
+                    ],
                     items=pictures,
                 )
             if collected and collected.diagnostics.get("progress_request", {}).get("film"):

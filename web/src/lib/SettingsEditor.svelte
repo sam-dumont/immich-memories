@@ -4,6 +4,7 @@
   import { api, post } from '#lib/api.ts';
   import type { components } from '#lib/api-types.ts';
   import { t } from '#lib/i18n.svelte.ts';
+  import { sectionLabel, settingLabel } from '#lib/settingLabels.ts';
 
   type SettingsView = components['schemas']['SettingsView'];
   type SettingRow = components['schemas']['SettingRow'];
@@ -78,21 +79,22 @@
     {/if}
     {#each view.sections as section (section.name)}
       <details class="rounded-xl border border-gray-200 dark:border-gray-800" open={OPEN_SECTIONS.has(section.name)}>
-        <summary class="cursor-pointer px-4 py-2 font-medium capitalize">{section.name.replaceAll('_', ' ')}</summary>
+        <summary class="cursor-pointer px-4 py-2 font-medium">{sectionLabel(section.name)}</summary>
         <div class="flex flex-col divide-y divide-gray-200 dark:divide-gray-800">
           {#each section.settings as row (row.key)}
-            {@const name = row.key.slice(section.name.length + 1)}
+            {@const label = settingLabel(row.key)}
             <div class="grid gap-1 px-4 py-2 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] sm:items-center sm:gap-4">
               <div class="min-w-0">
-                <span class="block text-sm break-all">{name}</span>
+                <span class="block text-sm">{label}</span>
+                <code class="block text-xs break-all text-gray-600 dark:text-gray-400">{row.key}</code>
                 <span class="block text-xs text-gray-600 dark:text-gray-400">{origin(row)}</span>
               </div>
               {#if row.input.kind === 'bool'}
-                <input type="checkbox" class="size-5 justify-self-start" aria-label={row.key} disabled={!row.editable}
+                <input type="checkbox" class="size-5 justify-self-start" aria-label={label} disabled={!row.editable}
                   checked={(drafts[row.key] ?? row.value) as boolean} onchange={(event) => (drafts[row.key] = event.currentTarget.checked)} />
               {:else if row.input.kind === 'choice'}
                 {@const current = asText(drafts[row.key] ?? row.value)}
-                <select class={field} aria-label={row.key} disabled={!row.editable}
+                <select class={field} aria-label={label} disabled={!row.editable}
                   value={current} onchange={(event) => (drafts[row.key] = event.currentTarget.value)}>
                   {#if !row.input.choices.some((choice) => choice.value === current)}
                     <option value={current}>{current} (not in the list)</option>
@@ -102,14 +104,14 @@
                   {/each}
                 </select>
               {:else if row.input.kind === 'number'}
-                <input class={field} type="number" aria-label={row.key} disabled={!row.editable}
+                <input class={field} type="number" aria-label={label} disabled={!row.editable}
                   min={row.input.min ?? undefined} max={row.input.max ?? undefined} step={row.input.step ?? 'any'}
                   value={asText(drafts[row.key] ?? row.value)} oninput={(event) => (drafts[row.key] = event.currentTarget.value)} />
               {:else if row.input.kind === 'secret'}
-                <input class={field} type="password" autocomplete="off" aria-label={row.key} disabled={!row.editable}
+                <input class={field} type="password" autocomplete="off" aria-label={label} disabled={!row.editable}
                   placeholder={row.value ? t('Saved - type a new key to replace it') : ''} oninput={(event) => (drafts[row.key] = event.currentTarget.value)} />
               {:else}
-                <input class={field} aria-label={row.key} disabled={!row.editable} placeholder={row.input.hint ?? ''}
+                <input class={field} aria-label={label} disabled={!row.editable} placeholder={row.input.hint ?? ''}
                   value={asText(drafts[row.key] ?? row.value)} oninput={(event) => (drafts[row.key] = event.currentTarget.value)} />
               {/if}
             </div>

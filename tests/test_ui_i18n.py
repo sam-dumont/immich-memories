@@ -218,9 +218,33 @@ def _is_registered(table: str, source: str, root: Path) -> bool:
     for text in (source, (root / "lib/labels.ts").read_text() if root.is_dir() else ""):
         definition = re.search(rf"\bconst\s+{re.escape(table)}\b[^=]*=\s*([\[{{])", text)
         if definition:
-            body = text[definition.end() : text.find(";", definition.end())]
+            body = text[definition.end() : _closing(text, definition.end())]
             return "N_(" in body and not _bare_words(body)
     return False
+
+
+def _closing(text: str, start: int) -> int:
+    """Where the table opened just before `start` closes: a ";" in a label, or a quote in a
+    comment, does not end it."""
+    depth, quote, index = 1, "", start
+    while index < len(text) and depth:
+        char = text[index]
+        if quote:
+            if char == "\\":
+                index += 1
+            elif char == quote:
+                quote = ""
+        elif text.startswith("//", index):
+            newline = text.find("\n", index)
+            index = len(text) if newline < 0 else newline
+        elif char in "'\"`":
+            quote = char
+        elif char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth -= 1
+        index += 1
+    return index
 
 
 def _bare_words(body: str) -> list[str]:

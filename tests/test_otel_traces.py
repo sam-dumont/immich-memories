@@ -267,19 +267,14 @@ def test_relayed_phase_lines_carry_the_trace_of_the_work_that_relays_them(collec
 def test_a_reader_retry_stage_is_named_without_its_server():
     from immich_memories.analysis.llm.provider_status import watch_provider
     from immich_memories.analysis.llm.wire import LLMTransportAttempt
-    from immich_memories.config.models.llm import LLMConfig
     from immich_memories.operations.cut_progress import announcing_stages
 
     heard = []
-    observe = watch_provider("reader", LLMConfig(base_url="http://10.9.8.7:8000/v1"))
+    observe = watch_provider()
     with announcing_stages(heard.append):
         observe(LLMTransportAttempt(attempt=1, outcome="connection_error", status_code=None))
         observe(LLMTransportAttempt(attempt=99, outcome="connection_error", status_code=None))
-    assert [update.stage_key for update in heard] == [
-        "Waiting for the reader",
-        "Gave up on the reader",
-    ]
-    assert "10.9.8.7" in heard[0].label
+    assert [update.stage_key for update in heard] == ["cut.reader_waiting", "cut.reader_gave_up"]
 
 
 def test_a_cli_command_is_the_root_of_everything_it_does(collector, monkeypatch):

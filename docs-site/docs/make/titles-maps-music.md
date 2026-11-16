@@ -50,6 +50,15 @@ title, the trip picker in the web UI, and the discovery table a `generate --memo
 run prints before cutting one. A French film never shows a region translated next to its
 country in English, or the other way round.
 
+The file name follows the same split. The file on disk keeps its English name
+(`camille_monthly_highlights_2025_a1b2c3d4.mp4`), so scripts that read your output folder never
+break, and so does the run's folder. The name a person sees is in the film's language: the file
+name Immich shows for the uploaded film, and the name your browser saves when you download a film
+from the web UI. A French film shows up as `Camille Moments du mois 2025 a1b2c3d4.mp4`. It's built
+from the same parts (people, type, dates, the recipe hash), with letters of any script kept and
+anything a filesystem refuses (`/ \ : * ? " < > |`, control characters) dropped. English films
+and files you named with `--output` are shown as they are.
+
 ## Opening and closing fades
 
 Choose **Opening and closing fade** under **Render**: white, black, or **As configured**. This changes the fade at both ends of the title sequence for this film. Title screens must be enabled.

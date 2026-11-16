@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 
 from immich_memories.config.loader import Config
 from immich_memories.db import open_store
+from immich_memories.operational_warnings import worded_for
 from immich_memories.operations.auto_output import output_log_path
 from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.storyboard import read_storyboard
@@ -107,10 +108,10 @@ def read_run(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         completed_at=record.completed_at,
         output_path=record.output_path,
         delivery_status=record.delivery_status.value,
-        delivery_error=record.delivery_error,
+        delivery_error=worded_for(config, record.delivery_error) if record.delivery_error else None,
         immich_asset_id=record.immich_asset_id,
         immich_asset_url=config.immich.asset_url(record.immich_asset_id),
-        warnings=record.warnings.copy(),
+        warnings=[worded_for(config, warning) for warning in record.warnings],
         phases=[
             PhaseTiming(
                 name=phase.phase_name,

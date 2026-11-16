@@ -15,6 +15,7 @@ from immich_memories.audio.music_generator_client import MusicGenClientConfig
 from immich_memories.audio.music_generator_models import VideoTimeline
 from immich_memories.audio.text_mood import mood_for_cut, music_hemisphere
 from immich_memories.processing.render_inputs import read_render_inputs
+from immich_memories.progress_text import Stage, coded
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -59,7 +60,7 @@ async def preview_music_for_cut(
     inputs = read_render_inputs(attempt_dir)
     ids = tuple(clip.asset.id for clip in inputs.clips) if inputs else ()
     if progress is not None:
-        progress(0, "Reading the cut for music", 0.0, "")
+        progress(0, coded(Stage.MUSIC_READING_CUT), 0.0, "")
     choice = await mood_for_cut(config, attempt_dir, ids)
     for clip in timeline.clips:
         clip.mood = choice.mood.primary_mood

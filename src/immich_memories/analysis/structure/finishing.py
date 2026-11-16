@@ -44,13 +44,12 @@ from immich_memories.analysis.structure.unvouched_filler import (
     owner_vouches_for,
 )
 from immich_memories.operations.cut_progress import StageUpdate, announce_stage
+from immich_memories.progress_text import Stage
 
 
-def announce_count(pictures: int, point: str) -> None:
+def announce_count(pictures: int, point: Stage) -> None:
     """The edit's own counts, said out loud instead of only written to a record."""
-    announce_stage(
-        StageUpdate(f"Editing the memory: {pictures} pictures {point}", key="Editing the memory")
-    )
+    announce_stage(StageUpdate(point, params={"pictures": pictures}))
 
 
 def counted_verdicts(
@@ -76,9 +75,7 @@ def counted_verdicts(
         done = min(checked, total)
         if now - last >= every_seconds or checked == total:
             last = now
-            announce_stage(
-                StageUpdate("the family-viewing check", done=done, total=total, verb="Running")
-            )
+            announce_stage(StageUpdate(Stage.CUT_FAMILY_CHECK, done=done, total=total))
         return verdict
 
     return counted
@@ -117,7 +114,7 @@ def resolve_motion_and_timing(
     retained_motion = RetainedMotion(ports.resolve_motion, run.bind_stitch)
     run.carriers = retained_motion(run.carriers)
     run.selection_stages["before_picture_review"] = len(run.carriers)
-    announce_count(len(run.carriers), "going into the picture review")
+    announce_count(len(run.carriers), Stage.CUT_COUNT_PICTURE_REVIEW)
     # Audience-eligible funded pictures and completion additions reuse prior results.
     run.carriers = retained_motion(run.carriers)
     run.motion_metrics = retained_motion.metrics

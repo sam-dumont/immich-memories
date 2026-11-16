@@ -90,3 +90,35 @@ async def test_a_render_outside_the_album_is_left_alone() -> None:
     )
 
     assert client.trashed == []
+
+
+@pytest.mark.asyncio
+async def test_a_render_sent_under_its_shown_name_is_replaced_like_one_sent_under_its_disk_name() -> (
+    None
+):
+    ours = {"deviceId": "immich-memories", "deviceAssetId": "immich-memories-a1b2c3d4"}
+    client = _Recorder(
+        [
+            {
+                "id": "shown",
+                "originalFileName": "Camille Moments du mois 2025 a1b2c3d4.mp4",
+                **ours,
+            },
+            {
+                "id": "disk",
+                "originalFileName": "camille_monthly_highlights_2025_a1b2c3d4.mp4",
+                **ours,
+            },
+            {"id": "new", "originalFileName": "Camille Moments du mois 2025 a1b2c3d4.mp4"},
+        ]
+    )
+
+    superseded = await supersede_previous_renders(
+        client,
+        album_id="alb",
+        filename="camille_monthly_highlights_2025_a1b2c3d4.mp4",
+        keep_asset_id="new",
+        shown_name="Camille Moments du mois 2025 a1b2c3d4.mp4",
+    )
+
+    assert sorted(superseded) == ["disk", "shown"]

@@ -16,6 +16,7 @@
 
 /* Demo mode: every picture and film blurred, so a screen can be shared without a family's photos. */
 .demo-mode img,
-.demo-mode video {
+.demo-mode video,
+.demo-mode svg image {
   filter: blur(14px);
 }

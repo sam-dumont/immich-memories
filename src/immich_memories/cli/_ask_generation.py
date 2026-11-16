@@ -24,7 +24,7 @@ from immich_memories.analysis.audience.shareability import level_of
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._helpers import print_info, refuse_blocked_host
-from immich_memories.cli.progress_file import write_progress
+from immich_memories.cli.progress_file import worded, write_progress
 from immich_memories.config.models.resources import PRIMARY_ACCOUNT
 from immich_memories.free_text.account_scope import (
     AccountScope,
@@ -370,9 +370,16 @@ def _progress_reporter(
         return None
 
     def report(message: str, fraction: float | None, remaining_seconds: float | None) -> None:
+        fields = worded(message)
+        # Not "done": in a progress file that says the command has finished.
+        counts = {
+            f"items_{name}": int(fields["params"][name])
+            for name in ("done", "total")
+            if str(fields["params"].get(name, "")).isdigit()
+        }
         write_progress(
             progress_file,
-            {"phase": "preparing", "message": message, "fraction": fraction}
+            {"phase": "preparing", **fields, **counts, "fraction": fraction}
             | ({"remaining_seconds": remaining_seconds} if remaining_seconds else {}),
         )
 

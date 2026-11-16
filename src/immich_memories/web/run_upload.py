@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.config.loader import Config
 from immich_memories.db import open_store
+from immich_memories.operational_warnings import worded_for
 from immich_memories.operations.film_labelling import label_for_run
 from immich_memories.operations.local_output_cleanup import remove_after_confirmed_upload
 from immich_memories.tracking import RunDatabase
@@ -83,7 +84,7 @@ def upload_finished_film(
         label=label_for_run(config, record, store=db.store),
     )
     asset_id = result.get("asset_id")
-    warnings = [str(w) for w in result.get("warnings", [])]
+    warnings = [worded_for(config, str(w)) for w in result.get("warnings", [])]
     if result.get("delivery_complete") is False or not asset_id:
         raise UploadRefused(
             "; ".join(warnings) or "Immich did not accept the upload; the local film is kept.",

@@ -6,6 +6,7 @@ import asyncio
 from types import SimpleNamespace
 
 from immich_memories.audio.cut_music_preview import preview_music_for_cut
+from immich_memories.progress_text import stage_text
 from tests.test_revision_render import cut  # noqa: F401 - the saved-cut fixture
 
 
@@ -16,7 +17,9 @@ def test_the_preview_is_generated_from_the_cut_s_own_timeline_and_mood(cut, tmp_
     progress = []
 
     async def mood_for_cut(config, attempt_dir, asset_ids):
-        assert progress == [(0, "Reading the cut for music", 0.0, "")]
+        assert [(v, stage_text(s), p, d) for v, s, p, d in progress] == [
+            (0, "Reading the cut for music", 0.0, "")
+        ]
         asked["mood_ids"] = asset_ids
         return SimpleNamespace(mood=SimpleNamespace(primary_mood="happy"))
 

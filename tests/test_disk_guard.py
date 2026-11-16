@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from immich_memories.operational_warnings import render_warning
 from immich_memories.operations.disk_guard import (
     InsufficientDiskSpace,
     estimate_output_bytes,
@@ -77,10 +78,11 @@ def test_low_free_space_names_the_volume_and_what_to_do(tmp_path: Path) -> None:
     warning = low_space_warning(_volume(int(2.5 * 1024**3), tmp_path), min_free_gb=5.0)
 
     assert warning is not None
-    assert "output" in warning
-    assert str(tmp_path) in warning
-    assert "2.5" in warning
-    assert "runs delete" in warning
+    worded = render_warning(warning)
+    assert "output" in worded
+    assert str(tmp_path) not in worded and str(tmp_path) not in warning
+    assert "2.5" in worded
+    assert "runs delete" in worded
 
 
 def test_a_film_that_fits_raises_nothing(tmp_path: Path) -> None:
@@ -95,7 +97,7 @@ def test_a_film_that_cannot_fit_names_the_volume_the_free_space_and_the_estimate
 
     message = str(caught.value)
     assert "output" in message
-    assert str(tmp_path) in message
+    assert str(tmp_path) not in message
     assert "0.5" in message
     assert "2.0" in message
     assert "runs delete" in message

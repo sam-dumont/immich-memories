@@ -134,3 +134,10 @@ def test_a_son_or_daughter_names_the_child_role_two_kinds_up(tmp_path: Path) -> 
 )
 def test_a_word_does_not_name_an_unrelated_role(tmp_path: Path, word: str, role: str) -> None:
     assert not _people_words(tmp_path).names_role(word, role)
+
+
+def test_a_noun_gives_the_adjectives_wordnet_forms_from_it(lexicon: WordNetLexicon) -> None:
+    """#2140: "snow" is "snowy" in a caption; a noun with no adjective gives none."""
+    assert lexicon.derived_adjectives("snow") == {"snowy"}
+    assert lexicon.derived_adjectives("snows") == {"snowy"}
+    assert lexicon.derived_adjectives("cat") == frozenset()

@@ -37,6 +37,7 @@ from immich_memories.audio.music_generator_models import (
     VideoTimeline,
 )
 from immich_memories.audio.take_join import join_takes, trim_take
+from immich_memories.progress_text import Stage, coded
 
 if TYPE_CHECKING:
     from immich_memories.audio.mood_analyzer import VideoMood
@@ -375,10 +376,11 @@ class MusicPipeline:
         def _progress(status, progress, detail):
             if progress_callback:
                 scaled = 80 + progress * 0.2
-                progress_callback(version_idx, f"Separating stems: {status}", scaled, detail)
+                # The separator's own status words nothing a reader can translate.
+                progress_callback(version_idx, coded(Stage.MUSIC_STEMS), scaled, detail)
 
         try:
-            _progress("Checking stem separator", 0, None)
+            _progress(coded(Stage.MUSIC_STEMS), 0, None)
             if not await self._stem_separator.is_available():
                 logger.warning("Stem separator unavailable, skipping")
                 return None
@@ -463,7 +465,7 @@ def _why(exc: Exception) -> str:
 
 async def _is_ready(gen: MusicGenerator, progress: _VersionProgress) -> bool:
     try:
-        progress("Checking music service", 0, None)
+        progress(coded(Stage.MUSIC_CHECKING_SERVICE), 0, None)
         if await gen.is_available():
             return True
         logger.info(f"{gen.name} unavailable, trying next...")
@@ -479,7 +481,7 @@ async def _run(
     """One request on one backend, or None when it fails or makes unusable audio."""
     try:
         logger.info(f"Generating with {gen.name}")
-        progress("Generating music", 0, None)
+        progress(coded(Stage.MUSIC_GENERATING), 0, None)
         result = await gen.generate(request, progress)
     except Exception as exc:
         # WHY broad: the point of a backend chain is that one backend
@@ -490,7 +492,7 @@ async def _run(
         # still propagates.
         # No exc_info: a backend's exception text can carry its URL or
         # key, so the log gets the reason from `_why`, never the raw text.
-        progress("Music service failed; trying the next service", 0, None)
+        progress(coded(Stage.MUSIC_NEXT_SERVICE), 0, None)
         logger.warning("Music backend %s failed (%s); trying next backend", gen.name, _why(exc))
         return None
     if reason := validate_generated_audio(result.audio_path):

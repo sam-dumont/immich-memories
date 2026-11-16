@@ -1,4 +1,8 @@
-"""A JSON progress file a long command keeps for a watcher, such as the web client's job page."""
+"""A JSON progress file a long command keeps for a watcher, such as the web client's job page.
+
+A heading is kept three ways: `key` and `params` for the web client to word in the reader's
+language, and `message` in English for anything that reads the file as text.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +10,14 @@ import json
 import time
 from pathlib import Path
 
+from immich_memories.progress_text import heading, stage_text
 from immich_memories.security import write_secret_file
+
+
+def worded(message: str) -> dict:
+    """A heading's fields in the file: its key and params, and its English sentence."""
+    key, params = heading(message)
+    return {"message": stage_text(message), "key": key, "params": params}
 
 
 def write_progress(path: Path | None, record: dict) -> None:
@@ -52,6 +63,8 @@ def _with_history(record: dict, previous: dict, stamp: float) -> dict:
         history.append(
             {
                 "label": str(previous.get("message") or previous.get("phase") or ""),
+                "key": str(previous.get("key") or ""),
+                "params": previous.get("params") or {},
                 "pass_id": previous.get("pass_id", 0),
                 "scope": previous.get("scope", ""),
                 "state": "previous",
@@ -86,7 +99,7 @@ def progress_writer(path: Path | None):
                 "done": False,
                 "phase": phase,
                 "fraction": fraction,
-                "message": message,
+                **worded(message),
                 "scope": message if phase == "music" else "",
                 "fraction_scope": "unknown",
                 "stage_fraction": None,

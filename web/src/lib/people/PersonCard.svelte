@@ -14,7 +14,7 @@
   }
 </script>
 
-<li class="flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+<li id={`person-${person.person_id}`} tabindex="-1" class="flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 outline-primary focus:outline-2 dark:border-gray-800">
   <div class="flex items-center gap-3">
     <img src={`/api/v1/people/${encodeURIComponent(person.person_id)}/face`} alt="" class="size-14 rounded-full bg-gray-100 object-cover dark:bg-gray-900" loading="lazy"
       onerror={(event) => ((event.currentTarget as HTMLImageElement).style.visibility = 'hidden')} />

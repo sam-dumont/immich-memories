@@ -207,3 +207,89 @@ msgstr "рожден"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "День рождения"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "Не загружено: у ключа нет прав ({permissions})"
+
+msgid "warning.delivery_incomplete"
+msgstr "Доставка не завершена: у ключа нет прав ({permissions})"
+
+msgid "warning.previous_kept_key"
+msgstr "Предыдущая версия сохранена: у ключа нет прав ({permission})"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "Предыдущая версия сохранена: доставка не завершена"
+
+msgid "warning.previous_kept_error"
+msgstr "Предыдущая версия сохранена: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "Загружено без сведений о происхождении: у ключа нет прав ({permissions})"
+
+msgid "warning.provenance_unverified"
+msgstr "Загружено без подтверждённых сведений о происхождении: тег не сохранился"
+
+msgid "warning.provenance_error"
+msgstr "Загружено без подтверждённых сведений о происхождении: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "Загружено без подтверждённого описания и тегов: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "Загружено без тегов истории: у ключа нет прав ({permissions})"
+
+msgid "warning.no_description_key"
+msgstr "Загружено без описания: у ключа нет прав ({permission})"
+
+msgid "warning.album_not_created_key"
+msgstr "Альбом не создан: у ключа нет прав ({permission})"
+
+msgid "warning.album_not_added_key"
+msgstr "Фильм не добавлен в альбом: у ключа нет прав ({permission})"
+
+msgid "warning.album_not_added_error"
+msgstr "Фильм не добавлен в альбом: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "описание загруженного фильма не сохранилось"
+
+msgid "warning.tags_not_kept"
+msgstr "теги загруженного фильма не сохранились"
+
+msgid "warning.gave_up"
+msgstr "Доставка в Immich прекращена после {attempts} попыток: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Доставка в Immich прекращена после {attempts} попыток: ошибка не записана"
+
+msgid "warning.low_space_output"
+msgstr "Мало места на диске (вывод): свободно {free_gb} ГБ, ниже порога предупреждения в {min_gb} ГБ. Выполните `immich-memories runs delete`, чтобы освободить место, или включите загрузку, чтобы готовые фильмы удалялись автоматически."
+
+msgid "warning.low_space_cache"
+msgstr "Мало места на диске (кэш): свободно {free_gb} ГБ, ниже порога предупреждения в {min_gb} ГБ. Выполните `immich-memories runs delete`, чтобы освободить место, или включите загрузку, чтобы готовые фильмы удалялись автоматически."
+
+msgid "notify.title.ready"
+msgstr "Фильм готов: {name}"
+
+msgid "notify.title.failed"
+msgstr "Фильм не удался: {name}"
+
+msgid "notify.body.type"
+msgstr "Тип: {type}"
+
+msgid "notify.body.duration"
+msgstr "Время обработки: {minutes} мин {seconds:02d} с"
+
+msgid "notify.body.output"
+msgstr "Файл: {path}"
+
+msgid "notify.body.watch"
+msgstr "Смотреть в Immich: {url}"
+
+msgid "notify.body.error"
+msgstr "Ошибка: {error}"
+
+msgid "notify.body.warning"
+msgstr "Предупреждение: {warning}"

@@ -1174,6 +1174,61 @@
         "title": "Decision",
         "type": "object"
       },
+      "FamilyTree": {
+        "properties": {
+          "couples": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Couples",
+            "type": "array"
+          },
+          "families": {
+            "items": {
+              "$ref": "#/components/schemas/TreeFamily"
+            },
+            "title": "Families",
+            "type": "array"
+          },
+          "left_out": {
+            "title": "Left Out",
+            "type": "integer"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/TreePerson"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/TreeSuggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "people",
+          "couples",
+          "families",
+          "suggestions",
+          "left_out"
+        ],
+        "title": "FamilyTree",
+        "type": "object"
+      },
       "FlagAnswer": {
         "properties": {
           "kind": {
@@ -1402,6 +1457,11 @@
             "title": "History",
             "type": "array"
           },
+          "key": {
+            "default": "",
+            "title": "Key",
+            "type": "string"
+          },
           "label": {
             "default": "",
             "title": "Label",
@@ -1417,6 +1477,21 @@
               }
             ],
             "title": "Last Completed At"
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "default": {},
+            "title": "Params",
+            "type": "object"
           },
           "pass_id": {
             "default": 0,
@@ -1523,9 +1598,29 @@
             ],
             "title": "Done"
           },
+          "key": {
+            "default": "",
+            "title": "Key",
+            "type": "string"
+          },
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "default": {},
+            "title": "Params",
+            "type": "object"
           },
           "pass_id": {
             "default": 0,
@@ -2321,6 +2416,48 @@
         "title": "PreflightCheck",
         "type": "object"
       },
+      "RelabelAnswer": {
+        "description": "What re-labelling a delivered film in Immich did.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "removed_tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed Tags",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "written",
+              "unchanged",
+              "asset_gone",
+              "rights_missing",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "detail",
+          "removed_tags",
+          "warnings"
+        ],
+        "title": "RelabelAnswer",
+        "type": "object"
+      },
       "Relationship": {
         "properties": {
           "kind": {
@@ -2771,6 +2908,29 @@
         "title": "Roster",
         "type": "object"
       },
+      "RosterChainStep": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "person": {
+            "title": "Person",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person",
+          "kind",
+          "other"
+        ],
+        "title": "RosterChainStep",
+        "type": "object"
+      },
       "RosterFlag": {
         "properties": {
           "kind": {
@@ -2817,6 +2977,14 @@
       },
       "RosterLink": {
         "properties": {
+          "chain": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RosterChainStep"
+            },
+            "title": "Chain",
+            "type": "array"
+          },
           "confidence": {
             "title": "Confidence",
             "type": "number"
@@ -4130,6 +4298,116 @@
           "lines"
         ],
         "title": "TraceBlock",
+        "type": "object"
+      },
+      "TreeChild": {
+        "properties": {
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "through_sibling": {
+            "title": "Through Sibling",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "person_id",
+          "through_sibling"
+        ],
+        "title": "TreeChild",
+        "type": "object"
+      },
+      "TreeFamily": {
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/TreeChild"
+            },
+            "title": "Children",
+            "type": "array"
+          },
+          "parents": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parents",
+            "type": "array"
+          }
+        },
+        "required": [
+          "parents",
+          "children"
+        ],
+        "title": "TreeFamily",
+        "type": "object"
+      },
+      "TreePerson": {
+        "properties": {
+          "birth_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Year"
+          },
+          "generation": {
+            "title": "Generation",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner": {
+            "title": "Owner",
+            "type": "boolean"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "birth_year",
+          "generation",
+          "x",
+          "owner"
+        ],
+        "title": "TreePerson",
+        "type": "object"
+      },
+      "TreeSuggestion": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "kind",
+          "target"
+        ],
+        "title": "TreeSuggestion",
         "type": "object"
       },
       "TripChoice": {
@@ -5969,6 +6247,28 @@
         ]
       }
     },
+    "/api/v1/roster/tree": {
+      "get": {
+        "description": "The family tree the confirmed relationships draw, laid out row by row.\n\nParents, children, partners and siblings draw it; everyone else is counted in `left_out`.\nThe page draws it from this, in the browser; nothing about it leaves the app's server.",
+        "operationId": "tree_api_v1_roster_tree_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyTree"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Tree",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/roster/{person_id}": {
       "put": {
         "description": "Keep this person's role, notes and answers to the graph's guesses.",
@@ -6597,6 +6897,49 @@
         "summary": "Film",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/label": {
+      "post": {
+        "description": "Write this run's current description and tags to the film Immich holds, and take off\nthe app's own tags the label no longer has.",
+        "operationId": "relabel_run_film_api_v1_runs__run_id__label_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelabelAnswer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relabel Run Film",
+        "tags": [
+          "runs"
         ]
       }
     },

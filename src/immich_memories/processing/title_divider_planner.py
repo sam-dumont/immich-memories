@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.location_card_route import RouteStop, location_card_moves
 from immich_memories.processing.map_move_timing import map_move_timing_of
+from immich_memories.progress_text import Stage, coded
 
 if TYPE_CHECKING:
     from immich_memories.titles.generator import GeneratedScreen
@@ -53,29 +54,29 @@ class _CardProgress:
     """
 
     def __init__(
-        self, callback: Callable[[float, str], None] | None, noun: str, total: int
+        self, callback: Callable[[float, str], None] | None, stage: Stage, total: int
     ) -> None:
         self._callback = callback
-        self._noun = noun
+        self._stage = stage
         self._total = max(total, 1)
         self._index = 0
-
-    def _label(self) -> str:
-        return f"{self._noun} {self._index + 1} of {self._total}"
 
     def card(self, index: int) -> None:
         """Announce the card at ``index`` (0-based) before it renders."""
         self._index = index
         if self._callback:
-            self._callback(index / self._total, self._label())
+            self._callback(
+                index / self._total, coded(self._stage, index=index + 1, count=self._total)
+            )
 
     def frames(self, done: int, total: int) -> None:
-        """Report the current card's rendered frames."""
+        """Report the current card's rendered frames; the count is part of the message."""
         if self._callback:
             share = min(1.0, done / max(total, 1))
-            self._callback(
-                (self._index + share) / self._total, f"{self._label()} (frame {done}/{total})"
+            message = coded(
+                self._stage, index=self._index + 1, count=self._total, frame=done, frames=total
             )
+            self._callback((self._index + share) / self._total, message)
 
 
 def _divider_limit(title_settings: Any) -> int | None:
@@ -181,7 +182,7 @@ class TitleDividerPlanner:
         # a memory opens in, so a divider there would say it twice.
         planned_changes = year_changes if limit is None else year_changes[1 : limit + 1]
         years = list(dict.fromkeys(year for _, year in planned_changes))
-        steps = _CardProgress(progress_callback, "Year divider", len(years))
+        steps = _CardProgress(progress_callback, Stage.RENDER_YEAR_CARD, len(years))
         for index, year in enumerate(years):
             steps.card(index)
             year_divider_paths[year] = self._generator.generate_year_divider(year).path
@@ -258,7 +259,7 @@ class TitleDividerPlanner:
             planned_changes = month_changes if limit is None else month_changes[1 : limit + 1]
 
         keys = list(dict.fromkeys((year, month) for _, month, year in planned_changes))
-        steps = _CardProgress(progress_callback, "Month divider", len(keys))
+        steps = _CardProgress(progress_callback, Stage.RENDER_MONTH_CARD, len(keys))
         for index, (year, month) in enumerate(keys):
             steps.card(index)
             is_birthday = (
@@ -399,7 +400,9 @@ class TitleDividerPlanner:
             for clip, move in zip(clips, moves, strict=True)
         ]
         steps = _CardProgress(
-            progress_callback, "Location card", sum(point is not None for point in points)
+            progress_callback,
+            Stage.RENDER_LOCATION_CARD,
+            sum(point is not None for point in points),
         )
         cards = 0
         for clip, move, point in zip(clips, moves, points, strict=True):

@@ -8,6 +8,7 @@ import pytest
 from immich_memories.api.album_service import AlbumService
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.permissions import UPLOAD_PERMISSIONS, ApiKeyCapabilities
+from immich_memories.operational_warnings import render_warnings
 
 
 def _scoped_key(*permissions: str) -> ApiKeyCapabilities:
@@ -30,7 +31,7 @@ async def test_missing_upload_scope_keeps_local_film_without_writing_immich(tmp_
     assert result["asset_id"] is None
     assert result["delivery_complete"] is False
     assert result["missing_permissions"] == list(UPLOAD_PERMISSIONS)
-    assert "asset.upload" in result["warnings"][0]
+    assert "asset.upload" in render_warnings(result["warnings"])[0]
     assert film.read_bytes() == b"completed film"
     request.assert_not_awaited()
 
@@ -64,7 +65,9 @@ async def test_upload_only_key_uploads_without_tags_album_or_previous_deletion(t
         "album.create",
         "albumAsset.create",
     }
-    assert "previous version kept: the key lacks asset.delete" in result["warnings"]
+    assert "previous version kept: the key lacks asset.delete" in render_warnings(
+        result["warnings"]
+    )
     assert calls == [("POST", "/assets"), ("GET", "/albums")]
 
 
@@ -106,8 +109,10 @@ async def test_missing_album_scope_keeps_film_even_when_no_album_creation_needed
     assert result["delivery_complete"] is False
     assert result["album_id"] == ("existing" if album_name else None)
     assert result["missing_permissions"] == ["album.create"]
-    assert any("album.create" in warning for warning in result["warnings"])
-    assert "previous version kept: the key lacks asset.delete" in result["warnings"]
+    assert any("album.create" in warning for warning in render_warnings(result["warnings"]))
+    assert "previous version kept: the key lacks asset.delete" in render_warnings(
+        result["warnings"]
+    )
     assert (("PUT", "/albums/existing/assets") in calls) is bool(album_name)
     assert not any(method == "DELETE" for method, _ in calls)
 
@@ -138,4 +143,4 @@ async def test_incomplete_provenance_keeps_previous_upload_even_with_delete_scop
     )
     result = await service.upload_memory(film, "Memories")
     assert result["delivery_complete"] is False
-    assert "previous version kept: delivery incomplete" in result["warnings"]
+    assert "previous version kept: delivery incomplete" in render_warnings(result["warnings"])

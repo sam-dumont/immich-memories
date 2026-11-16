@@ -17,6 +17,7 @@ from immich_memories.audio.generators.base import (
 )
 from immich_memories.audio.music_generator_models import MusicStems, VideoTimeline
 from immich_memories.audio.music_pipeline import MusicPipeline
+from immich_memories.progress_text import Stage, coded
 from tests.generated_audio_fixtures import write_audio
 
 
@@ -911,11 +912,11 @@ async def test_music_reports_service_waits_before_the_first_generated_audio(tmp_
 
     class ObservedGenerator(FakeGenerator):
         async def is_available(self):
-            assert events[-1][1] == "Checking music service"
+            assert events[-1][1] == coded(Stage.MUSIC_CHECKING_SERVICE)
             return True
 
         async def generate(self, request, progress_callback=None):
-            assert events[-1][1] == "Generating music"
+            assert events[-1][1] == coded(Stage.MUSIC_GENERATING)
             return await super().generate(request, progress_callback)
 
     async with MusicPipeline([ObservedGenerator()]) as pipeline:

@@ -24,9 +24,11 @@ import yaml
 from playwright.sync_api import Page, expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+from immich_memories.people.transfer import import_document
 from tests.e2e.conftest import _launch_workspace, _serve_launch, set_theme
 from tests.e2e.fake_editorial import active_cut, active_minutes
 from tests.e2e.fake_library import LIBRARY, MONTH, TRIP, YEAR
+from tests.e2e.family_tree_household import household
 from tests.e2e.redaction import redact_page
 from tests.e2e.web_flow import contact_sheet, cut_month, render, the_film
 
@@ -454,6 +456,25 @@ def test_capture_relationship_suggestions(
     expect(suggested.first).to_be_visible(timeout=30_000)
     page.wait_for_load_state("networkidle")
     _save_padded(page, card, screenshot_dir, _name("people-relationship-suggestions", theme), pad=8)
+
+
+@pytest.mark.parametrize("theme", _THEMES)
+def test_capture_the_family_tree(
+    page: Page,
+    launch_app_url: str,
+    launch_workspace,
+    roster_restored: None,
+    screenshot_dir: Path,
+    theme: str,
+) -> None:
+    """The fixture household's tree: couples, children, a sibling group and one suggestion."""
+    import_document(launch_workspace.store(), household(), replace=True)
+    _open(page, f"{launch_app_url}/app/settings/people", theme)
+    tree = page.get_by_role("region", name="Family tree")
+    tree.get_by_role("button", name="Draw the family tree").click()
+    expect(tree.get_by_test_id("tree-person")).to_have_count(9, timeout=30_000)
+    page.wait_for_load_state("networkidle")
+    _save_padded(page, tree, screenshot_dir, _name("people-family-tree", theme), pad=8)
 
 
 @pytest.fixture(scope="session")

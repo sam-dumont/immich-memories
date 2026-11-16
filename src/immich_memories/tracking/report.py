@@ -10,6 +10,7 @@ from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from immich_memories import __version__
+from immich_memories.operational_warnings import render_warnings
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.report_logs import collapse_log
 from immich_memories.tracking.report_privacy import ReportPrivacy
@@ -275,7 +276,8 @@ def build_report(
             for phase in run.phases
         ],
         "llm": _usage(llm),
-        "warnings": run.warnings,
+        # The report is read by scripts: its warnings stay the English text they always were.
+        "warnings": render_warnings(run.warnings),
         "selection_funnel": [
             {"stage": stage.get("stage")} | _numbers(stage, ("kept", "dropped", "input"))
             for stage in diagnostics.get("funnel", [])

@@ -6,12 +6,12 @@ import asyncio
 
 from immich_memories.analysis.llm.provider_status import watch_provider
 from immich_memories.analysis.llm.wire import LLMTransportAttempt
-from immich_memories.config.models.llm import LLMConfig
 from immich_memories.operations.cut_progress import (
     StageUpdate,
     announce_stage,
     announcing_stages,
 )
+from immich_memories.progress_text import Stage
 
 
 def test_an_announcement_reaches_the_attached_sink_and_nothing_else() -> None:
@@ -41,24 +41,22 @@ def test_an_announcement_survives_the_sync_bridge_thread() -> None:
     assert [update.label for update in seen] == ["from the bridge"]
 
 
-def test_the_first_dropped_connection_names_the_provider_and_the_retry() -> None:
+def test_the_first_dropped_connection_names_the_reader_and_the_retry() -> None:
     seen: list[StageUpdate] = []
-    watch = watch_provider(
-        "reader", LLMConfig(enabled=True, base_url="http://omlx.local:9999/v1", model="m")
-    )
+    watch = watch_provider()
     with announcing_stages(seen.append):
         watch(LLMTransportAttempt(1, "connection_error", None))
         watch(LLMTransportAttempt(2, "connection_error", None))
         watch(LLMTransportAttempt(3, "ok", 200))
-    assert [update.label for update in seen] == [
-        "Waiting for the reader at omlx.local:9999: connection dropped, retry 1 of 3",
-        "Waiting for the reader at omlx.local:9999: connection dropped, retry 2 of 3",
+    assert [update.stage_label for update in seen] == [
+        "Waiting for the reader: connection dropped, retry 1 of 3",
+        "Waiting for the reader: connection dropped, retry 2 of 3",
     ]
     assert all(not update.counted for update in seen)
 
 
 def test_a_counted_stage_says_what_it_is_doing_on_both_surfaces() -> None:
-    update = StageUpdate("event evidence", done=2, total=5, verb="Reading")
+    update = StageUpdate(Stage.CUT_EVENT_PACKS, done=2, total=5)
     assert update.stage_label == "Reading event evidence: 2/5"
     restored = StageUpdate.from_record(update.as_record())
     assert restored is not None and restored.stage_label == update.stage_label

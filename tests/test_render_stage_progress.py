@@ -3,6 +3,8 @@
 A render worker's stall guard reads a phase, fraction and message that stop changing as a
 dead worker (#2694). A trip with many stops spent more than 20 minutes rendering its
 location cards behind one "Generating location cards..." line, so the film was thrown away.
+
+Messages are stage keys and params (`progress_text`); the tests read them worded in English.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from immich_memories.processing.assembly_config import (
 )
 from immich_memories.processing.title_divider_planner import TitleDividerPlanner
 from immich_memories.processing.title_inserter import TitleInserter
+from immich_memories.progress_text import stage_text
 
 # Made-up stops, far enough apart that each one gets its own card.
 NORTHTOWN = (10.0, 20.0, "Northtown")
@@ -86,7 +89,9 @@ def test_each_location_card_reports_its_own_step(map_tiles: bool) -> None:
     settings = TitleScreenSettings(memory_type="trip", map_tiles=map_tiles, max_dividers=None)
     planner = TitleDividerPlanner(_rendering_generator(), settings)
 
-    planner.build_clips_with_location_dividers(_trip(), lambda f, m: calls.append((f, m)))
+    planner.build_clips_with_location_dividers(
+        _trip(), lambda f, m: calls.append((f, stage_text(m)))
+    )
 
     messages = [message for _, message in calls]
     for card in (1, 2, 3):
@@ -99,11 +104,26 @@ def test_a_map_card_reports_while_its_frames_render() -> None:
     settings = TitleScreenSettings(memory_type="trip", map_tiles=True, max_dividers=None)
     planner = TitleDividerPlanner(_rendering_generator(), settings)
 
-    planner.build_clips_with_location_dividers(_trip(), lambda f, m: calls.append((f, m)))
+    planner.build_clips_with_location_dividers(
+        _trip(), lambda f, m: calls.append((f, stage_text(m)))
+    )
 
     first_card = [(f, m) for f, m in calls if m.startswith("Location card 1 of 3")]
     # Three frame reports after the card's own step: each one is new to a stall guard.
     assert len(set(first_card)) >= 4, first_card
+
+
+def test_a_card_frame_is_new_to_the_stall_guard_before_it_is_worded() -> None:
+    """The worker hands the raw coded message to the guard: each frame must change it."""
+    raw: list[str] = []
+    settings = TitleScreenSettings(memory_type="trip", map_tiles=True, max_dividers=None)
+    planner = TitleDividerPlanner(_rendering_generator(), settings)
+
+    planner.build_clips_with_location_dividers(_trip(), lambda _f, m: raw.append(m))
+
+    first_card = [m for m in raw if stage_text(m).startswith("Location card 1 of 3")]
+    assert len(first_card) == len(set(first_card)) >= 4, first_card
+    assert all(m.startswith("stage.render.location_card?") for m in first_card), first_card
 
 
 def test_each_month_divider_reports_its_own_step() -> None:
@@ -117,7 +137,7 @@ def test_each_month_divider_reports_its_own_step() -> None:
     settings = TitleScreenSettings(divider_mode="month", max_dividers=None)
     planner = TitleDividerPlanner(_rendering_generator(), settings)
 
-    planner.generate_month_dividers(clips, lambda f, m: calls.append((f, m)))
+    planner.generate_month_dividers(clips, lambda f, m: calls.append((f, stage_text(m))))
 
     messages = [message for _, message in calls]
     for card in (1, 2, 3, 4):
@@ -136,7 +156,7 @@ def test_each_year_divider_reports_its_own_step() -> None:
     settings = TitleScreenSettings(divider_mode="year", max_dividers=None)
     planner = TitleDividerPlanner(_rendering_generator(), settings)
 
-    planner.generate_year_dividers(clips, lambda f, m: calls.append((f, m)))
+    planner.generate_year_dividers(clips, lambda f, m: calls.append((f, stage_text(m))))
 
     messages = [message for _, message in calls]
     for card in (1, 2, 3, 4):
@@ -198,7 +218,7 @@ def test_a_trip_film_titles_its_stages_in_order_and_never_goes_back(
         return output_path
 
     inserter.assemble_with_titles(
-        _trip(), tmp_path / "out.mp4", assemble, lambda f, m: calls.append((f, m))
+        _trip(), tmp_path / "out.mp4", assemble, lambda f, m: calls.append((f, stage_text(m)))
     )
 
     _assert_moves_forward(calls)

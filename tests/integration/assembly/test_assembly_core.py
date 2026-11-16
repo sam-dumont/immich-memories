@@ -650,6 +650,7 @@ class TestAssemblyEngineMethods:
         """Progress callback is invoked during scalable assembly."""
         from immich_memories.processing.assembly_engine import AssemblyEngine
         from immich_memories.processing.clip_encoder import ClipEncoder
+        from immich_memories.progress_text import stage_text
 
         settings = _make_settings()
         prober = _make_prober(settings)
@@ -659,7 +660,7 @@ class TestAssemblyEngineMethods:
         progress_calls = []
 
         def on_progress(pct, msg):
-            progress_calls.append((pct, msg))
+            progress_calls.append((pct, stage_text(msg)))
 
         output = tmp_path / "progress.mp4"
         clips = [_make_clip(test_clip_720p), _make_clip(test_clip_720p_b)]

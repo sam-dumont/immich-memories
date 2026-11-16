@@ -78,6 +78,15 @@ FLAGGED_KINDS = frozenset({"twin", "duplicate"})
 RELINK = "relink"
 
 
+@dataclass(frozen=True)
+class ChainStep:
+    """One step of a suggestion's chain: `person` is `kind` (`parent-of`) `other`."""
+
+    person: str
+    kind: str
+    other: str
+
+
 @dataclass
 class LinkView:
     """One edge, and what the user has said about it."""
@@ -94,6 +103,9 @@ class LinkView:
     # release without ever saying what the pair is; rejected; named: a real relationship;
     # suggested: the family tree implies it, and `via` names the chain.
     status: str = NAMED
+    # A suggestion's chain as keys the client words in the reader's language; `via` is the
+    # English sentence of the same chain.
+    chain: list[ChainStep] = field(default_factory=list)
 
     @property
     def prompt(self) -> str:
@@ -194,7 +206,20 @@ def _suggested_link(suggestion: Suggestion, names: dict[str, str]) -> LinkView:
         inferred=True,
         reverse_kind=suggestion.reverse_kind,
         status=SUGGESTED,
+        chain=_chain_steps(suggestion, names),
     )
+
+
+def _chain_steps(suggestion: Suggestion, names: dict[str, str]) -> list[ChainStep]:
+    """The chain as (person, kind, other) steps, the first one starting at the suggested person."""
+    people = [
+        names.get(person, _GONE)
+        for person in (suggestion.source, *(h.person for h in suggestion.hops))
+    ]
+    return [
+        ChainStep(person=people[index], kind=f"{hop.relation}-of", other=people[index + 1])
+        for index, hop in enumerate(suggestion.hops)
+    ]
 
 
 def _chain(hops: tuple[Hop, ...], names: dict[str, str]) -> str:

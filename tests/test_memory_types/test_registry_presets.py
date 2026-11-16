@@ -115,8 +115,6 @@ class TestBuriedFields:
         with pytest.raises(TypeError, match=dead):
             MemoryPreset(
                 memory_type=MemoryType.YEAR_IN_REVIEW,
-                name="2025 Memories",
-                description="A look back",
                 date_ranges=[DateRange(start=datetime(2025, 1, 1), end=datetime(2025, 12, 31))],
                 person_filter=PersonFilter(),
                 **{dead: "whatever it used to hold"},

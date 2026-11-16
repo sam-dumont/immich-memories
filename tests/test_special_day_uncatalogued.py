@@ -53,13 +53,6 @@ def test_a_day_the_catalogue_never_found_still_resolves(catalogue) -> None:
     assert load_catalogue() == [_ROW], "filming a day catalogues nothing"
 
 
-def test_an_uncatalogued_day_is_named_by_its_date_when_nothing_else_names_it(catalogue) -> None:
-    """The last rung of the ladder: a date is not an invented event."""
-    preset = create_preset(MemoryType.SPECIAL_DAY, **resolve_special_day(_DAY, "special_day"))
-
-    assert preset.name == "4 April 2021"
-
-
 def test_the_catalogue_still_names_the_day_it_has_a_row_for(catalogue) -> None:
     params = resolve_special_day(_CATALOGUED, "special_day")
 
@@ -97,7 +90,7 @@ def test_a_catalogued_day_with_nothing_written_on_it_is_not_refused() -> None:
     params = resolve_special_day(_CATALOGUED, "special_day")
 
     assert not params["title"]
-    assert create_preset(MemoryType.SPECIAL_DAY, **params).name == "12 June 2016"
+    assert create_preset(MemoryType.SPECIAL_DAY, **params).memory_type is MemoryType.SPECIAL_DAY
 
 
 _UNNAMED = date(2016, 8, 13)

@@ -312,6 +312,9 @@ def build_subject(
             forms = {head} | lexicon.derived_nouns(head)
             if forms.intersection(main):
                 extent.extend(sorted(forms - set(main) - set(extent)))
+    # "the snow" is also "snowy" in a caption (#2140): its adjective forms are the subject too.
+    for noun in main:
+        extent.extend(sorted(lexicon.derived_adjectives(noun) - set(main) - set(extent)))
     return Subject(
         heads=found.heads,
         words=found.words,

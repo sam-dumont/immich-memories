@@ -54,6 +54,7 @@ from immich_memories.generate_progress import (  # noqa: E402
     PipelineProgress,
     report_progress,
 )
+from immich_memories.progress_text import Stage, coded  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +194,7 @@ class PreparedGeneration:
         fails stays where it is, and the error names it.
         """
         if decode_check is not None and decode_check.progress is not None:
-            decode_check.progress("Checking the finished film")
+            decode_check.progress(coded(Stage.RENDER_CHECK))
         if self.staged_path is None:
             return validate_output(
                 self.path, self.encoding_plan, decode_check, verified=self.verified
@@ -390,7 +391,7 @@ def _complete_music_phase(
     if not params.original_audio:
         from immich_memories.generate_music import mute_original_audio
 
-        progress.report("music", 0.0, "Muting original audio...")
+        progress.report("music", 0.0, coded(Stage.RENDER_MUSIC_MUTE))
         mute_original_audio(result_path, encoding_plan)
         # Source music is gone too: it must not silence the requested soundtrack.
         mute_windows = None
@@ -402,7 +403,7 @@ def _complete_music_phase(
         return MusicPhaseResult(applied=False)
 
     operational.emit(OperationalPhase.MUSIC, 0, 1, "Generating music")
-    progress.report("music", 0.0, "Generating music...")
+    progress.report("music", 0.0, coded(Stage.RENDER_MUSIC))
     result = run_music_phase(
         params,
         assembly_clips,
@@ -413,7 +414,11 @@ def _complete_music_phase(
         mute_windows=mute_windows,
         early=early,
     )
-    progress.report("music", 1.0, result.warning or "Music ready")
+    progress.report(
+        "music",
+        1.0,
+        coded(Stage.RENDER_MUSIC_WARNING if result.warning else Stage.RENDER_MUSIC_READY),
+    )
     operational.emit(OperationalPhase.MUSIC, 1, 1, result.warning or "Music ready")
     return result
 
@@ -698,7 +703,7 @@ def _generate_memory_inner(
             collected.interval("generation", _phase_start, _phase_times["total"], len(params.clips))
         _log_phase_timing(_phase_times, len(assembly_clips))
 
-        report_progress(params, "done", 1.0, "Complete!")
+        report_progress(params, "done", 1.0, coded(Stage.RENDER_COMPLETE))
         operational.emit(OperationalPhase.COMPLETE, 1, 1, "Complete")
 
         return result_path

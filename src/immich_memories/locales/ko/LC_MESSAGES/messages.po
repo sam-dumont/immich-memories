@@ -197,3 +197,89 @@ msgstr "생일"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "생일"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "업로드되지 않음: 키에 권한이 없습니다({permissions})"
+
+msgid "warning.delivery_incomplete"
+msgstr "전달이 완료되지 않음: 키에 권한이 없습니다({permissions})"
+
+msgid "warning.previous_kept_key"
+msgstr "이전 버전 유지: 키에 권한이 없습니다({permission})"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "이전 버전 유지: 전달이 완료되지 않음"
+
+msgid "warning.previous_kept_error"
+msgstr "이전 버전 유지: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "출처 정보 없이 업로드됨: 키에 권한이 없습니다({permissions})"
+
+msgid "warning.provenance_unverified"
+msgstr "확인된 출처 정보 없이 업로드됨: 태그가 유지되지 않았습니다"
+
+msgid "warning.provenance_error"
+msgstr "확인된 출처 정보 없이 업로드됨: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "확인된 설명과 태그 없이 업로드됨: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "스토리 태그 없이 업로드됨: 키에 권한이 없습니다({permissions})"
+
+msgid "warning.no_description_key"
+msgstr "설명 없이 업로드됨: 키에 권한이 없습니다({permission})"
+
+msgid "warning.album_not_created_key"
+msgstr "앨범이 만들어지지 않음: 키에 권한이 없습니다({permission})"
+
+msgid "warning.album_not_added_key"
+msgstr "영상이 앨범에 추가되지 않음: 키에 권한이 없습니다({permission})"
+
+msgid "warning.album_not_added_error"
+msgstr "영상이 앨범에 추가되지 않음: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "업로드된 영상의 설명이 유지되지 않았습니다"
+
+msgid "warning.tags_not_kept"
+msgstr "업로드된 영상의 태그가 유지되지 않았습니다"
+
+msgid "warning.gave_up"
+msgstr "{attempts}번 시도한 뒤 Immich로의 전달을 포기했습니다: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "{attempts}번 시도한 뒤 Immich로의 전달을 포기했습니다: 기록된 오류 없음"
+
+msgid "warning.low_space_output"
+msgstr "디스크 공간이 부족합니다(출력): {free_gb} GB 남음, 경고 기준 {min_gb} GB 미만입니다. `immich-memories runs delete`로 공간을 확보하거나, 업로드를 켜서 완성된 영상이 자동으로 삭제되게 하세요."
+
+msgid "warning.low_space_cache"
+msgstr "디스크 공간이 부족합니다(캐시): {free_gb} GB 남음, 경고 기준 {min_gb} GB 미만입니다. `immich-memories runs delete`로 공간을 확보하거나, 업로드를 켜서 완성된 영상이 자동으로 삭제되게 하세요."
+
+msgid "notify.title.ready"
+msgstr "영상 완성: {name}"
+
+msgid "notify.title.failed"
+msgstr "영상 생성 실패: {name}"
+
+msgid "notify.body.type"
+msgstr "유형: {type}"
+
+msgid "notify.body.duration"
+msgstr "처리 시간: {minutes}분 {seconds:02d}초"
+
+msgid "notify.body.output"
+msgstr "출력: {path}"
+
+msgid "notify.body.watch"
+msgstr "Immich에서 보기: {url}"
+
+msgid "notify.body.error"
+msgstr "오류: {error}"
+
+msgid "notify.body.warning"
+msgstr "경고: {warning}"

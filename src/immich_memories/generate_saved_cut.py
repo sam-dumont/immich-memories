@@ -369,6 +369,7 @@ def render_saved_cut(
 def _render_as_new_run(config: Config, run: RunMetadata, params: GenerationParams) -> Path:
     from immich_memories.automation.notifications import (
         run_completion_details,
+        run_film_title,
         send_configured_notification,
     )
     from immich_memories.db import open_store
@@ -391,6 +392,7 @@ def _render_as_new_run(config: Config, run: RunMetadata, params: GenerationParam
             output_path=str(path),
             warnings=warnings,
             immich_asset_url=asset_url,
+            film_title=run_film_title(config, params.editorial_attempt_dir),
         )
     except (OSError, RuntimeError, SQLAlchemyError):
         # The film is already complete; delivery trouble must not mark it as failed.

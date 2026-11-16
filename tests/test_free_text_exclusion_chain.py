@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pytest
+
 from immich_memories.analysis.film.intent import build_editorial_intent
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._editorial_context import build_editorial_context
@@ -14,8 +16,6 @@ from immich_memories.config.loader import Config
 from immich_memories.free_text.handoff import Film
 from immich_memories.free_text.linking import Reason
 from immich_memories.timeperiod import DateRange
-
-SUBJECT = "landscapes, no humans"
 
 
 def _preset_params(curated: CuratedPool, subject: str | None) -> dict:
@@ -32,7 +32,15 @@ def _preset_params(curated: CuratedPool, subject: str | None) -> dict:
     )
 
 
-def test_exclusions_travel_from_ask_to_the_editorial_brief():
+@pytest.mark.parametrize(
+    ("subject", "kind", "person_ids"),
+    [
+        ("landscapes, no humans", "people", ("cy",)),
+        ("a concert, without the audience", "audience", ()),  # #2072: a company kind too
+    ],
+)
+def test_exclusions_travel_from_ask_to_the_editorial_brief(subject, kind, person_ids):
+    SUBJECT = subject
     # 1. `--ask`'s `scope_of_ask` builds the film, then the curated pool from it.
     film = Film(
         route="pool",
@@ -40,8 +48,8 @@ def test_exclusions_travel_from_ask_to_the_editorial_brief():
         asset_ids=("a1", "a2"),
         subject=SUBJECT,
         window=DateRange(datetime(2024, 3, 10), datetime(2024, 5, 20, 23, 59, 59)),
-        excluded=("people",),
-        excluded_person_ids=("cy",),
+        excluded=(kind,),
+        excluded_person_ids=person_ids,
     )
     curated = CuratedPool(
         name=SUBJECT,
@@ -54,8 +62,8 @@ def test_exclusions_travel_from_ask_to_the_editorial_brief():
 
     # 2. `handle_album_generation` folds the curated pool into the preset params.
     preset_params = _preset_params(curated, subject=SUBJECT)
-    assert preset_params["excluded_phrases"] == ["people"]
-    assert preset_params["excluded_person_ids"] == ["cy"]
+    assert preset_params["excluded_phrases"] == [kind]
+    assert preset_params.get("excluded_person_ids", []) == list(person_ids)
 
     # 3. `build_editorial_context` reads them into the run context, for a subject pool only.
     config = Config()
@@ -86,8 +94,8 @@ def test_exclusions_travel_from_ask_to_the_editorial_brief():
         accept_any_provenance=True,
     )
     assert context.pool_subject == SUBJECT
-    assert context.excluded == ("people",)
-    assert context.excluded_person_ids == ("cy",)
+    assert context.excluded == (kind,)
+    assert context.excluded_person_ids == person_ids
 
     # 4. The editorial brief carries them as its own hard rule.
     intent = build_editorial_intent(
@@ -97,5 +105,5 @@ def test_exclusions_travel_from_ask_to_the_editorial_brief():
         pool_subject=context.pool_subject,
         excluded=context.excluded,
     )
-    assert intent.excluded == ("people",)
-    assert "must not show: people" in intent.prompt_block()
+    assert intent.excluded == (kind,)
+    assert f"must not show: {kind}" in intent.prompt_block()

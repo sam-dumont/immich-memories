@@ -197,3 +197,89 @@ msgstr "生日"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "生日"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "未上传：密钥缺少权限（{permissions}）"
+
+msgid "warning.delivery_incomplete"
+msgstr "交付未完成：密钥缺少权限（{permissions}）"
+
+msgid "warning.previous_kept_key"
+msgstr "已保留旧版本：密钥缺少权限（{permission}）"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "已保留旧版本：交付未完成"
+
+msgid "warning.previous_kept_error"
+msgstr "已保留旧版本：{detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "上传时缺少来源信息：密钥缺少权限（{permissions}）"
+
+msgid "warning.provenance_unverified"
+msgstr "上传时来源信息未经验证：标签未能保留"
+
+msgid "warning.provenance_error"
+msgstr "上传时来源信息未经验证：{detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "上传时描述和标签未经验证：{detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "上传时缺少故事标签：密钥缺少权限（{permissions}）"
+
+msgid "warning.no_description_key"
+msgstr "上传时缺少描述：密钥缺少权限（{permission}）"
+
+msgid "warning.album_not_created_key"
+msgstr "未创建相册：密钥缺少权限（{permission}）"
+
+msgid "warning.album_not_added_key"
+msgstr "影片未添加到相册：密钥缺少权限（{permission}）"
+
+msgid "warning.album_not_added_error"
+msgstr "影片未添加到相册：{detail}"
+
+msgid "warning.description_not_kept"
+msgstr "已上传影片的描述未能保留"
+
+msgid "warning.tags_not_kept"
+msgstr "已上传影片的标签未能保留"
+
+msgid "warning.gave_up"
+msgstr "尝试 {attempts} 次后放弃向 Immich 交付：{detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "尝试 {attempts} 次后放弃向 Immich 交付：没有记录到错误"
+
+msgid "warning.low_space_output"
+msgstr "磁盘空间不足（输出）：剩余 {free_gb} GB，低于 {min_gb} GB 的警告阈值。运行 `immich-memories runs delete` 释放空间，或开启上传，让完成的影片自动删除。"
+
+msgid "warning.low_space_cache"
+msgstr "磁盘空间不足（缓存）：剩余 {free_gb} GB，低于 {min_gb} GB 的警告阈值。运行 `immich-memories runs delete` 释放空间，或开启上传，让完成的影片自动删除。"
+
+msgid "notify.title.ready"
+msgstr "影片已完成：{name}"
+
+msgid "notify.title.failed"
+msgstr "影片生成失败：{name}"
+
+msgid "notify.body.type"
+msgstr "类型：{type}"
+
+msgid "notify.body.duration"
+msgstr "处理时间：{minutes} 分 {seconds:02d} 秒"
+
+msgid "notify.body.output"
+msgstr "输出：{path}"
+
+msgid "notify.body.watch"
+msgstr "在 Immich 中观看：{url}"
+
+msgid "notify.body.error"
+msgstr "错误：{error}"
+
+msgid "notify.body.warning"
+msgstr "警告：{warning}"

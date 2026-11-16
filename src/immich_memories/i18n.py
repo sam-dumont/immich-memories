@@ -45,6 +45,24 @@ SUPPORTED_LOCALES = [
 ]
 DEFAULT_LOCALE = "en"
 
+# The language each film locale is, as the title prompt names it.
+LANGUAGE_NAMES = {
+    "en": "English",
+    "fr": "French",
+    "nl": "Dutch",
+    "de": "German",
+    "es": "Spanish",
+    "it": "Italian",
+    "pt-BR": "Brazilian Portuguese",
+    "pt-PT": "European Portuguese",
+    "pl": "Polish",
+    "sv": "Swedish",
+    "ru": "Russian",
+    "ja": "Japanese",
+    "zh-Hans": "Simplified Chinese",
+    "ko": "Korean",
+}
+
 # Scripts without letter case, whose month names read best as numbers.
 _CJK_LOCALES = frozenset({"ja", "zh-Hans", "ko"})
 # What a system locale says, mapped to a film language ("pt" alone is Portugal's).

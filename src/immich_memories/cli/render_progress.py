@@ -9,6 +9,7 @@ from pathlib import Path
 from immich_memories.cli._helpers import console
 from immich_memories.cli._live_display import LiveDisplay, QuietDisplay
 from immich_memories.cli.progress_file import progress_writer
+from immich_memories.progress_text import stage_text
 from immich_memories.tracking.timing import active
 
 
@@ -29,7 +30,7 @@ def render_progress(
                 writer(phase, fraction, message)
             collected = active()
             progress = collected.diagnostics.get("progress", {}) if collected else {}
-            display.update(task, description=message, forecast=progress.get("forecast"))
+            display.update(task, description=stage_text(message), forecast=progress.get("forecast"))
             if phase == "done":
                 display.update(task, completed=True)
 

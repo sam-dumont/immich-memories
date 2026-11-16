@@ -202,3 +202,89 @@ msgstr "födelsedag"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "Födelsedag"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "Inte uppladdad: nyckeln saknar {permissions}"
+
+msgid "warning.delivery_incomplete"
+msgstr "Leveransen ofullständig: nyckeln saknar {permissions}"
+
+msgid "warning.previous_kept_key"
+msgstr "Tidigare version behölls: nyckeln saknar {permission}"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "Tidigare version behölls: leveransen ofullständig"
+
+msgid "warning.previous_kept_error"
+msgstr "Tidigare version behölls: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "Uppladdad utan ursprung: nyckeln saknar {permissions}"
+
+msgid "warning.provenance_unverified"
+msgstr "Uppladdad utan verifierat ursprung: taggen blev inte kvar"
+
+msgid "warning.provenance_error"
+msgstr "Uppladdad utan verifierat ursprung: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "Uppladdad utan verifierad beskrivning och taggar: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "Uppladdad utan berättelsetaggar: nyckeln saknar {permissions}"
+
+msgid "warning.no_description_key"
+msgstr "Uppladdad utan beskrivning: nyckeln saknar {permission}"
+
+msgid "warning.album_not_created_key"
+msgstr "Albumet skapades inte: nyckeln saknar {permission}"
+
+msgid "warning.album_not_added_key"
+msgstr "Filmen lades inte till i albumet: nyckeln saknar {permission}"
+
+msgid "warning.album_not_added_error"
+msgstr "Filmen lades inte till i albumet: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "den uppladdade filmens beskrivning blev inte kvar"
+
+msgid "warning.tags_not_kept"
+msgstr "den uppladdade filmens taggar blev inte kvar"
+
+msgid "warning.gave_up"
+msgstr "Gav upp leveransen till Immich efter {attempts} försök: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Gav upp leveransen till Immich efter {attempts} försök: inget fel registrerades"
+
+msgid "warning.low_space_output"
+msgstr "Lite diskutrymme (utdata): {free_gb} GB ledigt, under varningsgränsen på {min_gb} GB. Kör `immich-memories runs delete` för att frigöra utrymme, eller aktivera uppladdning så att färdiga filmer tas bort automatiskt."
+
+msgid "warning.low_space_cache"
+msgstr "Lite diskutrymme (cache): {free_gb} GB ledigt, under varningsgränsen på {min_gb} GB. Kör `immich-memories runs delete` för att frigöra utrymme, eller aktivera uppladdning så att färdiga filmer tas bort automatiskt."
+
+msgid "notify.title.ready"
+msgstr "Filmen är klar: {name}"
+
+msgid "notify.title.failed"
+msgstr "Filmen misslyckades: {name}"
+
+msgid "notify.body.type"
+msgstr "Typ: {type}"
+
+msgid "notify.body.duration"
+msgstr "Bearbetningstid: {minutes} min {seconds:02d} s"
+
+msgid "notify.body.output"
+msgstr "Fil: {path}"
+
+msgid "notify.body.watch"
+msgstr "Titta i Immich: {url}"
+
+msgid "notify.body.error"
+msgstr "Fel: {error}"
+
+msgid "notify.body.warning"
+msgstr "Varning: {warning}"

@@ -197,3 +197,89 @@ msgstr "birthday"
 # The film type a birthday or birthdays film is filed under, as a tag.
 msgid "film_type.birthday"
 msgstr "Birthday"
+
+# Notifications and operational warnings (#1962). A warning is stored as a code and
+# its params; the code's template here words it where it is read.
+msgid "warning.not_uploaded"
+msgstr "not uploaded: the key lacks {permissions}"
+
+msgid "warning.delivery_incomplete"
+msgstr "delivery incomplete: the key lacks {permissions}"
+
+msgid "warning.previous_kept_key"
+msgstr "previous version kept: the key lacks {permission}"
+
+msgid "warning.previous_kept_incomplete"
+msgstr "previous version kept: delivery incomplete"
+
+msgid "warning.previous_kept_error"
+msgstr "previous version kept: {detail}"
+
+msgid "warning.no_provenance_key"
+msgstr "uploaded without provenance: the key lacks {permissions}"
+
+msgid "warning.provenance_unverified"
+msgstr "uploaded without verified provenance: the tag did not stay"
+
+msgid "warning.provenance_error"
+msgstr "uploaded without verified provenance: {detail}"
+
+msgid "warning.label_unverified_error"
+msgstr "uploaded without a verified description and tags: {detail}"
+
+msgid "warning.no_story_tags_key"
+msgstr "uploaded without story tags: the key lacks {permissions}"
+
+msgid "warning.no_description_key"
+msgstr "uploaded without description: the key lacks {permission}"
+
+msgid "warning.album_not_created_key"
+msgstr "album not created: the key lacks {permission}"
+
+msgid "warning.album_not_added_key"
+msgstr "film not added to album: the key lacks {permission}"
+
+msgid "warning.album_not_added_error"
+msgstr "film not added to album: {detail}"
+
+msgid "warning.description_not_kept"
+msgstr "uploaded film's description did not stay"
+
+msgid "warning.tags_not_kept"
+msgstr "uploaded film's tags did not stay"
+
+msgid "warning.gave_up"
+msgstr "Gave up delivering to Immich after {attempts} attempts: {detail}"
+
+msgid "warning.gave_up_no_error"
+msgstr "Gave up delivering to Immich after {attempts} attempts: no error recorded"
+
+msgid "warning.low_space_output"
+msgstr "Low disk space on output: {free_gb} GB free, below the {min_gb} GB warning threshold. Run `immich-memories runs delete` to reclaim space, or enable upload so finished films are removed automatically."
+
+msgid "warning.low_space_cache"
+msgstr "Low disk space on cache: {free_gb} GB free, below the {min_gb} GB warning threshold. Run `immich-memories runs delete` to reclaim space, or enable upload so finished films are removed automatically."
+
+msgid "notify.title.ready"
+msgstr "Film ready: {name}"
+
+msgid "notify.title.failed"
+msgstr "Film failed: {name}"
+
+msgid "notify.body.type"
+msgstr "Type: {type}"
+
+msgid "notify.body.duration"
+msgstr "Processing time: {minutes}m {seconds:02d}s"
+
+msgid "notify.body.output"
+msgstr "Output: {path}"
+
+msgid "notify.body.watch"
+msgstr "Watch in Immich: {url}"
+
+msgid "notify.body.error"
+msgstr "Error: {error}"
+
+msgid "notify.body.warning"
+msgstr "Warning: {warning}"

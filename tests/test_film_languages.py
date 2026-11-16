@@ -81,6 +81,20 @@ def test_no_template_asks_for_a_value_the_code_does_not_give(locale: str) -> Non
         "name",
         "names",
         "age",
+        # Notifications and operational warnings (#1962): what the code knows, never config.
+        "type",
+        "minutes",
+        "seconds",
+        "path",
+        "url",
+        "error",
+        "warning",
+        "permission",
+        "permissions",
+        "detail",
+        "attempts",
+        "free_gb",
+        "min_gb",
     }
     for prefix in ("", "start_", "end_"):
         given |= {f"{prefix}month", f"{prefix}month_lc", f"{prefix}month_of", f"{prefix}month_num"}

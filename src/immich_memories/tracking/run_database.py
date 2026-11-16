@@ -702,6 +702,16 @@ class RunDatabase:
         with self.store.connect() as conn:
             return frozenset(conn.execute(query).scalars())
 
+    def delivered_run_ids(self) -> list[str]:
+        """The runs with an Immich asset recorded, oldest first: the films a re-label can reach."""
+        query = (
+            sa.select(_RUNS.run_id)
+            .where(_RUNS.immich_asset_id.is_not(None), sa.func.trim(_RUNS.immich_asset_id) != "")
+            .order_by(_RUNS.created_at, _RUNS.run_id)
+        )
+        with self.store.connect() as conn:
+            return list(conn.execute(query).scalars())
+
     def get_run_by_automation_attempt(self, automation_attempt_id: str) -> RunMetadata | None:
         """Find the newest run of any status that one automation attempt started.
 

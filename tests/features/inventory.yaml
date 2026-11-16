@@ -477,6 +477,12 @@ features:
     covers: ["cli:runs upload", "cli:runs upload --album"]
     tests:
       - tests/integration/features/test_runs_render_and_upload.py::test_runs_upload_sends_the_film_on_disk_into_the_album_and_frees_it
+  - id: runs.label
+    promise: "runs label writes a delivered film's description and tags to Immich again without rendering, removes the app's own tags the current label no longer has and leaves every other tag alone; a label that already matches is reported unchanged."
+    doc: make/cli/runs.md#re-label-a-film-already-in-immich
+    covers: ["cli:runs label", "cli:runs label --all"]
+    tests:
+      - tests/integration/features/test_runs_render_and_upload.py::test_runs_label_rewrites_a_delivered_film_and_drops_only_the_apps_stale_tags
   - id: runs.delete
     promise: "runs delete removes the run record and its output after confirmation; --keep-output keeps the film and --yes skips the question."
     doc: make/cli/runs.md#storage-and-deletion
@@ -1296,6 +1302,8 @@ features:
     covers: ["web:settings"]
     tests:
       - tests/e2e/test_web_features.py::test_settings_names_each_source_locks_file_and_environment_values_and_masks_keys
+      - tests/e2e/test_settings_and_people_in_french.py::test_settings_sections_and_fields_are_worded_in_french
+      - tests/e2e/test_settings_and_people_in_french.py::test_settings_sections_and_fields_are_worded_in_french
   - id: updates.check
     promise: "A Check for updates button in Settings and version --check ask GitHub once, anonymously, and name the newer release, its notes and the update command for how this copy was installed."
     doc: run/maintenance/upgrading.md#finding-out-a-release-is-out
@@ -1326,6 +1334,14 @@ features:
       - tests/e2e/test_people_owner_and_links.py::test_the_family_tree_suggests_what_it_implies_live_and_a_tick_or_accept_all_records_it
       - tests/e2e/test_people_page.py::test_each_curation_flag_names_both_people_and_can_be_kept_apart
       - tests/e2e/test_people_accounts_and_groups.py::test_link_a_person_by_picking_save_a_group_pick_it_on_the_brief
+      - tests/e2e/test_settings_and_people_in_french.py::test_a_relationship_reads_in_french_with_its_dropdown_and_confirm_text
+  - id: web.people-family-tree
+    promise: "The People page draws the family tree from the confirmed relationships, says how many people it left out, confirms a dotted suggestion with its tick, and saves the tree as SVG or PNG made in the browser."
+    doc: get-started/who-is-who.md#the-family-tree
+    tests:
+      - tests/e2e/test_people_family_tree.py::test_the_household_is_drawn_as_a_tree_with_couples_children_and_a_sibling_group
+      - tests/e2e/test_people_family_tree.py::test_a_dotted_suggestion_is_confirmed_from_the_tree
+      - tests/e2e/test_people_family_tree.py::test_the_tree_is_saved_as_svg_and_png_made_in_the_browser
   - id: web.suggestions
     promise: "Suggestions shows the candidates automation would make and why, keeps its last result, and Check eligibility is a dry run."
     doc: make/automate.md#how-it-picks-one-memory

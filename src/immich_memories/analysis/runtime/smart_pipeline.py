@@ -25,6 +25,7 @@ from immich_memories.analysis.runtime.pipeline_result import (
 from immich_memories.analysis.runtime.progress import ProgressTracker
 from immich_memories.operations.storyboard import TRACE_FILE
 from immich_memories.processing.render_inputs import write_render_inputs
+from immich_memories.progress_text import Stage
 
 if TYPE_CHECKING:
     from immich_memories.analysis.runtime.plan import (
@@ -113,7 +114,7 @@ class SmartPipeline:
                 candidates, result = self._planned_editorial_source(
                     sources, report_stage, include_live_photos=include_live_photos
                 )
-                report_stage("Editorial selection complete", status="complete")
+                report_stage(Stage.CUT_COMPLETE, status="complete")
                 # Only a successful cut completes the tracker. Its display
                 # callbacks cannot turn an already finished selection into failure.
                 with contextlib.suppress(Exception, PipelineCancelled):
@@ -121,13 +122,13 @@ class SmartPipeline:
                 return candidates, result
         except PipelineCancelled:
             with contextlib.suppress(PipelineCancelled):
-                report_stage("Editorial selection cancelled", status="cancelled")
+                report_stage(Stage.CUT_CANCELLED, status="cancelled")
             raise
         except Exception:
             # A stop requested by a terminal display callback must not replace
             # the source failure that caused this notification.
             with contextlib.suppress(PipelineCancelled):
-                report_stage("Editorial selection failed", status="failed")
+                report_stage(Stage.CUT_FAILED, status="failed")
             raise
 
     def _planned_editorial_source(

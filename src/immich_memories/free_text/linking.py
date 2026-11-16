@@ -317,6 +317,9 @@ def _scan_clause(
             _record_named(request, named, rule, token, negated_here, found, absent, reasons, asker)
             continue
         kind = negation.request_kind_of(token, negated=negated_here)
+        if _carves_out_of_everyone(token, kind, negated_here, tokens):
+            reasons.append(_no_one_to_carve_out(token))
+            continue
         # Required and absent are independent slots: each word's own negation decides which
         # one it fills, so an earlier word filling one never blocks the other (#2061).
         slot_free = company.absent is None if negated_here else company.required is None
@@ -329,6 +332,28 @@ def _scan_clause(
             )
             reasons.append(reason)
     return replace(company, exclusive=company.exclusive or clause.exclusive)
+
+
+def _carves_out_of_everyone(
+    token: str, kind: str | None, negated: bool, tokens: Sequence[str]
+) -> bool:
+    """A relation said against "everyone" ("everyone except grandpa") is one person, not no
+    people: the people file did not name them, so it must not turn into an absence of
+    everyone that cancels the required company (#2072)."""
+    return (
+        negated
+        and kind == "people"
+        and negation.is_specific_relation(token)
+        and any(negation.is_everyone(other) for other in tokens)
+    )
+
+
+def _no_one_to_carve_out(token: str) -> Reason:
+    return Reason(
+        token,
+        "a relation said against everyone, and no one in your people file has that role",
+        "no one excluded",
+    )
 
 
 def _record_named(

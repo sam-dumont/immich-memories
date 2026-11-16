@@ -17,6 +17,7 @@ from immich_memories.automation.models import (
 from immich_memories.automation.notifications import send_configured_notification
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.config.loader import Config
+from immich_memories.operational_warnings import JOINER, coded, render_warning, scrub_warning
 from immich_memories.operations.film_labelling import label_for_run
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
@@ -122,8 +123,8 @@ class PendingDeliveryRetry:
         upload: dict[str, Any],
         output_path: Path,
     ) -> AutoRunResult:
-        warnings = [self._safe_error(w) for w in upload.get("warnings", [])]
-        reason = "; ".join(warnings) or "Immich delivery incomplete; local film kept"
+        warnings = [scrub_warning(w, self._safe_error) for w in upload.get("warnings", [])]
+        reason = JOINER.join(warnings) or "Immich delivery incomplete; local film kept"
         asset_id = upload.get("asset_id")
         permanent = bool(upload.get("missing_permissions"))
         operation = (
@@ -349,10 +350,11 @@ def abandon_if_exhausted(pending: RunMetadata, *, config: Config, db: RunDatabas
         return False
 
     reason = (
-        f"Gave up delivering to Immich after {pending.delivery_attempts} attempts: "
-        f"{pending.delivery_error or 'no error recorded'}"
+        coded("gave_up", attempts=pending.delivery_attempts, detail=pending.delivery_error)
+        if pending.delivery_error
+        else coded("gave_up_no_error", attempts=pending.delivery_attempts)
     )
-    logger.warning("%s (run %s)", reason, pending.run_id)
+    logger.warning("%s (run %s)", render_warning(reason), pending.run_id)
     with contextlib.suppress(Exception):
         db.mark_delivery_abandoned(pending.run_id, reason)
     # The original error is what tells an operator whether to fix a scope, an

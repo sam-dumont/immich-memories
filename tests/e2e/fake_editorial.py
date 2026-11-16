@@ -29,6 +29,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+from immich_memories.progress_text import Stage
 from immich_memories.security import write_secret_file
 from tests.e2e import fake_library
 
@@ -44,15 +45,15 @@ from tests.e2e.fake_live_motion import companions_of, live_projection
 # exercised by the same file the production pass writes.
 PREVIEW_STAGE = "previews"
 
-# The exact labels `RuntimeEditorialPlanner` reports through `on_stage`, in the
-# order the real route reaches them. The Memory page shows the current one, so a
-# wrong label here would hide a real regression in the progress surface.
+# The exact stage keys `RuntimeEditorialPlanner` reports through `on_stage`, in the
+# order the real route reaches them. The Memory page words the current one, so a
+# wrong key here would hide a real regression in the progress surface.
 STAGES = (
-    "Reading dates, places and people",
-    "Reading event evidence",
-    "Building editorial cards",
-    "Editing the memory",
-    "Validating selected source timing",
+    Stage.CUT_METADATA,
+    Stage.CUT_EVENT_EVIDENCE,
+    Stage.CUT_CARDS,
+    Stage.CUT_EDITING,
+    Stage.CUT_TIMING,
 )
 
 # Long enough that a reload lands on a running cut, short enough that the whole
@@ -558,7 +559,7 @@ class _FakeEditorialPipeline:
             cancellation_scope,
             check_cancelled,
         )
-        from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageUpdate
+        from immich_memories.operations.cut_progress import StageUpdate
         from immich_memories.operations.editorial_attempt import EditorialAttempt
 
         _adopt_server_ids(sources)
@@ -589,10 +590,8 @@ class _FakeEditorialPipeline:
                     attempt.directory / SNAPSHOT_NAME, json.dumps(payload, default=str)
                 )
                 self._prepare_previews(sources, attempt, report_stage, check_cancelled)
-                for label in STAGES:
-                    update = StageUpdate(
-                        label, ANALYSIS_PHASE if label.startswith("Preparing") else "selection"
-                    )
+                for stage in STAGES:
+                    update = StageUpdate(stage, "selection")
                     update = attempt.stage(update)
                     report_stage(update)
                     time.sleep(self._stage_seconds)
@@ -653,13 +652,13 @@ class _FakeEditorialPipeline:
                     outcome="selected",
                     duration_realization=realization,
                 )
-                report_stage("Editorial selection complete", status="complete")
+                report_stage(Stage.CUT_COMPLETE, status="complete")
                 with contextlib.suppress(Exception):
                     self.tracker.finish()
                 return list(candidates), result
         except PipelineCancelled:
             with contextlib.suppress(PipelineCancelled):
-                report_stage("Editorial selection cancelled", status="cancelled")
+                report_stage(Stage.CUT_CANCELLED, status="cancelled")
             raise
 
     def _prepare_previews(self, sources, attempt, report_stage, check_cancelled) -> None:
