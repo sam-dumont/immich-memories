@@ -619,7 +619,7 @@ E2E_SHARD ?=
 e2e: web-client-present  ## Run required fake-service contracts and real hermetic browser render
 	files=$$(python3 scripts/shard_tests.py pick e2e "$(E2E_SHARD)" tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
-		tests/e2e/test_web_client.py tests/e2e/test_job_errors.py tests/e2e/test_keep_intermediates.py \
+		tests/e2e/test_web_client.py tests/e2e/test_cut_editor.py tests/e2e/test_job_errors.py tests/e2e/test_keep_intermediates.py \
 		tests/e2e/test_people_page.py tests/e2e/test_people_owner_and_links.py tests/e2e/test_people_accounts_and_groups.py tests/e2e/test_people_family_tree.py tests/e2e/test_settings_and_people_in_french.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py tests/e2e/test_web_features.py tests/e2e/test_generated_login.py tests/e2e/test_music_preview.py tests/e2e/test_update_check.py) && \
 	uv run pytest $$files -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short -n $(E2E_WORKERS) --dist loadfile \

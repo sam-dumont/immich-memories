@@ -11,8 +11,13 @@
   type Item = components['schemas']['PoolItem'];
   type Hold = components['schemas']['Hold'];
   type Revision = components['schemas']['Revision'];
+  type Edits = components['schemas']['RevisionEdits'];
 
   const runId = $derived(page.params.run_id ?? '');
+  // The revision the owner came from: the ticks start from it, and a save keeps its trims and swaps.
+  const from = $derived(Number(page.url.searchParams.get('revision')) || null);
+  const cutHref = $derived(`/app/runs/${encodeURIComponent(runId)}${from == null ? '' : `?revision=${from}`}`);
+  let base = $state<Required<Edits>>({ removed: [], segments: {}, swaps: {}, added: [] });
   let items = $state<Item[]>([]);
   let total = $state<number | null>(null);
   let outside = $state(0);
@@ -60,22 +65,57 @@
     return () => observer.disconnect();
   });
 
-  const ticked = (item: Item) => ticks[item.asset_id] ?? item.in_cut;
-  const include = $derived(items.filter((item) => !item.in_cut && ticks[item.asset_id] === true).map((i) => i.asset_id));
-  const exclude = $derived(items.filter((item) => item.in_cut && ticks[item.asset_id] === false).map((i) => i.asset_id));
+  $effect(() => {
+    const number = from;
+    const id = runId;
+    if (number == null) return;
+    void api<Revision[]>(`/runs/${encodeURIComponent(id)}/revisions`).then((found) => {
+      const opened = found.find((revision) => revision.number === number);
+      if (opened)
+        base = { removed: opened.removed ?? [], segments: opened.segments ?? {}, swaps: opened.swaps ?? {}, added: opened.added ?? [] };
+    });
+  });
+
+  // A tick belongs to a shot's place in the cut: a picture swapped in stands for the shot it replaced.
+  const slots = $derived(Object.fromEntries(Object.entries(base.swaps).map(([shot, picture]) => [picture, shot])));
+  const slot = (item: Item) => slots[item.asset_id] ?? item.asset_id;
+  const known = $derived(new Map(items.map((item) => [item.asset_id, item])));
+  const inCut = (id: string) => id in base.swaps || !!known.get(id)?.in_cut;
+  const inBase = (id: string) => (inCut(id) ? !base.removed.includes(id) : base.added.includes(id));
+  const ticked = (item: Item) => ticks[slot(item)] ?? inBase(slot(item));
+  // What the ticks change from the revision the owner came from.
+  const changed = $derived(Object.entries(ticks).filter(([id, on]) => on !== inBase(id)));
+  const include = $derived(changed.filter(([, on]) => on).length);
+  const exclude = $derived(changed.filter(([, on]) => !on).length);
 
   async function decide(item: Item, action: 'never_use' | 'clear' | 'forget') {
     const { body } = await post<Hold>(`/pictures/${encodeURIComponent(item.asset_id)}/decision`, { action, level });
     items = items.map((row) => (row.asset_id === item.asset_id ? { ...row, hold: body } : row));
-    if (action === 'never_use' && item.in_cut) ticks = { ...ticks, [item.asset_id]: false };
+    if (action === 'never_use' && ticked(item)) ticks = { ...ticks, [slot(item)]: false };
     clearing = null;
+  }
+
+  // The revision the owner came from with these ticks: its trims and swaps stay, except a trim on
+  // a picture that no longer plays.
+  function edits(): Edits {
+    const removed = new Set(base.removed);
+    const added = new Set(base.added);
+    const segments = { ...base.segments };
+    for (const [id, on] of changed) {
+      if (inCut(id) && on) removed.delete(id);
+      else if (inCut(id)) removed.add(id);
+      else if (on) added.add(id);
+      else added.delete(id);
+      if (!on) delete segments[base.swaps[id] ?? id];
+    }
+    return { removed: [...removed], segments, swaps: base.swaps, added: [...added] };
   }
 
   // The ticks are the owner's last pass over this cut: saved as a revision, never a recut.
   async function preview() {
     previewing = true;
     refusal = '';
-    const { status, body } = await post<Revision>(`/runs/${encodeURIComponent(runId)}/revisions`, { added: include, removed: exclude });
+    const { status, body } = await post<Revision>(`/runs/${encodeURIComponent(runId)}/revisions`, edits());
     previewing = false;
     if (status !== 201) {
       refusal = body.detail ?? t('The revision could not be saved.');
@@ -100,7 +140,7 @@
 
 <div class="flex flex-col gap-6">
   <div class="flex flex-col gap-2">
-    <a href={`/app/runs/${encodeURIComponent(runId)}`} class="flex w-fit items-center gap-1 text-sm text-gray-600 hover:text-primary dark:text-gray-400">
+    <a href={cutHref} class="flex w-fit items-center gap-1 text-sm text-gray-600 hover:text-primary dark:text-gray-400">
       <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={mdiArrowLeft} /></svg>{t('Back to the cut')}
     </a>
     <Heading size="large" tag="h1">{t('Pool')}</Heading>
@@ -123,7 +163,7 @@
           <label class={['relative block cursor-pointer overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900', ticked(item) ? 'ring-2 ring-primary' : 'opacity-70']}>
             <img src={thumbnail(item.asset_id)} alt={item.fate} loading="lazy" decoding="async" class="aspect-[4/3] w-full object-contain" />
             <input type="checkbox" class="absolute top-2 left-2 size-5 accent-[var(--color-primary)]" checked={ticked(item)}
-              aria-label={t('In the film')} onchange={(event) => (ticks = { ...ticks, [item.asset_id]: event.currentTarget.checked })} />
+              aria-label={t('In the film')} onchange={(event) => (ticks = { ...ticks, [slot(item)]: event.currentTarget.checked })} />
             {#if item.kind !== 'photo'}<span class="absolute right-1 bottom-1 rounded bg-black/60 px-1.5 text-[11px] text-white">{item.kind === 'video' ? t('Video') : t('Live')}</span>{/if}
           </label>
           <p class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600 tabular-nums dark:text-gray-400">
@@ -144,9 +184,9 @@
     </ul>
     <div bind:this={sentinel} class="flex h-12 items-center justify-center">{#if loading}<LoadingSpinner />{/if}</div>
 
-    {#if include.length || exclude.length}
+    {#if include || exclude}
       <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
-        <p class="text-sm">{t('Add: {include} · Take out: {exclude}', { include: include.length, exclude: exclude.length })}</p>
+        <p class="text-sm">{t('Add: {include} · Take out: {exclude}', { include, exclude })}</p>
         <Button size="small" class="ml-auto" leadingIcon={mdiEyeOutline} loading={previewing} onclick={preview}>{t('Preview with these choices')}</Button>
         {#if refusal}<p class="w-full text-sm text-danger" role="alert">{refusal}</p>{/if}
       </div>

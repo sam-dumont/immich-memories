@@ -512,7 +512,7 @@ def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
     page.get_by_role("button", name="Preview with these choices").click()
     # The same run, with the ticks opened as its first revision: nothing was cut again.
     page.wait_for_url(f"**/app/runs/{run}?revision=1", timeout=30_000)
-    expect(page.get_by_role("list", name="Added from the pool").get_by_role("img")).to_have_count(1)
+    expect(contact_sheet(page).get_by_text("Added", exact=True)).to_have_count(1)
     expect(contact_sheet(page).get_by_text("Removed", exact=True)).to_have_count(1)
     panel = page.get_by_role("region", name="Render")
     expect(panel.get_by_label("What to render")).to_have_value("1")
