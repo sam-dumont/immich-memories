@@ -193,18 +193,16 @@ dictionary lookups. The supported WordNet and ACE-Step routes do not call the af
 save/load APIs. This is a reviewed reachability finding, not a patched package or a blanket
 scanner exception. Keep the advisory tracked and re-audit any new NLTK training or export integration.
 
-### Approved temporary docs advisory review
+### Docs advisory reviews
 
-`make npm-audit` and CI use the owner-approved review of one unpatched docs
-dependency, expiring November 16, 2026. The client audit remains strict.
-`make npm-audit-strict` runs the unfiltered audit explicitly:
+No docs advisory review is open: `make npm-audit` and CI refuse any high or critical
+advisory in the docs dependencies, as `make npm-audit-strict` does. The client audit is
+strict either way.
 
-- braces 3.0.3: [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
-  Deeply nested glob patterns can still crash a docs build. A pull request can
-  supply these patterns, but that same build already executes its branch's
-  JavaScript configuration and npm scripts. This review accepts build denial of
-  service within that existing code execution boundary; it does not fix braces.
-  The published site is static and accepts no server-side glob patterns.
+braces 3.0.3 ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm))
+was reviewed until November 16, 2026: deeply nested glob patterns could crash a docs build,
+within the code execution a docs build already has. GitHub then withdrew the advisory, so
+npm audit no longer reports it, and the review was retired.
 
 http-cache-semantics was reviewed the same way until 4.3.0 shipped the fix for
 [GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp) on
