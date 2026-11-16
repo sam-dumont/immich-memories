@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from immich_memories import update_check
 from immich_memories.config.loader import Config
@@ -15,8 +15,16 @@ router = APIRouter(prefix="/api/v1/updates", tags=["updates"])
 
 
 @router.get("")
-def check() -> UpdateStatus:
-    """Ask GitHub now. Only the button calls this: nothing goes out until somebody asks."""
+def check(request: Request, config: Annotated[Config, Depends(current_config)]) -> UpdateStatus:
+    """Ask GitHub now. Only the button calls this: nothing goes out until somebody asks.
+
+    A request another site sent (an image tag, a top-level navigation) is refused, so a
+    visited page cannot make this server call out.
+    """
+    from immich_memories.web.request_origin import cross_site_request
+
+    if cross_site_request(dict(request.headers), config):
+        raise HTTPException(403, "The update check starts from this app, not from another site")
     return update_check.check_now()
 
 

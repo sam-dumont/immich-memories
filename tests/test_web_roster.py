@@ -293,3 +293,19 @@ def test_an_empty_registry_draws_an_empty_family_tree(tmp_path):
     tree = api_client(config_in(tmp_path)).get("/api/v1/roster/tree").json()
 
     assert tree == {"people": [], "couples": [], "families": [], "suggestions": [], "left_out": 0}
+
+
+def test_a_cross_site_roster_read_follows_no_faces_and_a_same_origin_one_does(tmp_path):
+    from immich_memories.web.roster import face_follower
+
+    client = api_client(config_in(tmp_path))
+    client.post("/api/v1/roster", json={"name": "Ana"})
+    followed = []
+    client.app.dependency_overrides[face_follower] = lambda: lambda store: followed.append(store)
+
+    other = client.get("/api/v1/roster", headers={"sec-fetch-site": "cross-site"})
+    assert other.status_code == 200 and followed == []
+    assert [p["name"] for p in other.json()["people"]] == ["Ana"]
+
+    client.get("/api/v1/roster", headers={"sec-fetch-site": "same-origin"})
+    assert len(followed) == 1

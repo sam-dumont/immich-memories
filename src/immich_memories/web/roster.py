@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import asdict
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from immich_memories.api.person_expression import PersonExpression
@@ -170,6 +170,7 @@ def _alias_url(config: Config, account: str, alias_id: str) -> str | None:
 
 @router.get("", response_model=Roster)
 def roster(
+    request: Request,
     store: Annotated[Store, Depends(people_store)],
     config: Annotated[Config, Depends(current_config)],
     follow_faces: Annotated[Callable[[Store], None], Depends(face_follower)],
@@ -177,8 +178,12 @@ def roster(
     """Everyone in the people registry, inner circle first, with what needs curating.
 
     A person whose face Immich merged away is followed to their new one first, and saved.
+    A request another site sent gets the roster as saved: no Immich call, no write.
     """
-    follow_faces(store)
+    from immich_memories.web.request_origin import cross_site_request
+
+    if not cross_site_request(dict(request.headers), config):
+        follow_faces(store)
     people = load_people(store)
     return Roster(
         people=[_shown(person, config) for person in people],

@@ -286,3 +286,18 @@ def test_the_run_log_gets_one_line_when_the_daily_check_finds_a_release(
     lines = [r.getMessage() for r in caplog.records if "1.0.0 is out" in r.getMessage()]
     assert len(lines) == 1
     assert json.dumps(lines)  # one plain line
+
+
+class TestCrossSite:
+    def test_another_site_cannot_start_the_check_but_this_app_can(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(update_check, "__version__", "0.9.0")
+        seen = []
+        monkeypatch.setattr(update_check, "release_client", lambda: seen.append(1) or _client())
+        client = api_client(_config(tmp_path))
+
+        refused = client.get("/api/v1/updates", headers={"sec-fetch-site": "cross-site"})
+        by_origin = client.get("/api/v1/updates", headers={"origin": "http://evil.example"})
+        assert (refused.status_code, by_origin.status_code, seen) == (403, 403, [])
+
+        same = client.get("/api/v1/updates", headers={"sec-fetch-site": "same-origin"})
+        assert same.status_code == 200 and same.json()["latest"] == "1.0.0"
