@@ -140,8 +140,9 @@ def _watch_headings(
             progress = job["progress"]
             stages = [progress, *progress["history"]]
             unkeyed.extend(stage["label"] for stage in stages if not stage["key"])
-        heading = panel.locator("section[aria-live='polite'] p.font-medium").first
-        text = heading.text_content(timeout=1_000) if heading.count() else None
+        # Read what is on screen now: a count then a wait races the next stage replacing it.
+        texts = panel.locator("section[aria-live='polite'] p.font-medium").all_text_contents()
+        text = texts[0] if texts else None
         if text and text.strip() and (not shots or shots[-1] != text.strip()):
             shots.append(text.strip())
             _evidence_of(panel, f"{name}-{len(shots):02d}")
