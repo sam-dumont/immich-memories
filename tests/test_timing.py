@@ -129,10 +129,18 @@ def test_a_run_opened_after_imports_names_that_time_startup():
     with observe_run(open_store(), source="manual", capture_system=False, startup=startup) as run:
         pass
     spans = {span.name: span for span in _spans(run)}
-    assert spans["startup"].duration >= 4.0
-    assert spans["startup"].parent_id == spans["run"].span_id
-    assert spans["run"].duration >= spans["startup"].duration
-    assert uncovered_seconds(list(spans.values()), 0.0) < 0.5
+    startup_span = spans["startup"]
+    assert startup_span.duration >= 4.0
+    assert startup_span.parent_id == spans["run"].span_id
+    assert startup_span.start == pytest.approx(spans["run"].start, abs=0.01)
+    assert spans["run"].duration >= startup_span.duration
+    # The seconds before the run opened count as measured: drop the startup spans and exactly
+    # that much becomes unexplained. A fixed ceiling on what is left would time observe_run's own
+    # bookkeeping instead, which a busy CI runner stretched past 0.5 s.
+    every_span = list(spans.values())
+    without_startup = [span for span in every_span if not span.name.startswith("startup")]
+    hidden = uncovered_seconds(without_startup, 0.0) - uncovered_seconds(every_span, 0.0)
+    assert hidden == pytest.approx(startup_span.duration, abs=0.01)
 
 
 def test_only_the_first_cli_run_of_a_process_claims_its_startup(monkeypatch):
