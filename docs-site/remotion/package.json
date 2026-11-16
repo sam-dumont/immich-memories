@@ -25,6 +25,15 @@
     "prettier": "3.8.1",
     "typescript": "5.9.3"
   },
+  "overrides": {
+    "zod": "4.6.6",
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": {
+        ".": "11.0.1",
+        "brace-expansion": "5.0.12"
+      }
+    }
+  },
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
