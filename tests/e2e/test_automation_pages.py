@@ -188,8 +188,17 @@ def test_variety_rejections_and_all_sidebar_destinations(
             memory_category="person_spotlight",
         )
     )
-    page.goto(f"{launch_app_url}/app/suggestions")
-    page.get_by_role("button", name="Refresh suggestions").click()
+    # The page shows the last discovery at once and polls for the fresh one, so an earlier test's
+    # skipped list is on screen straight away. Wait for the discovery that read this run.
+    page.goto(f"{launch_app_url}/app/suggestions", wait_until="networkidle")
+
+    def fresh(response) -> bool:
+        if "/api/v1/suggestions" not in response.url or not response.ok:
+            return False
+        return response.json().get("refreshing") is False
+
+    with page.expect_response(fresh, timeout=60_000):
+        page.get_by_role("button", name="Refresh suggestions").click()
     skipped = page.get_by_text("Why other suggestions were skipped", exact=True)
     expect(skipped).to_be_visible(timeout=60_000)
     skipped.click()
