@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from immich_memories.analysis.corpus.trace import Trace
+from immich_memories.api.models import Asset, AssetType
 from immich_memories.config.loader import Config
 from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import CandidateFates
@@ -18,6 +19,8 @@ from immich_memories.operations.cut_revisions import (
     CutEdits,
     CutRevision,
     RevisionRefused,
+    added_hold,
+    pool_assets,
     read_revisions,
     save_revision,
 )
@@ -26,6 +29,7 @@ from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.story_view import StoryEntry, read_story_view
 from immich_memories.operations.storyboard import (
     Shot,
+    Storyboard,
     moment_alternatives,
     read_storyboard,
     source_intervals,
@@ -180,7 +184,52 @@ def _attempt(config: Config, run_id: str) -> Path:
     return attempt
 
 
-def _revision(revision: CutRevision) -> Revision:
+def _addition(asset: Asset, board: Storyboard) -> CutShot:
+    """An added picture as a shot: the hold the renderer gives it, a video's from its start.
+
+    Where it lands in the film is the client's to place, by when it was taken.
+    """
+    seconds, motion = added_hold(((shot.seconds, shot.motion) for shot in board.shots), asset)
+    taken = asset.local_taken_at.isoformat()
+    # A Live Photo's motion is stitched at render time; only a video has a source range to trim.
+    trimmable = asset.type == AssetType.VIDEO
+    return CutShot(
+        asset_id=asset.id,
+        position=0,
+        start=0.0,
+        seconds=seconds,
+        taken=taken,
+        day=taken[:10],
+        new_day=False,
+        chapter="",
+        story_key="",
+        story_title="",
+        moment="",
+        reason="",
+        motion=motion,
+        recorded_seconds=seconds,
+        source_interval=(0.0, seconds) if trimmable else None,
+        selection=None,
+        model=None,
+        alternatives=[],
+    )
+
+
+def _additions(attempt: Path, revisions: list[CutRevision]) -> dict[str, CutShot]:
+    """The pictures these revisions add, as shots in capture order; never the rest of the pool."""
+    wanted = {asset for revision in revisions for asset in revision.edits.added}
+    board = read_storyboard(attempt) if wanted else None
+    if board is None:
+        return {}
+    pool = pool_assets(attempt)
+    found = sorted(
+        (pool[asset] for asset in wanted if asset in pool),
+        key=lambda asset: (asset.file_created_at, asset.id),
+    )
+    return {asset.id: _addition(asset, board) for asset in found}
+
+
+def _revision(revision: CutRevision, additions: dict[str, CutShot]) -> Revision:
     return Revision(
         number=revision.number,
         created_at=revision.created_at,
@@ -189,6 +238,7 @@ def _revision(revision: CutRevision) -> Revision:
         segments=dict(revision.edits.segments),
         swaps=dict(revision.edits.swaps),
         added=list(revision.edits.added),
+        additions=[shot for asset, shot in additions.items() if asset in revision.edits.added],
     )
 
 
@@ -196,8 +246,11 @@ def _revision(revision: CutRevision) -> Revision:
 def list_revisions(
     run_id: str, config: Annotated[Config, Depends(current_config)]
 ) -> list[Revision]:
-    """Every saved revision of this cut, oldest first."""
-    return [_revision(revision) for revision in read_revisions(_attempt(config, run_id))]
+    """Every saved revision of this cut, oldest first, each with the pictures it adds."""
+    attempt = _attempt(config, run_id)
+    revisions = read_revisions(attempt)
+    additions = _additions(attempt, revisions)
+    return [_revision(revision, additions) for revision in revisions]
 
 
 @router.post("/{run_id}/revisions", response_model=Revision, status_code=201)
@@ -205,9 +258,10 @@ def create_revision(
     run_id: str, edits: RevisionEdits, config: Annotated[Config, Depends(current_config)]
 ) -> Revision:
     """Keep the owner's edits as the next revision; 422 names the edit that would not render."""
+    attempt = _attempt(config, run_id)
     try:
         revision = save_revision(
-            _attempt(config, run_id),
+            attempt,
             CutEdits(
                 removed=tuple(edits.removed),
                 segments=edits.segments,
@@ -217,4 +271,4 @@ def create_revision(
         )
     except RevisionRefused as refusal:
         raise HTTPException(422, str(refusal)) from refusal
-    return _revision(revision)
+    return _revision(revision, _additions(attempt, [revision]))

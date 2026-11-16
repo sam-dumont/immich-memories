@@ -183,6 +183,9 @@ class Revision(RevisionEdits):
     number: int
     created_at: str
     content_seconds: float
+    # The pictures this revision adds, as shots the editor shows and trims, in capture order.
+    # Their position and start are the client's to place among the cut's own shots.
+    additions: list[CutShot] = []
 
 
 class Hold(BaseModel):

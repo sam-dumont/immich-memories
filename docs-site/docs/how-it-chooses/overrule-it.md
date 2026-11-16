@@ -15,12 +15,15 @@ Open a shot in the contact sheet:
 - **Remove from this cut** takes it out of this film.
 - For a video, **Start here** and **End here** choose the interval to play. The preview loops the chosen interval; seek before or after it to move an edge outwards.
 - Under **Other pictures of this moment**, choose a replacement and press **Use this picture instead**. **Keep the original** undoes a swap.
+- A picture added from the pool sits in the contact sheet where it was taken, marked **Added**. Trim it like any other shot, or press **Take out**.
 
-Press **Save revision**, then select that revision under **What to render**. The app renders those edits without choosing the shots again. **Undo** walks back an edit; **Discard changes** drops the unsaved changes.
+Press **Save revision**, then select that revision under **What to render**. The app renders those edits without choosing the shots again. **Undo** walks back an edit; **Discard changes** drops the unsaved changes. With unsaved changes, the button reads **Save and render**: it saves them as a new revision first, so the film never leaves them out.
 
 ## Tick and untick
 
 Open **Pool** to see the pictures the cut considered. Tick a missing picture, untick one you do not want, then press **Preview with these choices**. This saves a revision in time order, with the length adjusted to your choices.
+
+The pool opens on the revision you were looking at: its additions are ticked, and its trims and swaps carry over to the new revision. Unsaved changes are saved as a revision before the pool opens.
 
 <ThemedScreenshot name="memory-pool-outcomes" alt="The Pool of a July cut: every picture it saw in the order they were taken, each with a tick box, its date, why it stayed out and Never use" />
 

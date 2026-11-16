@@ -13,12 +13,15 @@
   type RenderCapabilities = components['schemas']['RenderCapabilities'];
   let uploadCapability = $state<RenderCapabilities | null>(null);
 
-  let { runId, revisions, current = null }: { runId: string; revisions: Revision[]; current?: number | null } = $props();
+  // `unsaved`: the editor holds changes no revision has yet, and `onSave` keeps them as one.
+  let { runId, revisions, current = null, unsaved = false, onSave }: {
+    runId: string; revisions: Revision[]; current?: number | null; unsaved?: boolean; onSave?: () => Promise<number | null>;
+  } = $props();
 
   let from = $state<number | null>(null);
-  // The revision just saved or opened is the one the owner means to render.
+  // The revision on screen, just saved or opened, is the one the owner means to render.
   $effect(() => {
-    if (current != null) from = current;
+    from = current;
   });
   let title = $state('');
   let subtitle = $state('');
@@ -88,6 +91,15 @@
 
   async function render() {
     problem = '';
+    // A film renders from a saved revision: changes on screen are saved first, never left out.
+    if (unsaved) {
+      const saved = (await onSave?.()) ?? null;
+      if (saved == null) {
+        problem = t('The revision could not be saved.');
+        return;
+      }
+      from = saved;
+    }
     const { status, body } = await post<JobView>(`/runs/${encodeURIComponent(runId)}/renders`, {
       revision: from,
       title: orNull(title),
@@ -169,7 +181,7 @@
   {#if !job || job.status !== 'running'}
     <form class="grid max-w-3xl gap-4 sm:grid-cols-2" onsubmit={(event) => { event.preventDefault(); void render(); }}>
       <label class={label}>{t('What to render')}
-        <select class={field} bind:value={from}>
+        <select class={field} bind:value={from} disabled={unsaved}>
           <option value={null}>{t('The cut as chosen')}</option>
           {#each revisions as revision (revision.number)}<option value={revision.number}>{t('Revision {number}', { number: revision.number })}</option>{/each}
         </select>
@@ -284,7 +296,10 @@
         {#if upload}<label class={label}>{t('Album name')}<input class={field} bind:value={album} placeholder={t('As configured')} /></label>{/if}
       </div>
       {#if problem}<p class="text-sm text-danger sm:col-span-2" role="alert">{problem}</p>{/if}
-      <Button type="submit" class="w-fit">{t('Render')}</Button>
+      {#if unsaved}
+        <p class="text-sm text-warning sm:col-span-2">{t('Your latest changes are in no revision yet. Rendering saves them as a new revision first, so the film has them.')}</p>
+      {/if}
+      <Button type="submit" class="w-fit">{unsaved ? t('Save and render') : t('Render')}</Button>
     </form>
   {/if}
 </section>

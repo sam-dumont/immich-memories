@@ -2,6 +2,7 @@ import type { components } from './api-types';
 
 type Cut = components['schemas']['Cut'];
 type CutShot = components['schemas']['CutShot'];
+type Revision = components['schemas']['Revision'];
 export type RevisionEdits = components['schemas']['RevisionEdits'];
 
 type Snapshot = { removed: string[]; segments: Record<string, [number, number]>; swaps: Record<string, string>; added: string[] };
@@ -23,6 +24,8 @@ const copy = (value: Snapshot): Snapshot => ({
  */
 export class CutEditor {
   #cut: Cut;
+  // The added pictures as shots, by id: each revision brings the ones it adds.
+  #additions = $state<Record<string, CutShot>>({});
   current = $state<Snapshot>(empty());
   history = $state<Snapshot[]>([]);
 
@@ -53,7 +56,8 @@ export class CutEditor {
     if (this.count) this.#change((next) => Object.assign(next, empty()));
   }
 
-  load(edits: RevisionEdits) {
+  load(edits: RevisionEdits & Pick<Revision, 'additions'>) {
+    for (const shot of edits.additions ?? []) this.#additions[shot.asset_id] = shot;
     this.#change((next) => {
       next.removed = [...(edits.removed ?? [])];
       next.segments = Object.fromEntries(Object.entries(edits.segments ?? {}).map(([key, [a, b]]) => [key, [a, b]]));
@@ -63,6 +67,7 @@ export class CutEditor {
   }
 
   isRemoved = (shot: CutShot) => this.current.removed.includes(shot.asset_id);
+  isAdded = (shot: CutShot) => this.current.added.includes(shot.asset_id);
   playing = (shot: CutShot) => this.current.swaps[shot.asset_id] ?? shot.asset_id;
   interval = (shot: CutShot): [number, number] | null =>
     this.current.segments[this.playing(shot)] ?? (shot.source_interval ? [...shot.source_interval] : null);
@@ -78,6 +83,7 @@ export class CutEditor {
   };
 
   toggleRemoved(shot: CutShot) {
+    if (this.isAdded(shot)) return this.unadd(shot.asset_id);
     this.#change((next) => {
       next.removed = next.removed.includes(shot.asset_id)
         ? next.removed.filter((id) => id !== shot.asset_id)
@@ -111,11 +117,42 @@ export class CutEditor {
     });
   }
 
-  /** Seconds of pictures and video the edited cut plays; an added picture counts as a typical shot. */
+  /**
+   * The cut as the film plays it: its own shots in their order, each addition before the first
+   * shot taken after it, as the renderer places them. Positions count the additions; the cut's
+   * own shots keep their timecodes.
+   */
+  get shots(): CutShot[] {
+    const when = (shot: CutShot) => Date.parse(shot.taken);
+    const pending = this.current.added.flatMap((id) => this.#additions[id] ?? []).sort((a, b) => when(a) - when(b));
+    if (!pending.length) return this.#cut.shots;
+    const order: CutShot[] = [];
+    for (const shot of this.#cut.shots) {
+      while (pending.length && when(pending[0]) < when(shot)) order.push(pending.shift()!);
+      order.push(shot);
+    }
+    order.push(...pending);
+    let previous: CutShot | undefined;
+    return order.map((shot, index) => {
+      const month = shot.taken.slice(0, 7);
+      previous = {
+        ...shot,
+        position: index + 1,
+        start: this.isAdded(shot) ? (previous ? previous.start + previous.seconds : 0) : shot.start,
+        new_day: shot.day !== previous?.day,
+        chapter: month !== previous?.taken.slice(0, 7) ? shot.chapter || month : '',
+      };
+      return previous;
+    });
+  }
+
+  /** Seconds of pictures and video the edited cut plays; an addition not yet known counts as a typical shot. */
   get contentSeconds() {
     const kept = this.#cut.shots.filter((shot) => !this.isRemoved(shot));
-    const typical = kept.length ? kept.reduce((sum, shot) => sum + this.seconds(shot), 0) / kept.length : 3;
-    return kept.reduce((sum, shot) => sum + this.seconds(shot), 0) + this.current.added.length * typical;
+    const total = kept.reduce((sum, shot) => sum + this.seconds(shot), 0);
+    const typical = kept.length ? total / kept.length : 3;
+    const added = this.current.added.map((id) => (this.#additions[id] ? this.seconds(this.#additions[id]) : typical));
+    return added.reduce((sum, seconds) => sum + seconds, total);
   }
 
   /** Whether the film grows past the length the cut was made for: the owner's call, never refused. */
@@ -123,7 +160,11 @@ export class CutEditor {
     return this.#cut.content_budget_seconds != null && this.contentSeconds > this.#cut.content_budget_seconds + 1e-6;
   }
 
+  /** What a save sends: a trim on a shot taken out stays here for Undo, never in the revision. */
   get edits(): RevisionEdits {
-    return this.current;
+    const kept = this.#cut.shots.filter((shot) => !this.isRemoved(shot)).map((shot) => this.playing(shot));
+    const plays = new Set([...kept, ...this.current.added]);
+    const segments = Object.fromEntries(Object.entries(this.current.segments).filter(([id]) => plays.has(id)));
+    return { ...this.current, segments };
   }
 }

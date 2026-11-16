@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from immich_memories.analysis.sources.snapshot import SNAPSHOT_NAME, source_payload
+from immich_memories.api.models import Asset, AssetType
 from immich_memories.config.loader import Config
 from immich_memories.tracking.models import DeliveryStatus
+from tests.conftest import make_asset
 from tests.web_api_fixtures import api_client, config_in, save_run, selection_trace
 
 RUN = "20260913_080000_ab12"
@@ -181,9 +186,55 @@ def test_edits_save_as_revisions_and_a_refused_one_says_why(client, config):
     assert [revision["number"] for revision in history] == [1]
 
 
-def test_the_story_view_orders_stories_by_weight_and_lists_what_carries_each(client, config):
-    import json
+def _pool_of(attempt: Path, *assets: Asset) -> None:
+    (attempt / SNAPSHOT_NAME).write_text(json.dumps(source_payload(list(assets)), default=str))
 
+
+def test_a_revision_brings_its_additions_as_shots_the_editor_trims_and_nothing_else(client, config):
+    """#2953: an added video had no range to trim, so it always played its default hold."""
+    attempt = save_run(config, RUN)
+    assert attempt is not None
+    clip = make_asset("pond-4", file_created_at=datetime(2024, 6, 15, 9, tzinfo=UTC), duration=10.0)
+    still = make_asset("woods-9", file_created_at=datetime(2024, 6, 12, 9, tzinfo=UTC))
+    still = still.model_copy(update={"type": AssetType.IMAGE, "duration": None})
+    unused = make_asset("shed-2", file_created_at=datetime(2024, 6, 10, 9, tzinfo=UTC))
+    _pool_of(attempt, clip, still, unused)
+
+    saved = client.post(
+        f"/api/v1/runs/{RUN}/revisions",
+        json={"added": ["pond-4", "woods-9"], "segments": {"pond-4": [2.0, 9.5]}},
+    )
+    listed = client.get(f"/api/v1/runs/{RUN}/revisions").json()
+
+    assert saved.status_code == 201
+    assert saved.json()["segments"] == {"pond-4": [2.0, 9.5]}
+    for revision in (saved.json(), listed[0]):
+        woods, pond = revision["additions"]
+        # Capture order, each with the hold the renderer gives an addition by default: the
+        # cut's own moving shot (4 s) for the video, its own still (4 s) for the photo.
+        assert (woods["asset_id"], pond["asset_id"]) == ("woods-9", "pond-4")
+        assert (pond["motion"], pond["source_interval"], pond["recorded_seconds"]) == (
+            True,
+            [0.0, 4.0],
+            4.0,
+        )
+        assert (woods["motion"], woods["source_interval"], woods["seconds"]) == (False, None, 4.0)
+        assert pond["taken"].startswith("2024-06-15") and pond["day"] == pond["taken"][:10]
+    # Only what a revision adds: the rest of the pool stays on the Pool page.
+    cut = client.get(f"/api/v1/runs/{RUN}/cut").json()
+    assert "shed-2" not in json.dumps(listed) + json.dumps(cut)
+
+
+def test_a_revision_without_additions_reads_no_pool(client, config):
+    save_run(config, RUN)
+
+    saved = client.post(f"/api/v1/runs/{RUN}/revisions", json={"removed": ["garden-1"]})
+
+    assert saved.json()["additions"] == []
+    assert client.get(f"/api/v1/runs/{RUN}/revisions").json()[0]["additions"] == []
+
+
+def test_the_story_view_orders_stories_by_weight_and_lists_what_carries_each(client, config):
     from tests.web_api_fixtures import PLAN
 
     attempt = save_run(config, RUN)
@@ -216,8 +267,6 @@ def test_a_run_without_a_plan_has_no_story(client, config):
 
 
 def test_refinement_captions_are_read_from_every_round_of_the_saved_cut(client, config):
-    import json
-
     attempt = save_run(config, RUN)
     (attempt / "preparation.private.json").write_text(json.dumps({"tier": "no_captions"}))
     for number, asset, description in (
@@ -250,8 +299,6 @@ def test_refinement_captions_are_read_from_every_round_of_the_saved_cut(client, 
 
 
 def test_older_refinement_records_prove_caption_reads_without_inventing_text(client, config):
-    import json
-
     attempt = save_run(config, RUN)
     directory = attempt / "refinement" / "0001"
     directory.mkdir(parents=True)

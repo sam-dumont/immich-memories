@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { Alert, Badge, Button, Heading, Text } from '@immich/ui';
   import { mdiArrowLeft, mdiContentSaveOutline, mdiDownload, mdiPlay, mdiUndo } from '@mdi/js';
   import { api, ApiError, thumbnail, type CutShot } from '#lib/api.ts';
@@ -33,8 +34,28 @@
   let saving = $state(false);
   let refusal = $state('');
   let saved = $state<{ number: number; edits: string } | null>(null);
-  // The edits the last save wrote: saving them again would only duplicate that revision.
+  // The edits the last save wrote, or the revision opened: saving them again would only duplicate it.
   const unsaved = $derived(!!editor && JSON.stringify(editor.edits) !== saved?.edits);
+  // Edits no saved revision holds yet: a render or the pool works from a saved one, so they'd be left out.
+  const pending = $derived(!!editor?.count && unsaved);
+  // The revision on screen, the one Render and the pool start from; none while it is the cut as chosen.
+  const showing = $derived(editor?.count ? (saved?.number ?? null) : null);
+  const poolHref = (number: number | null) =>
+    `/app/runs/${encodeURIComponent(run.run_id)}/pool${number == null ? '' : `?revision=${number}`}`;
+
+  function open(revision: Revision) {
+    if (!editor) return;
+    editor.load(revision);
+    saved = { number: revision.number, edits: JSON.stringify(editor.edits) };
+  }
+
+  // Edits not yet saved go into a revision first, so the pool never starts without them.
+  async function openPool(event: MouseEvent) {
+    if (!pending) return;
+    event.preventDefault();
+    const number = await save();
+    if (number != null) void goto(poolHref(number));
+  }
 
   $effect(() => {
     const id = data.run.run_id;
@@ -48,15 +69,12 @@
       void api<Revision[]>(`/runs/${encodeURIComponent(id)}/revisions`).then((found) => {
         revisions = found;
         const opened = found.find((revision) => revision.number === asked);
-        if (opened && editor) {
-          editor.load(opened);
-          saved = { number: opened.number, edits: JSON.stringify(editor.edits) };
-        }
+        if (opened) open(opened);
       });
   });
 
-  async function save() {
-    if (!editor) return;
+  async function save(): Promise<number | null> {
+    if (!editor) return null;
     saving = true;
     refusal = '';
     try {
@@ -69,8 +87,10 @@
       if (!response.ok) throw new ApiError(response.status, body.detail);
       revisions = [...revisions, body as Revision];
       saved = { number: body.number, edits: JSON.stringify(editor.edits) };
+      return body.number;
     } catch (reason) {
       refusal = reason instanceof ApiError && reason.detail ? reason.detail : t('The revision could not be saved.');
+      return null;
     } finally {
       saving = false;
     }
@@ -81,8 +101,9 @@
   let selectedId = $state<string | null>(null);
   let inspecting = $state(false);
 
+  // The cut's own shots and the pictures added from the pool, in the order the film plays them.
   const shots = $derived(
-    (cut?.shots ?? []).filter((shot) => filter === 'all' || (filter === 'videos') === shot.motion),
+    (editor?.shots ?? cut?.shots ?? []).filter((shot) => filter === 'all' || (filter === 'videos') === shot.motion),
   );
   const selected = $derived(shots.find((shot) => shot.asset_id === selectedId) ?? shots[0]);
   const videos = $derived((cut?.shots ?? []).filter((shot) => shot.motion).length);
@@ -205,7 +226,7 @@
       </div>
       <div class="flex items-center gap-3">
         <Text size="small" color="muted">{t('Order and timecodes from the saved cut.')}</Text>
-        <Button size="small" variant="outline" href={`/app/runs/${encodeURIComponent(run.run_id)}/pool`}>{t('Pool')}</Button>
+        <Button size="small" variant="outline" href={poolHref(showing)} onclick={openPool}>{t('Pool')}</Button>
       </div>
     </div>
 
@@ -253,6 +274,8 @@
                   class={['size-full object-contain', editor?.isRemoved(shot) && 'opacity-30 grayscale']} />
                 {#if editor?.isRemoved(shot)}
                   <span class="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-xs font-semibold">{t('Removed')}</span>
+                {:else if editor?.isAdded(shot)}
+                  <span class="absolute top-1 right-1 rounded bg-primary px-1.5 text-[11px] font-semibold text-light">{t('Added')}</span>
                 {:else if editor && editor.playing(shot) !== shot.asset_id}
                   <span class="absolute top-1 right-1 rounded bg-primary px-1.5 text-[11px] font-semibold text-light">{t('Swapped')}</span>
                 {/if}
@@ -280,25 +303,10 @@
           <div class="mb-3 lg:hidden">
             <Button size="small" variant="ghost" leadingIcon={mdiArrowLeft} onclick={() => (inspecting = false)}>{t('Back to pictures')}</Button>
           </div>
-          {#if editor}<ShotInspector shot={selected} modelPolish={cut.model_polish} captionsRead={cut.captions_read} {editor} runId={run.run_id} />{/if}
+          {#if editor}<ShotInspector shot={selected} modelPolish={cut.model_polish} captionsRead={cut.captions_read} {editor} poolHref={poolHref(showing)} onpool={openPool} />{/if}
         </div>
       {/if}
     </div>
-    {#if editor?.current.added.length}
-      <section class="flex flex-col gap-2">
-        <Heading size="tiny" tag="h2">{t('Added from the pool')}</Heading>
-        <Text size="small" color="muted">{t('They play in the order they were taken, prepared like the rest of the cut.')}</Text>
-        <ul class="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3" aria-label={t('Added from the pool')}>
-          {#each editor.current.added as assetId (assetId)}
-            <li class="flex flex-col gap-1.5">
-              <img src={thumbnail(assetId)} alt={t('Added from the pool')} loading="lazy" decoding="async" class="aspect-[4/3] w-full rounded-lg bg-gray-100 object-contain dark:bg-gray-900" />
-              <Button size="tiny" variant="ghost" onclick={() => editor?.unadd(assetId)}>{t('Take out')}</Button>
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/if}
-
     {#if editor && (editor.count || editor.history.length)}
       <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
         <p class="text-sm tabular-nums">
@@ -329,7 +337,7 @@
               <span class="font-medium">{t('Revision {number}', { number: revision.number })}</span>
               <span class="text-gray-600 dark:text-gray-400">{new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(revision.created_at))}</span>
               <span>{clock(revision.content_seconds)}</span>
-              <Button size="tiny" variant="ghost" onclick={() => editor?.load(revision)}>{t('Open')}</Button>
+              <Button size="tiny" variant="ghost" onclick={() => open(revision)}>{t('Open')}</Button>
             </li>
           {/each}
         </ul>
@@ -341,7 +349,7 @@
     <Text color="muted">{t('No saved cut is available for this run.')}</Text>
   {/if}
 
-  {#if cut}<RenderPanel runId={run.run_id} {revisions} current={saved?.number ?? null} />{/if}
+  {#if cut}<RenderPanel runId={run.run_id} {revisions} current={showing} unsaved={pending} onSave={save} />{/if}
 
   <section class="flex flex-col gap-3 border-t border-gray-200 pt-6 dark:border-gray-800">
     <Heading size="tiny" tag="h2">{t('Run details')}</Heading>

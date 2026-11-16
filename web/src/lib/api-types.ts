@@ -1191,7 +1191,7 @@ export interface paths {
         };
         /**
          * List Revisions
-         * @description Every saved revision of this cut, oldest first.
+         * @description Every saved revision of this cut, oldest first, each with the pictures it adds.
          */
         get: operations["list_revisions_api_v1_runs__run_id__revisions_get"];
         put?: never;
@@ -2468,6 +2468,11 @@ export interface components {
              * @default []
              */
             added: string[];
+            /**
+             * Additions
+             * @default []
+             */
+            additions: components["schemas"]["CutShot"][];
             /** Content Seconds */
             content_seconds: number;
             /** Created At */

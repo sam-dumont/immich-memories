@@ -1273,6 +1273,10 @@ features:
       - tests/e2e/test_web_client.py::test_edits_undo_save_as_a_revision_and_reopen_after_a_reload
       - tests/e2e/test_web_client.py::test_a_trim_before_the_window_moves_the_start_and_the_time_on_screen
       - tests/e2e/test_web_client.py::test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut
+      - tests/e2e/test_cut_editor.py::test_a_seek_past_the_end_stays_put_and_end_here_sets_a_later_end
+      - tests/e2e/test_cut_editor.py::test_an_added_clip_plays_in_the_cut_in_capture_order_and_its_trim_saves
+      - tests/e2e/test_cut_editor.py::test_a_trim_and_an_earlier_addition_survive_choosing_more_from_the_pool
+      - tests/e2e/test_cut_editor.py::test_render_saves_unsaved_edits_as_a_revision_before_it_starts
   - id: web.find-and-download
     promise: "Runs lists cuts and renders newest first; a local film plays on the page and Download film fetches it, even after delivery."
     doc: make/web-ui.mdx#find-a-finished-film

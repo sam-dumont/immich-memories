@@ -7,7 +7,9 @@
   import { t } from './i18n.svelte';
   import { clock, seatLabel } from './labels';
 
-  let { shot, modelPolish, captionsRead, editor, runId }: { shot: CutShot; modelPolish: boolean; captionsRead: boolean; editor: CutEditor; runId: string } = $props();
+  let { shot, modelPolish, captionsRead, editor, poolHref, onpool }: {
+    shot: CutShot; modelPolish: boolean; captionsRead: boolean; editor: CutEditor; poolHref: string; onpool: (event: MouseEvent) => void;
+  } = $props();
 
   let player = $state<HTMLVideoElement>();
   let comparing = $state<string | null>(null);
@@ -16,6 +18,7 @@
   const swapped = $derived(playing !== shot.asset_id);
   const interval = $derived(swapped ? null : editor.interval(shot));
   const removed = $derived(editor.isRemoved(shot));
+  const added = $derived(editor.isAdded(shot));
 
   function mark(edge: 0 | 1) {
     if (!player || !interval) return;
@@ -25,18 +28,25 @@
   }
 
   // The preview opens on the stretch the film plays and loops it while it plays through. A seek
-  // outside it is the reader looking for a new edge, so it is never pulled back.
+  // outside it is the reader looking for a new edge, so it is never pulled back. The whole source
+  // loads, so a later end can be found. A seek's own timeupdate fires once `seeking` is false
+  // again, before `seeked`: until then the jump is a seek, never a play-through.
   let last = 0;
+  let seeking = false;
   function start() {
     if (!player || !interval) return;
     player.currentTime = interval[0];
     last = interval[0];
   }
   function hold() {
-    if (!player || !interval || player.seeking) return;
+    if (!player || !interval || seeking || player.seeking) return;
     const playedOut = last >= interval[0] && last < interval[1] && player.currentTime >= interval[1];
     if (playedOut) player.currentTime = interval[0];
     last = player.currentTime;
+  }
+  function sought() {
+    seeking = false;
+    if (player) last = player.currentTime;
   }
 </script>
 
@@ -46,8 +56,8 @@
       {#key shot.asset_id}
         <video bind:this={player} class="aspect-[4/3] w-full object-contain" controls muted playsinline autoplay
           preload="metadata" poster={thumbnail(shot.asset_id, 'preview')}
-          src={`${video(shot.asset_id)}#t=${interval[0]},${interval[1]}`}
-          ontimeupdate={hold} onloadedmetadata={start}></video>
+          src={video(shot.asset_id)}
+          ontimeupdate={hold} onloadedmetadata={start} onseeking={() => (seeking = true)} onseeked={sought}></video>
       {/key}
     {:else}
       <img class={['aspect-[4/3] w-full object-contain', removed && 'opacity-40']} src={thumbnail(playing, 'preview')} alt={shot.reason || shot.story_title} />
@@ -57,7 +67,7 @@
   <section class="flex flex-col gap-2" aria-label={t('Edit this shot')}>
     <div class="flex flex-wrap gap-2">
       <Button size="small" variant="outline" color={removed ? 'primary' : 'danger'} leadingIcon={removed ? mdiArrowULeftTop : mdiDeleteOutline}
-        onclick={() => editor.toggleRemoved(shot)}>{removed ? t('Put it back') : t('Remove from this cut')}</Button>
+        onclick={() => editor.toggleRemoved(shot)}>{removed ? t('Put it back') : added ? t('Take out') : t('Remove from this cut')}</Button>
       {#if swapped}
         <Button size="small" variant="outline" leadingIcon={mdiArrowULeftTop} onclick={() => editor.swap(shot, null)}>{t('Keep the original')}</Button>
       {/if}
@@ -86,12 +96,12 @@
       <Badge size="tiny" color={shot.motion ? 'info' : 'secondary'}>{shot.motion ? t('Video') : t('Still')}</Badge>
     </p>
     <!-- A rules-made story title can list every place of the week: two lines, the rest on hover. -->
-    <Heading size="tiny" tag="h2" class="line-clamp-2" title={shot.story_title}>{shot.story_title}</Heading>
+    <Heading size="tiny" tag="h2" class="line-clamp-2" title={shot.story_title}>{shot.story_title || (added ? t('Added from the pool') : '')}</Heading>
   </div>
 
   <section class="flex flex-col gap-1">
     <h3 class="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">{t('Why this picture')}</h3>
-    <p>{shot.reason || t('No reason recorded for this picture.')}</p>
+    <p>{shot.reason || (added ? t('You added it from the pool.') : t('No reason recorded for this picture.'))}</p>
   </section>
 
   {#if shot.caption}
@@ -142,7 +152,7 @@
           <Button size="small" variant="outline" leadingIcon={mdiSwapHorizontal} class="w-fit" onclick={() => editor.swap(shot, compared.asset_id)}>{t('Use this picture instead')}</Button>
         {/if}
       {/if}
-      <a class="w-fit text-sm text-primary hover:underline" href={`/app/runs/${encodeURIComponent(runId)}/pool`}>{t('Browse the whole pool')}</a>
+      <a class="w-fit text-sm text-primary hover:underline" href={poolHref} onclick={onpool}>{t('Browse the whole pool')}</a>
     </section>
   {/if}
 
