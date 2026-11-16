@@ -130,11 +130,14 @@ OTEL_SERVICE_NAME=immich-memories   # the default
   paths. The collector never has to be reachable from the browser. Browser spans carry the service
   name `immich-memories-web`.
 - **Every hop is a span too.** Each web request is a server span named by its route
-  (`GET /api/v1/films/{film_id}`), and joins the caller's trace when the caller sent one. Each
-  HTTP call (Immich, the reader, the render worker, the music service) is a client span named by
-  method and path, with ids replaced by `{id}` and no query string. Each store query is a span with
-  its statement, never its values. Each program the app starts (ffmpeg, ffprobe, ...) is a span
-  with its exit code and its arguments, paths cut to the file name. The render worker and the
+  (`GET /api/v1/films/{film_id}`), and joins the caller's trace when the caller sent one. Its path
+  is the route too, so an account name or group label in the URL stays home. Each HTTP call
+  (Immich, the reader, the render worker, the music service, map tiles) is a client span named by
+  method and path, with ids and tile coordinates replaced by `{id}` and no query string. Each store
+  query is a span with its statement, never its values. Each program the app starts (ffmpeg,
+  ffprobe, ...) is a span with its exit code and its arguments, paths cut to the file name. The
+  values that name people or carry your words (`--person`, `--ask`, `--title`, `--album`,
+  `--birthday`, a caption drawn on a clip, ...) read `{redacted}` unless content capture is on. The render worker and the
   inference service trace their own side when the same variables are set on them, so a remote
   render shows up inside the run that asked for it.
 - **Every selection decision is a span.** Each stage that narrows the pool is a
@@ -152,11 +155,14 @@ OTEL_SERVICE_NAME=immich-memories   # the default
   the server's address. Retries stay inside one span, one `gen_ai.attempt` event each, and the
   caption worker's calls and each answered batch line get a span too. Some backends have a
   GenAI view of their own (token cost per model, slow calls), and these spans feed it.
-- **Prompts and replies stay out unless you ask for them.** They carry people's names and
+- **Prompts, replies and names stay out unless you ask for them.** They carry people's names and
   captions. Set `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true` to record them as
-  `gen_ai.input.messages` and `gen_ai.output.messages`. Pictures are never recorded, only how many
-  went in.
-- A failed stage is an error span with its exception (redacted, the app's own frames only).
+  `gen_ai.input.messages` and `gen_ai.output.messages`, and to keep the names and free text in
+  program arguments. Pictures are never recorded, only how many went in. Paths and keys are cut
+  either way.
+- A failed stage is an error span with its exception (redacted, the app's own frames only). So
+  is an error a hop records (a refused connection, a route that failed): its message and status
+  with paths cut to the file name and secrets redacted, its traceback cut to the app's own frames.
   Logged warnings are span events, the first 20 per span.
 - Export is OTLP over HTTP (protobuf). `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` is refused with a
   warning: point the endpoint at port 4318 instead.

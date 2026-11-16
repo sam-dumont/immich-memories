@@ -13,7 +13,6 @@ instrumentations share. Pictures never are, only how many went in.
 from __future__ import annotations
 
 import json
-import os
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -92,7 +91,7 @@ class Call:
 
     def answered(self, text: str) -> None:
         """The reply, when content capture is on."""
-        if not capturing():
+        if not otel.capturing_content():
             return
         message: dict[str, Any] = {
             "role": "assistant",
@@ -109,12 +108,6 @@ _call: ContextVar[Call | None] = ContextVar("genai_call", default=None)
 def current() -> Call | None:
     """The call the code running now is part of, for the transport to report into."""
     return _call.get()
-
-
-def capturing() -> bool:
-    """Whether prompts and replies go into the trace (off unless the standard switch says so)."""
-    flag = os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "")
-    return flag.strip().lower() == "true"
 
 
 @contextmanager
@@ -148,7 +141,7 @@ def inference(
         "immich_memories.llm.thinking": thinking or None,
         "immich_memories.llm.batch": batch or None,
     }
-    if capturing() and prompt is not None:
+    if otel.capturing_content() and prompt is not None:
         part = {"type": "text", "content": prompt[:_CONTENT_CHARACTERS]}
         attributes["gen_ai.input.messages"] = json.dumps([{"role": "user", "parts": [part]}])
     span = otel.start(f"chat {model}", attributes, kind=SpanKind.CLIENT)

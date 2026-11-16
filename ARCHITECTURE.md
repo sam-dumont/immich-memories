@@ -1214,6 +1214,7 @@ src/immich_memories/
 │   ├── models.py               # Run/phase data models
 │   ├── otel.py                 # OpenTelemetry traces: live spans, TRACEPARENT into children, when OTEL_EXPORTER_OTLP_ENDPOINT is set
 │   ├── otel_hops.py            # Routes, HTTP calls, store queries and child programs as spans; paths and ids scrubbed
+│   ├── trace_redaction.py      # What a span keeps: argv without names/free text/paths, the export-time scrub of every span
 │   └── system_info.py          # System info collection
 │
 ├── db/                         # The store (#871): one versioned database on SQLite or PostgreSQL
@@ -1826,8 +1827,11 @@ tracer (`web/src/lib/tracing-sdk.ts`) as a lazy chunk only then, makes each `pos
 span and each page change a `route` span, and parents the requests made meanwhile to them.
 `otel_hops.py` adds the hops while exporting: FastAPI server spans (the served app of the web
 server, the inference service, the GPU and render workers), httpx client spans named by method and
-id-free path, SQLAlchemy query spans, and a `Popen` hook timing each child program. The exporter
-cuts absolute paths in span names and attributes to file names before anything leaves.
+id-free path, SQLAlchemy query spans, and a `Popen` hook timing each child program.
+`trace_redaction.py` decides what a span keeps: a child's arguments lose paths, ids and (unless
+`otel.capturing_content()`) the values of the CLI flags that carry names or free text, and the
+exporter runs `redacted` on every span, cutting paths and secrets from names, attributes, events
+and status, and tracebacks to the app's frames, before anything leaves.
 `analysis/corpus/decision_spans.py` turns each selection stage and editorial pass the corpus
 trace records into a `select <name>` span with counts and a `clip.dropped` event per clip, and
 `run_observations._film` puts the finished film on the run's root span.

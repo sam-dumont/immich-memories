@@ -102,6 +102,33 @@ def test_browser_spans_are_forwarded_scrubbed_with_the_server_headers(collector,
     assert "shared-secret" not in body.decode()
 
 
+def test_a_browser_request_to_a_route_named_after_someone_is_forwarded_as_its_template(collector):
+    client = _client()
+
+    # WHY: the real server has this route; the test app adds it so its template is known.
+    @client.app.get("/api/v1/accounts/{name}/people")
+    def people(name: str) -> list[str]:
+        return []
+
+    batch = _browser_spans()
+    span = batch["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+    span["name"] = "GET /api/v1/accounts/Alex%20Example/people"
+    span["attributes"][0]["value"]["stringValue"] = (
+        "http://memories.local/api/v1/accounts/Alex%20Example/people"
+    )
+
+    assert client.post("/api/v1/telemetry/traces", json=batch).status_code == 202
+
+    (forwarded,) = [
+        body for _, headers, body in collector.requests if "json" in headers["Content-Type"]
+    ]
+    sent = json.loads(forwarded)["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+    assert sent["name"] == "GET /api/v1/accounts/{name}/people"
+    url = sent["attributes"][0]["value"]["stringValue"]
+    assert url == "http://memories.local/api/v1/accounts/{name}/people"
+    assert "Alex" not in forwarded.decode()
+
+
 def test_forwarding_makes_no_spans_of_its_own(collector):
     client = _client()
     client.post("/api/v1/telemetry/traces", json=_browser_spans())

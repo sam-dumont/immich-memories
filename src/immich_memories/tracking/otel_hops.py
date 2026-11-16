@@ -3,10 +3,14 @@
 Installed by `otel.setup()` only while exporting, and removed by `otel.shutdown()`. Each hop
 records what it was and how it went, never what it carried:
 
-- an HTTP call is named by its method and path with ids replaced, without its query string;
+- an HTTP call is named by its method and path with ids and map tile coordinates replaced,
+  without its query string;
 - a store query keeps its statement with the placeholders, never the bound values;
-- a child program keeps its arguments with private paths cut to the file name and ids replaced;
-- a web route is named by its template (`/api/v1/films/{film_id}`), health probes left out.
+- a child program keeps its arguments as `trace_redaction.arguments` leaves them: private paths
+  cut to the file name, ids replaced, names and free text replaced unless content is captured;
+- a web route is named by its template (`/api/v1/films/{film_id}`), and its path is that
+  template, so a name in a segment (`/api/v1/accounts/{name}/people`) stays home; health probes
+  are left out.
 """
 
 from __future__ import annotations
@@ -14,37 +18,32 @@ from __future__ import annotations
 import os
 import re
 import subprocess
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from pathlib import PurePath
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit, urlunsplit
 
 from opentelemetry.trace import Span
 
-from immich_memories.logging_config import redact_secrets
 from immich_memories.tracking import otel
+from immich_memories.tracking.trace_redaction import IDS, arguments, cut_paths
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
-    from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
+    from opentelemetry.sdk.trace import TracerProvider
 
-# UUIDs, and long hex or digit runs (hashes, numeric ids): what makes one path every path.
-_IDS = re.compile(
-    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-    r"|\b[0-9a-fA-F]{16,}\b|\b\d{6,}\b"
-)
+# A path segment of digits alone: a map tile's zoom, column and row (`/14/8392/5467.png`), which
+# say where a trip went or where home is.
+_NUMBERS = re.compile(r"(?<=/)\d+(?=[/.@]|$)")
+# A request as a browser span names it: `GET /api/v1/...`, a bare path, or a whole URL.
+_REQUEST = re.compile(r"(?P<method>[A-Z]+ )?(?P<target>https?://\S+|/\S*)")
 # Health probes, the route the web client sends its own spans through, and static files: the
 # client's bundle is thirty requests a page load that say nothing the page's own spans do not.
 _UNTRACED = "/health,/health/live,/health/ready,/api/v1/telemetry,/app/_app/,/static/,/favicon.ico"
-# An absolute path of two or more parts outside a URL: `/home/x/store.db`, not `/api/v1`.
-_PATHS = re.compile(
-    r"(?<![\w:/.])(?:/(?:Users|home|var|private|tmp|data|mnt|srv|opt|root|Volumes)\b)(?:/[^\s/'\"]+)+"
-)
-# ffmpeg filter graphs run to kilobytes; a span keeps the head of each and of the list.
-_ARGUMENTS = 64
-_ARGUMENT_CHARACTERS = 512
 
 _restore: list[Callable[[], None]] = []
+# The traced apps, whose route templates name the requests made to them.
+_apps: list[FastAPI] = []
 
 
 def instrument(provider: TracerProvider) -> None:
@@ -72,12 +71,14 @@ def uninstrument() -> None:
     """Put back what `instrument` changed."""
     while _restore:
         _restore.pop()()
+    _apps.clear()
 
 
 def instrument_app(app: FastAPI, provider: TracerProvider) -> None:
     """Make each request to `app` a server span, joining the caller's trace when it sent one."""
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+    _apps.append(app)
     FastAPIInstrumentor.instrument_app(
         app,
         tracer_provider=provider,
@@ -92,57 +93,43 @@ def _named_route(span: Span, scope: dict[str, Any]) -> None:
     # The span is named by the route template; the raw path and query it also keeps do not.
     if not span.is_recording():
         return
-    span.set_attribute("url.path", template(scope.get("path", "")))
+    span.set_attribute("url.path", route_template(scope.get("path", "")))
     if scope.get("query_string"):
         span.set_attribute("url.query", "")
 
 
-def without_paths(span: ReadableSpan) -> ReadableSpan:
-    """`span` with every absolute path in its name and text attributes cut to the file name.
-
-    The last line before export: an instrumentation that names a SQLite file, or an error that
-    quotes a folder, would otherwise send a person's home layout to the collector.
-    """
-    from opentelemetry.sdk.trace import ReadableSpan
-
-    name = _cut_paths(span.name)
-    attributes = {
-        key: _cut_paths(value) if isinstance(value, str) else value
-        for key, value in (span.attributes or {}).items()
-    }
-    if name == span.name and attributes == dict(span.attributes or {}):
-        return span
-    return ReadableSpan(
-        name=name,
-        context=span.context,
-        parent=span.parent,
-        resource=span.resource,
-        attributes=attributes,
-        events=span.events,
-        links=span.links,
-        kind=span.kind,
-        status=span.status,
-        start_time=span.start_time,
-        end_time=span.end_time,
-        instrumentation_scope=span.instrumentation_scope,
-    )
-
-
-def _cut_paths(text: str) -> str:
-    return _PATHS.sub(lambda match: PurePath(match.group(0)).name, text)
-
-
 def scrub(text: str) -> str:
-    """Text from outside the app (a browser span) without query strings, ids or paths."""
-    if text.startswith(("http://", "https://", "/")):
-        parts = urlsplit(text)
-        text = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
-    return _IDS.sub("{id}", _cut_paths(text))
+    """Text from outside the app (a browser span) without query strings, ids, names or paths."""
+    if request := _REQUEST.fullmatch(text):
+        parts = urlsplit(request["target"])
+        path = route_template(parts.path)
+        text = (request["method"] or "") + urlunsplit((parts.scheme, parts.netloc, path, "", ""))
+    return IDS.sub("{id}", cut_paths(text))
 
 
 def template(path: str) -> str:
-    """`path` with every id replaced by `{id}`, so all calls of one kind share a name."""
-    return _IDS.sub("{id}", path) or "/"
+    """`path` with every id and tile coordinate replaced by `{id}`: one name per kind of call."""
+    return _NUMBERS.sub("{id}", IDS.sub("{id}", path)) or "/"
+
+
+def route_template(path: str) -> str:
+    """The template of the traced app's route `path` matches, else `template(path)`.
+
+    A route's parameters are not all ids: an account name or a group label is a segment too.
+    """
+    from starlette.convertors import PathConvertor
+    from starlette.routing import Route
+
+    for app in _apps:
+        for route in app.routes:
+            if (
+                isinstance(route, Route)
+                and route.param_convertors
+                and not any(isinstance(c, PathConvertor) for c in route.param_convertors.values())
+                and route.path_regex.match(path)
+            ):
+                return route.path_format
+    return template(path)
 
 
 def _named_request(span: Span, request: Any) -> None:
@@ -186,7 +173,7 @@ def _trace_children() -> None:
         program = PurePath(os.fsdecode(options.get("executable") or argv[0])).name
         span = otel.start(
             f"exec {program}",
-            {"process.executable.name": program, "process.command_args": _arguments(argv)},
+            {"process.executable.name": program, "process.command_args": arguments(argv)},
         )
         try:
             original_init(self, args, *rest, **options)
@@ -228,16 +215,3 @@ def _exited(process: subprocess.Popen, code: int) -> None:
     if code != 0:
         otel.mark_failed(span, "ExitCode", f"the program exited with status {code}")
     otel.end(span)
-
-
-def _arguments(argv: Sequence[Any]) -> list[str]:
-    return [_argument(os.fsdecode(item)) for item in argv[:_ARGUMENTS]]
-
-
-def _argument(value: str) -> str:
-    """One argument without what would identify the library: its paths and its ids."""
-    value = redact_secrets(value)
-    if os.sep in value and not value.startswith("-"):
-        # A path names a person's folders; the file name is what tells two steps apart.
-        value = PurePath(value).name
-    return _IDS.sub("{id}", value)[:_ARGUMENT_CHARACTERS]
