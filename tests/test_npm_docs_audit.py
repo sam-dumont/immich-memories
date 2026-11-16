@@ -8,6 +8,24 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/npm_docs_audit.py"
 
 
+BRACES_REVIEW = ("braces", "3.0.3", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm")
+
+
+def with_review(review=BRACES_REVIEW):
+    """The script's `evaluate`, with one review open, so the machinery is tested on its own.
+
+    `run_path` returns a copy of the module's globals, so the set itself is filled in place: the
+    function reads that same object, and every call gets a fresh one.
+    """
+    namespace = runpy.run_path(str(SCRIPT))
+    namespace["REVIEWED"].add(review)
+    return namespace["evaluate"]
+
+
+def test_no_docs_review_is_open_once_the_braces_advisory_is_withdrawn():
+    assert runpy.run_path(str(SCRIPT))["REVIEWED"] == set()
+
+
 def with_metadata(report):
     counts = dict.fromkeys(["info", "low", "moderate", "high", "critical"], 0)
     for item in report["vulnerabilities"].values():
@@ -18,7 +36,7 @@ def with_metadata(report):
 
 
 def test_strict_default_rejects_even_reviewed_advisories():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     report = {
         "auditReportVersion": 2,
         "vulnerabilities": {
@@ -43,7 +61,7 @@ def test_strict_default_rejects_even_reviewed_advisories():
 
 
 def test_malformed_low_report_cannot_be_mistaken_for_clean():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     assert (
         evaluate(
             {"auditReportVersion": 2, "vulnerabilities": {"mystery": {"severity": "unknown"}}},
@@ -88,7 +106,7 @@ def reviewed_report():
 
 
 def test_only_exact_unfixed_graph_is_accepted_until_expiry():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     report, lock = reviewed_report()
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 15)) == 0
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 16)) == 1
@@ -97,7 +115,7 @@ def test_only_exact_unfixed_graph_is_accepted_until_expiry():
 
 
 def test_http_cache_semantics_review_is_retired_once_patched():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     report, lock = reviewed_report()
     lock["packages"]["node_modules/http-cache-semantics"] = {"version": "4.2.0"}
     report["vulnerabilities"]["http-cache-semantics"] = {
@@ -117,7 +135,7 @@ def test_http_cache_semantics_review_is_retired_once_patched():
 
 
 def test_new_fixable_and_critical_advisories_are_refused():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     for change in ["fix", "advisory", "critical"]:
         report, lock = reviewed_report()
         node = report["vulnerabilities"]["braces"]
@@ -131,7 +149,7 @@ def test_new_fixable_and_critical_advisories_are_refused():
 
 
 def test_missing_lock_paths_unknown_graph_and_cycles_fail_closed():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     for change in ["path", "graph", "cycle", "format"]:
         report, lock = reviewed_report()
         if change == "path":
@@ -166,7 +184,7 @@ def test_cli_crashes_and_malformed_json_never_pass(tmp_path):
 
 
 def test_npm_boolean_metavulnerability_remediation_does_not_claim_a_leaf_fix():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     report, lock = reviewed_report()
     report["vulnerabilities"]["docusaurus"]["fixAvailable"] = True
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 3)) == 0
@@ -178,7 +196,7 @@ def test_npm_boolean_metavulnerability_remediation_does_not_claim_a_leaf_fix():
 
 
 def test_dependency_cycles_need_a_reviewed_leaf_and_do_not_hide_other_leaves():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     report, lock = reviewed_report()
     node = report["vulnerabilities"]["docusaurus"]
     node["via"].append("docusaurus")
@@ -188,7 +206,7 @@ def test_dependency_cycles_need_a_reviewed_leaf_and_do_not_hide_other_leaves():
 
 
 def test_missing_or_contradictory_metadata_and_wrong_package_paths_fail():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     assert (
         evaluate(
             {"auditReportVersion": 2, "vulnerabilities": {}},
@@ -209,34 +227,40 @@ def test_missing_or_contradictory_metadata_and_wrong_package_paths_fail():
 
 
 def test_critical_source_cannot_hide_under_high_parent():
-    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    evaluate = with_review()
     report, lock = reviewed_report()
     report["vulnerabilities"]["braces"]["via"][0]["severity"] = "critical"
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 3)) == 1
 
 
-def test_make_default_uses_approved_review_and_explicit_strict_still_refuses(tmp_path):
+def test_make_refuses_any_high_docs_advisory_and_passes_a_clean_report(tmp_path):
     import os
     import subprocess
 
-    report, _ = reviewed_report()
-    report["vulnerabilities"] = {"braces": report["vulnerabilities"]["braces"]}
-    audit = tmp_path / "audit.json"
-    audit.write_text(json.dumps(with_metadata(report)))
     npm = tmp_path / "npm"
     npm.write_text(
         "#!/bin/sh\n"
         'case "$PWD" in */web) exit 0 ;; esac\n'
         'case "$*" in *--json*) cat "$AUDIT_FIXTURE" ;; esac\n'
-        "exit 1\n"
+        'exit "$AUDIT_EXIT"\n'
     )
     npm.chmod(0o700)
-    env = os.environ | {
-        "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
-        "AUDIT_FIXTURE": str(audit),
-    }
     root = SCRIPT.parent.parent
-    reviewed = subprocess.run(["make", "npm-audit"], cwd=root, env=env, capture_output=True)
-    assert reviewed.returncode == 0, reviewed.stderr.decode()
-    strict = subprocess.run(["make", "npm-audit-strict"], cwd=root, env=env, capture_output=True)
-    assert strict.returncode != 0
+
+    def audit(report, exit_code, target="npm-audit"):
+        fixture = tmp_path / f"audit-{exit_code}.json"
+        fixture.write_text(json.dumps(with_metadata(report)))
+        env = os.environ | {
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+            "AUDIT_FIXTURE": str(fixture),
+            "AUDIT_EXIT": str(exit_code),
+        }
+        return subprocess.run(["make", target], cwd=root, env=env, capture_output=True)
+
+    high, _ = reviewed_report()
+    high["vulnerabilities"] = {"braces": high["vulnerabilities"]["braces"]}
+    assert audit(high, 1).returncode != 0
+    assert audit(high, 1, "npm-audit-strict").returncode != 0
+    clean = {"auditReportVersion": 2, "vulnerabilities": {}}
+    passed = audit(clean, 0)
+    assert passed.returncode == 0, passed.stderr.decode()

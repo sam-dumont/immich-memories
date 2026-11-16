@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed; permit one time-limited docs review only with explicit opt-in."""
+"""Fail closed; permit a time-limited docs review, when one is open, only with explicit opt-in."""
 
 import argparse
 import json
@@ -7,10 +7,11 @@ import sys
 from datetime import date
 from pathlib import Path
 
+# No docs advisory review is open. The last one, braces 3.0.3 (GHSA-vfj7-8cjw-p6xm), ended on
+# this date; GitHub had withdrawn that advisory, so npm audit no longer reports it. A new owner-
+# approved review adds its (package, version, advisory URL) and sets a new date.
 EXPIRES = date(2026, 11, 16)
-REVIEWED = {
-    ("braces", "3.0.3", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"),
-}
+REVIEWED: set[tuple[str, str, str]] = set()
 SEVERITIES = {"info", "low", "moderate", "high", "critical"}
 
 
@@ -151,7 +152,7 @@ def main() -> None:
             2: "Inconclusive docs audit: refused.",
         }[result]
     )
-    if result == 0 and args.reviewed:
+    if result == 0 and args.reviewed and REVIEWED:
         print(f"Explicit docs-only review expires {EXPIRES}; packages remain unpatched.")
     sys.exit(result)
 
