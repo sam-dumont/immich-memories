@@ -51,6 +51,16 @@ _inherited: object | None = None
 _warned = False
 
 
+def capturing_content() -> bool:
+    """Whether traces carry content: prompts, replies, and the names in program arguments.
+
+    Off unless `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`, the switch the
+    OpenTelemetry GenAI instrumentations share.
+    """
+    flag = os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "")
+    return flag.strip().lower() == "true"
+
+
 def traces_endpoint() -> str | None:
     """Where traces go, by the OTLP exporter rules: the signal URL as-is, else base + path."""
     if os.environ.get("OTEL_SDK_DISABLED", "").strip().lower() == "true":
@@ -361,10 +371,10 @@ def _quiet(exporter: SpanExporter) -> SpanExporter:
     class Quiet(SpanExporter):
         def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
             global _warned
-            from immich_memories.tracking import otel_hops
+            from immich_memories.tracking import trace_redaction
 
             try:
-                kept = [otel_hops.without_paths(span) for span in spans if not _orphan_hop(span)]
+                kept = [trace_redaction.redacted(span) for span in spans if not _orphan_hop(span)]
                 result = exporter.export(kept) if kept else SpanExportResult.SUCCESS
             except Exception:  # noqa: BLE001 - telemetry must never fail the work it describes
                 result = SpanExportResult.FAILURE

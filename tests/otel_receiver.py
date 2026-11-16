@@ -62,6 +62,7 @@ def decode(body: bytes) -> list[dict]:
             "parent": span.parent_span_id.hex() or None,
             "attributes": _attributes(span.attributes),
             "status": span.status.code,
+            "status_message": span.status.message,
             "events": [(event.name, _attributes(event.attributes)) for event in span.events],
             "start": span.start_time_unix_nano,
             "end": span.end_time_unix_nano,
