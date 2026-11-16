@@ -33,12 +33,14 @@ The [threat model](docs/security/threat-model.md) describes assets, trust bounda
 
 ## Deployment posture (short version)
 
-- Authentication is **off by default**. Outside Docker the UI then binds `127.0.0.1` unless you
-  name another address. The container listens on `0.0.0.0:8080` and the shipped
-  [Compose file](docker-compose.yml) publishes it only on host address `127.0.0.1`,
-  so the port mapping is the boundary. Enable
-  [authentication](https://sam-dumont.github.io/immich-memories/docs/run/authentication)
-  before exposing the port beyond localhost, and put a TLS reverse proxy in front.
+- Sign-in is **on by default**. With basic sign-in and no password set, the first start
+  generates one and prints it once to the console; only its hash is kept. Outside Docker,
+  `immich-memories ui` listens on `127.0.0.1` unless you name another address. The container
+  listens on `0.0.0.0:8080` and the shipped [Compose file](docker-compose.yml) publishes it only
+  on host address `127.0.0.1`. Turning sign-in off (`auth.enabled: false`) is a choice you make on
+  purpose, and the UI then answers on localhost only. Keep
+  [sign-in](https://sam-dumont.github.io/immich-memories/docs/run/authentication) on and put a
+  TLS reverse proxy in front before exposing the port beyond localhost.
 - The UI never sends the saved Immich key to a URL typed into it: a new server URL needs its key
   typed in too. Whoever reaches an unauthenticated UI can still use your library through it.
 - Read access is enough to generate a local video. Upload-back needs upload/album scopes.
