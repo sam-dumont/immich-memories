@@ -43,6 +43,8 @@ _TYPE_NAMES = {
     "holiday": "Holiday",
     "special_day": "Special day",
 }
+# A film with no memory type, as `web/src/lib/labels.ts` names it.
+_DATE_RANGE_NAME = "Custom date range"
 
 
 def memory_type_label(memory_type: str | None, locale: str = "en") -> str | None:
@@ -53,13 +55,23 @@ def memory_type_label(memory_type: str | None, locale: str = "en") -> str | None
     """
     if not memory_type:
         return None
-    from immich_memories.i18n import get_translator
     from immich_memories.memory_types import list_memory_types
 
     name = _TYPE_NAMES.get(memory_type) or next(
         (e["name"] for e in list_memory_types() if e["type"] == memory_type),
         memory_type.replace("_", " "),
     )
+    return _ui_name(name, locale)
+
+
+def date_range_film_label(locale: str = "en") -> str:
+    """What the film-type list calls a film made from a date range and no memory type."""
+    return _ui_name(_DATE_RANGE_NAME, locale)
+
+
+def _ui_name(name: str, locale: str) -> str:
+    from immich_memories.i18n import get_translator
+
     translated = get_translator(locale, "ui").gettext(name)
     return _sentence(name) if locale == "en" or translated == name else translated
 
