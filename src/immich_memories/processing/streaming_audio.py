@@ -119,19 +119,55 @@ def _build_merge_graph(
     return ";".join(filter_parts) + tail
 
 
+def _silence(duration: float, fps: int) -> list[str]:
+    """FFmpeg input arguments for silence lasting exactly a clip's whole frames."""
+    frame_dur = int(duration * fps) / fps
+    return ["-f", "lavfi", "-i", f"anullsrc=r=48000:cl=stereo:d={frame_dur}"]
+
+
+def _carries_sound(
+    clip: object, index: int, pre_extracted: list[Path] | None, probe_cache: ProbeCache
+) -> bool:
+    """Whether a clip has sound to mix.
+
+    A title screen never does. A video can be recorded without an audio track
+    (#2945): FFmpeg then has nothing to read, so it plays as silence instead of
+    failing the film's audio. A WAV the decode pass already extracted counts as
+    sound. When the file can't be probed, it is mixed as before and FFmpeg
+    reports what is wrong with it.
+    """
+    from immich_memories.processing.probe_cache import ProbeError
+
+    if getattr(clip, "is_title_screen", False):
+        return False
+    if pre_extracted and index < len(pre_extracted):
+        extracted = pre_extracted[index]
+        if extracted.name and extracted.is_file():
+            return True
+    try:
+        return probe_cache.get(clip.path).has_audio  # type: ignore[attr-defined]
+    except (OSError, ProbeError, ValueError):
+        return True
+
+
 def _clip_sources(
     clips: list,
     fps: int,
     reversed_paths: list[Path],
     pre_extracted_audio: list[Path] | None,
     privacy_mode: bool,
+    sound: list[bool] | None = None,
 ) -> list[list[str]]:
     """Pick the FFmpeg input arguments carrying each clip's best audio source.
 
     Pre-extracted WAVs (from the video decode pass) have exact frame-level
     timing; reversed paths are privacy-processed; original clip paths are the
-    fallback. A title screen has no source audio and gets generated silence.
+    fallback. A clip with no sound (a title screen, or a video recorded without
+    an audio track) gets generated silence. `sound` says which clips have it;
+    without it only title screens are silent.
     """
+    if sound is None:
+        sound = [not getattr(clip, "is_title_screen", False) for clip in clips]
     sources: list[list[str]] = []
     rev_idx = 0
     for i, clip in enumerate(clips):
@@ -142,9 +178,8 @@ def _clip_sources(
             and pre_extracted_audio[i].name
             and pre_extracted_audio[i].exists()
         )
-        if getattr(clip, "is_title_screen", False):
-            frame_dur = int(clip.duration * fps) / fps
-            sources.append(["-f", "lavfi", "-i", f"anullsrc=r=48000:cl=stereo:d={frame_dur}"])
+        if not sound[i]:
+            sources.append(_silence(clip.duration, fps))
         elif has_pre and pre_extracted_audio:
             sources.append(["-i", str(pre_extracted_audio[i])])
         elif reversed_paths:
@@ -383,18 +418,29 @@ def extract_and_mix_audio(
     # WHY: Segment-wise reversal reverses audio in 200ms chunks, destroying
     # phoneme order and making speech unintelligible while preserving rhythm.
     # The reversed audio is saved to temp WAVs that replace clip inputs.
+    from immich_memories.processing.probe_cache import ProbeCache
+
+    cache = probe_cache if probe_cache is not None else ProbeCache()
+    sound = [
+        _carries_sound(clip, index, pre_extracted_audio, cache) for index, clip in enumerate(clips)
+    ]
     reversed_paths: list[Path] = []
     if privacy_mode:
-        reversed_paths = _preprocess_privacy_audio(clips, output_path.parent, pre_extracted_audio)
+        reversed_paths = _preprocess_privacy_audio(
+            clips, output_path.parent, pre_extracted_audio, sound
+        )
 
     if len(clips) == 1:
-        audio_src = _resolve_single_clip_audio(clips[0], reversed_paths, pre_extracted_audio)
+        audio_input = (
+            ["-i", _resolve_single_clip_audio(clips[0], reversed_paths, pre_extracted_audio)]
+            if sound[0]
+            else _silence(clips[0].duration, fps)
+        )
         result = subprocess.run(  # noqa: S603, S607
             [
                 "ffmpeg",
                 "-y",
-                "-i",
-                audio_src,
+                *audio_input,
                 "-vn",
                 "-c:a",
                 "aac",
@@ -414,7 +460,7 @@ def extract_and_mix_audio(
             )
         return
 
-    sources = _clip_sources(clips, fps, reversed_paths, pre_extracted_audio, privacy_mode)
+    sources = _clip_sources(clips, fps, reversed_paths, pre_extracted_audio, privacy_mode, sound)
 
     # WHY: Clamp final audio to video duration INSIDE the filter graph,
     # so the AAC encode produces the exact right length. This avoids
@@ -459,17 +505,23 @@ def _resolve_single_clip_audio(
 
 
 def _preprocess_privacy_audio(
-    clips: list, work_dir: Path, pre_extracted: list[Path] | None = None
+    clips: list,
+    work_dir: Path,
+    pre_extracted: list[Path] | None = None,
+    sound: list[bool] | None = None,
 ) -> list[Path]:
-    """Pre-process non-title clip audio with segment-wise reversal.
+    """Pre-process the audio of every clip with sound with segment-wise reversal.
 
-    Returns list of WAV paths (one per non-title clip) in clip order.
+    Returns list of WAV paths (one per clip with sound) in clip order. Without
+    `sound`, only title screens are skipped.
     """
     from immich_memories.processing.privacy_audio import apply_privacy_audio
 
+    if sound is None:
+        sound = [not getattr(clip, "is_title_screen", False) for clip in clips]
     paths: list[Path] = []
     for i, clip in enumerate(clips):
-        if getattr(clip, "is_title_screen", False):
+        if not sound[i]:
             continue
         out = work_dir / f".privacy_audio_{i}.wav"
         source = (
