@@ -32,7 +32,7 @@ def _client_stages() -> dict[str, str]:
     """The client's `STAGES` table, key -> msgid, read from its source."""
     source = STAGES_TS.read_text()
     body = source.split("const STAGES", 1)[1].split("\n};", 1)[0]
-    entries = re.findall(r"^\s*'?([a-z_.]+)'?: N_\('((?:\\.|[^'])*)'\),$", body, re.M)
+    entries = re.findall(r"^\s*'?([a-z_.]+)'?: N_\('((?:\\.|[^'\\])*)'\),$", body, re.M)
     return {key: text.replace("\\'", "'") for key, text in entries}
 
 
