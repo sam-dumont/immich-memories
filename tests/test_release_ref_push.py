@@ -99,14 +99,14 @@ def test_a_new_version_tag_is_pushed(repo):
     assert _remote_tag(origin, env, "v1.2.4")
 
 
-def test_a_refused_push_names_the_secret_without_printing_it(repo):
+def test_a_refused_push_names_the_app_without_printing_the_token(repo):
     work, origin, env = repo
     # WHY: a moved tag without --force is refused, standing in for GitHub refusing an
     # expired token or one without Workflows write.
     result = _push(work, {**env, "RELEASE_TAG_TOKEN": CANARY}, "refs/tags/nightly")
 
     assert result.returncode == 1
-    assert "secret RELEASE_TAG_TOKEN" in result.stdout
+    assert "immich-memories-ci-bot" in result.stdout
     assert CANARY not in result.stdout + result.stderr
 
 
@@ -138,3 +138,25 @@ def test_the_release_job_checkout_keeps_no_credentials():
         if step.get("uses", "").startswith("actions/checkout@")
     )
     assert checkout["with"]["persist-credentials"] is False
+
+
+def test_the_token_is_minted_by_the_ci_app_for_this_repository_only():
+    """No stored token: the release job mints a one-hour app token just before the pushes."""
+    workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
+    steps = workflow["jobs"]["release"]["steps"]
+    names = [step.get("name") for step in steps]
+    mint = steps[names.index("Mint the release tag token")]
+    assert mint["uses"].startswith("actions/create-github-app-token@")
+    assert mint["with"]["repositories"] == "immich-memories"
+    assert mint["with"]["permission-contents"] == "write"
+    assert mint["with"]["permission-workflows"] == "write"
+    assert names.index("Mint the release tag token") < names.index("Push release tag")
+    for name in ("Push release tag", "Move the nightly tag to this commit"):
+        env = steps[names.index(name)]["env"]
+        # The minted token's output, never a stored secret.
+        assert env["RELEASE_TAG_TOKEN"].split() == ["${{", "steps.tag-token.outputs.token", "}}"]
+
+
+def test_no_workflow_reads_a_stored_release_token():
+    for path in sorted((ROOT / ".github").rglob("*.yml")):
+        assert "secrets.RELEASE_TAG_TOKEN" not in path.read_text(), path.name
