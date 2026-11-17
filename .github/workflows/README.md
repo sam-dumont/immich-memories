@@ -71,7 +71,7 @@ Runs when dispatched (`stable` or `rc`) and when `nightly.yml` calls it (`nightl
 - `production` - For minor/patch releases
 - `production-major` - For major releases (add approval requirement)
 
-**Secret required:** `RELEASE_TAG_TOKEN`, a fine-grained token on this repository only with Contents and Workflows read/write. GitHub refuses a tag the workflow's own token writes when the tagged commit's workflow files differ from `main`'s at push time, which happens whenever a workflow change merges during the two-hour run. Only the two steps that push a tag (`Push release tag` and `Move the nightly tag to this commit`) read it, through `scripts/push_release_ref.sh`; every other step uses `GITHUB_TOKEN`. When it is missing or expired, those steps fail naming the secret, before any GitHub Release or PyPI upload.
+**Credentials:** no stored token. The release job mints a one-hour token from the CI GitHub App (`immich-memories-ci-bot`, Contents and Workflows write on this repository) right before it pushes the version tag or moves `nightly`: GitHub refuses a tag the workflow's own token writes when the tagged commit's workflow files differ from `main`'s (#2615). It reads the variable `CI_APP_CLIENT_ID` and the secret `CI_APP_PRIVATE_KEY`, as `mirror.yml` does.
 
 ### `mirror.yml` and `integration.yml` - GPU tests on the private mirror
 

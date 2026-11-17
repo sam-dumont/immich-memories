@@ -385,7 +385,7 @@ jobs:
           egress-policy: audit
 
       # No stored credentials: the only pushes here are the two ref steps below, and
-      # they authenticate with RELEASE_TAG_TOKEN themselves.
+      # they authenticate with the app token minted just before them.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -414,16 +414,30 @@ jobs:
           name: deployment-assets
           path: deployment-assets/
 
+      # GITHUB_TOKEN may not write a tag whose commit's workflow files differ from
+      # main's at push time (#2615). The CI GitHub App (immich-memories-ci-bot) mints
+      # a one-hour token for this repository with Contents and Workflows write,
+      # here, two hours into the run, so it is fresh for both ref steps below.
+      - name: Mint the release tag token
+        id: tag-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: sam-dumont
+          repositories: immich-memories
+          permission-contents: write
+          permission-workflows: write
+
       # The tag goes out only after every fallible pre-publication step has
       # succeeded (#1010): a stranded tag must stay a resume signal, not the
-      # only evidence that a release completed. GITHUB_TOKEN may not write a tag
-      # whose commit's workflow files differ from main's at push time (#2615), so
-      # the push uses RELEASE_TAG_TOKEN, in this step and the nightly's only.
+      # only evidence that a release completed. The push uses the app token
+      # above, in this step and the nightly's only.
       - name: Push release tag
         if: inputs.channel != 'nightly'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN }}
+          RELEASE_TAG_TOKEN: ${{ steps.tag-token.outputs.token }}
           NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
         run: |
           if git rev-parse "v$NEXT_VERSION" >/dev/null 2>&1; then
@@ -470,11 +484,11 @@ jobs:
           make_latest: ${{ needs.analyze.outputs.prerelease == 'true' && 'false' || 'true' }}
 
       # The only tag a nightly moves; version tags are the stable and rc channels'.
-      # RELEASE_TAG_TOKEN for the same reason as above.
+      # The app token, for the same reason as above.
       - name: Move the nightly tag to this commit
         if: inputs.channel == 'nightly'
         env:
-          RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN }}
+          RELEASE_TAG_TOKEN: ${{ steps.tag-token.outputs.token }}
         run: |
           git tag -f nightly "$GITHUB_SHA"
           scripts/push_release_ref.sh --force refs/tags/nightly
