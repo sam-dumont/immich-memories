@@ -10,7 +10,7 @@ answer about a picture.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -73,12 +73,17 @@ def banked_catalogue(
     hints: Mapping[str, Mapping[str, Any]],
     asset_ids_of: Mapping[str, Sequence[str]],
     records: Mapping[str, str] | None = None,
+    thesis: Callable[[], str] = str,
 ) -> BankedCatalogue | None:
     """The catalogue of one period, or None when the library holds no account of it.
 
     None is the fallback signal: a film with no catalogued period plans the way it always has.
     A story the period holds no pictures of is left out, because a story with nothing to show
     can neither be weighed nor spoken for.
+
+    Its thesis is the cut's own (`polish.period_thesis`), asked only once the period has an
+    account. The account is a navigation note over the whole period, so it stands in only when
+    no thesis could be read.
     """
     if not account.strip():
         return None
@@ -98,7 +103,7 @@ def banked_catalogue(
     if not stories:
         return None
     return BankedCatalogue(
-        thesis=account.strip(),
+        thesis=thesis().strip() or account.strip(),
         stories=stories,
         hints=dict(hints),
         records=dict(records or {}),

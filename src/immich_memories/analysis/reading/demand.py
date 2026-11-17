@@ -123,6 +123,10 @@ class DemandEpisodeReadings:
             if evidence.reading is not None
         }
 
+    def readings_so_far(self) -> list[BankedEpisodeReading]:
+        """Every episode reading this run's demands have read, in the order they were read."""
+        return [e.reading for e in self._outcomes.values() if e.reading is not None]
+
     def reading_health(self) -> dict[str, Any]:
         """Latest availability and exact identities for this run's demanded episodes."""
         episodes = []

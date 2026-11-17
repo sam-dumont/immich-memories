@@ -317,12 +317,15 @@ class FilmJudge(StoryJudge):
                     "retitle": {},
                 }
             )
+        if stage == "period-thesis":
+            # The period's thesis, told from the occasions the prompt was fed (#2594).
+            heads = re.findall(r"^\d\. (.*)$", prompt, re.MULTILINE)
+            return json.dumps({"thesis": "A period of " + "; ".join(heads) + "."})
         if stage == "film-summary":
-            # The film's summary, told from what the stories the prompt was fed were (#2575).
-            names = [
-                json.loads(line)["what"] for line in prompt.split("STORIES\n", 1)[1].splitlines()
-            ]
-            return json.dumps({"summary": "A film of " + "; ".join(names) + "."})
+            # The film's summary, told from the thesis and the counted shots it was fed.
+            thesis = re.search(r"^THE PERIOD: (.*)$", prompt, re.MULTILINE)
+            told = thesis.group(1) if thesis else ""
+            return json.dumps({"summary": "A film of " + told.removeprefix("A period of ")})
         if stage.startswith("story-threads") and self.threads is not None:
             rows = re.findall(r"^K\d{2} \|.*$", prompt, re.MULTILINE)
             return json.dumps({"same": self.threads(rows, prompt)})  # groups: flattened on read

@@ -196,24 +196,28 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   one per calendar year it touches plus one over those years (`reading/library_catalogue.py`,
   `runtime/period_accounts.py`, `prepare --overviews`). The rules reader writes none: an account is a
   reading.
-- **Thesis**: the up-to-150-word statement of what a period was about. The story synthesis writes
-  it (`stories/grouping.py`) and the account carries it to the thin layer
-  (`polish/catalogue.py`), where it sits above every block the model votes on. The
-  polish keeps the account it read on the run (`PlanRun.period_account`) for the summary.
+- **Thesis**: two short sentences, in the film's language, on what a cut's period was about:
+  its biggest occasions, who was there and where. It is asked of the cut, not the period
+  (`polish/period_thesis.py`): the four heaviest stories the cut shows, each with its share of
+  the shots and what the readings of up to two of its episodes say, plus the four people on
+  the most pictures (the episode block's People line). The polish asks it of the draft once the
+  period has an account and the vote reads it above every block (`polish/catalogue.py`); with
+  no usable answer the vote reads the account. A period with no account gets no thesis, no
+  polish and no vote. The story synthesis's own thesis (`stories/grouping.py`) is separate.
 - **Summary**: what one film was about, stored as the plan's `story.thesis` (the storyboard, the
   film page, `runs story`, the music mood, the title and the Immich description read it). When
   no synthesis wrote one, `structure/film_summary.py` writes it once the cut is settled: on Full
-  one question fed the period's account (ids taken out) and the stories the cut shows (what
-  each was, first names, occasion, trip, and what its shots show people doing from the
-  activity heads), with the film's kind, dates and subject in the prompt so the judgment bank
-  never answers another scope's film. The answer says what happened and with whom, after the
-  film's occasion (`Case.occasion`: a holiday with the years its cut shows, a trip's
-  destination, whose birthday), which the code puts in front; one naming more than two of the
-  stories' places, a year, an id or the prompt's own labels is refused. On Basic, or when that
+  two small questions, the thesis of the settled cut and then one sentence of at most 25 words
+  from that thesis and a line the code counts from the shots (the three largest groups, "5 of
+  12" with what their episode was read as, then what the activity heads show people doing).
+  Both prompts carry the film's kind, dates and subject, so the judgment bank never answers
+  another scope's film, and the film's occasion (`Case.occasion`: a holiday with the years its
+  cut shows, a trip's destination, whose birthday) as its own line. Code keeps the length cap
+  and the display guard on the answer. On Basic, or when an
   answer is unusable, a line of the story names in the film's language (`summary.then` in the
   film-text catalogues). A Full film refines its rules draft, and the refinement clears the
-  draft's Basic line so the model writes the summary. A list of places the model repeats is
-  said once (`one_place_once`), and the plan records the summary's language as
+  draft's Basic line so the model writes the summary. The Immich description says a repeated
+  list of places once (`one_place_once`), for summaries cuts already hold, and the plan records the summary's language as
   `story.thesis_locale`: the Immich label (`operations/film_labelling.py`) uses the summary
   only when the render is in that language. The file keeps its English name on disk; the
   name Immich and a web download show is built in the film's language
@@ -703,7 +707,7 @@ src/immich_memories/
 │   │   ├── carrier_projection.py # Whether a carrier row can render from its source media, asked before the film finalizes.
 │   │   ├── cut_invariants.py   # One check of the finished cut against every pass's promise (seat, favourite, eras, Live motion, holds, order); changes nothing
 │   │   ├── family_seat.py      # A close family member with no shot gets one seat, after the draft, on every tier
-│   │   ├── film_summary.py     # The film's summary: the period's account and the cut's stories on Full, story names on Basic
+│   │   ├── film_summary.py     # The film's summary: the cut's thesis and its counted shots on Full, story names on Basic
 │   │   ├── finishing.py        # The passes a settled cut goes through, and the run they mutate.
 │   │   ├── framing.py          # Decisions the structure planner makes about what the film is of, before and around selection.
 │   │   ├── owner_required.py   # Admit the pictures the owner ticked after seeing a cut.
@@ -719,6 +723,7 @@ src/immich_memories/
 │   │   ├── catalogue.py        # What a polish may read of a catalogued period: account, stories, hints
 │   │   ├── layer.py            # ThinPolish: the model reads a rules cut once instead of planning the film;
 │   │   │                       # held to 4 calls per 12 draft shots + 4 per seat (thin_budget)
+│   │   ├── period_thesis.py    # A cut's thesis: its heaviest stories, their readings and its people, two sentences
 │   │   ├── pages.py            # What a seat is offered: motion first, records first, the refused moment first
 │   │   ├── refill.py           # Which seats open; each picks from 12 rows first, then only the picks
 │   │   │                       # meet the gates, and a refused pick is picked once more; a removal's

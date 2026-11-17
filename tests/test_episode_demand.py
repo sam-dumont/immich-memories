@@ -255,6 +255,24 @@ def test_a_second_cut_over_the_same_draft_asks_nothing_new(tmp_path):
     assert len(asked) == paid
 
 
+def test_the_thesis_reads_the_episodes_the_draft_read_and_asks_the_reader_nothing_more(tmp_path):
+    asked: list[str] = []
+    demand, _prepared = demand_for(tmp_path, asked)
+    story, moments = one_story_over_three_days()
+    seen: list = []
+
+    polish_reading_through(demand, tmp_path).catalogue_of(
+        story,
+        moments,
+        drafted=[{"asset_id": "day-two"}],
+        thesis_of=lambda: seen.extend(demand.readings_so_far()) or "",
+    )
+
+    assert [reading.full_asset_ids for reading in seen] == [("day-two",)]
+    assert seen[0].what_happened
+    assert len(asked) == 1
+
+
 def test_a_cut_with_no_draft_reads_nothing(tmp_path):
     asked: list[str] = []
     demand, _prepared = demand_for(tmp_path, asked)

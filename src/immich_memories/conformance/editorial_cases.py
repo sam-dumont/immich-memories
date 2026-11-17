@@ -4,6 +4,7 @@ from datetime import date
 from functools import partial
 
 from immich_memories.analysis.polish.block_votes import judge_worthiness
+from immich_memories.analysis.polish.period_thesis import FilmShots, read_thesis, thesis_prompt
 from immich_memories.analysis.selection.vote import pick_story_moments
 from immich_memories.analysis.stories.period_account import (
     PeriodStory,
@@ -18,6 +19,11 @@ from immich_memories.analysis.structure.film_summary import read_summary
 from immich_memories.config.models.llm import LLMConfig
 from immich_memories.conformance.fixtures import scratch_judge
 from immich_memories.conformance.runtime import Case
+from immich_memories.store.episode_readings import (
+    BankedEpisodeReading,
+    EpisodeReadingIdentity,
+    EpisodeRepresentative,
+)
 
 
 def worthiness(llm: LLMConfig) -> str:
@@ -209,45 +215,57 @@ def recurring_activity(llm: LLMConfig) -> str:
     return "folds both swimming lessons while keeping the home day separate"
 
 
+def _reading(group: str, members: list[str], what: str) -> BankedEpisodeReading:
+    return BankedEpisodeReading(
+        identity=EpisodeReadingIdentity(group, "conformance", "synthetic"),
+        full_asset_ids=tuple(members),
+        what_happened=what,
+        representatives=(EpisodeRepresentative(members[0], "the moment"),),
+        cull_decisions=(),
+    )
+
+
 def film_summary(llm: LLMConfig) -> str:
     stories = [
-        {
-            "key": "S1",
-            "title": "Avery's birthday",
-            "weight": "dominant",
-            "occasion": "birthday",
-            "people": ["Avery"],
-            "days": ["2030-06-04", "2030-06-04"],
-            "places": ["home"],
-        },
+        {"key": "S1", "title": "Avery's birthday", "weight": "dominant", "days": ["2030-06-04"]},
         {
             "key": "S2",
             "title": "Through the hills",
             "weight": "major",
-            "occasion": "leg",
             "days": ["2030-06-10", "2030-06-16"],
-            "places": ["Hill Town", "Lake Town"],
             "trip": "The road to the lakes",
         },
-        {
-            "key": "S3",
-            "title": "Lakes and back",
-            "weight": "major",
-            "occasion": "leg",
-            "days": ["2030-06-17", "2030-06-24"],
-            "places": ["Lake Town"],
-            "trip": "The road to the lakes",
-        },
-        {"key": "S4", "title": "Ordinary days", "weight": "glimpse", "days": ["2030-06-01"] * 2},
+        {"key": "S3", "title": "Ordinary days", "weight": "glimpse", "days": ["2030-06-01"]},
     ]
+    lines = {
+        "b1": "2030-06-04T10:00 | a cake with candles | with Avery (daughter); Kit (son)",
+        "b2": "2030-06-04T10:10 | presents | with Avery (daughter); Kit (son)",
+        "l1": "2030-06-12T11:00 | a lake | with Kit (son) | at Lake Town",
+        "o1": "2030-06-01T08:00 | a kitchen | with Avery (daughter)",
+    }
+    shots = FilmShots(
+        carriers=[
+            {"asset_id": a, "story_episode": key, "line": lines[a]}
+            for key, a in (("S3", "o1"), ("S1", "b1"), ("S1", "b2"), ("S2", "l1"))
+        ],
+        stories=stories,
+        readings=(
+            _reading("E1", ["b1", "b2"], "Avery blows out the candles on her cake with Kit."),
+            _reading("E2", ["l1"], "Kit swims in a lake at Lake Town."),
+            _reading("E3", ["o1"], "Breakfast at home."),
+        ),
+        line_of=lines.get,
+    )
+    scope = "a monthly_highlights film, 2030-06-01 to 2030-06-30"
     with scratch_judge(llm) as judge:
-        answer = read_summary(
-            judge, stories, scope="a monthly_highlights film, 2030-06-01 to 2030-06-30", locale="en"
+        thesis = read_thesis(
+            judge, thesis_prompt(shots, scope=scope, occasion="", language="English")
         )
-    text = answer.casefold()
-    assert "birthday" in text, "film summary lost the birthday"
-    assert "lake" in text or "road" in text, "film summary lost the trip"
-    return "summary parses and names the birthday and the trip from the film's own stories"
+        answer = read_summary(judge, shots, thesis=thesis, scope=scope, locale="en")
+    told = f"{thesis} {answer}".casefold()
+    assert "birthday" in told or "cake" in told, "film summary lost the birthday"
+    assert "lake" in told, "film summary lost the trip"
+    return "thesis and summary parse and name the birthday and the lake from the film's shots"
 
 
 def editorial_cases(llm: LLMConfig) -> tuple[Case, ...]:
@@ -255,7 +273,12 @@ def editorial_cases(llm: LLMConfig) -> tuple[Case, ...]:
         Case(
             "film summary",
             partial(film_summary, llm),
-            frozenset({"analysis.structure.film_summary:read_summary"}),
+            frozenset(
+                {
+                    "analysis.polish.period_thesis:read_thesis",
+                    "analysis.structure.film_summary:read_summary",
+                }
+            ),
         ),
         Case(
             "recurring activity",

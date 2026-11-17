@@ -22,10 +22,13 @@ class PolishJudge(FilmJudge):
     """The rules reader answers everything else; only the polish's own questions come here."""
 
     summary_prompt = ""
+    vote_prompts: tuple[str, ...] = ()
 
     def answer(self, stage, prompt):
         if stage == "film-summary":
             self.summary_prompt = prompt
+        if stage.startswith("thesis-fit-"):
+            self.vote_prompts = (*self.vote_prompts, prompt)
         if stage.startswith("thesis-fit-"):
             named = re.findall(rf"^(P\d+): .*{JUNK}", prompt, re.MULTILINE)
             return json.dumps({"weak": dict.fromkeys(named, "adds nothing")})
@@ -84,14 +87,19 @@ def test_a_catalogued_period_has_its_cut_voted_on_once(tmp_path):
     assert sum(c["seconds"] for c in plan["carriers"]) <= source.case.target_seconds
 
 
-def test_a_polished_film_is_summarised_from_the_account_and_its_own_stories(tmp_path):
+def test_a_polished_film_is_judged_and_summarised_from_its_thesis_not_the_account(tmp_path):
     source = film(tmp_path)
     judge = PolishJudge()
     plan = run(source, judge, account=ACCOUNT)
 
     assert plan["story"]["thesis"].startswith("A film of ")
     assert ACCOUNT not in plan["story"]["thesis"]
-    assert ACCOUNT in judge.summary_prompt
+    assert ACCOUNT not in judge.summary_prompt
+    assert "THE PERIOD: A period of " in judge.summary_prompt
+    assert judge.vote_prompts
+    for prompt in judge.vote_prompts:
+        assert "THE THESIS THIS FILM IS BUILT ON\nA period of " in prompt
+        assert ACCOUNT not in prompt
 
 
 def test_a_period_with_no_account_falls_back_to_the_planner_and_asks_no_vote(tmp_path):

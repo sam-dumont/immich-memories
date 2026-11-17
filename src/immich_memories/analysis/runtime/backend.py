@@ -64,6 +64,7 @@ from immich_memories.analysis.structure.planning_input import capture_structure_
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.config.tiers import nas_draft_config
 from immich_memories.security import write_secret_file
+from immich_memories.store.episode_readings import BankedEpisodeReading
 from immich_memories.store.library_catalogue import LibraryAccount
 from immich_memories.store.library_overviews import library_period_account
 
@@ -425,6 +426,7 @@ class ProductionPostCardBackend:
                 bank_scope=source.case.key,
                 read_period=lambda asset_ids_of: self._read_period(source, periods, asset_ids_of),
                 short=self._short_reads(source, rules.standing),
+                readings=self._readings_so_far,
             ),
         }
 
@@ -440,6 +442,11 @@ class ProductionPostCardBackend:
             records=lambda asset_ids: self._records_for(source, asset_ids),
             standing=standing,
         )
+
+    def _readings_so_far(self) -> list[BankedEpisodeReading]:
+        """The episode readings this run read: what the thesis and the summary say from."""
+        demand = self._episode_demand
+        return [] if demand is None else demand.readings_so_far()
 
     def _records_for(
         self, source: StructurePlanningInput, asset_ids: Sequence[str]

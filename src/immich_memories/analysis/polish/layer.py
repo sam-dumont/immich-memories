@@ -31,6 +31,7 @@ from immich_memories.analysis.polish.catalogue import (
     ThinCatalogue,
     banked_catalogue,
 )
+from immich_memories.analysis.polish.period_thesis import EpisodeReading
 from immich_memories.analysis.polish.refill import (
     REMOVALS,
     ThinRefill,
@@ -136,6 +137,9 @@ class ThinPolish:
     )
     # What a film left short may still read; None on a route that reads nothing more.
     short: ShortReads | None = None
+    # The episode readings this run has read so far: the thesis and the summary say what
+    # happened from them, without reading anything more.
+    readings: Callable[[], Sequence[EpisodeReading]] = tuple
 
     def catalogue_of(
         self,
@@ -144,6 +148,7 @@ class ThinPolish:
         records: Mapping[str, str] | None = None,
         *,
         drafted: Sequence[Mapping[str, Any]],
+        thesis_of: Callable[[], str] = str,
     ) -> BankedCatalogue | None:
         """The catalogued period behind this run's own story reading, or None for no account.
 
@@ -153,7 +158,8 @@ class ThinPolish:
         hold most of a month: on one measured month the longest story spanned 10 episodes to
         give the film 5 shots, and reading every story the draft touched read 44 of the
         month's 50 episodes. The rest of the period is filled in later, by `prepare
-        --overviews` or by another cut.
+        --overviews` or by another cut. `thesis_of` asks the draft's thesis once the period
+        has an account; a period with none asks nothing.
         """
         asset_ids_of = _story_asset_ids(story.episodes, story.stories, moment_assets)
         account, banked_records = self.read_period(_drafted_shots(asset_ids_of, drafted))
@@ -163,6 +169,7 @@ class ThinPolish:
             hints=story.audit.get("hints") or {},
             asset_ids_of=asset_ids_of,
             records=banked_records if records is None else records,
+            thesis=thesis_of,
         )
 
     def polish(
