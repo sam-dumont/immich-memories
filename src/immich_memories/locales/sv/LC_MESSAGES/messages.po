@@ -114,6 +114,10 @@ msgstr "En dag {phrase}"
 msgid "title.day_in_place_neutral"
 msgstr "{place} · En dag"
 
+# A special day a close family member was born on (#2667).
+msgid "title.birth"
+msgstr "{name}s födelse"
+
 msgid "summary.then"
 msgstr "{earlier}, sedan {later}"
 

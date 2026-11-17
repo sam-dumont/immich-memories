@@ -32,8 +32,14 @@ long day (20 pictures over six active hours) with your close family on it. Each 
 video share, then family presence. The title is "A day in" the place. Without roles in the people registry, a long
 day at home is not found.
 
-Catalogue titles are stored in English, whatever the film's language ends up being. A non-English film writes
-its own title in the film's language at render time; the stored catalogue entry does not change.
+Titles are written in the film language (`title_screens.locale`) at scan time, and each catalogue entry records
+which language that was. A film in that language opens on the entry's title as written. A film in another
+language, or an entry from a scan that wrote English, gets its title written again in the film's language at
+render time; the stored entry does not change.
+
+A day one of your close family was born on is their birth: its title says so ("Naissance de Kit" on a French
+install), on every tier, whatever else the pictures show. The date comes from the birth date in the people
+registry, the same people that count as close family above. Such a day is always proposed and never thinned.
 
 **On Full tier** (optional), every run of activity is read a month at a time as one line of recorded facts
 (time, place, counts, who Immich recognised, close family by role, up to three captions), and the model names

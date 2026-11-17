@@ -115,6 +115,10 @@ msgstr "Une journée {phrase}"
 msgid "title.day_in_place_neutral"
 msgstr "{place} · Une journée"
 
+# A special day a close family member was born on (#2667).
+msgid "title.birth"
+msgstr "Naissance de {name}"
+
 msgid "date.ordinal_1"
 msgstr "1er"
 

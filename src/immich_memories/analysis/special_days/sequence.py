@@ -113,6 +113,24 @@ def close_family_roles(people: Mapping[str, Any]) -> dict[str, str]:
     return roles
 
 
+def close_family_births(people: Mapping[str, Any]) -> dict[date, tuple[str, ...]]:
+    """The days the owner's close family were born on, and who, from the people registry.
+
+    The same people `close_family_roles` admits, by the birth date their registry entry holds:
+    a day one of them was born on is their birth (`detection.the_birth_of`). One person answers
+    to several ids, and counts once.
+    """
+    born: dict[date, dict[str, None]] = {}
+    for person_id in close_family_roles(people):
+        person = people[person_id]
+        try:
+            day = date.fromisoformat(str(person.birth_date or "")[:10])
+        except ValueError:
+            continue
+        born.setdefault(day, {})[person.name] = None
+    return {day: tuple(names) for day, names in born.items()}
+
+
 def close_family_on(items: list, family: Mapping[str, str]) -> tuple[list[str], int]:
     """The close family roles in this run, and on how many of its pictures any of them are."""
     roles: set[str] = set()

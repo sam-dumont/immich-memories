@@ -165,10 +165,11 @@ def _occasion_name(preset: Mapping[str, Any]) -> str | None:
     """What the catalogue saw on this day, months before anybody asked for a film.
 
     A special day's own title, when the scan could write one, is the vetted
-    name for what happened; its subtitle rides along the same way. Both are
-    banked as English facts (the catalogue is shared and stays English) for
-    this prompt to reword into the film's language -- never used as a ready
-    title, which is how an English headline used to reach a French film.
+    name for what happened; its subtitle rides along the same way. A row in
+    the film's own language is the film's title as it stands; one in another
+    language (an older scan wrote English) reaches this prompt as a fact to
+    reword into the film's language, which is how an English headline is kept
+    off a French film.
     """
     title = str(preset.get("title") or "").strip()
     subtitle = str(preset.get("subtitle") or "").strip()

@@ -21,9 +21,9 @@ from immich_memories.analysis.stories.names import (
     trip_name,
     trip_purpose,
 )
-from immich_memories.analysis.stories.occasions import find_occasions, spoken_list
+from immich_memories.analysis.stories.occasions import find_occasions
 from immich_memories.analysis.structure.film_summary import plain_summary
-from immich_memories.i18n import SUPPORTED_LOCALES, film_texts
+from immich_memories.i18n import SUPPORTED_LOCALES, film_texts, spoken_list
 
 _STORY_KEYS = {
     "story.weekday_date",

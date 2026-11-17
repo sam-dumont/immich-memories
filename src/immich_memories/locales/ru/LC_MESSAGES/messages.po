@@ -115,6 +115,10 @@ msgstr "День {phrase}"
 msgid "title.day_in_place_neutral"
 msgstr "{place} · День"
 
+# A special day a close family member was born on (#2667).
+msgid "title.birth"
+msgstr "Рождение: {name}"
+
 msgid "summary.then"
 msgstr "{earlier}, затем {later}"
 

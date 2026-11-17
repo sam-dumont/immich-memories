@@ -18,13 +18,14 @@ import os
 import re
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import lru_cache
 from operator import itemgetter
 from pathlib import Path
 
 from babel import Locale
 from babel.dates import get_month_names
+from babel.lists import format_list
 
 # Film-text languages, as the config spells them.
 SUPPORTED_LOCALES = [
@@ -93,6 +94,14 @@ def babel_locale(code: str) -> Locale:
         return Locale.parse(code.replace("-", "_"))
     except (ValueError, TypeError):
         return Locale.parse(DEFAULT_LOCALE)
+
+
+def spoken_list(names: Sequence[str], locale: str) -> str:
+    """Names as a sentence says them: "Pat", "Pat and Lou", "Pat, Lou and Remy" ("et", "und")."""
+    if len(names) <= 1:
+        return "".join(names)
+    # British English, like the English film text: no comma before the last "and".
+    return format_list(list(names), locale=babel_locale("en_GB" if locale == "en" else locale))
 
 
 def _supported(code: str) -> str:

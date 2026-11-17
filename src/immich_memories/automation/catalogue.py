@@ -90,18 +90,22 @@ def record_for(entry: DiscoveredDay) -> dict:
     stamp = {"prompt_version": entry.prompt_version, "app_version": entry.app_version}
     if not entry.judged:
         return {"unjudged": entry.day.isoformat(), "photos": entry.photos} | stamp
-    return {
-        "day": entry.day.isoformat(),
-        "title": entry.title,
-        "subtitle": entry.subtitle,
-        "what": entry.what,
-        "photos": entry.photos,
-        "window": [when.isoformat() for when in entry.window] if entry.window else None,
-        "active_hours": entry.active_hours,
-        "run_start": entry.run_start.isoformat() if entry.run_start else None,
-        "run_end": entry.run_end.isoformat() if entry.run_end else None,
-        "window_photos": entry.window_photos,
-    } | stamp
+    return (
+        {
+            "day": entry.day.isoformat(),
+            "title": entry.title,
+            "subtitle": entry.subtitle,
+            "what": entry.what,
+            "photos": entry.photos,
+            "window": [when.isoformat() for when in entry.window] if entry.window else None,
+            "active_hours": entry.active_hours,
+            "run_start": entry.run_start.isoformat() if entry.run_start else None,
+            "run_end": entry.run_end.isoformat() if entry.run_end else None,
+            "window_photos": entry.window_photos,
+        }
+        | ({"locale": entry.locale} if entry.locale else {})
+        | stamp
+    )
 
 
 def scope_window(entry: DiscoveredDay) -> tuple[datetime, datetime] | None:
@@ -291,6 +295,7 @@ def _entry_from_record(raw: dict) -> DiscoveredDay | None:
         window_photos=raw.get("window_photos", 0),
         prompt_version=raw.get("prompt_version", ""),
         app_version=raw.get("app_version", ""),
+        locale=raw.get("locale", ""),
     )
 
 

@@ -224,9 +224,10 @@ def _title_prompts() -> tuple[str, str]:
 def _special_day_prompts() -> tuple[str, str]:
     from immich_memories.analysis.special_days.detection import _PROMPT
 
+    # The install's language is the same on every call, so it belongs to the shared head.
     return (
-        _PROMPT.format(lines="09:00 a river"),
-        _PROMPT.format(lines="10:00 a park\n11:00 a beach"),
+        _PROMPT.format(lines="09:00 a river", language="French"),
+        _PROMPT.format(lines="10:00 a park\n11:00 a beach", language="French"),
     )
 
 

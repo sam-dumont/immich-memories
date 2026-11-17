@@ -28,10 +28,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import chain
 
-from babel.lists import format_list
-
 from immich_memories.analysis.stories.names import story_text, story_text_n
-from immich_memories.i18n import babel_locale
+from immich_memories.i18n import spoken_list
 
 OCCASION_MIN_PICTURES = 2
 VISIT_MAX_DAYS = 3
@@ -153,11 +151,3 @@ def _birthday(
 def _number(n: int, locale: str) -> str:
     """An age as the purpose writes it: spelled out in English ("five"), a numeral elsewhere."""
     return _NUMBERS[n] if locale == "en" and 0 <= n < len(_NUMBERS) else str(n)
-
-
-def spoken_list(names: Sequence[str], locale: str) -> str:
-    """Names as a sentence says them: "Pat", "Pat and Lou", "Pat, Lou and Remy" ("et", "und")."""
-    if len(names) <= 1:
-        return "".join(names)
-    # British English, like the English film text: no comma before the last "and".
-    return format_list(list(names), locale=babel_locale("en_GB" if locale == "en" else locale))

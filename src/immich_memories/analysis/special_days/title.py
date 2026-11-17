@@ -20,6 +20,9 @@ from __future__ import annotations
 import collections
 import logging
 import re
+from collections.abc import Sequence
+
+from immich_memories.i18n import LANGUAGE_NAMES, elide_french, film_text, spoken_list
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +97,7 @@ def line_the_day_can_keep(written: str, assets: list, *, evidence: str) -> str:
     return _only_if_grounded(written, assets, evidence)
 
 
-def honest_title(assets: list, *, what: str, evidence: str) -> str:
+def honest_title(assets: list, *, what: str, evidence: str, locale: str = "en") -> str:
     """What to call a day whose own title was dropped, or nothing.
 
     The place comes before `what` because it is the checked signal: it is read
@@ -109,14 +112,54 @@ def honest_title(assets: list, *, what: str, evidence: str) -> str:
     """
     if not what:
         return ""
-    if place := place_from_assets(assets):
-        return f"A day in {place}"
+    if found := place_and_kind_from_assets(assets):
+        return day_in_place(*found, locale)
     return (
         title_the_day_can_keep(what, assets, evidence=evidence) if _reads_as_a_title(what) else ""
     )
 
 
-def retitle_prompt(lines: str, *, rejected: str, assets: list) -> str:
+def birth_title(born: Sequence[str], locale: str) -> str:
+    """The day these people were born, as the film's language names a birth, or nothing.
+
+    The registry's birth date is the evidence: on that day the occasion is the birth, whatever
+    else the pictures show ("Naissance de Kit", "The birth of Kit").
+    """
+    if not born:
+        return ""
+    named = film_text("title.birth", locale, name=spoken_list(list(born), locale))
+    return elide_french(named) if locale == "fr" else named
+
+
+def day_in_place(place_name: str, kind: str, locale: str) -> str:
+    """ "A day in {place}" with the right preposition, never a wrong one.
+
+    Reuses the trip machinery (`place_phrases`): a language with a rule for
+    this place's kind gets a proper phrase ("en France", "we Włoszech"); a
+    language or a place with none (Polish/Russian/Japanese/Chinese/Korean do
+    not cover every city and region, and some locales have no module at all)
+    gets the neutral form with no preposition at all, place first -- the same
+    rule the trip title follows (see `_trip_titles.generate_trip_title`).
+    """
+    from immich_memories.i18n_places import localise_country, localise_place
+    from immich_memories.place_phrases import Place, place_phrase
+
+    if phrase := place_phrase(locale, Place(place_name, kind)):
+        return film_text("title.day_in_place_with", locale, phrase=phrase)
+    localised = (
+        localise_country(place_name, locale)
+        if kind == "country"
+        else (localise_place(place_name, locale) or place_name)
+    )
+    return film_text("title.day_in_place_neutral", locale, place=localised)
+
+
+def title_language(locale: str) -> str:
+    """The language a day's title is asked for in, as the title prompts name it."""
+    return LANGUAGE_NAMES.get(locale, LANGUAGE_NAMES["en"])
+
+
+def retitle_prompt(lines: str, *, rejected: str, assets: list, locale: str = "en") -> str:
     """Ask again for a title, saying what the last one claimed and what a title may claim.
 
     Told once, positively, rather than handed the growing list of things not to
@@ -129,7 +172,9 @@ def retitle_prompt(lines: str, *, rejected: str, assets: list) -> str:
         if _knows_where_it_was(assets)
         else "\nNothing on this day records where it was, so no place name can be right.\n"
     )
-    return _RETITLE_PROMPT.format(lines=lines, rejected=rejected, unplaced=unplaced)
+    return _RETITLE_PROMPT.format(
+        lines=lines, rejected=rejected, unplaced=unplaced, language=title_language(locale)
+    )
 
 
 # The day's lines and the rejected title are last, so the instruction above them is one
@@ -140,6 +185,7 @@ Write another title for it. A first one was written and put aside because it cla
 something the lines do not show. Every specific in the new one — a place, a distance, a
 count, a name — comes from those lines: write what they show, as concretely as they show
 it, and nothing more. Not the date and not a name on its own; both are already on the card.
+Write it in {language}.
 
 Answer with STRICT JSON only, no prose:
 {{"title": "<a few words>"}}
@@ -187,12 +233,6 @@ def place_and_kind_from_assets(assets: list) -> tuple[str, str] | None:
         if names:
             return names.most_common(1)[0][0], kind
     return None
-
-
-def place_from_assets(assets: list) -> str:
-    """The place the day's own pictures name most often, spelled as they spell it."""
-    found = place_and_kind_from_assets(assets)
-    return found[0] if found else ""
 
 
 def _named_people(assets: list) -> set[str]:

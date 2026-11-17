@@ -122,31 +122,6 @@ def _place_and_kind_from_clips(clips: list[Any]) -> tuple[str, str] | None:
     return place_and_kind_from_assets(assets)
 
 
-def _day_in_place_title(place_name: str, kind: str, locale: str) -> str:
-    """ "A day in {place}" with the right preposition, never a wrong one.
-
-    Reuses the trip machinery (`place_phrases`): a language with a rule for
-    this place's kind gets a proper phrase ("en France", "we Włoszech"); a
-    language or a place with none (Polish/Russian/Japanese/Chinese/Korean do
-    not cover every city and region, and some locales have no module at all)
-    gets the neutral form with no preposition at all, place first -- the same
-    rule the trip title follows (see `_trip_titles.generate_trip_title`).
-    """
-    from immich_memories.i18n import film_text
-    from immich_memories.i18n_places import localise_country, localise_place
-    from immich_memories.place_phrases import Place, place_phrase
-
-    place = Place(place_name, kind)
-    if phrase := place_phrase(locale, place):
-        return film_text("title.day_in_place_with", locale, phrase=phrase)
-    localised = (
-        localise_country(place_name, locale)
-        if kind == "country"
-        else (localise_place(place_name, locale) or place_name)
-    )
-    return film_text("title.day_in_place_neutral", locale, place=localised)
-
-
 def _ordinal_day(day: int, locale: str) -> str:
     """The day of the month as a date names it: French says "1er juillet",
     not "1 juillet", for the first of the month.
@@ -169,7 +144,7 @@ def _special_day_place_title(
     """(title, subtitle) naming a special day after its place, in the film's
     language, for when there is no model to reword the catalogue's title.
 
-    The catalogue's own title is banked in English (#1959) and cannot be
+    A catalogue title in another language than the film's (#1959) cannot be
     reworded without one; naming the day after where it was still beats an
     English headline or losing the occasion to the generic month-and-year
     card. The day's own date rides in the subtitle so the film never drops
@@ -184,7 +159,9 @@ def _special_day_place_title(
     day = date_range.start.date()
     month = month_name_forms(day.month, locale)["month_of"]
     subtitle = f"{_ordinal_day(day.day, locale)} {month} {day.year}"
-    return _day_in_place_title(place_name, kind, locale), subtitle
+    from immich_memories.analysis.special_days.title import day_in_place
+
+    return day_in_place(place_name, kind, locale), subtitle
 
 
 def _special_day_fallback(
@@ -210,16 +187,17 @@ def _title_override_result(
 ) -> tuple[str, str | None, TitleSource] | None:
     """The (title, subtitle, source) to return for ``title_override``, or ``None``.
 
-    ``None`` means this override is a special day's catalogue title (#1959):
-    an English fact banked at scan time, not a ready title, so the caller
-    clears it and falls through to the model and its template below instead
-    of showing it verbatim -- unless the film's own language already IS
-    English, in which case the catalogue's words are already right and
-    rerouting them would only risk a model mangling them or a place fallback
-    discarding a title the catalogue got to keep (#1985 review).
+    ``None`` means this override is a special day's catalogue title written in
+    another language than the film's, so the caller clears it and falls through
+    to the model and its template below instead of showing it verbatim. The scan
+    writes a row's title in the install's language and records which (#2667); a
+    row with no language is from an older scan, which wrote English (#1959). A
+    row already in the film's language is its title: rerouting it would only
+    risk a model mangling it or a place fallback discarding it (#1985 review).
     """
     source = override_source(title_override, memory_type, memory_preset_params)
-    if source is TitleSource.OCCASION and memory_type == "special_day" and locale != "en":
+    written_in = (memory_preset_params or {}).get("title_locale") or "en"
+    if source is TitleSource.OCCASION and memory_type == "special_day" and written_in != locale:
         return None
     return title_override, subtitle_override, source
 
@@ -356,11 +334,11 @@ def resolve_film_title(
     special day, or its subtitle, after.
 
     A special day's catalogue title travels through this same ``title_override``
-    slot (see ``title_source.override_source``), but it is an English fact
-    banked at scan time, not a ready title (#1959): it is cleared here rather
-    than returned verbatim, so the model gets to reword it -- or, with no
-    model, the film falls back to a template in its own language instead of
-    an English headline.
+    slot (see ``title_source.override_source``). Written in another language
+    than the film's (an older scan wrote English, #1959), it is cleared here
+    rather than returned verbatim, so the model gets to reword it -- or, with
+    no model, the film falls back to a template in its own language instead
+    of a headline in another one.
     """
     locale = resolve_film_locale(config.title_screens.locale if config.title_screens else "en")
 
