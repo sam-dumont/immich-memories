@@ -290,8 +290,9 @@ writes the film's summary (the second half of its Immich description). `--llm-ti
 run and adds trips; `--no-llm-title` keeps the app's title for one run. `--title` always wins.
 
 Years, months, seasons, people, birthdays, holidays and "on this day" films are always titled by the app,
-by what they are and when ("Kit's birthday · 2026", "Christmas · 2019–2025"), with no subtitle unless you
-type one. An album film opens on the album's name.
+by what they are and when ("Kit's birthday · 2026", "Christmas · 2019–2025"). Under it goes the subtitle you
+type, else, with `title_screens.llm_titles` on, a few words the reader writes from the period thesis when they
+pass its checks, else nothing. An album film opens on the album's name.
 
 The title reader gets facts, never pictures and never coordinates: first names, birth dates and ages, the
 relations your [people registry](../get-started/who-is-who.md) confirms, the special-day catalogue's words, the

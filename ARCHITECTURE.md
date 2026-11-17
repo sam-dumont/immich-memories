@@ -1110,7 +1110,8 @@ src/immich_memories/
 │   ├── title_guards.py         # Guards refusing an invented name, a missing year, a missing place
 │   ├── common_nouns.py         # German capitalises every noun: the nouns whose capital names nobody
 │   ├── title_slots.py          # Closes a model title's empty slots: a dangling preposition, an orphan separator
-│   ├── film_stories.py         # The cut's stories (heaviest first) and summary, read from its plan for the title
+│   ├── film_stories.py         # The cut's stories (heaviest first), summary, thesis and places, read from its attempt for the title
+│   ├── film_subtitle.py        # A typed film's few-words subtitle from the period thesis, and the checks it must pass
 │   ├── relationship_guard.py   # Guard refusing a relationship word the people record doesn't back
 │   ├── relationship_words.py   # Per-locale relationship vocabulary (perspective/record-backed/alias)
 │   ├── title_routing.py        # Which prompt a memory gets: PEOPLE/OCCASION_MEMORY_TYPES, is_trip

@@ -8,7 +8,7 @@ Installing Full from scratch? Select its tab in [Quick start](../get-started/qui
 
 A reader picks the music mood on any tier. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
 
-Model-written titles and summaries are experimental and off by default. Turn them on with `title_screens.llm_titles: true` (or `--llm-title` for one run) and the reader names special days and writes the film's short summary. Years, months, seasons, people, birthdays, holidays and "on this day" films always keep the app's own title.
+Model-written titles and summaries are experimental and off by default. Turn them on with `title_screens.llm_titles: true` (or `--llm-title` for one run) and the reader names special days, writes the film's short summary, and may put a few words under a typed film's title. Years, months, seasons, people, birthdays, holidays and "on this day" films always keep the app's own title.
 
 Use a model with a 32k context and valid structured replies. The app can run its local default, or call an API server you already use.
 

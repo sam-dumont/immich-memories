@@ -151,9 +151,12 @@ serializes requests.
   run passes `--llm-title`: a special day's title, and a trip's with `--llm-title`.
   `--no-llm-title` keeps the app's title for one run. Year, month, season, person, birthday,
   several-people, holiday and on-this-day films always get the app's own title ("Kit · 2025",
-  "Christmas · 2019–2025") and no subtitle unless you type one (`STATIC_TITLE_MEMORY_TYPES` in
-  `titles/title_routing.py`); an album film gets its album's name. Otherwise the app writes every
-  title.
+  "Christmas · 2019–2025") (`STATIC_TITLE_MEMORY_TYPES` in `titles/title_routing.py`); an album
+  film gets its album's name. Otherwise the app writes every title.
+- **A typed film's subtitle**, under the same opt-in: a few words from the period thesis and the
+  title, in the film's language, asked once per cut and banked by prompt (`titles/film_subtitle.py`).
+  The reader may answer nothing. A line with a date, two places or more, a name the facts don't back,
+  the title again, a generic phrase or only story filler words is not shown.
 - **The music's mood**, from the film's story titles and captions, in one text call
   (`audio/text_mood.mood_for_cut`). With no model the clips' own mood decides, or "calm".
 - **The summary**, under the same experimental switch: off, a film has no summary and its Immich

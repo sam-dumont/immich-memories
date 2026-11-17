@@ -33,9 +33,10 @@ Use `landscape`, `portrait` or `square` to set the canvas yourself. Orientation 
 only; it does not change which pictures or video intervals are selected.
 
 Opening titles name the people or the occasion, never the query that produced them. A period, people,
-birthday, holiday or "on this day" film is titled by the app ("Kit's birthday · 2026"), with no subtitle
-unless you give one. Model-written titles are experimental and off by default: with a reader configured
-and `title_screens.llm_titles: true`, the model names a special day. `--llm-title` turns that on for one
+birthday, holiday or "on this day" film is titled by the app ("Kit's birthday · 2026"). Model-written
+titles are experimental and off by default: with a reader configured and `title_screens.llm_titles: true`,
+the model names a special day and may write a few words under a typed film's title, which are dropped when
+they fail a check. `--llm-title` turns that on for one
 run and adds trips, `--no-llm-title` keeps the app's title, and `--title` and `--subtitle` override all of
 it. `runs show` says which source the title came from: see
 [titles](output-rendering.md#where-the-title-came-from).

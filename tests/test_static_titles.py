@@ -2,8 +2,9 @@
 
 A birthday, a holiday, a month, a season, a year or a person's film is titled by what it is
 and when ("Kit's birthday · 2026"). A model asked for a birthday's title put a day of the year
-before under "birthday 2026", which read as the birthday's date. Nothing goes under the title
-unless someone typed a subtitle.
+before under "birthday 2026", which read as the birthday's date. With model-written text off,
+nothing goes under the title unless someone typed a subtitle (with it on, the reader may add a
+few words from the period thesis: `test_film_subtitle.py`).
 """
 
 from __future__ import annotations

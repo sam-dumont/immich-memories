@@ -2,9 +2,9 @@
 
 A typed film (a period, a person, a birthday, a holiday, a day across the years) is
 titled by what it is and when, as the app writes it: "Kit's birthday · 2026". No model
-writes it and nothing goes under it unless someone typed a subtitle: a model asked for
-a birthday's title put a day of the year before under the birthday's year, and the
-cut's stories do not yet say enough for a line about what the film is about. A special
+writes it: a model asked for a birthday's title put a day of the year before under the
+birthday's year. Under it goes a typed subtitle, else, with model-written text on, a few
+words the reader writes from the period thesis (`film_subtitle`), else nothing. A special
 day is still named by the model, from what the catalogue saw. Trips keep their own
 prompt and their own opt-in, and `--no-llm-title` pins the template.
 """
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from immich_memories.config.loader import Config
     from immich_memories.timeperiod import DateRange
     from immich_memories.titles.film_stories import FilmStories
+    from immich_memories.titles.film_subtitle import SubtitleJudge
 
 from immich_memories.i18n import elide_french, film_text, resolve_film_locale
 from immich_memories.titles.title_routing import PEOPLE_MEMORY_TYPES
@@ -286,8 +287,43 @@ def _years_in(clips: list[Any]) -> set[int]:
     return {day.year for day in taken if day is not None}
 
 
+def _subtitle_from_the_thesis(
+    *,
+    enabled: bool | None,
+    config: Config,
+    title: str,
+    stories: FilmStories | None,
+    reader: Callable[[], SubtitleJudge] | None,
+) -> str | None:
+    """A few words the reader writes under a typed film's title, or None.
+
+    Asked only with model-written text on (`title_screens.llm_titles`, the summary's opt-in,
+    or `--llm-title` for one run), a reader configured, and a period thesis the run recorded;
+    `--no-llm-title` asks nothing.
+    """
+    thesis = stories.thesis if stories is not None else None
+    llm = config.llm
+    opted_in = config.title_screens.llm_titles if enabled is None else enabled
+    if not opted_in or not (llm.enabled and llm.model) or not thesis or reader is None:
+        return None
+    from immich_memories.titles.film_subtitle import read_subtitle
+
+    try:
+        return read_subtitle(
+            reader(),
+            title=title,
+            thesis=thesis,
+            places=stories.places if stories is not None else (),
+            locale=resolve_film_locale(config.title_screens.locale),
+        )
+    except Exception:  # WHY: an optional subtitle must not fail the whole run
+        logger.warning("The film's subtitle could not be written; the title stands alone")
+        return None
+
+
 def _titled_by_its_kind(
     *,
+    enabled: bool | None,
     config: Config,
     memory_type: str,
     date_range: DateRange,
@@ -295,8 +331,10 @@ def _titled_by_its_kind(
     preset_params: dict | None,
     clips: list[Any],
     subtitle_override: str | None,
+    stories: FilmStories | None,
+    subtitle_reader: Callable[[], SubtitleJudge] | None,
 ) -> tuple[str, str | None, TitleSource]:
-    """A typed film's own title, with no line under it unless one was typed."""
+    """A typed film's own title, under it a typed subtitle or the reader's few words."""
     title = static_title(
         config,
         memory_type=memory_type,
@@ -306,7 +344,10 @@ def _titled_by_its_kind(
         years=_years_in(clips),
     )
     source = TitleSource.OCCASION if memory_type == "holiday" else TitleSource.FALLBACK
-    return title, subtitle_override, source
+    subtitle = subtitle_override or _subtitle_from_the_thesis(
+        enabled=enabled, config=config, title=title, stories=stories, reader=subtitle_reader
+    )
+    return title, subtitle, source
 
 
 def resolve_film_title(
@@ -323,6 +364,7 @@ def resolve_film_title(
     album_lookup: Callable[[], str | None] | None = None,
     stories: FilmStories | None = None,
     ask: Callable[..., Any] = _ask_the_llm,
+    subtitle_reader: Callable[[], SubtitleJudge] | None = None,
 ) -> tuple[str | None, str | None, TitleSource | None]:
     """Return the (title, subtitle, source) the run should use.
 
@@ -331,7 +373,9 @@ def resolve_film_title(
     the template (signalled by ``None``, with no source: the template layers name
     it later). The subtitle falls back to ``subtitle_override`` on every path.
     ``stories`` are the cut's own, read from its plan: what the model may name a
-    special day, or its subtitle, after.
+    special day, or its subtitle, after. ``subtitle_reader`` makes the reader a
+    typed film's subtitle is asked of (`film_subtitle.subtitle_reader`); without
+    one, a typed film has only the subtitle typed.
 
     A special day's catalogue title travels through this same ``title_override``
     slot (see ``title_source.override_source``). Written in another language
@@ -359,6 +403,7 @@ def resolve_film_title(
 
     if memory_type in STATIC_TITLE_MEMORY_TYPES:
         return _titled_by_its_kind(
+            enabled=enabled,
             config=config,
             memory_type=memory_type,
             date_range=date_range,
@@ -366,6 +411,8 @@ def resolve_film_title(
             preset_params=memory_preset_params,
             clips=clips,
             subtitle_override=subtitle_override,
+            stories=stories,
+            subtitle_reader=subtitle_reader,
         )
 
     llm_config = config.llm

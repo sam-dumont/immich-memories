@@ -158,3 +158,37 @@ def test_a_word_wider_than_the_frame_shrinks_until_it_is_inside() -> None:
     inked_columns = np.nonzero(plan.title_layer[..., 3].max(axis=0) > 0)[0]
     assert inked_columns.min() > 0
     assert inked_columns.max() < 1919
+
+
+# The longest subtitle the reader's few words may run to (`film_subtitle`), in French.
+LONGEST_SUBTITLE = (
+    "Le premier plongeon de Kit dans le lac, les châteaux de sable avec Pat et le "
+    "pique-nique d'anniversaire sous les arbres"
+)
+
+
+@pytest.mark.usefixtures("pinned_font")
+@pytest.mark.parametrize("frame", [{"width": 1920, "height": 1080}, PORTRAIT_1080])
+def test_the_longest_model_subtitle_wraps_under_a_typed_title_inside_the_frame(frame) -> None:
+    from immich_memories.titles.film_subtitle import SUBTITLE_MAX_CHARS
+
+    assert len(LONGEST_SUBTITLE) <= SUBTITLE_MAX_CHARS
+    renderer = TitleTextRenderer(
+        KernelTitleConfig(
+            **frame,
+            title_size_ratio=STYLE_TITLE_RATIO,
+            subtitle_size_ratio=STYLE_SUBTITLE_RATIO,
+        ),
+        cast(Any, None),
+    )
+
+    plan = renderer.plan_text_layers("Anniversaire de Kit · 2026", LONGEST_SUBTITLE)
+
+    assert plan.stack.subtitle_lines >= 2
+    assert plan.stack.bottom - plan.stack.top <= safe_text_height(frame["height"])
+    assert not text_blocks_overlap(
+        plan.title_layer, plan.subtitle_layer, plan.stack.title_shift, plan.stack.subtitle_shift
+    )
+    inked_columns = np.nonzero(plan.subtitle_layer[..., 3].max(axis=0) > 0)[0]
+    assert inked_columns.min() > 0
+    assert inked_columns.max() < frame["width"] - 1
