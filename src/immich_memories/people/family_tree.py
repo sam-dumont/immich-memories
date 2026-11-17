@@ -225,21 +225,33 @@ def _rows(ties: _Ties, drawn: set[str], owners: set[str]) -> tuple[dict[str, int
     for root in sorted(drawn, key=lambda p: (p not in owners, p)):
         if root in generation:
             continue
-        generation[root] = 0
-        members, queue = [root], deque([root])
-        while queue:
-            person = queue.popleft()
-            for other, step in steps.get(person, []):
-                if other in drawn and other not in generation:
-                    generation[other] = generation[person] + step
-                    members.append(other)
-                    queue.append(other)
+        members = _household(root, steps, drawn, generation)
         top = min(generation[p] for p in members)
         for person in members:
             generation[person] -= top
         components.append(members)
     components.sort(key=lambda m: (not owners.intersection(m), -len(m), min(m)))
     return generation, components
+
+
+def _household(
+    root: str,
+    steps: dict[str, list[tuple[str, int]]],
+    drawn: set[str],
+    generation: dict[str, int],
+) -> list[str]:
+    """Everyone drawn that `root` reaches, breadth-first, each written into `generation` as a
+    row relative to `root`'s 0. Someone already in `generation` keeps the row they have."""
+    generation[root] = 0
+    members, queue = [root], deque([root])
+    while queue:
+        person = queue.popleft()
+        for other, step in steps.get(person, []):
+            if other in drawn and other not in generation:
+                generation[other] = generation[person] + step
+                members.append(other)
+                queue.append(other)
+    return members
 
 
 def _dotted(

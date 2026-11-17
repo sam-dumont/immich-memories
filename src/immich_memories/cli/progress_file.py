@@ -60,16 +60,7 @@ def _with_history(record: dict, previous: dict, stamp: float) -> dict:
     reset = fraction is not None and old_fraction is not None and fraction < old_fraction
     history = list(previous.get("stage_history", []))
     if previous and (changed or reset):
-        history.append(
-            {
-                "label": str(previous.get("message") or previous.get("phase") or ""),
-                "key": str(previous.get("key") or ""),
-                "params": previous.get("params") or {},
-                "pass_id": previous.get("pass_id", 0),
-                "scope": previous.get("scope", ""),
-                "state": "previous",
-            }
-        )
+        history.append(_history_entry(previous))
     payload = record | {
         "stage_history": history[-24:],
         "pass_id": int(previous.get("pass_id", 0)) + int(changed or reset or not previous),
@@ -83,6 +74,18 @@ def _with_history(record: dict, previous: dict, stamp: float) -> dict:
     ):
         payload["last_completed_at"] = stamp
     return payload
+
+
+def _history_entry(previous: dict) -> dict:
+    """The stage a record replaces, as one line of its stage history."""
+    return {
+        "label": str(previous.get("message") or previous.get("phase") or ""),
+        "key": str(previous.get("key") or ""),
+        "params": previous.get("params") or {},
+        "pass_id": previous.get("pass_id", 0),
+        "scope": previous.get("scope", ""),
+        "state": "previous",
+    }
 
 
 def progress_writer(path: Path | None):

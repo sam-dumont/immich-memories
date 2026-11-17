@@ -60,23 +60,32 @@ def shown_film_name(
     stem, dot, suffix = disk_name.rpartition(".")
     if not dot or locale == "en" or not type_label:
         return disk_name
-    album = re.fullmatch(r"album(?:_(?P<slug>.+))?", stem) if memory_type == "album" else None
-    if album:
-        slug = (album.group("slug") or "").replace("_", _SEPARATOR)
-        head, tail = [type_label, slug], ""
-    else:
-        built = re.fullmatch(
-            rf"(?P<who>.+?)_(?P<type>{re.escape(memory_type or _DATE_RANGE_SLUG)}(?:_or)?)"
-            r"_(?P<rest>.+)",
-            stem,
-        )
-        if built is None:
-            return disk_name
-        head, tail = [people or "", type_label], built.group("rest").replace("_", _SEPARATOR)
+    parts = _shown_parts(stem, memory_type=memory_type, type_label=type_label, people=people)
+    if parts is None:
+        return disk_name
+    head, tail = parts
     ending = f"{_SEPARATOR}{safe_display_name(tail)}" if tail else ""
     room = _MAX_NAME_BYTES - len(ending.encode()) - len(suffix.encode()) - 1
     name = safe_display_name(_SEPARATOR.join(p for p in head if p), max_bytes=max(room, 1))
     return f"{name}{ending}.{suffix}" if name else disk_name
+
+
+def _shown_parts(
+    stem: str, *, memory_type: str | None, type_label: str, people: str | None
+) -> tuple[list[str], str] | None:
+    """The shown name's leading parts (people, type) and the disk name's own ending, or None
+    for a stem the builder did not make."""
+    album = re.fullmatch(r"album(?:_(?P<slug>.+))?", stem) if memory_type == "album" else None
+    if album:
+        return [type_label, (album.group("slug") or "").replace("_", _SEPARATOR)], ""
+    built = re.fullmatch(
+        rf"(?P<who>.+?)_(?P<type>{re.escape(memory_type or _DATE_RANGE_SLUG)}(?:_or)?)"
+        r"_(?P<rest>.+)",
+        stem,
+    )
+    if built is None:
+        return None
+    return [people or "", type_label], built.group("rest").replace("_", _SEPARATOR)
 
 
 def shown_film_name_for(
