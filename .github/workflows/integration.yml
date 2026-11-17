@@ -84,10 +84,23 @@ jobs:
       - name: Pull LFS files
         run: git lfs pull
 
+      - name: Mint a token for the public repository
+        id: public-token
+        if: github.event_name == 'repository_dispatch' && steps.params.outcome == 'success'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: sam-dumont
+          repositories: immich-memories
+          # statuses: the commit status; actions: the benchmark dispatch.
+          permission-statuses: write
+          permission-actions: write
+
       - name: Post "in_progress" status
         if: github.event_name == 'repository_dispatch' && steps.params.outcome == 'success'
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GH_TOKEN: ${{ steps.public-token.outputs.token }}
           PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
           SHA: ${{ steps.params.outputs.sha }}
         run: |
@@ -156,10 +169,25 @@ jobs:
           make benchmark-assembly || true
           make benchmark-titles-json || true
 
+      # A second token for the steps after the tests: an app token lives one
+      # hour, and a slow GPU run can outlast the first one.
+      - name: Mint a fresh token for the results
+        id: public-token-end
+        if: always() && steps.params.outcome == 'success'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: sam-dumont
+          repositories: immich-memories
+          # statuses: the commit status; actions: the benchmark dispatch.
+          permission-statuses: write
+          permission-actions: write
+
       - name: Submit GPU benchmark results
         if: always() && steps.tests.outcome == 'success'
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GH_TOKEN: ${{ steps.public-token-end.outputs.token }}
           SHA: ${{ steps.params.outputs.sha }}
           PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
         run: |
@@ -220,7 +248,7 @@ jobs:
       - name: Post success status
         if: success() && github.event_name == 'repository_dispatch' && steps.params.outcome == 'success'
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GH_TOKEN: ${{ steps.public-token-end.outputs.token }}
           PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
           SHA: ${{ steps.params.outputs.sha }}
         run: |
@@ -232,7 +260,7 @@ jobs:
       - name: Post failure status
         if: failure() && github.event_name == 'repository_dispatch' && steps.params.outcome == 'success'
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GH_TOKEN: ${{ steps.public-token-end.outputs.token }}
           PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
           SHA: ${{ steps.params.outputs.sha }}
         run: |
