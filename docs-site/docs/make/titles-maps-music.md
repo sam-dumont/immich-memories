@@ -22,9 +22,13 @@ app titles a film by what it is and when, in the film's language. No model write
 | On this day | the day and its span of years: "October 15 · 2012–2025" |
 | A special day the scan never catalogued | its place: "A day in Lisbon" |
 
-Nothing goes under the title unless you type a subtitle. With `title_screens.llm_titles: true`
-(experimental, off by default) an optional [text reader](../better/reader.md) names special days
-instead, from their stories, people and places. A reader title keeps the year the template title
+Nothing goes under the title unless you type a subtitle, or turn on `title_screens.llm_titles`
+(experimental, off by default). Then an optional [text reader](../better/reader.md) writes a few
+words under a typed film's title from what the period was about ("Kit learns to swim"), and names
+special days, from their stories, people and places. The reader may answer nothing, and a line
+that names a date, lists two places or more, names someone the film's facts don't, says the title
+again or says nothing in particular ("days at home and outings") is dropped: the title then stands
+alone. A reader title keeps the year the template title
 would show; one that drops it falls back to the template. A reader subtitle may only carry dates,
 places, people and words the film's facts use: a mood line the facts don't back ("salt air and
 golden light") is dropped and the title stands.
@@ -196,7 +200,7 @@ immich-memories generate --year 2025 --music ~/Music/track.mp3 --music-volume 0.
 
 ## When a model names the film
 
-Model-written titles and summaries are experimental and off by default: they miss too often. Turn them on with `title_screens.llm_titles: true`, or for one run with `--llm-title`. Then a text reader names special days (and trips, with `--llm-title`) and writes the film's summary. A reader still chooses the music mood on the Basic tier, whatever this setting says. Those calls use text, not pictures. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title whatever the reader could say. Your typed title wins over all of it. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
+Model-written titles and summaries are experimental and off by default: they miss too often. Turn them on with `title_screens.llm_titles: true`, or for one run with `--llm-title`. Then a text reader names special days (and trips, with `--llm-title`) and writes the film's summary. A reader still chooses the music mood on the Basic tier, whatever this setting says. Those calls use text, not pictures. Years, months, seasons, people, birthdays, holidays and "on this day" films keep the app's own title whatever the reader could say; the reader only adds the few words under it. Your typed title wins over all of it. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
 
 A model title can use a first name, a place, an occasion name or a relationship word your family record actually states between the people it names, such as "her grandmother". It never calls someone family, or states a relationship, that your record doesn't back, and it never names a year that isn't true for the span. It also never narrates a parent or grandparent from a child's point of view ("maman", "papy", "mum", "oma") even when your record backs the relation; standard words such as "abuela" or "mormor", which have no separate child's-eye form in their own language, are unaffected. A title that breaks a rule falls back to the plain template instead.
 

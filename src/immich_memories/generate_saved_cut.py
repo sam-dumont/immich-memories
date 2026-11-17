@@ -39,6 +39,7 @@ from immich_memories.processing.output_canvas import (
 from immich_memories.processing.render_inputs import CutTitles, read_cut_titles, read_render_inputs
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_stories import read_film_stories
+from immich_memories.titles.film_subtitle import subtitle_reader
 from immich_memories.titles.film_title import resolve_film_title
 
 if TYPE_CHECKING:
@@ -250,6 +251,7 @@ def _apply_request(
         person_names=list(run.memory_people),
         memory_preset_params=params.memory_preset_params,
         stories=read_film_stories(params.editorial_attempt_dir),
+        subtitle_reader=subtitle_reader(config, params.editorial_attempt_dir),
     )
     params.title_source = source.value if source is not None else None
 

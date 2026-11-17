@@ -13,7 +13,7 @@ import json
 import logging
 import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +24,8 @@ _WEIGHT_ORDER = ("dominant", "major", "minor", "glimpse")
 _MOST_STORIES = 6
 _MOST_SUMMARY_CHARS = 400
 _ISO_DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Where the run's summary step keeps what it read and wrote, the period thesis among it.
+_SUMMARY_RECORD = Path("derived-decisions") / "film-summary.private.json"
 
 
 @dataclass(frozen=True)
@@ -55,10 +57,17 @@ class FilmStory:
 
 @dataclass(frozen=True)
 class FilmStories:
-    """The cut's stories, heaviest first, and its summary when the run wrote one."""
+    """The cut's stories, heaviest first, and its summary when the run wrote one.
+
+    ``thesis`` is the period thesis the run asked the reader for, which a typed film's
+    subtitle is written from (`film_subtitle`), and ``places`` every place the cut's
+    stories went, which that subtitle may not list.
+    """
 
     stories: tuple[FilmStory, ...] = ()
     summary: str | None = None
+    thesis: str | None = None
+    places: tuple[str, ...] = ()
 
     @property
     def lead(self) -> FilmStory | None:
@@ -127,10 +136,39 @@ def film_stories_from_plan(plan: Mapping[str, Any]) -> FilmStories:
         return FilmStories()
     # The film's summary is the story's thesis, final once the cut is summarised.
     summary = str(story.get("thesis") or "").strip()
+    episodes = story.get("episodes") or ()
     return FilmStories(
-        stories=ranked_stories(story.get("episodes") or ()),
+        stories=ranked_stories(episodes),
         summary=summary[:_MOST_SUMMARY_CHARS] or None,
+        places=_places(episodes),
     )
+
+
+def _places(episodes: Iterable[Any]) -> tuple[str, ...]:
+    """Every town the stories went to, once, as its place line starts: "Lyon" of "Lyon, France"."""
+    towns = (
+        place.split(",")[0].strip()
+        for row in episodes
+        if isinstance(row, Mapping)
+        for place in _texts(row.get("places"))
+    )
+    return tuple(dict.fromkeys(town for town in towns if town))
+
+
+def _period_thesis(attempt_dir: Path) -> str | None:
+    """The period thesis the run's film summary was written from, or None when it had none.
+
+    The summary step records it with its own decisions (`structure.film_summary`); a cut
+    summarised with model text off, or before the thesis existed, has none.
+    """
+    try:
+        record = json.loads((attempt_dir / _SUMMARY_RECORD).read_text())
+    except (OSError, ValueError):
+        return None
+    thesis = record.get("thesis") if isinstance(record, Mapping) else None
+    if not isinstance(thesis, str):
+        return None
+    return thesis.strip() or None
 
 
 def read_film_stories(attempt_dir: Path | str | None) -> FilmStories:
@@ -144,4 +182,6 @@ def read_film_stories(attempt_dir: Path | str | None) -> FilmStories:
     except (OSError, ValueError):
         logger.debug("No readable plan for the title's stories", exc_info=True)
         return FilmStories()
-    return film_stories_from_plan(plan) if isinstance(plan, Mapping) else FilmStories()
+    if not isinstance(plan, Mapping):
+        return FilmStories()
+    return replace(film_stories_from_plan(plan), thesis=_period_thesis(Path(attempt_dir)))

@@ -8,12 +8,14 @@ from immich_memories.conformance.audience_cases import audience_cases
 from immich_memories.conformance.catalogue_cases import catalogue_cases
 from immich_memories.conformance.editorial_cases import editorial_cases
 from immich_memories.conformance.episode_cases import episode_cases
+from immich_memories.conformance.fixtures import scratch_judge
 from immich_memories.conformance.free_text_cases import free_text_cases
 from immich_memories.conformance.lexical_cases import lexical_cases
 from immich_memories.conformance.music_cases import music_cases
 from immich_memories.conformance.occasion_cases import occasion_cases
 from immich_memories.conformance.runtime import Case
 from immich_memories.conformance.vision_cases import vision_cases
+from immich_memories.titles.film_subtitle import read_subtitle
 from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_with_llm
 
 
@@ -71,6 +73,23 @@ def trip_title(llm: LLMConfig) -> str:
     return "names Iceland, keeps its year, and classifies the moving driving itinerary"
 
 
+def film_subtitle(llm: LLMConfig) -> str:
+    thesis = "Avery turned five: a cake with candles at home, with Kit. Later, a swim in the lake."
+    with scratch_judge(llm) as judge:
+        answer = read_subtitle(
+            judge, title="June 2030", thesis=thesis, places=("Lake Town",), locale="en"
+        )
+    assert answer is not None, (
+        "subtitle failed to parse, came back empty, or failed a check "
+        "(a date, a place list, an unbacked name, the title again, filler)"
+    )
+    told = answer.casefold()
+    assert any(word in told for word in ("birthday", "cake", "candle", "five", "avery")), (
+        "subtitle did not say what the period was about"
+    )
+    return "subtitle passes every check and names the birthday the period was about"
+
+
 def cases(llm: LLMConfig) -> tuple[Case, ...]:
     return (
         Case(
@@ -81,6 +100,11 @@ def cases(llm: LLMConfig) -> tuple[Case, ...]:
                     "titles.llm_titles:generate_title_with_llm",
                 }
             ),
+        ),
+        Case(
+            "film subtitle",
+            partial(film_subtitle, llm),
+            frozenset({"titles.film_subtitle:read_subtitle"}),
         ),
         Case(
             "trip title and route",
