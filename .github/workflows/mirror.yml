@@ -12,7 +12,7 @@
 # on GitHub-hosted runners.
 #
 # Flow:
-#   1. Push branch to private mirror (SSH deploy key)
+#   1. Push branch to private mirror (a token minted by the CI GitHub App)
 #   2. Trigger integration workflow via repository_dispatch
 #   3. Post "pending" commit status on this repo
 #   4. Private repo runs FFmpeg + GPU tests on ARC K8s runner
@@ -36,11 +36,14 @@ on:
         required: false
         type: string
 
-# The commit status and the dispatch below are both posted with
-# CI_MIRROR_TOKEN, not GITHUB_TOKEN — they have to reach the private mirror,
-# which GITHUB_TOKEN cannot see. So GITHUB_TOKEN needs nothing but the checkout.
+# The push, the dispatch and the mirror's bot-PR cleanup go through a token the
+# CI GitHub App (immich-memories-ci-bot) mints for this run: GITHUB_TOKEN cannot
+# see the private mirror, and an app token lives one hour instead of a stored
+# token that expires. The pending status is on this repository, so
+# GITHUB_TOKEN posts it.
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   mirror:
@@ -56,6 +59,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # WHY: checkout's stored header would go to the mirror too, next to
+          # the app token's, and GitHub refuses two Authorization headers.
+          # This repository is public, so fetching needs no credential.
+          persist-credentials: false
           ref: ${{ inputs.branch || github.sha }}
       - name: Create LFS cache key
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
@@ -76,18 +83,33 @@ jobs:
           git check-ref-format --branch "$BRANCH" >/dev/null
           printf 'sha=%s\nbranch=%s\n' "$(git rev-parse HEAD)" "$BRANCH" >> "$GITHUB_OUTPUT"
 
+      - name: Mint a mirror token
+        id: mirror-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: sam-dumont
+          repositories: immich-memories-ci
+          # contents + workflows: the force-push carries workflow files.
+          # contents also covers the repository_dispatch below.
+          permission-contents: write
+          permission-workflows: write
+          permission-pull-requests: write
+
       - name: Push to private mirror
         env:
-          SSH_KEY: ${{ secrets.MIRROR_SSH_KEY }}
+          MIRROR_TOKEN: ${{ steps.mirror-token.outputs.token }}
           BRANCH: ${{ steps.target.outputs.branch }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/mirror_key
-          chmod 600 ~/.ssh/mirror_key
-          trap 'rm -f ~/.ssh/mirror_key' EXIT
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/mirror_key -o IdentitiesOnly=yes"
-          git remote add mirror git@github.com:sam-dumont/immich-memories-ci.git
+          mirror=https://github.com/sam-dumont/immich-memories-ci.git
+          git remote add mirror "$mirror"
+          # WHY: a header scoped to the mirror's URL keeps the token out of the
+          # remote URL (and so out of logs); git-lfs reads the same setting.
+          basic=$(printf 'x-access-token:%s' "$MIRROR_TOKEN" | base64 -w0)
+          echo "::add-mask::$basic"
+          git config "http.$mirror/.extraheader" "AUTHORIZATION: basic $basic"
+          trap 'git config --unset-all "http.$mirror/.extraheader" || true' EXIT
           # Always push main first (integration.yml must exist on default branch
           # for repository_dispatch to find the workflow)
           git fetch origin main
@@ -98,11 +120,10 @@ jobs:
           # WHY: git push doesn't auto-push LFS to non-origin remotes.
           # Without this, LFS pointers land but blobs are missing = CI fails.
           git lfs push mirror --all 2>/dev/null || true
-          rm -f ~/.ssh/mirror_key
 
       - name: Set pending status
         env:
-          GH_TOKEN: ${{ secrets.CI_MIRROR_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.target.outputs.sha }}
         run: |
           gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" --method POST \
@@ -112,10 +133,23 @@ jobs:
 
       - name: Trigger integration tests
         env:
-          GH_TOKEN: ${{ secrets.CI_MIRROR_TOKEN }}
+          GH_TOKEN: ${{ steps.mirror-token.outputs.token }}
           SHA: ${{ steps.target.outputs.sha }}
           BRANCH: ${{ steps.target.outputs.branch }}
         run: |
           jq -n --arg sha "$SHA" --arg branch "$BRANCH" --arg repo "$GITHUB_REPOSITORY" \
             '{event_type: "integration-test", client_payload: {sha: $sha, branch: $branch, public_repo: $repo}}' \
             | gh api repos/sam-dumont/immich-memories-ci/dispatches --method POST --input -
+
+      # Dependabot reads the dependabot.yml this push carries and opens on the
+      # mirror the same update PRs this repository gets. Merging one there does
+      # nothing (the next push overwrites main), so they are closed here.
+      - name: Close the mirror's bot PRs
+        env:
+          GH_TOKEN: ${{ steps.mirror-token.outputs.token }}
+        run: |
+          for n in $(gh api "repos/sam-dumont/immich-memories-ci/pulls?state=open&per_page=100" \
+                       --jq '.[] | select(.user.login == "dependabot[bot]" or .user.login == "renovate[bot]") | .number'); do
+            gh pr close "$n" -R sam-dumont/immich-memories-ci \
+              -c "CI mirror: main is force-pushed from sam-dumont/immich-memories, where dependency updates land."
+          done

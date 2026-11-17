@@ -73,6 +73,16 @@ Runs when dispatched (`stable` or `rc`) and when `nightly.yml` calls it (`nightl
 
 **Secret required:** `RELEASE_TAG_TOKEN`, a fine-grained token on this repository only with Contents and Workflows read/write. GitHub refuses a tag the workflow's own token writes when the tagged commit's workflow files differ from `main`'s at push time, which happens whenever a workflow change merges during the two-hour run. Only the two steps that push a tag (`Push release tag` and `Move the nightly tag to this commit`) read it, through `scripts/push_release_ref.sh`; every other step uses `GITHUB_TOKEN`. When it is missing or expired, those steps fail naming the secret, before any GitHub Release or PyPI upload.
 
+### `mirror.yml` and `integration.yml` - GPU tests on the private mirror
+
+`mirror.yml` force-pushes `main` (or the branch given by hand) to the private `sam-dumont/immich-memories-ci`, where `integration.yml` runs the FFmpeg and GPU suites on the self-hosted runner and posts the `Integration (GPU)` commit status back here. It also closes the Dependabot and Renovate PRs the mirror gets from the pushed `dependabot.yml`: merging one there does nothing, since the next push overwrites `main`.
+
+**Credentials:** the GitHub App `immich-memories-ci-bot`, installed on both repositories. Each job mints a one-hour token scoped to the one repository and the permissions it needs (`actions/create-github-app-token`), so no token is stored that can expire:
+- `mirror.yml`: the mirror, with Contents, Workflows and Pull requests write (the push carries workflow files; the dispatch needs Contents).
+- `integration.yml`: this repository, with Commit statuses and Actions write (the status and the benchmark dispatch).
+
+Set on both repositories: the variable `CI_APP_CLIENT_ID` and the secret `CI_APP_PRIVATE_KEY` (the app's private key). Rotate the key from the app's settings, then set the secret again on both.
+
 ### `dependabot-notices.yml` - Dependabot notices
 
 Runs on Dependabot pull requests that change `uv.lock`. One job installs the PR's dependencies with every runtime extra (`make dev-notices`, so each licence comes from the installed package) and runs `make notices` with a read-only token; a second job, which runs no PR code, commits the regenerated `THIRD_PARTY_NOTICES` to the PR branch. The CI runs that push starts wait for "Approve workflows to run" on the PR, since a `GITHUB_TOKEN` push never starts CI unattended.
