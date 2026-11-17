@@ -64,17 +64,14 @@ async def test_a_title_request_asks_for_the_fields_its_prompt_names(memory_type,
     assert fields <= set(schema["properties"])
 
 
-def test_an_episode_request_asks_for_one_reading_per_offered_episode():
+def test_an_episode_request_asks_for_one_reading_naming_only_offered_pictures():
     from immich_memories.analysis.reading.prose_shapes import episode_reading_shape
 
-    shape = episode_reading_shape(3, lean=True)["json_schema"]["schema"]
-    episodes = shape["properties"]["episodes"]
+    lean = episode_reading_shape(3, lean=True)["json_schema"]["schema"]
+    full = episode_reading_shape(3, lean=False)["json_schema"]["schema"]
+    representatives = lean["properties"]["representatives"]
 
-    assert (episodes["minItems"], episodes["maxItems"]) == (3, 3)
-    assert "cull" not in episodes["items"]["properties"]
-    assert (
-        "cull"
-        in episode_reading_shape(3, lean=False)["json_schema"]["schema"]["properties"]["episodes"][
-            "items"
-        ]["properties"]
-    )
+    assert (representatives["minItems"], representatives["maxItems"]) == (1, 3)
+    assert representatives["items"]["properties"]["picture"]["maximum"] == 3
+    assert "cull" not in lean["properties"]
+    assert full["properties"]["cull"]["items"]["properties"]["picture"]["maximum"] == 3

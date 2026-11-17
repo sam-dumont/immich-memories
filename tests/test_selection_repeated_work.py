@@ -351,7 +351,7 @@ def _old_pages(identity, ids, *, max_assets, facts, max_chars):
         proposed = (*current, asset_id)
         scope = EpisodeRequestScope(identity, ids, proposed, count, count)
         if current and (
-            len(proposed) > max_assets or len(episode_prompt((scope,), facts)) > max_chars
+            len(proposed) > max_assets or len(episode_prompt(scope, facts)) > max_chars
         ):
             pages.append(current)
             current = (asset_id,)
@@ -395,7 +395,7 @@ def test_episode_pages_split_where_they_always_did_and_render_the_prompt_once(mo
         )
 
         whole = EpisodeRequestScope(identity, ids, ids, 1, 1)
-        if len(ids) <= cap and len(real_prompt((whole,), facts)) <= max_chars:
+        if len(ids) <= cap and len(real_prompt(whole, facts)) <= max_chars:
             assert [s.page_asset_ids for s in got] == [ids]
             continue
         expected = _old_pages(identity, ids, max_assets=cap, facts=facts, max_chars=max_chars)

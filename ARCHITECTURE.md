@@ -816,10 +816,11 @@ src/immich_memories/
 │   │   │                       # Latest demanded-reading availability reaches the final private plan;
 │   │   │                       # unresolved readings also warn in the trace, recovered ones stay banked
 │   │   ├── episode_answers.py  # Read a text episode answer with page-scoped label normalization.
+│   │   ├── episode_block.py    # One episode as the reader sees it: each fact said once, noise left out
 │   │   ├── episode_documents.py # Compact factual episode documents for production retrieval.
-│   │   ├── episode_paging.py   # Its request limits: an episode cut into pages, pages packed into prompts
+│   │   ├── episode_paging.py   # Its request limits: one request per episode, a large one cut into pages
 │   │   ├── episode_prompt.py   # What that reading is asked, and what it may take a name from
-│   │   │                       # (a film's on-demand reading asks the lean form: no Cull, one representative)
+│   │   │                       # (a film's on-demand reading asks the lean form: no Cull)
 │   │   ├── episode_reader.py   # Reading event evidence (paged, banked); the same reading names
 │   │   │                       # each episode's notable moments, which the polish layer seats and protects
 │   │   ├── event_families.py   # Deterministic event-family grouping over normalized production wall facts.

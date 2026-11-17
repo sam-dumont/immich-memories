@@ -81,7 +81,7 @@ Where it lives: `reading/episode_reader.py`, `polish/layer.py`, `polish/block_vo
 
 | Word | Meaning |
 |---|---|
-| **Episode reading** | a model's answer about one episode: what happened, a representative, moments worth a record |
+| **Episode reading** | a model's answer about one episode: what happened, up to three representatives, moments worth a record |
 | **Record** | a picture an episode reading named as the record of something that happens once (an arrival, a milestone with its occasion visible, a change you can see, text naming the occasion), judged on the episode's own lines; protected from the vote |
 | **Account** | what the library says a period was about, written once from episode readings and reused |
 | **Thesis** | the account's statement of what the period was, up to 150 words; the polish votes under it, and it is never a film's summary |

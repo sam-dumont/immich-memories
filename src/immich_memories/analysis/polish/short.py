@@ -30,8 +30,8 @@ from immich_memories.analysis.polish.catalogue import (
 from immich_memories.analysis.selection.lookalike import MOTION_KINDS
 from immich_memories.analysis.stories.replies import close_family_on
 
-# One reading call pages about three small episodes; the budget pays for that many calls.
-EPISODES_PER_READING = 3
+# One reading call reads one episode (#2594); the budget pays for that many calls.
+EPISODES_PER_READING = 1
 
 
 @dataclass(frozen=True)

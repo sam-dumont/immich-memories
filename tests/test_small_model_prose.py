@@ -26,7 +26,9 @@ def test_an_episode_is_asked_for_a_record_on_its_own_lines_whatever_else_is_in_t
     from immich_memories.analysis.reading.episode_prompt import _LEAN_PROMPT, _PROMPT
 
     for prompt in (_PROMPT, _LEAN_PROMPT):
-        assert "never against the other episodes" in prompt
+        # since #2594 a request holds one episode, so nothing else is in it to judge against
+        assert prompt.startswith("Read one episode")
+        assert "that is the usual answer" in prompt
         assert "most episodes have none" not in prompt
 
 

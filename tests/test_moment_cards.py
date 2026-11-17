@@ -126,7 +126,7 @@ def test_scope_changes_selectable_members_without_changing_the_full_moment_card(
     assert friend_card.full_asset_ids == ("id-wide-001", "id-friend-002", "id-action-003")
     assert friend_card.selectable_asset_ids == ("id-friend-002",)
     assert action_card.selectable_asset_ids == ("id-action-003",)
-    assert "wide view of a road race | outdoor | crowd" in prompts[0]
+    assert "\n1. wide view of a road race; outdoor; crowd\n" in prompts[0]
     assert "wide view of a road race | outdoor | crowd" not in friend_card.text
     assert "friend cheering beside the course | portrait | STARRED" in friend_card.text
     assert "the owner running through the race | sport-active | VIDEO 8s" in friend_card.text

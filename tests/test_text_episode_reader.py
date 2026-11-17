@@ -192,8 +192,8 @@ def test_a_cold_episode_is_read_once_then_reused_from_the_bank(tmp_path: Path) -
     assert first.episodes[0].cache_hit is False
     assert second.episodes[0].cache_hit is True
     assert len(calls) == 1
-    assert "birthday cake | with family | STARRED" in calls[0]
-    assert "beside the cake | with friend | activity=celebration" in calls[0]
+    assert "\n1. birthday cake; starred; with family\n" in calls[0]
+    assert "\n2. beside the cake; celebration; with friend" in calls[0]
     assert "party-context" not in calls[0]
     assert "friend-in-scope" not in calls[0]
 
@@ -234,21 +234,11 @@ def test_cold_episodes_are_packed_below_the_serialized_prompt_limit(
 
     def requester(prompt: str) -> str:
         prompts.append(prompt)
-        aliases = tuple(int(value) for value in re.findall(r"^episode (\d+)$", prompt, re.M))
         return json.dumps(
             {
-                "schema_version": "episode-reading-text-v1",
-                "episodes": [
-                    {
-                        "episode": alias,
-                        "what_happened": "One complete episode happened.",
-                        "representatives": [
-                            {"asset": 1, "reason": "The only frame represents it."}
-                        ],
-                        "cull": [],
-                    }
-                    for alias in aliases
-                ],
+                "what_happened": "One complete episode happened.",
+                "representatives": [{"picture": 1, "reason": "The only frame represents it."}],
+                "cull": [],
             }
         )
 
@@ -351,7 +341,7 @@ def test_an_oversized_episode_is_paged_then_banked_as_one_full_reading(
     ).read(projections)
 
     assert result.actual_calls == 2
-    assert [len(re.findall(r"^  asset ", prompt, re.M)) for prompt in prompts] == [90, 5]
+    assert [len(re.findall(r"^\d+\. ", prompt, re.M)) for prompt in prompts] == [90, 5]
     reading = result.episodes[0].reading
     assert reading is not None
     assert reading.full_asset_ids == prepared.candidate_ids
@@ -442,7 +432,7 @@ def test_episode_pages_shrink_to_the_serialized_prompt_limit(tmp_path: Path) -> 
     assert result.episodes[0].reading.full_asset_ids == prepared.candidate_ids
 
 
-def test_an_episode_omitted_from_a_pack_is_reasked_alone(
+def test_each_episode_is_asked_alone_with_only_its_own_lines(
     tmp_path: Path,
 ) -> None:
     from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
@@ -503,48 +493,35 @@ def test_an_episode_omitted_from_a_pack_is_reasked_alone(
     assert result.actual_calls == 2
     assert all(episode.reading is not None for episode in result.episodes)
     assert "the first complete episode line" in prompts[0]
-    assert "the second complete episode line" in prompts[0]
+    assert "the second complete episode line" not in prompts[0]
     assert "the first complete episode line" not in prompts[1]
     assert "the second complete episode line" in prompts[1]
 
 
-def test_a_truncated_reply_salvages_the_episode_it_finished_writing(
-    tmp_path: Path,
-) -> None:
+def test_a_truncated_reply_salvages_the_episode_it_finished_writing() -> None:
     """A transport cut mid-reply must not discard episodes it already wrote in full.
 
     Measured 2026-09-29 on a local gemma: 34 of 54 episode replies were truncated, and
     every one of them was discarded whole -- even the ones that had already written one
     or more complete episode objects before the cut. Salvaging what parsed cleanly turns
     a wasted 25s call into a partial win, and leaves only the genuinely unfinished
-    episode for a retry.
+    episode for a retry. The reader asks one episode per call since #2594; the parser
+    still salvages a reply that lists several.
     """
-    from immich_memories.analysis.reading.episode_paging import TextEpisodeRequestLimits
-    from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
+    from immich_memories.analysis.reading.episode_answers import (
+        EpisodeRequestScope,
+        read_response_result,
+    )
 
-    start = datetime(2026, 8, 25, 8, tzinfo=UTC)
-    prepared = prepare_editorial_source(
-        EditorialSelectionRequest(scope=SourceScope()),
-        EditorialDependencies(
-            source_fetcher=lambda _scope: (
-                make_asset("first-private", file_created_at=start),
-                make_asset("second-private", file_created_at=start + timedelta(hours=3)),
-            )
-        ),
-    )
-    projections = project_episode_groups(prepared, prepared.candidate_ids)
-    lines = _AnnotationLines(
-        {
-            "first-private": "the first complete episode line",
-            "second-private": "the second complete episode line",
-        }
-    )
-    producer = EpisodeReadingProducer(
-        model_id="qwen3-vl-30b",
-        prompt_version="episode-prompt-v1",
-        schema_version="episode-schema-v1",
-        annotation_renderer_version="annotation-line-v1",
-        annotation_versions=("description:student-v1",),
+    scopes = tuple(
+        EpisodeRequestScope(
+            identity=EpisodeReadingIdentity(group_id=key, producer_key="p", evidence_key="e"),
+            full_asset_ids=(f"{key}-private",),
+            page_asset_ids=(f"{key}-private",),
+            page_number=1,
+            page_count=1,
+        )
+        for key in ("first", "second")
     )
     complete_first = json.dumps(
         {
@@ -562,27 +539,10 @@ def test_a_truncated_reply_salvages_the_episode_it_finished_writing(
         + ', {"episode": 2, "what_happened": "The second episode was cut off be'
     )
 
-    result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(annotation_store()),
-        producer=producer,
-        annotations=lines,
-        requester=lambda _prompt: truncated,
-        limits=TextEpisodeRequestLimits(unread_retry_rounds=0),
-    ).read(projections)
+    response = read_response_result(truncated, scopes)
 
-    first = next(
-        episode
-        for episode in result.episodes
-        if episode.projection.group.candidate_ids == ("first-private",)
-    )
-    second = next(
-        episode
-        for episode in result.episodes
-        if episode.projection.group.candidate_ids == ("second-private",)
-    )
-    assert first.reading is not None
-    assert first.reading.what_happened == "A complete first episode is visible."
-    assert second.reading is None
+    assert [reading.scope for reading in response.readings] == [scopes[0]]
+    assert response.readings[0].what_happened == "A complete first episode is visible."
 
 
 def test_a_truncated_answer_gets_a_larger_budget_on_retry(tmp_path: Path) -> None:
@@ -904,7 +864,7 @@ def test_invalid_representative_rows_are_discarded_when_one_grounded_row_survive
     )
 
 
-def test_output_packing_and_transport_budget_share_one_bounded_estimate(tmp_path: Path) -> None:
+def test_each_request_carries_its_bounded_budget_and_shape(tmp_path: Path) -> None:
     from immich_memories.analysis.reading.episode_reader import CachedTextEpisodeReader
 
     noon = datetime(2026, 8, 25, 12, tzinfo=UTC)
@@ -928,23 +888,16 @@ def test_output_packing_and_transport_budget_share_one_bounded_estimate(tmp_path
             raise AssertionError("production episode requests must carry their computed budget")
 
         def request_with_budget(self, prompt: str, *, max_tokens: int, response_format=None) -> str:
-            aliases = tuple(int(value) for value in re.findall(r"^episode (\d+)$", prompt, re.M))
-            calls.append((len(aliases), max_tokens))
-            shaped.append(
-                response_format["json_schema"]["schema"]["properties"]["episodes"]["maxItems"]
-            )
+            calls.append((prompt.count("EPISODE:"), max_tokens))
+            representatives = response_format["json_schema"]["schema"]["properties"][
+                "representatives"
+            ]
+            shaped.append(representatives["items"]["properties"]["picture"]["maximum"])
             return json.dumps(
                 {
-                    "schema_version": "episode-reading-text-v1",
-                    "episodes": [
-                        {
-                            "episode": alias,
-                            "what_happened": "One grounded frame.",
-                            "representatives": [{"asset": 1, "reason": "Only frame."}],
-                            "cull": [],
-                        }
-                        for alias in aliases
-                    ],
+                    "what_happened": "One grounded frame.",
+                    "representatives": [{"picture": 1, "reason": "Only frame."}],
+                    "cull": [],
                 }
             )
 
@@ -963,12 +916,11 @@ def test_output_packing_and_transport_budget_share_one_bounded_estimate(tmp_path
         requester=BudgetedRequester(),
     ).read(project_episode_groups(prepared, prepared.candidate_ids))
 
-    # Recalibrated 2026-09-29 (#1609): a larger per-asset output allowance packs
-    # fewer episodes per call, trading call count for a budget that actually holds.
-    assert [rows for rows, _budget in calls] == [20, 20, 20, 20, 10]
-    assert [budget for _rows, budget in calls] == [3960, 3960, 3960, 3960, 2080]
-    assert shaped == [20, 20, 20, 20, 10]
-    assert result.actual_calls == 5
+    # One request per episode since #2594: one row of one picture, so the floor budget, and a
+    # shape that names only that picture.
+    assert calls == [(1, 512)] * 90
+    assert shaped == [1] * 90
+    assert result.actual_calls == 90
     assert all(episode.reading is not None for episode in result.episodes)
 
 

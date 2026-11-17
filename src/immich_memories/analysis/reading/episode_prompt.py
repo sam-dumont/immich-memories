@@ -7,94 +7,60 @@ from dataclasses import dataclass
 from hashlib import sha256
 
 from immich_memories.analysis.reading.episode_answers import EpisodeRequestScope
-
-_PROMPT_NAME = "episode-prompt-v4-notable-bar"
+from immich_memories.analysis.reading.episode_block import episode_block
 
 AlbumNames = Callable[[Sequence[str]], tuple[str, ...]]
 
-_PROMPT = """Read these episodes from one family's photo library. Every asset line contains
-all banked annotations for that asset. Use only those lines; do not invent names, places,
-relationships, or events.
+# One episode per call, its facts said once (#2594). The question is the one that won a measured
+# A/B on a real library with the small reader: against the old three-task prompt over raw lines
+# it was a third of the size and the time, named a person or a town in 71 answers of 76 instead
+# of 57, and wrote a generic sentence once instead of 22 times.
+_INTRO = """Read one episode from a family's photo library: pictures taken close together, each
+listed with what it shows. Use only these facts; do not invent names, places or events. Text
+read off a sign, a shirt or a screen names that object, not the place or the event.
+"""
 
-Text read off a banner, a shirt, a sign, a screen or a poster names the thing it is written
-on. It never names the day, the place or the event. Name an event, a venue or an organisation
-only when a fact line of that episode names it.
+_WHAT_HAPPENED = """- what_happened: one plain sentence of at most 25 words: the episode's main activity with its most
+  specific thing (a cake, a swim, a castle), who was there by first name (at most three), and
+  the main town. Say what people did, or with no one there, what is there (a
+  view, a car); never "various" or "spent time together".
+- representatives: the 1 to 3 pictures that best show it, by number, each with a reason of at
+  most six words. Prefer a starred picture, a video or a live photo when it shows the moment.
+"""
 
-For every episode return what happened in at most 25 words, one to three representatives
-covering distinct situations, and only genuine Cull rejects. Prefer a starred action frame,
-video, or qualifying Live Photo when it earns the place. Cull buckets are notes (screens,
-documents, receipts), failed (the picture did not come out), and foreign (saved imagery not
-from this life). Similar or merely ordinary pictures are not Cull rejects.
+# The polish layer seats and protects an episode's records, so a film's on-demand reading asks
+# for them too. The ask names notable_moments where it says "[]": a bare "Return []" was read as
+# the whole answer (#2682).
+_NOTABLE = """- notable_moments: the pictures that record something that happens once, by number, each
+  with what it records: an arrival (a birth, a new pet, a new home), a milestone with its
+  occasion visible (a named birthday, a first day, a graduation, a wedding, a trophy), a change
+  you can see (a new haircut, a cast, a finished build), text naming the occasion, or an object
+  that is the record itself (a ring in its box, a hospital bracelet). An outing, a view, a meal,
+  a pose, a game, a portrait or an animal is not one, and nor is a first guessed from the order
+  of the pictures. notable_moments is [] when no picture shows one; that is the usual answer.
+"""
 
-Also return notable_moments, separately from the account and its representatives: a picture
-that is the record of something that happens once, which the 25-word account would lose. The
-bar is absolute: judge each episode on its own lines, never against the other episodes here.
-It passes only when a line shows the once-only thing itself: an arrival (a birth, a new pet, a
-new home), a milestone with its occasion visible (a named birthday or anniversary, a first day,
-a graduation, a wedding, a trophy or a certificate), a change you can see (a new haircut, a cast,
-a finished build), or text naming the occasion. A small object can carry one when it is the
-record itself (a ring in its box, a hospital bracelet, the keys to a new home). An outing, a
-view, a meal, a pose, a game, a nice portrait or an animal is not a record, however good the
-picture. Do not infer a first, a relationship, a diagnosis or a feeling from the order things
-happened in. Name the asset and the observable reason. Return [] when no line shows such a
-record; that is the usual answer.
+# Library preparation only: the Cull pass reads these rejects.
+_CULL = """- cull: only genuine rejects, by number, each with a bucket: notes (screens, documents,
+  receipts), failed (the picture did not come out) or foreign (saved imagery not from this
+  life). Similar or merely ordinary pictures are not rejects; cull is [] when there are none.
+"""
 
-Return JSON only:
-{{"schema_version":"episode-reading-text-v1","episodes":[{{"episode":1,
-"what_happened":"plain factual sentence","representatives":[{{"asset":1,
-"reason":"short reason"}}],"cull":[{{"asset":2,"bucket":"notes"}}],
-"notable_moments":[{{"asset":1,"reason":"what this is a record of"}}]}}]}}
-
-{count}
-
-{episodes}"""
-
-_LEAN_PROMPT_NAME = "episode-prompt-v4-lean"
-
-# What a film's on-demand reading asks: the account's sentence and the records, with the one
-# representative a reading needs to be bankable. The full prompt's other asks (up to three
-# representatives with reasons, every Cull reject) were 62 % of the reader's output on the
-# measured cold year, and nothing a film reads on demand uses them. It names notable_moments
-# where it says "[]": a bare "Return []" was read as the whole answer, and 249 of 1,673
-# recorded answers were an empty episodes list (#2682).
-_LEAN_PROMPT = (
-    """Read these episodes from one family's photo library. Every asset line contains
-all banked annotations for that asset. Use only those lines; do not invent names, places,
-relationships, or events.
-
-Text read off a banner, a shirt, a sign, a screen or a poster names the thing it is written
-on. It never names the day, the place or the event. Name an event, a venue or an organisation
-only when a fact line of that episode names it.
-
-For every episode return what happened in at most 25 words, and the one representative that
-best shows it, with a reason of at most six words. Prefer a starred action frame, video, or
-qualifying Live Photo when it earns the place.
-
-Also return notable_moments, separately from the account and its representative: a picture
-that is the record of something that happens once, which the 25-word account would lose. The
-bar is absolute: judge each episode on its own lines, never against the other episodes here.
-It passes only when a line shows the once-only thing itself: an arrival (a birth, a new pet, a
-new home), a milestone with its occasion visible (a named birthday or anniversary, a first day,
-a graduation, a wedding, a trophy or a certificate), a change you can see (a new haircut, a cast,
-a finished build), or text naming the occasion. A small object can carry one when it is the
-record itself (a ring in its box, a hospital bracelet, the keys to a new home). An outing, a
-view, a meal, a pose, a game, a nice portrait or an animal is not a record, however good the
-picture. Do not infer a first, a relationship, a diagnosis or a feeling from the order things
-happened in. Name the asset and the observable reason. notable_moments is [] when no line shows
-such a record; that is the usual answer.
-
-Return JSON only:
-{{"schema_version":"episode-reading-text-v1","episodes":[{{"episode":1,
-"what_happened":"plain factual sentence","representatives":[{{"asset":1,
-"reason":"short reason"}}],
-"notable_moments":[{{"asset":1,"reason":"what this is a record of"}}]}}]}}
-
-{count}
-
-{episodes}"""
-    "\n\nReturn the complete JSON object now. After the final episode, close the episodes "
-    "array and the outer object with ]}}. Do not leave trailing whitespace."
+_ANSWER = (
+    '"what_happened":"...","representatives":[{"picture":1,"reason":"..."}],'
+    '"notable_moments":[{"picture":1,"reason":"what this is a record of"}]'
 )
+
+_LEAN_PROMPT = (
+    f"{_INTRO}\nAnswer three things:\n{_WHAT_HAPPENED}{_NOTABLE}\nJSON only: {{{_ANSWER}}}"
+)
+_PROMPT = (
+    f"{_INTRO}\nAnswer four things:\n{_WHAT_HAPPENED}{_NOTABLE}{_CULL}\n"
+    f'JSON only: {{{_ANSWER},"cull":[{{"picture":2,"bucket":"notes"}}]}}'
+)
+
+_PROMPT_NAME = "episode-prompt-v5-slim"
+_LEAN_PROMPT_NAME = "episode-prompt-v5-slim-lean"
 
 # A banked answer is ground truth for the question that was asked. Hashing the prompt into the
 # producer expires every reading the moment its wording changes, whether or not the name above
@@ -111,60 +77,34 @@ class EpisodePromptFacts:
 
     lines: Mapping[str, str]
     album_names: AlbumNames | None = None
-    # The film's on-demand question: no Cull, one representative.
+    # The film's on-demand question: no Cull.
     lean: bool = False
 
-    def albums_line(self, asset_ids: Sequence[str]) -> str:
-        """The `Albums:` fact line, or nothing when no album holds these assets."""
-        if self.album_names is None:
-            return ""
-        names = self.album_names(asset_ids)
-        return f"  Albums: {'; '.join(names)}\n" if names else ""
+    def albums(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
+        """The albums holding these assets; none when no album holds them."""
+        return () if self.album_names is None else tuple(self.album_names(asset_ids))
 
 
-def episode_prompt(
-    scopes: Sequence[EpisodeRequestScope],
-    facts: EpisodePromptFacts,
-) -> str:
-    """Render one request: its rules, then a block of facts per episode."""
-    blocks = []
-    for episode_alias, scope in enumerate(scopes, start=1):
-        asset_lines = "\n".join(
-            f"  asset {asset_alias} | {facts.lines[asset_id]}"
-            for asset_alias, asset_id in enumerate(scope.page_asset_ids, start=1)
-        )
-        page = f"  page {scope.page_number} of {scope.page_count}\n" if scope.page_count > 1 else ""
+def episode_prompt(scope: EpisodeRequestScope, facts: EpisodePromptFacts) -> str:
+    """Render one request: the question, then the block for one episode or one page of it."""
+    block = episode_block(
+        [facts.lines[asset_id] for asset_id in scope.page_asset_ids],
         # The album holds the whole episode, not just this page of it.
-        albums = facts.albums_line(scope.full_asset_ids)
-        blocks.append(f"episode {episode_alias}\n{albums}{page}{asset_lines}")
-    template = _LEAN_PROMPT if facts.lean else _PROMPT
-    return template.format(count=_count_line(len(scopes)), episodes="\n\n".join(blocks))
+        albums=facts.albums(scope.full_asset_ids),
+        page=(scope.page_number, scope.page_count) if scope.page_count > 1 else None,
+    )
+    return f"{_LEAN_PROMPT if facts.lean else _PROMPT}\n\n{block}"
 
 
 def episode_retry_prompt(
     scope: EpisodeRequestScope, facts: EpisodePromptFacts, problem: str
 ) -> str:
-    """The episode asked alone again, told what made its last answer unusable.
+    """The episode asked again, told what made its last answer unusable.
 
     At temperature 0 the same question earns the same answer byte for byte: the recorded
     refusals got it three times running. Naming the problem is what changes the answer.
     """
     return (
-        f"{episode_prompt((scope,), facts)}\n\nYour last answer could not be used: {problem}. "
-        'Answer again with exactly 1 entry in "episodes".'
-    )
-
-
-def _count_line(episodes: int) -> str:
-    """How many entries the answer holds, said outright.
-
-    Handed one episode of fifty pictures, a small model wrote an entry per picture and ran out
-    of tokens on every film; a local endpoint gets no schema to bound the array instead.
-    """
-    entries = "entry" if episodes == 1 else "entries"
-    return (
-        f"There {'is' if episodes == 1 else 'are'} exactly {episodes} "
-        f"episode{'' if episodes == 1 else 's'} below. Return exactly {episodes} {entries} in "
-        '"episodes", one per "episode" heading, each about all of that episode\'s assets: '
-        "never one entry per asset."
+        f"{episode_prompt(scope, facts)}\n\nYour last answer could not be used: {problem}. "
+        "Answer again with the JSON object only."
     )

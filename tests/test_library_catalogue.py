@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from datetime import UTC, datetime
 
 import pytest
@@ -319,29 +318,17 @@ class OneEpisodeRefuses:
 
     def __call__(self, prompt: str) -> str:
         self.prompts.append(prompt)
-        aliases = re.findall(r"^episode (\d+)$", prompt, re.MULTILINE)
         if "Return an account for EACH" in prompt:
             return Reader()(prompt)
+        # One episode per call: the one this reader refuses gets an answer that names no picture.
+        refused = self.refuses in prompt.split("\nPictures:\n")[-1]
         return json.dumps(
             {
-                "schema_version": "episode-reading-text-v1",
-                "episodes": [
-                    {
-                        "episode": int(alias),
-                        "what_happened": "Something happened.",
-                        "representatives": [{"asset": 1, "reason": "it carries the day"}],
-                        "cull": [],
-                    }
-                    for alias in aliases
-                    if self.refuses not in _assets_of(prompt, alias)
-                ],
+                "what_happened": "Something happened.",
+                "representatives": [] if refused else [{"picture": 1, "reason": "the day"}],
+                "cull": [],
             }
         )
-
-
-def _assets_of(prompt: str, alias: str) -> str:
-    block = prompt.split(f"episode {alias}\n")[-1].split("\n\nepisode ")[0]
-    return block
 
 
 def test_an_episode_the_reader_cannot_read_is_asked_once_across_two_runs(tmp_path) -> None:
@@ -366,8 +353,9 @@ def test_an_episode_the_reader_cannot_read_is_asked_once_across_two_runs(tmp_pat
         ).read(projections)
 
     readable = [e.reading for e in result.episodes if e.reading is not None]
-    # Three rounds on the first run, and nothing at all on the second.
-    assert len(asked.prompts) == 3
+    # One call per episode and two retries of the refused one on the first run, and nothing at
+    # all on the second.
+    assert len(asked.prompts) == 4
     assert len(readable) == 1
 
     bank_month_accounts(

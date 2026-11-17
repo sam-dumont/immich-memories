@@ -12,7 +12,6 @@ from typing import Any
 
 from immich_memories.analysis.reading.cull_answer import CULL_BUCKETS
 
-_EPISODE_SCHEMA = "episode-reading-text-v1"
 TRIP_TYPES = ("multi_base", "base_camp", "road_trip", "hiking_trail")
 MAP_MODES = ("title_only", "excursions", "overnight_stops")
 
@@ -30,41 +29,20 @@ def _object(properties: dict[str, Any], required: Sequence[str] | None = None) -
     }
 
 
-_ROW = _object({"asset": {"type": "integer", "minimum": 1}, "reason": {"type": "string"}})
-
-
-def episode_reading_shape(episodes: int, *, lean: bool) -> dict[str, Any]:
-    """One reading per offered episode alias; the lean question asks no Cull."""
+def episode_reading_shape(pictures: int, *, lean: bool) -> dict[str, Any]:
+    """One episode's reading, its rows naming pictures 1 to `pictures`; the lean question asks
+    no Cull."""
+    number = {"type": "integer", "minimum": 1, "maximum": max(1, pictures)}
+    row = _object({"picture": number, "reason": {"type": "string"}})
     reading: dict[str, Any] = {
-        "episode": {"type": "integer", "minimum": 1, "maximum": episodes},
         "what_happened": {"type": "string"},
-        "representatives": {
-            "type": "array",
-            "items": _ROW,
-            "minItems": 1,
-            "maxItems": 1 if lean else 3,
-        },
-        "notable_moments": {"type": "array", "items": _ROW},
+        "representatives": {"type": "array", "items": row, "minItems": 1, "maxItems": 3},
+        "notable_moments": {"type": "array", "items": row},
     }
     if not lean:
-        bucket = _object(
-            {"asset": {"type": "integer", "minimum": 1}, "bucket": {"enum": list(CULL_BUCKETS)}}
-        )
+        bucket = _object({"picture": number, "bucket": {"enum": list(CULL_BUCKETS)}})
         reading["cull"] = {"type": "array", "items": bucket}
-    return _named(
-        "episode_reading",
-        _object(
-            {
-                "schema_version": {"enum": [_EPISODE_SCHEMA]},
-                "episodes": {
-                    "type": "array",
-                    "items": _object(reading),
-                    "minItems": episodes,
-                    "maxItems": episodes,
-                },
-            }
-        ),
-    )
+    return _named("episode_reading", _object(reading))
 
 
 def accounts_shape(keys: Sequence[str], *, max_chars: int) -> dict[str, Any]:
