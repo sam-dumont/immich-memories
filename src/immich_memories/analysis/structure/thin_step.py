@@ -6,16 +6,21 @@ the no-model film's last passes (the unvouched-filler drop), so the polish only 
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from functools import partial
 
 from immich_memories.analysis.film.intent import voiced_era_of
 from immich_memories.analysis.film.material import Material, Wall
 from immich_memories.analysis.polish.layer import PeriodUnread
+from immich_memories.analysis.polish.period_thesis import THESIS_VERSION, FilmShots
 from immich_memories.analysis.polish.shot_kinds import shot_kind
 from immich_memories.analysis.selection.candidates import story_candidates
 from immich_memories.analysis.stories.replies import film_close_family
+from immich_memories.analysis.structure.film_summary import period_thesis
 from immich_memories.analysis.structure.unvouched_filler import filler_evidence, owner_vouches_for
+
+logger = logging.getLogger(__name__)
 
 
 def polish_the_draft(
@@ -41,14 +46,17 @@ def polish_the_draft(
     if ports.thin is None:
         return carriers
     try:
-        catalogue = ports.thin.catalogue_of(selection.story, pool.moment_assets, drafted=carriers)
+        # The thesis is what the polish judges every shot against: what this draft's period
+        # was about, asked of its own stories and readings once the period has an account.
+        catalogue = ports.thin.catalogue_of(
+            selection.story,
+            pool.moment_assets,
+            drafted=carriers,
+            thesis_of=lambda: _thesis_of_the_draft(source, ports, selection, carriers, record),
+        )
         unread = ""
     except PeriodUnread as exc:
         catalogue, unread = None, str(exc)
-    # The account is what the polish judges every shot against: what the library's readings say
-    # happened over the period. `structure.film_summary` tells it again, restricted to the
-    # stories the settled cut shows, as the film's summary (#2575).
-    run.period_account = catalogue.thesis if catalogue is not None else ""
     polished = ports.thin.polish(
         carriers,
         judge=ports.judge,
@@ -75,6 +83,25 @@ def polish_the_draft(
         if row["asset_id"] not in kept
     )
     return polished
+
+
+def _thesis_of_the_draft(source, ports, selection, carriers, record) -> str:
+    """The draft's thesis, or nothing when the reader gave none: the vote then reads the
+    period's account, as it did before there was a thesis."""
+    shots = FilmShots(
+        carriers=carriers,
+        stories=selection.story.stories,
+        readings=ports.thin.readings(),
+        line_of=selection.lines.get,
+    )
+    try:
+        thesis = period_thesis(source, ports.judge, shots)
+    except (OSError, ValueError, RuntimeError) as exc:
+        logger.warning("The period thesis was not usable (%s); the vote reads the account", exc)
+        record("period-thesis", {"version": THESIS_VERSION, "thesis": "", "fallback": str(exc)})
+        return ""
+    record("period-thesis", {"version": THESIS_VERSION, "thesis": thesis})
+    return thesis
 
 
 def _length_of(source, carriers, run) -> float:

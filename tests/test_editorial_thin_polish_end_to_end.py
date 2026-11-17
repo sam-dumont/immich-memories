@@ -54,6 +54,9 @@ class PolishJudge:
         if stage.startswith("story-pick-"):
             labels = re.findall(r"^(M\d{2}) \|", prompt, re.MULTILINE)
             return json.dumps({"keep": labels[:1]})
+        if stage == "period-thesis":
+            # The thesis the vote judges against and the summary is told from (#2594).
+            return json.dumps({"thesis": "Ordinary days at home in February."})
         if stage == "film-summary":
             # A Full film's summary is the model's, asked once the refined cut is settled.
             return json.dumps({"summary": "A month of ordinary days at home."})

@@ -7,6 +7,7 @@ __all__ = [
     "cull_answer",
     "demand",
     "episode_answers",
+    "episode_block",
     "episode_documents",
     "episode_paging",
     "episode_prompt",

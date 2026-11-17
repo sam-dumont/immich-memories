@@ -207,3 +207,34 @@ def test_moment_probe_does_not_pass_when_invalid_answers_fall_back_to_the_first_
     result = run_case(next(case for case in checks if case.name == "story moment selection"))
     assert not result.valid
     assert "fallback" in result.quality
+
+
+def test_film_summary_probe_asks_the_thesis_then_the_summary(monkeypatch):
+    from immich_memories.conformance.editorial_cases import editorial_cases
+
+    def reply(request):
+        prompt = json.loads(request.content)["messages"][0]["content"]
+        body = (
+            {"thesis": "Avery's birthday cake with Kit, then a swim in a lake."}
+            if prompt.startswith("Say what this period")
+            else {"summary": "Avery and Kit share a birthday cake, then swim in a lake."}
+        )
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(body)}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            },
+        )
+
+    # WHY: replace only the provider HTTP response; both production questions stay real.
+    monkeypatch.setattr(
+        httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
+    )
+    checks = editorial_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
+    result = run_case(next(case for case in checks if case.name == "film summary"))
+
+    assert result.valid, result.quality
+    assert result.calls == 2

@@ -61,6 +61,12 @@ def picture_line(number: int, line: str) -> str:
     return _read(line).line(number)
 
 
+def people_on(lines: Sequence[str]) -> str:
+    """Who is on these pictures, as the block's People line names them: the four on the most
+    pictures by first name with who they are, then how many others."""
+    return _who([_read(line) for line in lines])
+
+
 def episode_block(
     lines: Sequence[str],
     *,
@@ -76,9 +82,9 @@ def episode_block(
         head.append("Town: " + "; ".join(towns))
     if albums:
         head.append("Albums: " + "; ".join(albums))
-    people = _people_line(pictures)
+    people = _who(pictures)
     if people:
-        head.append(people)
+        head.append("People: " + people)
     numbered = (picture.line(number) for number, picture in enumerate(pictures, start=1))
     return "\n".join((*head, "Pictures:", *numbered))
 
@@ -93,7 +99,7 @@ def _episode_line(pictures: Sequence[_Picture], page: tuple[int, int] | None) ->
     return f"EPISODE: {count} picture{'' if count == 1 else 's'}{when}{part}"
 
 
-def _people_line(pictures: Sequence[_Picture]) -> str:
+def _who(pictures: Sequence[_Picture]) -> str:
     seen: Counter[str] = Counter()
     about: dict[str, str] = {}
     for picture in pictures:
@@ -103,9 +109,7 @@ def _people_line(pictures: Sequence[_Picture]) -> str:
     if not seen:
         return ""
     shown = [name for name, _count in seen.most_common(_PEOPLE_SHOWN)]
-    line = "People: " + "; ".join(
-        f"{name} ({about[name]})" if about[name] else name for name in shown
-    )
+    line = "; ".join(f"{name} ({about[name]})" if about[name] else name for name in shown)
     others = len(seen) - len(shown)
     return f"{line}; and {others} others" if others else line
 

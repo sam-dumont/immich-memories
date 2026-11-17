@@ -43,8 +43,12 @@ In order: read the period account, vote on the draft's unprotected shots, try ch
 replacements, review the newcomers those replacements bring in, then, only if the film is still
 short, read further episodes.
 
-**The vote.** The model gets the draft as text, in blocks of at most 12 shots, under the period's
-account and whose film it is. It answers one question, reject-only: which of these shots add
+**The vote.** The model gets the draft as text, in blocks of at most 12 shots, under the draft's
+thesis and whose film it is. The thesis is one small question asked once the period has an account:
+two short sentences on the draft's four heaviest stories (their share of the shots and what up to
+two of their episodes were read as) and the four people on the most pictures, in the film's
+language. With no usable answer the vote reads the account. A period with no account gets no
+vote. It answers one question, reject-only: which of these shots add
 nothing? Each block is asked in source order, and in a second, hashed order only when the first named
 a shot it may move. A shot named in either order is offered a replacement and keeps its place
 until one passes every check. If the bounded candidate search finds nothing suitable, the
@@ -153,16 +157,16 @@ serializes requests.
 - **The music's mood**, from the film's story titles and captions, in one text call
   (`audio/text_mood.mood_for_cut`). With no model the clips' own mood decides, or "calm".
 - **The summary**, under the same experimental switch: off, a film has no summary and its Immich
-  description is its title. On, it's up to 150 words on what the film was about and which stories
-  mattered. One
-  question, fed the film's own stories: their names, days, people, occasions, places, and the trip
-  each leg belongs to. The question names the film's kind, dates and subject, so a person, season or
-  year film never gets a month's summary back from the bank. The storyboard, the film page and the
+  description is its title. On, it's one sentence of at most 25 words on who the film was with and
+  what they did. Two small questions: the thesis of the finished cut, then the sentence, fed that
+  thesis and one line the app counts from the shots ("5 of 12: Kit blows out the candles; 4 of
+  12: a swim in the lake; 3 other shots. Doing: a meal (4)"). Both name the film's kind, dates and
+  subject, so a person, season or year film never gets a month's summary back from the bank. The storyboard, the film page and the
   title read it. With no model, or when the answer is unusable, the summary is one line of the
   stories' names in the film's language: "Kit's birthday, then The road north". Nothing in it is
   invented.
-- **The thesis**, the period's account in up to 150 words, shared by every film of that period. It
-  steers the vote and nothing else.
+- **The thesis**, two short sentences on what the cut's period was about, asked of the cut's own
+  stories and readings. It steers the vote and feeds the summary.
 
 The captions under the pictures are dates and places, on every tier: the date from Immich
 metadata, the place from Immich's city, or the resolved city, town or village when `network.geocoding` is on and found
