@@ -110,7 +110,7 @@ Every run has **Copy report** and **Download report**, including failed runs. Re
 
 ## Change settings
 
-Each setting shows where its value came from. A value set by the environment or `config.yaml` is locked here; change it at that source. Other values can be saved from the page.
+Each setting is named in the interface language, with its config key under the name, and shows where its value came from. A value set by the environment or `config.yaml` is locked here; change it at that source. Other values can be saved from the page.
 
 A setting with a fixed list of values (the tier, the output codec and resolution, the hardware backend, the title style) is a dropdown, so you can't type a value the app refuses. Each choice has a plain label next to its value, such as "H.264, software (libx264)" or "1080p (1920x1080)"; the labels are in English. A number has its limits (`output.crf` takes 0 to 51), and a value that the environment or the file set to something outside the list still shows, marked "not in the list". `analysis.source_prepare_workers` takes either a number from 1 to 4 or `auto`, so it stays a text box with that hint.
 
