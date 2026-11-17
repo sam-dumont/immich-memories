@@ -40,20 +40,18 @@ def _row(alias: int) -> dict:
     }
 
 
-def test_the_prompt_says_how_many_entries_to_return_whatever_the_pictures() -> None:
+def test_the_prompt_asks_one_reading_of_the_whole_episode_whatever_the_pictures() -> None:
+    """Since #2594 a request reads one episode and the answer is that reading, with no list of
+    entries a model could fill one per picture."""
     pictures = tuple(f"a{i}" for i in range(40))
     lines = dict.fromkeys(pictures, "a child in a garden")
 
     for lean in (False, True):
-        one = episode_prompt((_scope("e1", pictures),), EpisodePromptFacts(lines, lean=lean))
-        two = episode_prompt(
-            (_scope("e1", pictures[:20]), _scope("e2", pictures[20:])),
-            EpisodePromptFacts(lines, lean=lean),
-        )
+        prompt = episode_prompt(_scope("e1", pictures), EpisodePromptFacts(lines, lean=lean))
 
-        assert "exactly 1 entry" in one
-        assert "exactly 2 entries" in two
-        assert "never one entry per asset" in one
+        assert prompt.count("EPISODE: 40 pictures") == 1
+        assert '"episodes"' not in prompt
+        assert 'JSON only: {"what_happened"' in prompt
 
 
 def test_a_reply_with_an_entry_per_picture_reads_no_episode() -> None:

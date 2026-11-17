@@ -299,9 +299,9 @@ the run.
   repair round on that call. A moment pick still refused after its repair doesn't end the film:
   those rows get the moments the no-model film would pick, and the story's pick record says why
   (`pick-rules-fallback`).
-- **A reply cut off at its token cap keeps what it finished.** The episode readings or period
-  accounts it wrote whole are kept, and only the unfinished ones are asked again. An episode asked
-  again gets the full 4,000-token ceiling rather than its own estimate.
+- **A reply cut off at its token cap keeps what it finished.** The period accounts it wrote whole
+  are kept, and only the unfinished ones are asked again. Each episode is read in its own request;
+  one cut off is asked again with the full 4,000-token ceiling rather than its own estimate.
 - **The selection reader receives text only.** Image captions use the same settings only with an explicit [LLM-caption opt-in](../better/captions.md#explicit-llm-captions).
 
 To check an endpoint, run the conformance suite below. Keep usage and timings apart from the

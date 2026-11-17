@@ -50,20 +50,14 @@ def prepared_month():
 
 def answer(prompt: str) -> str:
     import json
-    import re
 
+    # One episode per call: the answer is that episode's reading.
+    assert prompt.count("EPISODE:") == 1
     return json.dumps(
         {
-            "schema_version": "episode-reading-text-v1",
-            "episodes": [
-                {
-                    "episode": int(alias),
-                    "what_happened": "Something happened.",
-                    "representatives": [{"asset": 1, "reason": "the only frame"}],
-                    "cull": [],
-                }
-                for alias in re.findall(r"^episode (\d+)$", prompt, re.MULTILINE)
-            ],
+            "what_happened": "Something happened.",
+            "representatives": [{"picture": 1, "reason": "the only frame"}],
+            "cull": [],
         }
     )
 

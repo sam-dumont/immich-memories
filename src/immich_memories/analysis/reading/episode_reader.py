@@ -702,7 +702,9 @@ def _offer_batch(requester, packs, facts, limits) -> None:
         return
     offer(
         tuple(
-            (episode_prompt(pack, facts), episode_completion_budget(pack, limits)) for pack in packs
+            (episode_prompt(scope, facts), episode_completion_budget(pack, limits))
+            for pack in packs
+            for scope in pack
         )
     )
 
@@ -715,17 +717,18 @@ def _read_missing(
     max_tokens: int,
     problem: str | None = None,
 ):
+    (scope,) = scopes
     prompt = (
-        episode_prompt(scopes, facts)
+        episode_prompt(scope, facts)
         if problem is None
-        else episode_retry_prompt(scopes[0], facts, problem)
+        else episode_retry_prompt(scope, facts, problem)
     )
     budgeted_request = getattr(requester, "request_with_budget", None)
     raw = (
         budgeted_request(
             prompt,
             max_tokens=max_tokens,
-            response_format=episode_reading_shape(len(scopes), lean=facts.lean),
+            response_format=episode_reading_shape(len(scope.page_asset_ids), lean=facts.lean),
         )
         if callable(budgeted_request)
         else requester(prompt)

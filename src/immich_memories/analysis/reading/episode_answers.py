@@ -123,7 +123,7 @@ def _json_problem(raw: str) -> str:
         if exc.pos >= len(body) - 1 or exc.msg.startswith("Unterminated"):
             return "the answer stopped before its JSON was complete"
         return f"the answer was not valid JSON ({exc.msg} at line {exc.lineno} column {exc.colno})"
-    return f'the answer had no object with schema_version "{TEXT_EPISODE_SCHEMA_VERSION}"'
+    return 'the answer had no object with "what_happened"'
 
 
 def _rows_by_alias(values: list) -> dict[int, list[object]]:
@@ -209,8 +209,8 @@ def _episode_payload(raw: str) -> tuple[dict[str, object] | None, bool]:
 
 
 def _complete_payload(raw: str) -> tuple[dict[str, object] | None, bool]:
-    payload = final_json_object(raw)
-    if payload is not None and payload.get("schema_version") == TEXT_EPISODE_SCHEMA_VERSION:
+    payload = _as_episodes(final_json_object(raw))
+    if payload is not None:
         return payload, False
     decoder = json.JSONDecoder()
     candidates: list[dict[str, object]] = []
@@ -221,9 +221,23 @@ def _complete_payload(raw: str) -> tuple[dict[str, object] | None, bool]:
             value, _end = decoder.raw_decode(raw, index)
         except json.JSONDecodeError:
             continue
-        if isinstance(value, dict) and value.get("schema_version") == TEXT_EPISODE_SCHEMA_VERSION:
-            candidates.append(value)
+        if (found := _as_episodes(value)) is not None:
+            candidates.append(found)
     return (candidates[0], True) if len(candidates) == 1 else (None, False)
+
+
+def _as_episodes(value: object) -> dict[str, object] | None:
+    """The answer as an `episodes` list: the one-episode question answers with a bare reading."""
+    if not isinstance(value, dict):
+        return None
+    if value.get("schema_version") == TEXT_EPISODE_SCHEMA_VERSION:
+        return value
+    if "what_happened" in value:
+        return {
+            "schema_version": TEXT_EPISODE_SCHEMA_VERSION,
+            "episodes": [{**value, "episode": 1}],
+        }
+    return None
 
 
 def _salvage_truncated_episodes(raw: str) -> dict[str, object] | None:
@@ -314,9 +328,9 @@ def _representative_named(item: object, asset_ids: tuple[str, ...]) -> tuple[str
     """The asset and reason one representative row names, or None when it names neither."""
     if not isinstance(item, dict):
         return None
-    asset_alias = item.get("asset")
+    asset_alias = _picture_number(item)
     if isinstance(asset_alias, str):
-        label = asset_alias.removeprefix("asset ")
+        label = asset_alias.removeprefix("asset ").removeprefix("picture ")
         asset_alias = next(
             (index for index in range(1, len(asset_ids) + 1) if str(index) == label), None
         )
@@ -351,14 +365,21 @@ def _representatives(
 
 def _cull_named(item: object, asset_ids: tuple[str, ...]) -> tuple[str, str] | None:
     """The asset and bucket one cull row names, or None when it names neither."""
+    if not isinstance(item, dict):
+        return None
+    number = _picture_number(item)
     if (
-        not isinstance(item, dict)
-        or not _is_alias(item.get("asset"))
+        not _is_alias(number)
         or item.get("bucket") not in CULL_BUCKETS
-        or not 1 <= item["asset"] <= len(asset_ids)
+        or not 1 <= number <= len(asset_ids)
     ):
         return None
-    return asset_ids[item["asset"] - 1], str(item["bucket"])
+    return asset_ids[number - 1], str(item["bucket"])
+
+
+def _picture_number(item: Mapping[str, object]) -> object:
+    """The number a row names its picture by: `picture` in the slim block, `asset` before it."""
+    return item["picture"] if "picture" in item else item.get("asset")
 
 
 def _cull_decisions(

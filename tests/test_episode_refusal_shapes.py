@@ -157,9 +157,9 @@ def test_the_lean_question_says_which_list_is_usually_empty():
     """249 of 1,673 recorded answers were `"episodes":[]`: a bare "Return []" read as the answer."""
     ids = ("picture",)
     scope = EpisodeRequestScope(EpisodeReadingIdentity("e", "p", "k"), ids, ids, 1, 1)
-    prompt = episode_prompt((scope,), EpisodePromptFacts({"picture": "a line"}, lean=True))
+    prompt = episode_prompt(scope, EpisodePromptFacts({"picture": "a line"}, lean=True))
 
-    assert "notable_moments is [] when no line shows" in prompt
+    assert "notable_moments is [] when no picture shows" in prompt
     assert "Return []" not in prompt
 
 

@@ -131,7 +131,8 @@ def test_fail_open_store_drift_is_stopped_before_the_requester(
     assert observed[0].requested_identities == identities
     assert observed[0].cache_hit_identities == ()
     assert observed[0].missing_identities == identities
-    assert observed[0].initial_pack_count == 1
+    # one request per episode (#2594)
+    assert observed[0].initial_pack_count == len(identities)
 
 
 def test_valid_warm_missing_partition_passes_before_request(

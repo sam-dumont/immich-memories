@@ -1,7 +1,7 @@
-"""How an episode request is cut into pages and packed into prompts under the model's limits.
+"""How an episode request is cut into pages under the model's limits.
 
-A reading is asked for in packs of whole episodes; an episode too large for one prompt is split
-into pages of its own, and every pack is sized so its answer fits the output budget.
+Each episode is asked on its own; an episode too large for one prompt is split into pages of its
+own, each asked on its own, and every answer is budgeted for the rows it may hold.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from immich_memories.analysis.reading.episode_answers import EpisodeRequestScope
+from immich_memories.analysis.reading.episode_block import picture_line
 from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 from immich_memories.store.episode_readings import EpisodeReadingIdentity
 
@@ -70,36 +71,32 @@ def episode_page_scopes(
         page_number=1,
         page_count=1,
     )
-    if (
-        len(full_asset_ids) <= max_assets_per_page
-        and len(episode_prompt((whole,), facts)) <= max_prompt_chars
-    ):
+    whole_prompt = episode_prompt(whole, facts)
+    if len(full_asset_ids) <= max_assets_per_page and len(whole_prompt) <= max_prompt_chars:
         return (whole,)
 
+    # A page's prompt is the question, a header of facts said once and one numbered line per
+    # picture. The header is sized from the whole episode, whose towns and people include every
+    # page's, with the longest page note; a page's length is then that plus its own lines, so
+    # the prompt is rendered once, not per picture.
+    conservative = max(len(full_asset_ids), 2)
+    whole_lines = len("\n".join(_lines(full_asset_ids, facts)))
+    page_note = len(f" (page {conservative} of {conservative})")
+    fixed = len(whole_prompt) - whole_lines + page_note
     pages: list[tuple[str, ...]] = []
     current: tuple[str, ...] = ()
-    conservative_page_count = max(len(full_asset_ids), 2)
-    # The prompt is its fixed text plus one numbered line per asset, so a page's length is the
-    # empty page's plus its lines, which is exact and renders the page once, not per asset.
-    empty = EpisodeRequestScope(
-        identity=identity,
-        full_asset_ids=full_asset_ids,
-        page_asset_ids=(),
-        page_number=conservative_page_count,
-        page_count=conservative_page_count,
-    )
-    fixed = len(episode_prompt((empty,), facts))
     lines_chars = 0
     for asset_id in full_asset_ids:
         position = len(current) + 1
-        line = len(f"  asset {position} | {facts.lines[asset_id]}")
-        proposed_chars = lines_chars + (1 if current else 0) + line
+        proposed_chars = (
+            lines_chars + (1 if current else 0) + len(picture_line(position, facts.lines[asset_id]))
+        )
         if current and (
             position > max_assets_per_page or fixed + proposed_chars > max_prompt_chars
         ):
             pages.append(current)
             current = (asset_id,)
-            lines_chars = len(f"  asset 1 | {facts.lines[asset_id]}")
+            lines_chars = len(picture_line(1, facts.lines[asset_id]))
         else:
             current = (*current, asset_id)
             lines_chars = proposed_chars
@@ -118,39 +115,34 @@ def episode_page_scopes(
     )
 
 
+def _lines(asset_ids: tuple[str, ...], facts: EpisodePromptFacts) -> list[str]:
+    return [
+        picture_line(number, facts.lines[asset_id])
+        for number, asset_id in enumerate(asset_ids, start=1)
+    ]
+
+
 def pack_episode_scopes(
     scopes: tuple[EpisodeRequestScope, ...],
     facts: EpisodePromptFacts,
     *,
     limits: TextEpisodeRequestLimits,
 ) -> tuple[tuple[tuple[EpisodeRequestScope, ...], ...], tuple[EpisodeRequestScope, ...]]:
+    """One request per page, and the pages no request can hold.
+
+    The question reads one episode: asked about several at once, the small reader wrote an
+    entry per picture or merged them (#2594).
+    """
     packs: list[tuple[EpisodeRequestScope, ...]] = []
     oversized: list[EpisodeRequestScope] = []
-    current: tuple[EpisodeRequestScope, ...] = ()
     for scope in scopes:
         if (
-            len(episode_prompt((scope,), facts)) > limits.max_prompt_chars
+            len(episode_prompt(scope, facts)) > limits.max_prompt_chars
             or episode_completion_budget((scope,), limits) > limits.max_output_tokens
         ):
             oversized.append(scope)
-            continue
-        if scope.page_count > 1:
-            if current:
-                packs.append(current)
-                current = ()
-            packs.append((scope,))
-            continue
-        proposed = (*current, scope)
-        if current and (
-            len(episode_prompt(proposed, facts)) > limits.max_prompt_chars
-            or episode_completion_budget(proposed, limits) > limits.max_output_tokens
-        ):
-            packs.append(current)
-            current = (scope,)
         else:
-            current = proposed
-    if current:
-        packs.append(current)
+            packs.append((scope,))
     return tuple(packs), tuple(oversized)
 
 

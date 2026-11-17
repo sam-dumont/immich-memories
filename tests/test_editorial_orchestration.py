@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -144,7 +143,7 @@ def test_text_editorial_planner_runs_the_real_banked_lane_with_full_context(
 
     def request_episode(prompt: str) -> str:
         episode_prompts.append(prompt)
-        assert re.findall(r"^episode (\d+)$", prompt, re.MULTILINE) == ["1"]
+        assert prompt.count("EPISODE:") == 1
         return json.dumps(
             {
                 "schema_version": TEXT_EPISODE_SCHEMA_VERSION,

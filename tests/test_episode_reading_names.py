@@ -40,33 +40,33 @@ def test_the_prompt_says_written_text_names_only_the_thing_it_is_written_on() ->
     from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 
     prompt = episode_prompt(
-        (_scope(("a1",)),),
+        _scope(("a1",)),
         EpisodePromptFacts(lines={"a1": "a crowd outside a building with a stage and banners"}),
     )
 
-    assert "banner" in prompt
-    assert "never names the day, the place or the event" in prompt
+    assert "Text\nread off a sign, a shirt or a screen names that object" in prompt
+    assert "not the place or the event" in prompt
 
 
 def test_the_prompt_carries_the_albums_that_hold_the_episode() -> None:
     from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 
     prompt = episode_prompt(
-        (_scope(("a1", "a2")),),
+        _scope(("a1", "a2")),
         EpisodePromptFacts(
             lines={"a1": "a crowd outside a building", "a2": "a stage at dusk"},
             album_names=lambda asset_ids: ("Summer Festival 2022",) if "a2" in asset_ids else (),
         ),
     )
 
-    assert "  Albums: Summer Festival 2022\n" in prompt
+    assert "\nAlbums: Summer Festival 2022\n" in prompt
 
 
 def test_an_episode_no_album_holds_carries_no_album_line() -> None:
     from immich_memories.analysis.reading.episode_prompt import EpisodePromptFacts, episode_prompt
 
     prompt = episode_prompt(
-        (_scope(("a1",)),),
+        _scope(("a1",)),
         EpisodePromptFacts(lines={"a1": "a crowd outside a building"}, album_names=lambda _ids: ()),
     )
 
@@ -167,4 +167,4 @@ def test_the_reader_shows_the_album_that_holds_the_episode(tmp_path: Path) -> No
         albums=RunAlbumNames(source),
     ).read(projections)
 
-    assert prompts and "  Albums: Summer Festival 2022\n" in prompts[0]
+    assert prompts and "\nAlbums: Summer Festival 2022\n" in prompts[0]
