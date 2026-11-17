@@ -147,12 +147,12 @@ class TestCLIHelp:
         assert "--end" in result.output
 
     def test_generate_help_offers_only_implemented_scale_modes(self):
-        """--help must not advertise a crop the assembler cannot do, nor a wrong default."""
+        """--help offers the looks that exist, never a retired name, nor a wrong default."""
         result = _invoke(["generate", "--help"])
 
         assert result.exit_code == 0
         assert "smart_crop" not in result.output
-        assert "fit|blur" in result.output.replace("\n", "").replace(" ", "")
+        assert "blur|fit|crop|auto" in result.output.replace("\n", "").replace(" ", "")
 
     def test_config_help(self):
         """config --help lists subcommands."""

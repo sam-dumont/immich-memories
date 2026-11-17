@@ -76,9 +76,10 @@ def register_render_command(runs: click.Group) -> None:
     )
     @click.option(
         "--scale-mode",
-        type=click.Choice(["fit", "blur"]),
+        type=click.Choice(["blur", "fit", "crop", "auto"]),
         default=None,
-        help="Fill an aspect mismatch with black bars or a blurred background",
+        help="How a picture of another shape fills the frame: blurred background, black bars, "
+        "a photo cropped around its faces, or crop when it has faces (default: from config, else blur)",
     )
     @click.option(
         "--format",

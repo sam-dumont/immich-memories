@@ -659,6 +659,7 @@ src/immich_memories/
 │   ├── gpu_moves.py            # Whether a move's frames are cut on the GPU (title kernel library on CUDA/Metal), via the kernel thread
 │   ├── move_kernels.py         # renderer.cut_frame as kernels; imported only once the kernel probe passed
 │   ├── ken_burns_moves.py      # Which move a still gets: whole picture <-> closest frame (person, group, pan, other)
+│   ├── photo_looks.py          # scale_mode looks for stills: blur, fit, crop (fill the frame around the faces), auto
 │   ├── animator.py             # Photo source prep: HEIC decode, downscale cap, HDR detection
 │   ├── photo_pipeline.py       # Render one photograph as a Ken Burns clip, streamed to FFmpeg
 │   ├── encoding.py             # Photo intermediate plan: fast x264 in software; NAS H.264/SDR on hardware without HEVC

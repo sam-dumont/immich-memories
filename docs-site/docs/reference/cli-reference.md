@@ -333,7 +333,7 @@ immich-memories generate [OPTIONS]
 | `--duration`, `-d` | integer | - | Target duration in seconds (default: fitted to the material the period holds) |
 | `--short-form` | choice: `15` \| `30` \| `60` \| `90` | - | Short-form preset: sets the duration and makes the video vertical |
 | `--orientation` | choice: `landscape` \| `portrait` \| `square` \| `auto` | auto | Output orientation (auto follows the final selected cut) |
-| `--scale-mode`, `-s` | choice: `fit` \| `blur` | - | How to fill an aspect mismatch: blurred background or black bars (default: from config, else blur) |
+| `--scale-mode`, `-s` | choice: `blur` \| `fit` \| `crop` \| `auto` | - | How a picture of another shape fills the frame: blurred background, black bars, a photo cropped around its faces, or crop when it has faces (default: from config, else blur) |
 | `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
 | `--transition`, `-t` | choice: `smart` \| `cut` \| `crossfade` \| `none` | smart | Transition style (default: smart, a mix of fades and cuts) |
 | `--resolution`, `-r` | choice: `auto` \| `4k` \| `1080p` \| `720p` | - | Output resolution (default: config value, 'auto' to match source clips) |
@@ -883,7 +883,7 @@ immich-memories runs render [OPTIONS] [RUN_ID]
 | `--title-style` | choice: `auto` \| `random` \| `modern_warm` \| `elegant_minimal` \| `vintage_charm` \| `playful_bright` \| `soft_romantic` | - | Title style for this render (default: title_screens.style_mode) |
 | `--resolution` | choice: `auto` \| `4k` \| `1080p` \| `720p` | - | Output resolution (default: from config) |
 | `--orientation` | choice: `landscape` \| `portrait` \| `square` \| `auto` | - | Output orientation (default: auto, follows the saved cut) |
-| `--scale-mode` | choice: `fit` \| `blur` | - | Fill an aspect mismatch with black bars or a blurred background |
+| `--scale-mode` | choice: `blur` \| `fit` \| `crop` \| `auto` | - | How a picture of another shape fills the frame: blurred background, black bars, a photo cropped around its faces, or crop when it has faces (default: from config, else blur) |
 | `--format` | choice: `mp4` \| `h265` \| `prores` | - | Output format override, as generate takes it (default: config value) |
 | `--quality` | choice: `high` \| `medium` \| `low` | - | Output quality: high, medium (balanced), low (fast); default: from config |
 | `--music` | text | - | A track to use, or 'auto' to choose as configured |

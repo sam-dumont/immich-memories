@@ -62,7 +62,12 @@ _LABELS: dict[str, dict[str, str]] = {
         "hdr": "HDR",
     },
     "output.quality": {"high": "High", "balanced": "Balanced", "fast": "Fast"},
-    "defaults.scale_mode": {"fit": "Fit (black bars)", "blur": "Fill with a blurred copy"},
+    "defaults.scale_mode": {
+        "fit": "Fit (black bars)",
+        "blur": "Fill with a blurred copy",
+        "crop": "Crop photos to fill, around their faces",
+        "auto": "Crop photos with faces, blur the rest",
+    },
     "defaults.transition": {
         "cut": "Cut",
         "crossfade": "Crossfade",

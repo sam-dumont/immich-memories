@@ -245,6 +245,7 @@
       <label class={label}>{t('Scaling Mode')}
         <select class={field} bind:value={scaleMode}>
           <option value="">{t('As configured')}</option><option value="blur">{t('Blurred background')}</option><option value="fit">{t('Fit with bars')}</option>
+          <option value="crop">{t('Crop photos around faces')}</option><option value="auto">{t('Crop photos with faces, blur the rest')}</option>
         </select>
       </label>
       <div class="flex flex-col gap-2 text-sm">

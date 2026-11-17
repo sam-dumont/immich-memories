@@ -24,6 +24,8 @@ If you crop, rotate or mirror a photo in Immich's own editor, the film uses that
 
 Clips keep their whole frame. For a landscape clip in a portrait film, choose **Blurred background** or **Fit with bars** under **Scaling Mode**. Neither crops your subject.
 
+Photos can fill the frame instead. **Crop photos around faces** cuts a portrait's long side in a landscape film (or the reverse) around the faces the move frames, so a person is big on screen. **Crop photos with faces, blur the rest** does that only for photos with faces. Videos keep the blurred background under both, and a photo whose faces can't all fit in the crop keeps it too. The config key is `defaults.scale_mode` (`crop` or `auto`).
+
 To make a video-only film, untick **Include photos** under **Length and pictures**, pass `--no-photos` on the CLI, or set `photos.enabled: false` in YAML.
 
 ## Live Photos

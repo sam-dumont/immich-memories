@@ -23,7 +23,8 @@ from immich_memories.config.models.render import PhotoConfig
 from immich_memories.generate_privacy import clip_location_name
 from immich_memories.photos.animator import prepare_photo_source
 from immich_memories.photos.encoding import photo_encoding_plan
-from immich_memories.photos.ken_burns_moves import film_subject, planned_move
+from immich_memories.photos.ken_burns_moves import film_subject
+from immich_memories.photos.photo_looks import FramedStill, framed_still, prepared_box
 from immich_memories.photos.renderer import (
     KenBurnsLayers,
     KenBurnsParams,
@@ -60,18 +61,14 @@ def _source_photo_path(asset: Asset, work_dir: Path) -> Path:
     return work_dir / f"{asset.id}{ext}"
 
 
-def _prepared_photo_pixels(raw_path: Path, target_w: int, target_h: int, work_dir: Path):
+def _prepared_photo_pixels(raw_path: Path, box: tuple[int, int], work_dir: Path):
     """Decode the source into integer RGB (16-bit for gain-mapped HDR), or report it unreadable."""
     # Prepare (HEIC decode, gain map extraction for HDR).
-    # WHY 1.5x (#423): the renderer samples at most output x 1.12 max zoom
-    # (1.41x before #2440 dropped the pan margin), and it holds three copies of
-    # whatever it is given. Measured on a 24.5 MP HEIC at 4K: 2.0x paid
-    # 0.63 s and 0.32 GB per photo for pixels its own resize discarded.
-    prepared = prepare_photo_source(
-        raw_path,
-        work_dir,
-        max_size=(round(target_w * 1.5), round(target_h * 1.5)),
-    )
+    # WHY a 1.5x box (#423, `photo_looks.prepared_box`): the renderer samples at
+    # most output x 1.5 max zoom, and it holds three copies of whatever it is
+    # given. Measured on a 24.5 MP HEIC at 4K: 2.0x paid 0.63 s and 0.32 GB per
+    # photo for pixels its own resize discarded.
+    prepared = prepare_photo_source(raw_path, work_dir, max_size=box)
 
     if prepared.pixels is not None:
         return prepared, prepared.pixels
@@ -81,29 +78,6 @@ def _prepared_photo_pixels(raw_path: Path, target_w: int, target_h: int, work_di
         logger.warning(f"Failed to read {prepared.path}")
         return None
     return prepared, cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-
-def _ken_burns_params(
-    asset: Asset,
-    fps: int,
-    duration: float,
-    *,
-    subjects: Collection[str | None] = (),
-    portrait: bool = False,
-) -> KenBurnsParams:
-    """Reproducible per-asset move between the whole picture and its closest frame.
-
-    ``subjects`` are the people the film is about, by name or person id: one
-    makes a person film, several a group film (see ``ken_burns_moves``).
-    """
-    return planned_move(
-        asset.id,
-        picture_faces(asset, subjects),
-        film_subject(subjects),
-        fps=fps,
-        duration=duration,
-        portrait=portrait,
-    )
 
 
 def photo_rendition(asset: Asset) -> str:
@@ -140,8 +114,9 @@ def render_single_photo(
 ) -> AssemblyClip | None:
     """Download, prepare, render (streaming), and encode a single photo.
 
-    `scale_mode` fills the bands around a still that does not match the canvas: its own
-    blur ("blur") or black ("fit"), the same choice the film makes for its videos.
+    `scale_mode` is the look a still takes on a canvas of another shape
+    (`photo_looks`): its own blur in the bands ("blur"), black ("fit"), a crop that
+    fills the canvas around the faces ("crop"), or a crop only when it has faces ("auto").
     `subjects` are the people the memory is about, by name or person id; the move
     ends on their faces. `film_transfer`, when known, is the HDR film's: the still is made in it.
     """
@@ -149,14 +124,13 @@ def render_single_photo(
         raw_path = _source_photo_path(asset, work_dir) if source_path is None else source_path
         if source_path is None and not raw_path.exists():
             _download_photo(download_fn, asset, raw_path)
-        loaded = _prepared_photo_pixels(raw_path, target_w, target_h, work_dir)
-        if loaded is None:
+        framed = _framed_source(
+            asset, raw_path, work_dir, (target_w, target_h), scale_mode, subjects,
+            fps=fps, duration=config.duration,
+        )  # fmt: skip
+        if framed is None:
             return None
-        prepared, img = loaded
-        # The prepared pixels are upright (EXIF applied), so their shape is the picture's own.
-        params = _ken_burns_params(
-            asset, fps, config.duration, subjects=subjects, portrait=img.shape[0] > img.shape[1]
-        )
+        prepared, still = framed
 
         # Stream-render to mp4 (O(1) memory — one frame at a time)
         output_path = work_dir / f"{asset.id}_photo.mp4"
@@ -164,8 +138,8 @@ def render_single_photo(
         # the 16-bit normalization. zscale npl must match.
         peak_nits = getattr(prepared, "peak_nits", 1000) if prepared.has_gain_map else 203
         _stream_render_to_mp4(
-            img,
-            params,
+            still.pixels,
+            still.params,
             output_path,
             target_w,
             target_h,
@@ -176,7 +150,7 @@ def render_single_photo(
             encoding_config=encoding_config,
             capabilities=capabilities,
             output_format=output_format,
-            scale_mode=scale_mode,
+            scale_mode=still.fill,
             film_transfer=film_transfer,
         )
         if not output_path.exists() or output_path.stat().st_size < 100:
@@ -197,6 +171,31 @@ def render_single_photo(
     except (ImmichAPIError, OSError, subprocess.SubprocessError, ValueError) as e:
         logger.warning(f"Failed to render photo {asset.id}: {e}")
         return None
+
+
+def _framed_source(
+    asset: Asset,
+    raw_path: Path,
+    work_dir: Path,
+    canvas: tuple[int, int],
+    look: str,
+    subjects: Collection[str | None],
+    *,
+    fps: int,
+    duration: float,
+) -> tuple[Any, FramedStill] | None:
+    """The prepared source and the still as the look shows it, or None when unreadable."""
+    faces = picture_faces(asset, subjects)
+    box = prepared_box(look, canvas, has_faces=bool(faces.faces))
+    loaded = _prepared_photo_pixels(raw_path, box, work_dir)
+    if loaded is None:
+        return None
+    prepared, img = loaded
+    # The prepared pixels are upright (EXIF applied), so their shape is the picture's own.
+    still = framed_still(
+        asset.id, img, faces, film_subject(subjects), canvas, look, fps=fps, duration=duration
+    )
+    return prepared, still
 
 
 # sRGB and BT.709 SDR share their range and near enough their curve: only the

@@ -2,7 +2,8 @@
 
 Runs where the title kernel library starts on a GPU (CUDA, Metal, Vulkan) and
 skips elsewhere: the blur fill around a portrait still, black bands around one,
-a landscape still filling the frame, and a 16-bit still.
+a landscape still filling the frame, a 16-bit still, and a portrait still the
+`crop` look cut to fill the frame around a face.
 """
 
 from __future__ import annotations
@@ -62,5 +63,38 @@ def test_gpu_frames_match_the_cpus(gpu_kernels, monkeypatch, shape, dtype, scale
     for gpu, cpu in pairs:
         difference = np.abs(gpu.astype(np.int32) - cpu.astype(np.int32))
         assert gpu.dtype == cpu.dtype
+        assert difference.max() <= code
+        assert difference.mean() < 0.1 * code
+
+
+@pytest.mark.parametrize("dtype", [np.uint8, np.uint16])
+def test_a_cropped_portrait_is_cut_the_same_on_the_gpu(gpu_kernels, monkeypatch, dtype):
+    from immich_memories.analysis.facts.framing_target import PictureFaces
+    from immich_memories.analysis.facts.subject_framing import FaceBox
+    from immich_memories.photos.ken_burns_moves import FilmSubject
+    from immich_memories.photos.photo_looks import framed_still
+
+    # WHY: the switch under comparison; OpenCV is what every move got before.
+    monkeypatch.setattr(gpu_moves, "gpu_cutter", REAL_GPU_CUTTER)
+    face = FaceBox(0.4, 0.6, 0.6, 0.75, named=True, person_id="kid")
+    still = framed_still(
+        "a-still",
+        _picture((3840, 2880, 3), dtype),
+        PictureFaces((face,), frozenset({"kid"})),
+        FilmSubject.PERSON,
+        (1920, 1080),
+        "crop",
+        fps=30,
+        duration=0.5,
+    )
+    assert still.cropped
+    layers = ken_burns_layers(still.pixels, 1920, 1080, still.params, scale_mode=still.fill)
+    code = 1 if dtype == np.uint8 else 257
+
+    pairs = zip(
+        move_frames(layers, still.params), ken_burns_frames(layers, still.params), strict=True
+    )
+    for gpu, cpu in pairs:
+        difference = np.abs(gpu.astype(np.int32) - cpu.astype(np.int32))
         assert difference.max() <= code
         assert difference.mean() < 0.1 * code

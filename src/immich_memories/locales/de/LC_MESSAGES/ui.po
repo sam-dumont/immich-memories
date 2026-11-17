@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-16 20:03+0100\n"
+"POT-Creation-Date: 2026-11-17 09:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -103,7 +103,7 @@ msgstr "Hinzufügen"
 msgid "Add a relationship"
 msgstr "Eine Beziehung hinzufügen"
 
-#: web/lib/RenderPanel.svelte:251
+#: web/lib/RenderPanel.svelte:252
 msgid "Add date overlay"
 msgstr "Datum einblenden"
 
@@ -153,7 +153,7 @@ msgstr "Nach einer Zeitspanne"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
+#: web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "Albumname"
 
@@ -240,7 +240,7 @@ msgstr "Alle. Nur Bilder ohne Einschränkung: kein Detektorhinweis, kein private
 
 #: web/lib/RenderPanel.svelte:191 web/lib/RenderPanel.svelte:197 web/lib/RenderPanel.svelte:206
 #: web/lib/RenderPanel.svelte:229 web/lib/RenderPanel.svelte:235 web/lib/RenderPanel.svelte:241
-#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:47
+#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:47
 #: web/routes/create/+page.svelte:494
 msgid "As configured"
 msgstr "Wie konfiguriert"
@@ -273,7 +273,7 @@ msgstr "Automatisch (passend zur Stimmung)"
 msgid "Automatic"
 msgstr "Automatisch"
 
-#: web/lib/RenderPanel.svelte:266
+#: web/lib/RenderPanel.svelte:267
 msgid "Automatic (as configured)"
 msgstr "Automatisch (wie konfiguriert)"
 
@@ -381,7 +381,7 @@ msgstr "API-Schlüssel für Bildunterschriften"
 msgid "Caption base URL"
 msgstr "Basis-URL für Bildunterschriften"
 
-#: web/lib/RenderPanel.svelte:252
+#: web/lib/RenderPanel.svelte:253
 msgid "Caption clips with their place"
 msgstr "Ortsnamen bei Clips einblenden"
 
@@ -628,6 +628,14 @@ msgstr "Der Stammbaum konnte nicht gezeichnet werden."
 #: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "Personen konnten nicht geladen werden."
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos around faces"
+msgstr "Fotos um die Gesichter zuschneiden"
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos with faces, blur the rest"
+msgstr "Fotos mit Gesichtern zuschneiden, sonst unscharf"
 
 #: web/lib/RenderPanel.svelte:192
 msgid "Crossfade"
@@ -1360,7 +1368,7 @@ msgstr "Getrennt halten"
 msgid "Keep downloaded videos"
 msgstr "Heruntergeladene Videos behalten"
 
-#: web/lib/RenderPanel.svelte:263
+#: web/lib/RenderPanel.svelte:264
 msgid "Keep original audio"
 msgstr "Originalton behalten"
 
@@ -1643,7 +1651,7 @@ msgstr "Nachzuholende Monate"
 msgid "Multi-Person"
 msgstr "Mehrere Personen"
 
-#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:262
+#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:263
 msgid "Music"
 msgstr "Musik"
 
@@ -1667,7 +1675,7 @@ msgstr "Musikdienst fehlgeschlagen; nächster Dienst wird versucht"
 msgid "Music upload quota (MB)"
 msgstr "Upload-Kontingent für Musik (MB)"
 
-#: web/lib/RenderPanel.svelte:287
+#: web/lib/RenderPanel.svelte:288
 msgid "Music volume:"
 msgstr "Musiklautstärke:"
 
@@ -1739,7 +1747,7 @@ msgstr ""
 "Dieser Schnitt wurde ausschließlich nach Auswahlregeln erstellt, ohne Analyse durch ein "
 "Modell."
 
-#: web/lib/RenderPanel.svelte:267 web/lib/settingLabels.ts:120
+#: web/lib/RenderPanel.svelte:268 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "Keine Musik"
 
@@ -2122,7 +2130,7 @@ msgstr "Voreinstellung"
 msgid "Preview"
 msgstr "Vorschau"
 
-#: web/lib/RenderPanel.svelte:274
+#: web/lib/RenderPanel.svelte:275
 msgid "Preview a track"
 msgstr "Musikstück anhören"
 
@@ -2134,7 +2142,7 @@ msgstr "Vorschau mit dieser Auswahl"
 msgid "Previous stages"
 msgstr "Vorherige Schritte"
 
-#: web/lib/RenderPanel.svelte:258
+#: web/lib/RenderPanel.svelte:259
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Datenschutzmodus: Jedes Bild verwischen und Namen verfremden"
 
@@ -2263,7 +2271,7 @@ msgstr "Diese Beziehung entfernen"
 msgid "Removed"
 msgstr "Entfernt"
 
-#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:303
 msgid "Render"
 msgstr "Rendern"
 
@@ -2392,7 +2400,7 @@ msgstr "Speichern"
 msgid "Save Config"
 msgstr "Konfiguration speichern"
 
-#: web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:303
 msgid "Save and render"
 msgstr "Speichern und rendern"
 
@@ -2597,7 +2605,7 @@ msgstr "Einige seiner Bilder"
 msgid "Some pictures were edited without descriptions."
 msgstr "Einige Bilder wurden ohne Beschreibungen in den Schnitt aufgenommen."
 
-#: web/lib/RenderPanel.svelte:264
+#: web/lib/RenderPanel.svelte:265
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr ""
 "Ton aus Videos und Live Photos. Ausschalten für nur Musik oder einen stummen Film mit „Keine "
@@ -2847,7 +2855,7 @@ msgstr "Das Personenregister: wer nahesteht, welche Rollen sie haben und wie sie
 msgid "The picture it replaced"
 msgstr "Das ersetzte Bild"
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:256
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -2864,7 +2872,7 @@ msgstr "Die verfügbaren Medien"
 msgid "The preview could not start."
 msgstr "Die Vorschau konnte nicht starten."
 
-#: web/lib/RenderPanel.svelte:268
+#: web/lib/RenderPanel.svelte:269
 msgid "The previewed track"
 msgstr "Das angehörte Musikstück"
 
@@ -3076,7 +3084,7 @@ msgstr "Updates"
 msgid "Upgrading guide"
 msgstr "Upgrade-Anleitung"
 
-#: web/lib/RenderPanel.svelte:277
+#: web/lib/RenderPanel.svelte:278
 msgid "Upload a track"
 msgstr "Musikstück hochladen"
 
@@ -3094,7 +3102,7 @@ msgstr ""
 msgid "Upload film"
 msgstr "Film hochladen"
 
-#: web/lib/RenderPanel.svelte:294
+#: web/lib/RenderPanel.svelte:295
 msgid "Upload the film to Immich"
 msgstr "Film zu Immich hochladen"
 
@@ -3352,7 +3360,7 @@ msgstr ""
 "Dein erster Film benötigt diese Modelldateien. Der Download beginnt erst, wenn du auf den "
 "Button drückst."
 
-#: web/lib/RenderPanel.svelte:300
+#: web/lib/RenderPanel.svelte:301
 msgid ""
 "Your latest changes are in no revision yet. Rendering saves them as a new revision first, so "
 "the film has them."

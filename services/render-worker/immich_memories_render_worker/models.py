@@ -175,7 +175,7 @@ class OutputSettings(Contract):
 
 
 class RenderOptions(Contract):
-    scale_mode: Literal["fit", "blur"] = "blur"
+    scale_mode: Literal["fit", "blur", "crop", "auto"] = "blur"
     add_date_overlay: bool = False
     add_place_overlay: bool = False
     privacy_mode: bool = False

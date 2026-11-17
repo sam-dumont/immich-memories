@@ -628,6 +628,37 @@ def test_fade_controls_save_a_default_and_submit_a_film_override(
     assert sent[-1]["fade_color"] is None
 
 
+def test_the_render_panel_offers_the_photo_crop_looks_and_sends_the_chosen_one(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _seed(launch_workspace)
+    sent = []
+
+    def record_render(route):
+        sent.append(route.request.post_data_json)
+        # WHY: inspect the browser's request without writing a whole film.
+        route.fulfill(status=422, json={"detail": "Test captured the render request"})
+
+    page.route("**/api/v1/runs/*/renders", record_render)
+    cut_month(page, launch_app_url)
+    panel = page.get_by_role("region", name="Render")
+    looks = panel.get_by_label("Scaling Mode")
+    expect(looks.locator("option")).to_have_text(
+        [
+            "As configured",
+            "Blurred background",
+            "Fit with bars",
+            "Crop photos around faces",
+            "Crop photos with faces, blur the rest",
+        ]
+    )
+    for look in ("crop", "auto"):
+        looks.select_option(look)
+        with page.expect_response("**/api/v1/runs/*/renders"):
+            panel.get_by_role("button", name="Render", exact=True).click()
+        assert sent[-1]["scale_mode"] == look
+
+
 @pytest.mark.parametrize("missing", [[], ["asset.upload"], ["tag.create", "tag.asset"]])
 @pytest.mark.feature("web.upload-permissions")
 def test_render_upload_option_explains_permissions_without_disabling_render(
