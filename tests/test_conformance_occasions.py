@@ -67,6 +67,31 @@ def test_day_probe_requires_a_grounded_race_verdict(monkeypatch, name):
     assert result.calls == 1
 
 
+@pytest.mark.parametrize("title,valid", [("Cycling race", True), ("A sunny day", False)])
+def test_title_probe_needs_the_race_named_from_the_facts(monkeypatch, title, valid):
+    from immich_memories.conformance.occasion_cases import occasion_cases
+
+    transport = httpx.MockTransport(
+        lambda _: httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"finish_reason": "stop", "message": {"content": json.dumps({"title": title})}}
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            },
+        )
+    )
+    # WHY: only the external LLM response is controlled.
+    monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
+    checks = occasion_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
+    result = run_case(next(case for case in checks if case.name == "occasion title"))
+    assert result.valid is valid
+    assert result.calls == 1
+
+
 @pytest.mark.parametrize("run,valid", [("R1", True), ("R2", False)])
 def test_sequence_probe_distinguishes_race_from_ordinary_day(monkeypatch, run, valid):
     from immich_memories.conformance.occasion_cases import occasion_cases

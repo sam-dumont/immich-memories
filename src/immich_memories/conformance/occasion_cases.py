@@ -4,7 +4,8 @@ from datetime import timedelta
 from functools import partial
 from types import SimpleNamespace
 
-from immich_memories.analysis.special_days.detection import ask_if_special
+from immich_memories.analysis.special_days.detection import SpecialDay, ask_if_special
+from immich_memories.analysis.special_days.facts_title import FactsTitle
 from immich_memories.analysis.special_days.holiday import was_the_holiday
 from immich_memories.analysis.special_days.sequence import read_in_sequence
 from immich_memories.config.models.llm import LLMConfig
@@ -31,6 +32,17 @@ def occasion(llm: LLMConfig, *, captioned: bool) -> str:
         for word in ("race", "cycling", "cyclist")
     ), "occasion lost the cycling evidence"
     return "recognizes and names the cycling race"
+
+
+def title(llm: LLMConfig) -> str:
+    assets = race_assets()
+    titled = FactsTitle(llm, None, captions={asset.id: asset.llm_description for asset in assets})(
+        assets[0].file_created_at.date(), assets, SpecialDay(special=True, title="A day out")
+    )
+    assert any(word in titled.title.lower() for word in ("race", "cycling", "cyclist")), (
+        "the title from the day's facts lost the cycling evidence"
+    )
+    return "names the cycling race from the day's facts"
 
 
 def sequence(llm: LLMConfig) -> str:
@@ -81,6 +93,11 @@ def occasion_cases(llm: LLMConfig) -> tuple[Case, ...]:
             "recorded occasion",
             partial(occasion, llm, captioned=False),
             frozenset({"analysis.special_days.detection:_ask"}),
+        ),
+        Case(
+            "occasion title",
+            partial(title, llm),
+            frozenset({"analysis.special_days.facts_title:_ask"}),
         ),
         Case(
             "holiday distinction",

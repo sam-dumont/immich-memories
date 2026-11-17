@@ -34,6 +34,7 @@ from typing import Any
 from babel import Locale
 from babel.lists import format_list
 
+from immich_memories.analysis.facts.line_fields import DOING
 from immich_memories.analysis.judgments.strict_json import bounded_model_text, final_json_object
 from immich_memories.analysis.polish.period_thesis import FilmShots, read_thesis, thesis_prompt
 from immich_memories.analysis.stories.names import span_label, story_text
@@ -53,17 +54,6 @@ _HOME_WEEK_GAP_DAYS = 7
 _LEADING = ("dominant", "major")
 # The groups of shots the summary's counted line names, largest first.
 _GROUPS = 3
-# What the shots show people doing, as the activity heads read them, in words a summary can
-# use. Posing and working say nothing about what happened, so they are left out.
-_DOING = {
-    "playing": "playing",
-    "eating-drinking": "a meal",
-    "celebration": "a celebration",
-    "sport-active": "being active outdoors",
-    "sightseeing": "sightseeing",
-    "performing": "a performance",
-    "animal-nature": "animals and nature",
-}
 _VENUES = {"water": "by the water"}
 _HEAD = re.compile(r"\b(activity|venue)=([a-z-]+)")
 _MOST_DOING = 3
@@ -383,6 +373,6 @@ def _doing(carriers: Sequence[Mapping[str, Any]]) -> list[str]:
     seen: Counter[str] = Counter()
     for carrier in carriers:
         for head, label in _HEAD.findall(str(carrier.get("line") or "")):
-            if word := (_DOING if head == "activity" else _VENUES).get(label):
+            if word := (DOING if head == "activity" else _VENUES).get(label):
                 seen[word] += 1
     return [f"{word} ({count})" for word, count in seen.most_common(_MOST_DOING)]

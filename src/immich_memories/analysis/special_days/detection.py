@@ -582,7 +582,8 @@ def _asked_again(
     answer = json_object_in(raw)
     if answer is None:
         return ""
-    return title_the_day_can_keep(str(answer.get("title", "")).strip(), assets, evidence=lines)
+    written = str(answer.get("title", "")).strip()
+    return title_the_day_can_keep(written, assets, evidence=lines, locale=locale)
 
 
 def json_object_in(raw: str) -> dict | None:
@@ -739,7 +740,7 @@ def _ask_from_facts(
         return SpecialDay(special=False)
     written = answer["title"].strip()
     what = answer["what"].strip()
-    title = title_the_day_can_keep(written, assets, evidence=lines)
+    title = title_the_day_can_keep(written, assets, evidence=lines, locale=locale)
     # Only for a day that is going to be kept. An ordinary day is discarded
     # whatever it is called, and a second live call to name it better is spent
     # on nothing.
@@ -748,7 +749,9 @@ def _ask_from_facts(
     return SpecialDay(
         special=special,
         title=title or honest_title(assets, what=what, evidence=lines, locale=locale),
-        subtitle=line_the_day_can_keep(answer["subtitle"].strip(), assets, evidence=lines),
+        subtitle=line_the_day_can_keep(
+            answer["subtitle"].strip(), assets, evidence=lines, locale=locale
+        ),
         what=what,
         window=_window_the_model_gave(answer, assets),
     )
@@ -883,9 +886,9 @@ def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answ
     what = answer["what"].strip()
     return SpecialDay(
         special=answer["special"],
-        title=title_the_day_can_keep(answer["title"], assets, evidence=lines)
+        title=title_the_day_can_keep(answer["title"], assets, evidence=lines, locale=locale)
         or honest_title(assets, what=what, evidence=lines, locale=locale),
-        subtitle=line_the_day_can_keep(answer["subtitle"], assets, evidence=lines),
+        subtitle=line_the_day_can_keep(answer["subtitle"], assets, evidence=lines, locale=locale),
         what=what,
         window=_window_the_model_gave(answer, assets),
     )

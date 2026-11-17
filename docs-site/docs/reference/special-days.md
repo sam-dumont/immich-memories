@@ -48,6 +48,12 @@ that day to `generate --day`, or add it to the catalogue. There is no yearly cap
 against what the day recorded: a title naming a place the day never went, or a claim nothing supports, is
 asked for once more, then the day is dropped.
 
+Once a day is confirmed, its title is written again from a short list of its facts: how many pictures over
+how many hours and where, who is on the most pictures (close family by role), a birthday or public holiday
+the library knows of, what the pictures show people doing, and four of its captions. That title goes through
+the same checks. When the reader gives nothing usable, the day keeps the title the check gave it. A birth
+day keeps its birth title.
+
 Each proposed occasion is checked against that day's own evidence. An ordinary-day verdict drops it. An
 empty or unreadable answer is asked once more; a day still without a verdict stays unjudged, and the scan
 prints why (nothing written about its pictures, the reader failed, or its answer could not be read). A

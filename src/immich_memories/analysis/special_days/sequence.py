@@ -41,6 +41,7 @@ from immich_memories.analysis.special_days.detection import (
     json_object_in,
     run_extent,
 )
+from immich_memories.analysis.special_days.facts_title import TITLE_VERSION
 from immich_memories.people.relationships import is_close_family
 
 if TYPE_CHECKING:
@@ -49,8 +50,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SEQUENCE_VERSION = "special-day-sequence-v1-occasions-in-order"
-# A catalogue from before this contract did not honour the day-level rejection.
-SCAN_VERSION = f"{SEQUENCE_VERSION}+{PROMPT_VERSION}+confirmed-v1"
+# A catalogue from before this contract did not honour the day-level rejection; one from before
+# the title question wrote its titles with the day question (#2667).
+SCAN_VERSION = f"{SEQUENCE_VERSION}+{PROMPT_VERSION}+confirmed-v1+{TITLE_VERSION}"
 
 # Owner, 2026-09-18: a day is kept only if a film of it can run this long.
 MIN_FILM_SECONDS = 30.0

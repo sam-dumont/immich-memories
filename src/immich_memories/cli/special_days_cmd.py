@@ -24,6 +24,7 @@ from immich_memories.cli._helpers import console, print_error, print_success
 if TYPE_CHECKING:
     from immich_memories.automation.special_day_scan import DiscoveredDay
     from immich_memories.config import Config
+    from immich_memories.db import Store
 
 
 def register_special_day_commands(main: click.Group) -> None:
@@ -267,6 +268,8 @@ def _scan_one_year(
     from immich_memories.home_country import home_country
     from immich_memories.i18n import resolve_film_locale
 
+    judgments = judgment_bank(config)
+    reader = config.editorial.resolve_reader(config.llm.model)
     for day in scan_year(
         assets,
         llm_config=config.llm,
@@ -276,13 +279,14 @@ def _scan_one_year(
         analysis_config=config.analysis,
         trips_config=config.trips,
         captions=prepared_captions(config, tuple(asset.id for asset in assets)),
-        judgments=judgment_bank(config),
+        judgments=judgments,
         still_seconds=config.photos.duration,
-        reader=config.editorial.resolve_reader(config.llm.model),
+        reader=reader,
         close_family=_close_family(),
         per_year=config.automation.special_days_per_year,
         locale=resolve_film_locale(config.title_screens.locale),
         births=_close_family_births(),
+        activities=_activities(assets, judgments, config) if reader == "model" else None,
     ):
         found.append(record_for(day))
         if day.judged:
@@ -306,6 +310,19 @@ def _close_family() -> dict[str, str]:
     from immich_memories.people.context import load_people_prompt_context
 
     return close_family_roles(load_people_prompt_context())
+
+
+def _activities(assets: list, store: Store | None, config: Config) -> dict[str, str]:
+    """What the activity head saw on each picture, as the store banked it; nothing without one."""
+    from immich_memories.cache.embedding_cache import HeadFactStore
+
+    version = config.editorial.active_head_versions.get("activity")
+    if store is None or not version:
+        return {}
+    facts = HeadFactStore(store).facts_for(
+        [asset.id for asset in assets], head="activity", version=version
+    )
+    return {asset_id: fact.label for asset_id, fact in facts.items()}
 
 
 def _close_family_births() -> dict[date, tuple[str, ...]]:

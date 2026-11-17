@@ -48,11 +48,11 @@ def _calendar_words() -> frozenset[str]:
     """
     from immich_memories.i18n import SUPPORTED_LOCALES
 
-    return frozenset().union(*(_calendar_words_in(code) for code in SUPPORTED_LOCALES))
+    return frozenset().union(*(calendar_words_in(code) for code in SUPPORTED_LOCALES))
 
 
 @lru_cache(maxsize=32)
-def _calendar_words_in(locale: str) -> frozenset[str]:
+def calendar_words_in(locale: str) -> frozenset[str]:
     """Month and weekday names as one film language spells them (#2139).
 
     A title spells its dates in the film's own language: "June" in a French title is not
@@ -131,7 +131,7 @@ def invented_name(line: str, facts: str, locale: str = "en") -> str | None:
         (
             word
             for word in named
-            if word.casefold() not in _calendar_words_in(locale) and not _names_a_fact(word, known)
+            if word.casefold() not in calendar_words_in(locale) and not _names_a_fact(word, known)
         ),
         None,
     )
