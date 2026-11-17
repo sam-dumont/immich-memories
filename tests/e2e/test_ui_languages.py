@@ -123,7 +123,14 @@ def _evidence_of(locator, name: str) -> None:
 
 
 def _watch_headings(
-    page, panel, until, shots: list[str], name: str, timeout: float, unkeyed: list[str]
+    page,
+    panel,
+    until,
+    shots: list[str],
+    name: str,
+    timeout: float,
+    unkeyed: list[str],
+    keys: list[str],
 ) -> None:
     """Poll the heading until `until()` holds, keeping one panel picture per new heading.
 
@@ -140,6 +147,7 @@ def _watch_headings(
             progress = job["progress"]
             stages = [progress, *progress["history"]]
             unkeyed.extend(stage["label"] for stage in stages if not stage["key"])
+            keys.extend(stage["key"] for stage in stages if stage["key"])
         # Read what is on screen now: a count then a wait races the next stage replacing it.
         texts = panel.locator("section[aria-live='polite'] p.font-medium").all_text_contents()
         text = texts[0] if texts else None
@@ -165,6 +173,7 @@ def test_a_french_cut_and_render_show_every_progress_heading_in_french(
         page.get_by_role("button", name="Monter", exact=True).click()
         seen: list[str] = []
         unkeyed: list[str] = []
+        keys: list[str] = []
         _watch_headings(
             page,
             page.locator("body"),
@@ -173,6 +182,7 @@ def test_a_french_cut_and_render_show_every_progress_heading_in_french(
             "fr-cut",
             timeout=240,
             unkeyed=unkeyed,
+            keys=keys,
         )
         expect(page.get_by_role("list", name="Planche-contact du montage").first).to_be_visible(
             timeout=30_000
@@ -193,6 +203,7 @@ def test_a_french_cut_and_render_show_every_progress_heading_in_french(
             "fr-render",
             timeout=600,
             unkeyed=unkeyed,
+            keys=keys,
         )
         assert not failed.is_visible(), render_panel.inner_text()
         headings = [*cut_headings, *page.evaluate("window.__headings || []"), *seen]
@@ -206,6 +217,13 @@ def test_a_french_cut_and_render_show_every_progress_heading_in_french(
     leaked = sorted({h for h in shown if "stage." in h or any(c in h for c in english)})
     assert history and not leaked, (history, leaked)
     assert not unkeyed, sorted(set(unkeyed))
-    # The run really passed through the stages it words, in French.
-    assert any(h.startswith("Lecture des dates") for h in headings), headings
-    assert any("Encodage" in h or "Préparation des clips" in h for h in headings), headings
+    # The run really passed through the stages it words, by the job's own record: a
+    # stage can end before the page paints its heading, so the screen can miss it.
+    # Every heading the page did show is checked for English above.
+    assert "cut.metadata" in keys, sorted(set(keys))
+    assert any(key.startswith(("render.encoding", "render.preparing_clips")) for key in keys), (
+        sorted(set(keys))
+    )
+    assert any(h.startswith(("Lecture des dates", "Encodage", "Préparation")) for h in headings), (
+        headings
+    )
