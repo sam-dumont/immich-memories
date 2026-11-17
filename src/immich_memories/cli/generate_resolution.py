@@ -128,6 +128,8 @@ def _special_day_params(entry: DiscoveredDay, other_days: set[date]) -> dict[str
         "subtitle": entry.subtitle,
         "what": entry.what.strip(),
         "active_hours": hours_awake(entry),
+        # The language the title was written in; a row from before #2667 was written in English.
+        "title_locale": entry.locale or "en",
     }
     if entry.event_id is not None:
         params["event_id"] = entry.event_id

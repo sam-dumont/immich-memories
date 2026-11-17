@@ -315,10 +315,11 @@ as **Title From**:
 | `place` | a trip title, built from where it went |
 | `fallback` | the app's own: the period, the people, the birthday, the day across the years |
 
-The special-day catalogue is stored in English. An English film shows the catalogue title verbatim
-(`occasion`). Any other film sends that English title through the reader when model titles are on
+Each special-day catalogue entry records the language its title was written in (English for an
+entry from an older scan). A film in that language shows the catalogue title verbatim (`occasion`).
+A film in any other language sends that title through the reader when model titles are on
 (`model`), and otherwise uses a localized `"A day in {place}"` template (`fallback`). So editing a
-catalogue title changes the film's title word for word only in English films.
+catalogue title changes the film's title word for word only in films of the entry's language.
 
 `fallback` on a special day or a trip you expected the model to name means the reader wasn't asked (model
 titles off, or no `--llm-title` for a trip), failed, or had its title refused.

@@ -15,7 +15,7 @@ from __future__ import annotations
 import collections
 import copy
 import logging
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
@@ -34,6 +34,7 @@ from immich_memories.analysis.special_days.detection import (
     event_window,
     pictures_inside,
     run_extent,
+    the_birth_of,
     window_that_holds_the_day,
 )
 from immich_memories.analysis.special_days.holiday import was_the_holiday
@@ -57,7 +58,7 @@ from immich_memories.config.models.render import PhotoConfig
 from immich_memories.memory_types.date_builders import holiday_name, holidays_of, resolve_holiday
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from immich_memories.db import Store
 
@@ -99,6 +100,9 @@ class DiscoveredDay:
     # stamped nothing and asked a question a pleasant afternoon answered yes to.
     prompt_version: str = ""
     app_version: str = ""
+    # The language the title was written in. Empty is a scan from before #2667, which wrote
+    # English whatever the install's language.
+    locale: str = ""
 
 
 def holidays_in(year: int, extra: Iterable[str] = (), *, country: str = "US") -> dict[date, str]:
@@ -242,8 +246,11 @@ def scan_year(
     close_family: Mapping[str, str] | None = None,
     per_year: int = 6,
     country: str = "US",
+    locale: str = "en",
+    births: Mapping[date, Sequence[str]] | None = None,
 ) -> list[DiscoveredDay]:
-    """Find the days in one year's assets that were occasions, and name them.
+    """Find the days in one year's assets that were occasions, and name them in `locale`'s
+    language.
 
     Every run of activity off a trip is read, a month at a time and in order, and the reader
     says which were occasions (`special_days.sequence`); no bar decides what it may see. Each
@@ -257,7 +264,9 @@ def scan_year(
     titled from its own place. The film floor applies the same on both tiers.
     `close_family` maps Immich person ids to close family roles (`close_family_roles`). The
     no-model tier keeps only the `per_year` strongest (`special_day_facts`); the model tier
-    keeps every occasion the day-level reading confirms.
+    keeps every occasion the day-level reading confirms. `births` are the days close family were
+    born on (`close_family_births`): each is proposed on both tiers, never thinned, and is that
+    person's birth (`detection.the_birth_of`).
 
     Anything generation would throw away is removed first, so the scan judges
     the same library a memory could actually be cut from. Measured on a real
@@ -302,6 +311,7 @@ def scan_year(
         off_trip, set(holidays), home, trips.min_distance_km
     )
     forwarded_on = _by_day(forwarded, candidates)
+    born = {day: tuple(names) for day, names in (births or {}).items() if day in off_trip}
     words = _standing_out(assets, captions, candidates, forwarded_on, reader)
     occasions = _occasions(
         candidates,
@@ -315,6 +325,7 @@ def scan_year(
         family=close_family or {},
         standing_out=words.standing,
         held=_held_holidays(off_trip, candidates, holidays),
+        born={day: f"the day {', '.join(names)} was born" for day, names in born.items()},
     )
     logger.info(
         "%d: %d occasions, %d dates covered by trips, %d dropped as the holiday they fell on",
@@ -340,9 +351,11 @@ def scan_year(
         read_as_candidates=set(candidates),
         stills=stills,
         clip_seconds=clip_seconds,
+        locale=locale,
+        births=born,
     )
     found = _judged_days(judge, occasions, off_trip, limit=limit, llm_config=llm_config)
-    return sorted(_thinned(found, words), key=lambda entry: entry.day)
+    return sorted(_thinned(found, words, born), key=lambda entry: entry.day)
 
 
 def _judged_days(
@@ -387,10 +400,15 @@ def _occasions(
     family: Mapping[str, str],
     standing_out: Mapping[date, str],
     held: Mapping[date, str],
+    born: Mapping[date, str],
 ) -> dict[date, str]:
-    """The occasions among these runs and what each was: read by the model, or by the facts."""
+    """The occasions among these runs and what each was: read by the model, or by the facts.
+
+    A close family member's birth day is proposed whatever the reading says, first on the
+    no-model tier, which stops at the year's few strongest.
+    """
     if reader == "rules":
-        return ranked_occasions(candidates, home=home, away_km=away_km, family=family)
+        return dict(born) | ranked_occasions(candidates, home=home, away_km=away_km, family=family)
     reading = read_in_sequence(
         candidates, captions=captions, llm_config=llm_config, judgments=judgments, family=family
     )
@@ -408,7 +426,7 @@ def _occasions(
     added = {day: what for day, what in added.items() if day not in reading.found}
     logger.info("%d: %d more days stand out by their words", year, len(added))
     # A holiday spent at home is judged like any day, then asked whether it was the holiday.
-    return dict(sorted((dict(held) | reading.found | added).items()))
+    return dict(sorted((dict(born) | dict(held) | reading.found | added).items()))
 
 
 def _standing_out(
@@ -458,9 +476,15 @@ def _held_holidays(
     }
 
 
-def _thinned(found: list[DiscoveredDay], words: _Words) -> list[DiscoveredDay]:
-    """The confirmed days, less those that only repeat the crowd of confirmed days around them."""
-    crowd = crowded_out([entry.day for entry in found], words.said, exempt=words.standing)
+def _thinned(
+    found: list[DiscoveredDay], words: _Words, born: Iterable[date] = ()
+) -> list[DiscoveredDay]:
+    """The confirmed days, less those that only repeat the crowd of confirmed days around them.
+
+    A birth is never one of them, however much the baby days around it say the same.
+    """
+    exempt = [*words.standing, *born]
+    crowd = crowded_out([entry.day for entry in found], words.said, exempt=exempt)
     if crowd:
         logger.info(
             "%d confirmed days only repeat the days around them: %s",
@@ -484,6 +508,8 @@ class _Judge:
     read_as_candidates: set[date]
     stills: float
     clip_seconds: float
+    locale: str = "en"
+    births: Mapping[date, tuple[str, ...]] = field(default_factory=dict)
 
     def day(self, day: date, items: list, what: str) -> DiscoveredDay | None:
         """The day's row, or None when it cannot be filmed, is not an occasion, or was the
@@ -493,18 +519,27 @@ class _Judge:
         ):
             logger.info("%s read as %r, dropped for want of material to film", day, what)
             return None
+        born = self.births.get(day, ())
         if self.reader == "rules":
-            verdict = SpecialDay(
-                special=True, title=honest_title(items, what=what, evidence=""), what=what
-            )
-            return _day_from(day, items, verdict, what)
-        ask = _Ask(self.llm_config, self.captions, self.judgments, self.told.get(day, []))
+            title = honest_title(items, what=what, evidence="", locale=self.locale)
+            verdict = SpecialDay(special=True, title=title, what=what)
+            birth = the_birth_of(verdict, born, self.locale)
+            return _day_from(day, items, birth, what, self.locale)
+        ask = _Ask(
+            self.llm_config,
+            self.captions,
+            self.judgments,
+            self.told.get(day, []),
+            self.locale,
+            born,
+        )
         verdict, whole_day = _read_the_day(items, ask)
         if verdict.special and self._was_the_holiday(day, verdict):
             return None
-        if verdict.special and whole_day:
+        # A birth is named by whose it was, never by the hours its words gather in.
+        if verdict.special and whole_day and not born:
             verdict = self._named_by_its_moment(items, verdict, ask)
-        return _day_from(day, items, verdict, what)
+        return _day_from(day, items, verdict, what, self.locale)
 
     def _named_by_its_moment(self, items: list, verdict: SpecialDay, ask: _Ask) -> SpecialDay:
         """A confirmed day, named by the hours its own unusual words gather in, when those hours
@@ -600,6 +635,8 @@ class _Ask:
     captions: Mapping[str, str] | None
     judgments: Store | None
     forwarded: list
+    locale: str = "en"
+    born: tuple[str, ...] = ()
 
     def __call__(self, pictures: list) -> SpecialDay:
         return ask_if_special(
@@ -612,6 +649,8 @@ class _Ask:
             },
             judgments=self.judgments,
             forwarded=self.forwarded,
+            locale=self.locale,
+            born=self.born,
         )
 
 
@@ -649,7 +688,9 @@ def _asked_at_its_place(items: list, ask: Callable[[list], SpecialDay]) -> Speci
     return inside if inside.special else None
 
 
-def _day_from(day: date, items: list, verdict: Any, what: str = "") -> DiscoveredDay | None:
+def _day_from(
+    day: date, items: list, verdict: Any, what: str = "", locale: str = ""
+) -> DiscoveredDay | None:
     """One candidate day's row, or nothing when there is nothing honest to write.
 
     A title, not just something written about the day. Every reader of the
@@ -696,6 +737,7 @@ def _day_from(day: date, items: list, verdict: Any, what: str = "") -> Discovere
         window_photos=pictures_inside(window, items),
         prompt_version=SCAN_VERSION,
         app_version=__version__,
+        locale=locale,
     )
 
 

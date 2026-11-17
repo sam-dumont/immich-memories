@@ -109,6 +109,7 @@ def test_a_year_is_saved_once_with_its_days_and_its_marker(monkeypatch):
         photos=SimpleNamespace(duration=4.0),
         editorial=SimpleNamespace(resolve_reader=lambda _m: "rules"),
         automation=SimpleNamespace(special_days_per_year=6),
+        title_screens=SimpleNamespace(locale="en"),
     )
     found: list[dict] = [{"scanned": 2020}]
 

@@ -109,6 +109,10 @@ msgstr "A day {phrase}"
 msgid "title.day_in_place_neutral"
 msgstr "{place} · A day"
 
+# A special day a close family member was born on (#2667).
+msgid "title.birth"
+msgstr "The birth of {name}"
+
 msgid "summary.then"
 msgstr "{earlier}, then {later}"
 

@@ -31,8 +31,9 @@ golden light") is dropped and the title stands.
 
 The film's language is separate from the interface language. Save **Settings > Title screens > locale**
 (including in Docker), or set it in your configuration. A special day found by the automatic
-scan is catalogued with an English name, but its opening title is always written in this
-configured language, not in English.
+scan is catalogued with a name in this language, and its opening title is always written in this
+configured language: an entry named in another language (an older scan named them in English) is
+written again for the film.
 
 ```yaml
 title_screens:

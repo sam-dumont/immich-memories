@@ -37,7 +37,7 @@ import json
 import logging
 import operator
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
@@ -53,9 +53,11 @@ if TYPE_CHECKING:
 from immich_memories.analysis.judgments.json_completion import complete_final_json
 from immich_memories.analysis.llm.failures import stop_if_this_is_our_bug
 from immich_memories.analysis.special_days.title import (
+    birth_title,
     honest_title,
     line_the_day_can_keep,
     retitle_prompt,
+    title_language,
     title_the_day_can_keep,
 )
 
@@ -71,8 +73,9 @@ MIN_PHOTOS = 20
 # answers produce, so a day judged by an older scan is recognisable without
 # re-reading it. Bumped whenever the question changes: v1 asked whether
 # something happened "worth remembering years later", which a pleasant
-# afternoon at home answers yes to, and a real catalogue filled up with them.
-PROMPT_VERSION = "special-day-v2-an-occasion-worth-telling"
+# afternoon at home answers yes to, and a real catalogue filled up with them. v3 asks
+# for the title in the install's language and says whose birth the day was (#2667).
+PROMPT_VERSION = "special-day-v3-in-the-install-language"
 
 # The lines are last so every day asked this way shares the whole preamble byte for
 # byte, which is what any prefix-reusing server needs to skip re-reading it (#981).
@@ -97,7 +100,7 @@ write what they show, as concretely as they show it, and nothing they do not.
 
 Give it a title and a line under it, the way a photographer would caption a
 set they were proud of. Not the date and not the place — those are already on
-the card. Say something about the day.
+the card. Say something about the day. Write the title and the line in {{language}}.
 
 If one clear event fills part of the day, give the clock times it ran between,
 and leave the window null when the day was all one thing.
@@ -551,6 +554,7 @@ def _asked_again(
     lines: str,
     llm_config: LLMConfig,
     timeout_seconds: int,
+    locale: str = "en",
 ) -> str:
     """One more attempt at a title, once the guard has taken the first one away.
 
@@ -562,7 +566,7 @@ def _asked_again(
     """
     try:
         raw = _ask(
-            retitle_prompt(lines, rejected=rejected, assets=assets),
+            retitle_prompt(lines, rejected=rejected, assets=assets, locale=locale),
             llm_config,
             timeout_seconds,
         )
@@ -625,8 +629,13 @@ def ask_if_special(
     captions: Mapping[str, str] | None = None,
     judgments: Store | None = None,
     forwarded: list | None = None,
+    locale: str = "en",
+    born: Sequence[str] = (),
 ) -> SpecialDay:
-    """Ask the model whether a day was an occasion, and name it.
+    """Ask the model whether a day was an occasion, and name it in the `locale`'s language.
+
+    A day close family members were `born` on says so among its lines, and is their birth
+    (`the_birth_of`).
 
     Pictures `forwarded` to the library that day follow the day's own lines, marked as sent
     rather than taken: evidence of what happened, never a line of the day itself.
@@ -646,16 +655,42 @@ def ask_if_special(
     if not assets:
         return SpecialDay(special=False)
 
-    sent = _forwarded_lines(forwarded or [], captions)
+    sent = _forwarded_lines(forwarded or [], captions) + _birth_line(born)
     described = _captioned_assets(assets, captions)
     if described:
-        return _ask_from_captions(
-            assets, described, captions, llm_config, timeout_seconds, judgments, sent
+        verdict = _ask_from_captions(
+            assets, described, captions, llm_config, timeout_seconds, judgments, sent, locale
         )
-    sampled = sample_across_day(assets)
-    if not _has_text_to_read(sampled, captions):
-        return _unjudged("nothing written about its pictures")
-    return _ask_from_facts(assets, sampled, captions, llm_config, timeout_seconds, sent)
+    elif _has_text_to_read(sampled := sample_across_day(assets), captions):
+        verdict = _ask_from_facts(
+            assets, sampled, captions, llm_config, timeout_seconds, sent, locale
+        )
+    else:
+        verdict = _unjudged("nothing written about its pictures")
+    return the_birth_of(verdict, born, locale)
+
+
+def _birth_line(born: Sequence[str]) -> str:
+    """Whose birth date the day is, as the people registry records it, or nothing."""
+    return f"\n  born that day, as the family records it: {', '.join(born)}" if born else ""
+
+
+def the_birth_of(verdict: SpecialDay, born: Sequence[str], locale: str) -> SpecialDay:
+    """The day a close family member was born is that birth, however the reader read it.
+
+    The registry's birth date is the evidence, the way a birthday's is: a child's birth day
+    came back titled after the district it happened in, with nothing saying it was the birth.
+    """
+    if not born:
+        return verdict
+    return replace(
+        verdict,
+        special=True,
+        judged=True,
+        unjudged_because="",
+        title=birth_title(born, locale),
+        what=verdict.what or f"the day {', '.join(born)} was born",
+    )
 
 
 def _ask_from_facts(
@@ -665,6 +700,7 @@ def _ask_from_facts(
     llm_config: LLMConfig,
     timeout_seconds: int,
     sent: str = "",
+    locale: str = "en",
 ) -> SpecialDay:
     """The day judged from its own recorded facts, in one text call.
 
@@ -674,7 +710,7 @@ def _ask_from_facts(
     route leaves it.
     """
     lines = _describe(sampled, captions) + sent
-    prompt = _PROMPT.format(lines=lines)
+    prompt = _PROMPT.format(lines=lines, language=title_language(locale))
     answer: dict | None = None
     because = ""
     # A small model sometimes answers in prose, or not at all. Neither is a verdict on the
@@ -708,10 +744,10 @@ def _ask_from_facts(
     # whatever it is called, and a second live call to name it better is spent
     # on nothing.
     if special and written and not title:
-        title = _asked_again(written, assets, lines, llm_config, timeout_seconds)
+        title = _asked_again(written, assets, lines, llm_config, timeout_seconds, locale)
     return SpecialDay(
         special=special,
-        title=title or honest_title(assets, what=what, evidence=lines),
+        title=title or honest_title(assets, what=what, evidence=lines, locale=locale),
         subtitle=line_the_day_can_keep(answer["subtitle"].strip(), assets, evidence=lines),
         what=what,
         window=_window_the_model_gave(answer, assets),
@@ -779,7 +815,7 @@ def _accepts_day_answer(raw: str) -> bool:
 
 
 def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answer is kept
-    assets, described, captions, llm_config, timeout_seconds, judgments, sent=""
+    assets, described, captions, llm_config, timeout_seconds, judgments, sent="", locale="en"
 ):
     """A prepared day, judged against the text bank's own contract."""
     from immich_memories.analysis.judgments.text_gateway import QueryTextRequester
@@ -809,7 +845,8 @@ def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answ
         "pictures it left. Do not invent details. "
         "Return only JSON: special (Boolean), title (at most 90 characters), subtitle "
         "(at most 90), what (at most 80), window (two HH:MM times or null). "
-        "Use a short title grounded in the evidence, no camera or photo-count commentary.\n" + lines
+        "Use a short title grounded in the evidence, no camera or photo-count commentary. "
+        f"Write the title and subtitle in {title_language(locale)}.\n" + lines
     )
     # Thinking is left to the transport, the way every other text call in the
     # project leaves it. Declaring it here takes the thinking branch instead,
@@ -847,7 +884,7 @@ def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answ
     return SpecialDay(
         special=answer["special"],
         title=title_the_day_can_keep(answer["title"], assets, evidence=lines)
-        or honest_title(assets, what=what, evidence=lines),
+        or honest_title(assets, what=what, evidence=lines, locale=locale),
         subtitle=line_the_day_can_keep(answer["subtitle"], assets, evidence=lines),
         what=what,
         window=_window_the_model_gave(answer, assets),

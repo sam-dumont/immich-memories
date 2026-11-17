@@ -265,6 +265,7 @@ def _scan_one_year(
     from immich_memories.automation.special_day_scan import scan_year
     from immich_memories.cache.judgment_cache import judgment_bank
     from immich_memories.home_country import home_country
+    from immich_memories.i18n import resolve_film_locale
 
     for day in scan_year(
         assets,
@@ -280,6 +281,8 @@ def _scan_one_year(
         reader=config.editorial.resolve_reader(config.llm.model),
         close_family=_close_family(),
         per_year=config.automation.special_days_per_year,
+        locale=resolve_film_locale(config.title_screens.locale),
+        births=_close_family_births(),
     ):
         found.append(record_for(day))
         if day.judged:
@@ -303,6 +306,14 @@ def _close_family() -> dict[str, str]:
     from immich_memories.people.context import load_people_prompt_context
 
     return close_family_roles(load_people_prompt_context())
+
+
+def _close_family_births() -> dict[date, tuple[str, ...]]:
+    """The days the owner's close family were born on, and who, from the people registry."""
+    from immich_memories.analysis.special_days.sequence import close_family_births
+    from immich_memories.people.context import load_people_prompt_context
+
+    return close_family_births(load_people_prompt_context())
 
 
 def _scan_library(
