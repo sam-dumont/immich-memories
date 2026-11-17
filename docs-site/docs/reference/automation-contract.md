@@ -324,10 +324,12 @@ immich-memories auto test-notification
 pause that follows a failed delivery (`notifications.cooldown_hours`, 24), and a test that succeeds ends it.
 
 Every rendered film sends a completion message: `auto run`, the Docker timer, plain `generate`, the web
-UI's **Render** and `runs render`. Saving a cut without rendering sends none. The message carries the
-memory type, the outcome, the duration, the output path and, once the film is uploaded, a direct Immich
-link. A failure adds the last 300 characters of the redacted output, which is the error itself. No picture
-unless you set `attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the
+UI's **Render** and `runs render`. Saving a cut without rendering sends none. A finished film's message is
+headed with the title the film opens on; a failure names the film, or its memory type when it has no title
+yet. The message carries the memory type, the duration, the output path, any warning about the run and,
+once the film is uploaded, a direct Immich link, all worded in the film's language. A failure adds the last
+300 characters of the redacted output, which is the error itself. No picture unless you set
+`attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the
 database stores them encrypted.
 Every key is in the [config reference](config-reference.md#notifications).
 
