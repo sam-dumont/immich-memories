@@ -157,13 +157,18 @@ OTEL_SERVICE_NAME=immich-memories   # the default
   GenAI view of their own (token cost per model, slow calls), and these spans feed it.
 - **Prompts, replies and names stay out unless you ask for them.** They carry people's names and
   captions. Set `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true` to record them as
-  `gen_ai.input.messages` and `gen_ai.output.messages`, and to keep the names and free text in
-  program arguments. Pictures are never recorded, only how many went in. Paths and keys are cut
-  either way.
-- A failed stage is an error span with its exception (redacted, the app's own frames only). So
-  is an error a hop records (a refused connection, a route that failed): its message and status
-  with paths cut to the file name and secrets redacted, its traceback cut to the app's own frames.
-  Logged warnings are span events, the first 20 per span.
+  `gen_ai.input.messages` and `gen_ai.output.messages`, to keep the names and free text in
+  program arguments, and to keep an error's own message. Pictures are never recorded, only how
+  many went in. Paths and keys are cut either way.
+- A failed stage is an error span with its exception: its type and the app's own frames. So is an
+  error a hop records (a refused connection, a route that failed, a store write the database
+  refused) and one the web page forwards. The error's message reads `{redacted}`: it quotes
+  whatever failed, and a store error quotes the values it was writing, a person's name
+  included. With content capture on, the message is kept, with paths cut to the file name and
+  secrets redacted. A reason the app writes itself ("the job exited with status 3") is always
+  kept.
+  Logged warnings are span events, the first 20 per span: the logger that wrote each one, and
+  its line only with content capture on, since a log line can quote a name too.
 - Export is OTLP over HTTP (protobuf). `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` is refused with a
   warning: point the endpoint at port 4318 instead.
 - The standard variables apply: `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (used as-is),

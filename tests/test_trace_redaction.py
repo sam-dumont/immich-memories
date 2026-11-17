@@ -190,9 +190,8 @@ def test_a_route_segment_that_names_someone_is_templated(collector):
     assert "Alex" not in repr(route)
 
 
-def test_an_exception_a_route_raised_arrives_scrubbed_with_the_app_frames_only(
-    collector, monkeypatch
-):
+def _route_that_raises(monkeypatch) -> dict:
+    """A route whose error names a person, quotes a home path and a secret, then its span."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
@@ -204,7 +203,7 @@ def test_an_exception_a_route_raised_arrives_scrubbed_with_the_app_frames_only(
     # The app's own frame on the way: the decorator that measures the read.
     @timed("film.read")
     def read() -> None:
-        raise OSError(f"could not open {_HOME}/store.db with lab-secret-value")
+        raise OSError(f"no film of Alex Example in {_HOME}/store.db with lab-secret-value")
 
     @app.get("/api/v1/films/{film_id}")
     def film(film_id: str) -> None:
@@ -213,16 +212,79 @@ def test_an_exception_a_route_raised_arrives_scrubbed_with_the_app_frames_only(
     otel.instrument_app(app)
     with TestClient(app, raise_server_exceptions=False) as client:
         client.get("/api/v1/films/one")
+    return app
 
-    route = next(span for span in collector.spans() if span["kind"] == 2)
-    (exception,) = [attributes for name, attributes in route["events"] if name == "exception"]
-    assert exception["exception.message"] == "could not open store.db with [redacted]"
+
+def _exception(span: dict) -> dict:
+    (exception,) = [attributes for name, attributes in span["events"] if name == "exception"]
+    return exception
+
+
+def test_an_exception_a_route_raised_keeps_its_type_and_app_frames_not_its_words(
+    collector, monkeypatch
+):
+    _route_that_raises(monkeypatch)
+
+    spans = collector.spans()
+    route = next(span for span in spans if span["kind"] == 2)
+    exception = _exception(route)
+    assert exception["exception.type"] == "OSError"
+    assert exception["exception.message"] == "{redacted}"
     frames = exception["exception.stacktrace"].splitlines()
     assert frames
     assert all(frame.startswith("tracking/timed.py:") for frame in frames)
+    # The app's own span around the read keeps the type and drops the words too.
+    assert _exception(collector.named()["film.read"])["exception.message"] == "{redacted}"
+    for text in ("Alex", "lab-secret-value", "/Users/", "site-packages"):
+        assert text not in repr(spans)
+
+
+def test_with_content_capture_on_an_exception_keeps_its_words_without_paths_or_secrets(
+    collector, monkeypatch
+):
+    monkeypatch.setenv(_CAPTURE, "true")
+    _route_that_raises(monkeypatch)
+
+    route = next(span for span in collector.spans() if span["kind"] == 2)
+    message = "no film of Alex Example in store.db with [redacted]"
+    assert _exception(route)["exception.message"] == message
     assert "lab-secret-value" not in repr(route)
     assert "/Users/" not in repr(route)
-    assert "site-packages" not in repr(route)
+
+
+def test_a_failed_store_write_keeps_its_bound_values_out_of_the_trace(collector, tmp_path):
+    import sqlalchemy as sa
+
+    from immich_memories.db.bootstrap import StoreLocation
+    from immich_memories.db.engine import create_store_engine
+
+    engine = create_store_engine(StoreLocation(url=f"sqlite:///{tmp_path / 'store.db'}"))
+    with engine.begin() as connection:
+        connection.execute(sa.text("CREATE TABLE people (name TEXT UNIQUE)"))
+    # SQLAlchemy's error text quotes the statement's parameters: the name written twice.
+    with pytest.raises(sa.exc.IntegrityError), timing.span("people.save"), engine.begin() as c:
+        c.execute(sa.text("INSERT INTO people VALUES (:name)"), {"name": "Alex Example"})
+        c.execute(sa.text("INSERT INTO people VALUES (:name)"), {"name": "Alex Example"})
+
+    spans = collector.spans()
+    saved = collector.named()["people.save"]
+    assert _exception(saved)["exception.type"] == "IntegrityError"
+    assert _exception(saved)["exception.message"] == "{redacted}"
+    query = next(
+        span for span in spans if span["name"].startswith("INSERT") and span["status"] == 2
+    )
+    assert query["status_message"] == "{redacted}"
+    assert "Alex" not in repr(spans)
+
+
+def test_a_reason_the_app_wrote_still_says_why_a_step_failed(collector):
+    span = otel.start("job")
+    otel.mark_failed(span, "ExitCode", "the job exited with status 3")
+    otel.end(span)
+
+    failed = collector.named()["job"]
+    assert _exception(failed)["exception.message"] == "the job exited with status 3"
+    assert failed["status_message"] == "ExitCode"
 
 
 def test_a_status_description_with_a_path_is_cut(collector):

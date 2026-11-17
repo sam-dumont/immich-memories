@@ -129,6 +129,55 @@ def test_a_browser_request_to_a_route_named_after_someone_is_forwarded_as_its_te
     assert "Alex" not in forwarded.decode()
 
 
+def _failed_browser_batch() -> dict:
+    """A page's failed call whose error quotes what the server answered: a person's name."""
+    batch = _browser_spans()
+    span = batch["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+    span["status"] = {"code": 2, "message": "No person named Alex Example"}
+    span["events"] = [
+        {
+            "name": "exception",
+            "timeUnixNano": "1793170000050000000",
+            "attributes": [
+                {"key": "exception.type", "value": {"stringValue": "TypeError"}},
+                {
+                    "key": "exception.message",
+                    "value": {"stringValue": "No person named Alex Example"},
+                },
+            ],
+        }
+    ]
+    return batch
+
+
+def _forwarded_span(client: TestClient, collector, batch: dict) -> tuple[dict, str]:
+    assert client.post("/api/v1/telemetry/traces", json=batch).status_code == 202
+    (forwarded,) = [
+        body for _, headers, body in collector.requests if "json" in headers["Content-Type"]
+    ]
+    return json.loads(forwarded)["resourceSpans"][0]["scopeSpans"][0]["spans"][
+        0
+    ], forwarded.decode()
+
+
+def test_a_browser_error_keeps_its_type_and_not_its_words(collector):
+    sent, body = _forwarded_span(_client(), collector, _failed_browser_batch())
+
+    assert sent["status"] == {"code": 2, "message": "{redacted}"}
+    (event,) = sent["events"]
+    attributes = {pair["key"]: pair["value"]["stringValue"] for pair in event["attributes"]}
+    assert attributes == {"exception.type": "TypeError", "exception.message": "{redacted}"}
+    assert "Alex" not in body
+
+
+def test_a_browser_error_keeps_its_words_with_content_capture_on(collector, monkeypatch):
+    monkeypatch.setenv("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "true")
+
+    sent, _ = _forwarded_span(_client(), collector, _failed_browser_batch())
+
+    assert sent["status"]["message"] == "No person named Alex Example"
+
+
 def test_forwarding_makes_no_spans_of_its_own(collector):
     client = _client()
     client.post("/api/v1/telemetry/traces", json=_browser_spans())
@@ -175,7 +224,7 @@ def test_a_deeply_nested_body_is_a_400_never_a_500(collector, content_type):
 def test_a_batch_that_overflows_the_scrub_is_a_400(collector, monkeypatch):
     from immich_memories.web import telemetry
 
-    def too_deep(_value):
+    def too_deep(_value, **_):
         raise RecursionError
 
     monkeypatch.setattr(telemetry, "_scrubbed", too_deep)

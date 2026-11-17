@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from opentelemetry.sdk.trace import Event, ReadableSpan
     from opentelemetry.trace import Status
 
-HIDDEN = "{redacted}"
+HIDDEN = otel.HIDDEN
 # The CLI's text options whose value is a name (a person, an album, a group, an account), a
 # date that identifies someone, or the user's own words. Keys the app builds from names
 # (`--memory-key`, `--candidate`) count as names.
@@ -72,6 +72,8 @@ _FRAME = re.compile(
     r'^\s*File "(?P<file>[^"]+)", line (?P<line>\d+), in (?P<name>.+)$', re.MULTILINE
 )
 _APP = "immich_memories/"
+# An exception's type as Python names it, dotted when qualified: `sqlite3.IntegrityError`.
+_TYPE_NAME = re.compile(r"[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*")
 # ffmpeg filter graphs run to kilobytes; a span keeps the head of each and of the list.
 _ARGUMENTS = 64
 _ARGUMENT_CHARACTERS = 512
@@ -125,10 +127,13 @@ def redacted(span: ReadableSpan) -> ReadableSpan:
     """
     from opentelemetry.sdk.trace import ReadableSpan
 
+    # The app writes its own errors as content already (`otel.record_error`); an
+    # instrumentation writes the error's own words, which hold whatever the error quoted.
+    quoted = not otel.capturing_content() and _scope(span) != otel.SCOPE
     name = _clean(span.name)
     attributes = _clean_attributes(span.attributes or {})
-    events = [_clean_event(event) for event in span.events]
-    status = _clean_status(span.status)
+    events = [_clean_event(event, quoted) for event in span.events]
+    status = _clean_status(span.status, quoted)
     unchanged = (
         name == span.name
         and attributes == dict(span.attributes or {})
@@ -169,24 +174,40 @@ def _clean_attributes(attributes: Mapping[str, Any]) -> dict[str, Any]:
     return {key: _clean_value(value) for key, value in attributes.items()}
 
 
-def _clean_event(event: Event) -> Event:
+def _scope(span: ReadableSpan) -> str:
+    return span.instrumentation_scope.name if span.instrumentation_scope else ""
+
+
+def _clean_event(event: Event, quoted: bool) -> Event:
     from opentelemetry.sdk.trace import Event
 
     attributes = dict(event.attributes or {})
     if isinstance(trace := attributes.get("exception.stacktrace"), str):
         attributes["exception.stacktrace"] = _app_frames(trace)
+    if quoted and "exception.message" in attributes:
+        attributes["exception.message"] = HIDDEN
     cleaned = _clean_attributes(attributes)
     if cleaned == dict(event.attributes or {}):
         return event
     return Event(event.name, cleaned, event.timestamp)
 
 
-def _clean_status(status: Status) -> Status:
+def _clean_status(status: Status, quoted: bool) -> Status:
     from opentelemetry.trace import Status
 
-    if not status.description or (description := _clean(status.description)) == status.description:
+    if not status.description:
+        return status
+    description = _error_type(status.description) if quoted else _clean(status.description)
+    if description == status.description:
         return status
     return Status(status.status_code, description)
+
+
+def _error_type(description: str) -> str:
+    # An instrumentation writes `Type: message` (FastAPI) or the driver's message alone
+    # (SQLAlchemy, where Postgres adds `DETAIL: Key (name)=(...)`): keep the type, if any.
+    head, colon, _ = description.partition(": ")
+    return head if colon and _TYPE_NAME.fullmatch(head) else HIDDEN
 
 
 def _app_frames(stacktrace: str) -> str:
