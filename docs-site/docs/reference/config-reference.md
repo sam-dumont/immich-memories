@@ -272,7 +272,7 @@ knows to step aside instead of just ducking under it. Without the ONNX runtime, 
 
 ```yaml
 defaults:
-  scale_mode: "blur"             # blur | fit (black bars); used when --scale-mode is not given
+  scale_mode: "blur"             # blur | fit | crop | auto (see below); used when --scale-mode is not given
   transition: "smart"            # cut, crossfade, smart, none (used when --transition is left on smart)
   transition_duration: 0.5       # 0-2 seconds
   sharing: "family"              # just-us | family | shareable; used when --sharing is not given
@@ -368,8 +368,22 @@ second less and the film's first and last stills half a second more; a full film
 stills rather than shaving them below that. `generate --photo-duration` sets it for one run.
 
 The animation per photo (Ken Burns, face pan) is picked from the photo's content and is not
-configurable. The bands around a photo that does not fill the canvas follow `defaults.scale_mode`,
-as they do for video.
+configurable. A photo of another shape than the canvas follows `defaults.scale_mode`:
+
+| Value | A photo | A video |
+|---|---|---|
+| `blur` (default) | whole picture, its own blurred copy in the bands | the same |
+| `fit` | whole picture, black bands | the same |
+| `crop` | fills the frame: the long side is cut around the faces the move frames (the film's person when they show, else every face), or around the centre when nobody is in it | blurred bands |
+| `auto` | `crop` for a photo with faces, `blur` for one without | blurred bands |
+
+A crop never cuts those faces. When they can't all fit (two people at the top and bottom of a
+portrait, in a landscape film), or the crop has too few pixels for the move's closest frame, that
+photo keeps the blur. At 4K that is most phone portraits: a 3024-pixel-wide picture can't fill
+3840 pixels sharply.
+
+`fill` and `smart_crop` are old names that still load: `fill` means `fit`, `smart_crop` means
+`blur`.
 
 Burst de-duplication keeps only the best-scored frame of a run of near-identical photos (five
 minutes apart at most), so fifteen shots of the same jump do not become fifteen clips.

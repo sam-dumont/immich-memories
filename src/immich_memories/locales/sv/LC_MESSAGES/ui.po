@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-16 20:03+0100\n"
+"POT-Creation-Date: 2026-11-17 09:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -103,7 +103,7 @@ msgstr "Lägg till"
 msgid "Add a relationship"
 msgstr "Lägg till en relation"
 
-#: web/lib/RenderPanel.svelte:251
+#: web/lib/RenderPanel.svelte:252
 msgid "Add date overlay"
 msgstr "Visa datum"
 
@@ -153,7 +153,7 @@ msgstr "Efter en period"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
+#: web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "Albumnamn"
 
@@ -240,7 +240,7 @@ msgstr "Alla. Bara bilder utan begränsningar: ingen detektorflagga, inget priva
 
 #: web/lib/RenderPanel.svelte:191 web/lib/RenderPanel.svelte:197 web/lib/RenderPanel.svelte:206
 #: web/lib/RenderPanel.svelte:229 web/lib/RenderPanel.svelte:235 web/lib/RenderPanel.svelte:241
-#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:47
+#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:47
 #: web/routes/create/+page.svelte:494
 msgid "As configured"
 msgstr "Enligt konfigurationen"
@@ -273,7 +273,7 @@ msgstr "Automatiskt (efter stämningen)"
 msgid "Automatic"
 msgstr "Automatisk"
 
-#: web/lib/RenderPanel.svelte:266
+#: web/lib/RenderPanel.svelte:267
 msgid "Automatic (as configured)"
 msgstr "Automatiskt (enligt konfigurationen)"
 
@@ -381,7 +381,7 @@ msgstr "API-nyckel för bildtexter"
 msgid "Caption base URL"
 msgstr "Bas-URL för bildtexter"
 
-#: web/lib/RenderPanel.svelte:252
+#: web/lib/RenderPanel.svelte:253
 msgid "Caption clips with their place"
 msgstr "Visa plats på klippen"
 
@@ -628,6 +628,14 @@ msgstr "Släktträdet kunde inte ritas."
 #: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "Det gick inte att läsa in personerna."
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos around faces"
+msgstr "Beskär foton runt ansiktena"
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos with faces, blur the rest"
+msgstr "Beskär foton med ansikten, gör resten suddiga"
 
 #: web/lib/RenderPanel.svelte:192
 msgid "Crossfade"
@@ -1357,7 +1365,7 @@ msgstr "Håll isär"
 msgid "Keep downloaded videos"
 msgstr "Behåll nedladdade videor"
 
-#: web/lib/RenderPanel.svelte:263
+#: web/lib/RenderPanel.svelte:264
 msgid "Keep original audio"
 msgstr "Behåll originalljud"
 
@@ -1640,7 +1648,7 @@ msgstr "Månader att fylla på"
 msgid "Multi-Person"
 msgstr "Flera personer"
 
-#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:262
+#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:263
 msgid "Music"
 msgstr "Musik"
 
@@ -1664,7 +1672,7 @@ msgstr "Musiktjänsten misslyckades; provar nästa tjänst"
 msgid "Music upload quota (MB)"
 msgstr "Kvot för musikuppladdning (MB)"
 
-#: web/lib/RenderPanel.svelte:287
+#: web/lib/RenderPanel.svelte:288
 msgid "Music volume:"
 msgstr "Musikvolym:"
 
@@ -1732,7 +1740,7 @@ msgstr ""
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Den här klippningen bygger helt på urvalsregler, utan analys av en modell."
 
-#: web/lib/RenderPanel.svelte:267 web/lib/settingLabels.ts:120
+#: web/lib/RenderPanel.svelte:268 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "Ingen musik"
 
@@ -2115,7 +2123,7 @@ msgstr "Förinställning"
 msgid "Preview"
 msgstr "Förhandsvisning"
 
-#: web/lib/RenderPanel.svelte:274
+#: web/lib/RenderPanel.svelte:275
 msgid "Preview a track"
 msgstr "Förhandslyssna på ett spår"
 
@@ -2127,7 +2135,7 @@ msgstr "Förhandsvisning med de här valen"
 msgid "Previous stages"
 msgstr "Tidigare steg"
 
-#: web/lib/RenderPanel.svelte:258
+#: web/lib/RenderPanel.svelte:259
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Sekretessläge: gör alla bilder suddiga och döljer namn"
 
@@ -2256,7 +2264,7 @@ msgstr "Ta bort den här relationen"
 msgid "Removed"
 msgstr "Borttagen"
 
-#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:303
 msgid "Render"
 msgstr "Rendera"
 
@@ -2385,7 +2393,7 @@ msgstr "Spara"
 msgid "Save Config"
 msgstr "Spara konfiguration"
 
-#: web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:303
 msgid "Save and render"
 msgstr "Spara och rendera"
 
@@ -2590,7 +2598,7 @@ msgstr "Några av dess bilder"
 msgid "Some pictures were edited without descriptions."
 msgstr "Vissa bilder redigerades utan beskrivningar."
 
-#: web/lib/RenderPanel.svelte:264
+#: web/lib/RenderPanel.svelte:265
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr ""
 "Ljud inspelat i videor och Live Photos. Stäng av för enbart musik, eller välj även ”Ingen "
@@ -2840,7 +2848,7 @@ msgstr "Personregistret: vem som står nära, deras roller och hur de hänger ih
 msgid "The picture it replaced"
 msgstr "Bilden den ersatte"
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:256
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -2856,7 +2864,7 @@ msgstr "Tillgängliga medier"
 msgid "The preview could not start."
 msgstr "Förhandsvisningen kunde inte starta."
 
-#: web/lib/RenderPanel.svelte:268
+#: web/lib/RenderPanel.svelte:269
 msgid "The previewed track"
 msgstr "Det förhandslyssnade spåret"
 
@@ -3065,7 +3073,7 @@ msgstr "Uppdateringar"
 msgid "Upgrading guide"
 msgstr "Uppgraderingsguide"
 
-#: web/lib/RenderPanel.svelte:277
+#: web/lib/RenderPanel.svelte:278
 msgid "Upload a track"
 msgstr "Ladda upp ett spår"
 
@@ -3083,7 +3091,7 @@ msgstr ""
 msgid "Upload film"
 msgstr "Ladda upp film"
 
-#: web/lib/RenderPanel.svelte:294
+#: web/lib/RenderPanel.svelte:295
 msgid "Upload the film to Immich"
 msgstr "Ladda upp filmen till Immich"
 
@@ -3335,7 +3343,7 @@ msgstr "Du har den senaste versionen."
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "Din första film behöver dessa modellfiler. Ingenting laddas ner förrän du trycker på knappen."
 
-#: web/lib/RenderPanel.svelte:300
+#: web/lib/RenderPanel.svelte:301
 msgid ""
 "Your latest changes are in no revision yet. Rendering saves them as a new revision first, so "
 "the film has them."

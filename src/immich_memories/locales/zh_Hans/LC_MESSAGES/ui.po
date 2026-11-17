@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-16 20:03+0100\n"
+"POT-Creation-Date: 2026-11-17 09:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -99,7 +99,7 @@ msgstr "添加"
 msgid "Add a relationship"
 msgstr "添加关系"
 
-#: web/lib/RenderPanel.svelte:251
+#: web/lib/RenderPanel.svelte:252
 msgid "Add date overlay"
 msgstr "显示日期"
 
@@ -149,7 +149,7 @@ msgstr "一段时间之后"
 msgid "Album"
 msgstr "相册"
 
-#: web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
+#: web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "相册名称"
 
@@ -234,7 +234,7 @@ msgstr "任何人。仅使用未受限制的画面：没有检测标记，也没
 
 #: web/lib/RenderPanel.svelte:191 web/lib/RenderPanel.svelte:197 web/lib/RenderPanel.svelte:206
 #: web/lib/RenderPanel.svelte:229 web/lib/RenderPanel.svelte:235 web/lib/RenderPanel.svelte:241
-#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:47
+#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:47
 #: web/routes/create/+page.svelte:494
 msgid "As configured"
 msgstr "按配置"
@@ -265,7 +265,7 @@ msgstr "自动（配合影片氛围）"
 msgid "Automatic"
 msgstr "自动"
 
-#: web/lib/RenderPanel.svelte:266
+#: web/lib/RenderPanel.svelte:267
 msgid "Automatic (as configured)"
 msgstr "自动（按配置）"
 
@@ -373,7 +373,7 @@ msgstr "字幕描述 API 密钥"
 msgid "Caption base URL"
 msgstr "字幕描述基础 URL"
 
-#: web/lib/RenderPanel.svelte:252
+#: web/lib/RenderPanel.svelte:253
 msgid "Caption clips with their place"
 msgstr "在片段上显示地点"
 
@@ -618,6 +618,14 @@ msgstr "无法绘制家谱。"
 #: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "无法加载人物。"
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos around faces"
+msgstr "围绕人脸裁剪照片"
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos with faces, blur the rest"
+msgstr "有人脸的照片裁剪，其余模糊"
 
 #: web/lib/RenderPanel.svelte:192
 msgid "Crossfade"
@@ -1330,7 +1338,7 @@ msgstr "保持分开"
 msgid "Keep downloaded videos"
 msgstr "保留已下载的视频"
 
-#: web/lib/RenderPanel.svelte:263
+#: web/lib/RenderPanel.svelte:264
 msgid "Keep original audio"
 msgstr "保留原始音频"
 
@@ -1611,7 +1619,7 @@ msgstr "回填月数"
 msgid "Multi-Person"
 msgstr "多人"
 
-#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:262
+#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:263
 msgid "Music"
 msgstr "音乐"
 
@@ -1635,7 +1643,7 @@ msgstr "音乐服务失败；正在尝试下一个服务"
 msgid "Music upload quota (MB)"
 msgstr "音乐上传配额（MB）"
 
-#: web/lib/RenderPanel.svelte:287
+#: web/lib/RenderPanel.svelte:288
 msgid "Music volume:"
 msgstr "音乐音量："
 
@@ -1697,7 +1705,7 @@ msgstr "媒体库中没有足够的匹配素材来制作这部影片。试着换
 msgid "No model read this cut: the rules chose every picture."
 msgstr "此剪辑完全由筛选规则生成，没有经过模型分析。"
 
-#: web/lib/RenderPanel.svelte:267 web/lib/settingLabels.ts:120
+#: web/lib/RenderPanel.svelte:268 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "无音乐"
 
@@ -2075,7 +2083,7 @@ msgstr "预设"
 msgid "Preview"
 msgstr "预览"
 
-#: web/lib/RenderPanel.svelte:274
+#: web/lib/RenderPanel.svelte:275
 msgid "Preview a track"
 msgstr "试听曲目"
 
@@ -2087,7 +2095,7 @@ msgstr "按此选择预览"
 msgid "Previous stages"
 msgstr "之前的步骤"
 
-#: web/lib/RenderPanel.svelte:258
+#: web/lib/RenderPanel.svelte:259
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "隐私模式：模糊所有素材并打乱姓名"
 
@@ -2216,7 +2224,7 @@ msgstr "移除此关系"
 msgid "Removed"
 msgstr "已移除"
 
-#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:303
 msgid "Render"
 msgstr "渲染"
 
@@ -2345,7 +2353,7 @@ msgstr "保存"
 msgid "Save Config"
 msgstr "保存配置"
 
-#: web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:303
 msgid "Save and render"
 msgstr "保存并渲染"
 
@@ -2548,7 +2556,7 @@ msgstr "其中的一些素材"
 msgid "Some pictures were edited without descriptions."
 msgstr "部分素材在没有描述的情况下完成了剪辑。"
 
-#: web/lib/RenderPanel.svelte:264
+#: web/lib/RenderPanel.svelte:265
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr "视频和实况照片中录制的声音。关闭后只播放音乐，同时选择“无音乐”则生成无声影片。"
 
@@ -2784,7 +2792,7 @@ msgstr "人物登记：谁比较亲近、他们的角色，以及彼此的关系
 msgid "The picture it replaced"
 msgstr "被替换的素材"
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:256
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -2798,7 +2806,7 @@ msgstr "候选素材"
 msgid "The preview could not start."
 msgstr "预览无法启动。"
 
-#: web/lib/RenderPanel.svelte:268
+#: web/lib/RenderPanel.svelte:269
 msgid "The previewed track"
 msgstr "已试听的曲目"
 
@@ -3005,7 +3013,7 @@ msgstr "更新"
 msgid "Upgrading guide"
 msgstr "升级指南"
 
-#: web/lib/RenderPanel.svelte:277
+#: web/lib/RenderPanel.svelte:278
 msgid "Upload a track"
 msgstr "上传曲目"
 
@@ -3021,7 +3029,7 @@ msgstr "无法检查是否可以上传。影片仍可渲染和下载。"
 msgid "Upload film"
 msgstr "上传影片"
 
-#: web/lib/RenderPanel.svelte:294
+#: web/lib/RenderPanel.svelte:295
 msgid "Upload the film to Immich"
 msgstr "将影片上传到 Immich"
 
@@ -3269,7 +3277,7 @@ msgstr "已是最新版本。"
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "制作第一部影片需要这些模型文件。点击按钮前不会开始下载。"
 
-#: web/lib/RenderPanel.svelte:300
+#: web/lib/RenderPanel.svelte:301
 msgid ""
 "Your latest changes are in no revision yet. Rendering saves them as a new revision first, so "
 "the film has them."

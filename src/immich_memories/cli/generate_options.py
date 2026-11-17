@@ -201,10 +201,10 @@ def output_options(command: FC) -> FC:
         click.option(
             "--scale-mode",
             "-s",
-            type=click.Choice(["fit", "blur"]),
+            type=click.Choice(["blur", "fit", "crop", "auto"]),
             default=None,
-            help="How to fill an aspect mismatch: blurred background or black bars "
-            "(default: from config, else blur)",
+            help="How a picture of another shape fills the frame: blurred background, black bars, "
+            "a photo cropped around its faces, or crop when it has faces (default: from config, else blur)",
         ),
         click.option(
             "--fade-color",

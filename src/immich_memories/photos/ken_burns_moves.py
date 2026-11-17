@@ -100,7 +100,7 @@ def planned_move(
     forward = rng.random() < 0.5
     easing = rng.choice(EASINGS)
 
-    padded = _with_air(faces.faces)
+    padded = with_air(faces.faces)
     if not padded:
         return _drift(rng, zoom_in, forward, easing, portrait=portrait, fps=fps, duration=duration)
     subject = [face for face in padded if face.person_id and face.person_id in faces.subject_ids]
@@ -141,7 +141,7 @@ def pan_for_centre(centre: tuple[float, float], window: float) -> tuple[float, f
     )
 
 
-def _with_air(faces: Sequence[FaceBox]) -> list[FaceBox]:
+def with_air(faces: Sequence[FaceBox]) -> list[FaceBox]:
     padded = []
     for face in faces:
         if face.area <= 0:

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-16 20:03+0100\n"
+"POT-Creation-Date: 2026-11-17 09:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -99,7 +99,7 @@ msgstr "추가"
 msgid "Add a relationship"
 msgstr "관계 추가"
 
-#: web/lib/RenderPanel.svelte:251
+#: web/lib/RenderPanel.svelte:252
 msgid "Add date overlay"
 msgstr "날짜 표시"
 
@@ -149,7 +149,7 @@ msgstr "기간 후"
 msgid "Album"
 msgstr "앨범"
 
-#: web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
+#: web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "앨범 이름"
 
@@ -234,7 +234,7 @@ msgstr "누구나. 감지기 표시나 사적인 순간 등 제한이 없는 소
 
 #: web/lib/RenderPanel.svelte:191 web/lib/RenderPanel.svelte:197 web/lib/RenderPanel.svelte:206
 #: web/lib/RenderPanel.svelte:229 web/lib/RenderPanel.svelte:235 web/lib/RenderPanel.svelte:241
-#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:47
+#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:47
 #: web/routes/create/+page.svelte:494
 msgid "As configured"
 msgstr "설정대로"
@@ -265,7 +265,7 @@ msgstr "자동(영상 분위기에 맞게)"
 msgid "Automatic"
 msgstr "자동"
 
-#: web/lib/RenderPanel.svelte:266
+#: web/lib/RenderPanel.svelte:267
 msgid "Automatic (as configured)"
 msgstr "자동(설정대로)"
 
@@ -373,7 +373,7 @@ msgstr "캡션 API 키"
 msgid "Caption base URL"
 msgstr "캡션 기본 URL"
 
-#: web/lib/RenderPanel.svelte:252
+#: web/lib/RenderPanel.svelte:253
 msgid "Caption clips with their place"
 msgstr "클립에 장소 표시"
 
@@ -618,6 +618,14 @@ msgstr "가계도를 그릴 수 없습니다."
 #: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "인물을 불러오지 못했습니다."
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos around faces"
+msgstr "얼굴을 중심으로 사진 자르기"
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos with faces, blur the rest"
+msgstr "얼굴이 있는 사진은 자르고 나머지는 흐리게"
 
 #: web/lib/RenderPanel.svelte:192
 msgid "Crossfade"
@@ -1338,7 +1346,7 @@ msgstr "따로 두기"
 msgid "Keep downloaded videos"
 msgstr "다운로드한 동영상 보관"
 
-#: web/lib/RenderPanel.svelte:263
+#: web/lib/RenderPanel.svelte:264
 msgid "Keep original audio"
 msgstr "원본 오디오 유지"
 
@@ -1619,7 +1627,7 @@ msgstr "소급 처리할 개월 수"
 msgid "Multi-Person"
 msgstr "여러 인물"
 
-#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:262
+#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:263
 msgid "Music"
 msgstr "음악"
 
@@ -1643,7 +1651,7 @@ msgstr "음악 서비스 실패. 다음 서비스를 시도하는 중"
 msgid "Music upload quota (MB)"
 msgstr "음악 업로드 한도(MB)"
 
-#: web/lib/RenderPanel.svelte:287
+#: web/lib/RenderPanel.svelte:288
 msgid "Music volume:"
 msgstr "음악 음량:"
 
@@ -1705,7 +1713,7 @@ msgstr "라이브러리에서 요청에 맞는 소재를 찾지 못해 영상을
 msgid "No model read this cut: the rules chose every picture."
 msgstr "모델의 분석 없이 선별 규칙만으로 만든 편집본입니다."
 
-#: web/lib/RenderPanel.svelte:267 web/lib/settingLabels.ts:120
+#: web/lib/RenderPanel.svelte:268 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "음악 없음"
 
@@ -2085,7 +2093,7 @@ msgstr "프리셋"
 msgid "Preview"
 msgstr "미리보기"
 
-#: web/lib/RenderPanel.svelte:274
+#: web/lib/RenderPanel.svelte:275
 msgid "Preview a track"
 msgstr "트랙 미리듣기"
 
@@ -2097,7 +2105,7 @@ msgstr "이 선택으로 미리보기"
 msgid "Previous stages"
 msgstr "이전 단계"
 
-#: web/lib/RenderPanel.svelte:258
+#: web/lib/RenderPanel.svelte:259
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "개인정보 보호 모드: 모든 소재를 흐리게 하고 이름을 가립니다"
 
@@ -2226,7 +2234,7 @@ msgstr "이 관계 삭제"
 msgid "Removed"
 msgstr "뺌"
 
-#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:303
 msgid "Render"
 msgstr "렌더링"
 
@@ -2355,7 +2363,7 @@ msgstr "저장"
 msgid "Save Config"
 msgstr "설정 저장"
 
-#: web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:303
 msgid "Save and render"
 msgstr "저장하고 렌더링"
 
@@ -2558,7 +2566,7 @@ msgstr "해당 소재 일부"
 msgid "Some pictures were edited without descriptions."
 msgstr "일부 소재는 설명 없이 편집되었습니다."
 
-#: web/lib/RenderPanel.svelte:264
+#: web/lib/RenderPanel.svelte:265
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr "동영상과 Live Photos에 녹음된 소리입니다. 끄면 음악만 재생되며, 음악 없음도 선택하면 무음이 됩니다."
 
@@ -2798,7 +2806,7 @@ msgstr "인물 레지스트리: 누가 가까운지, 역할, 서로의 관계."
 msgid "The picture it replaced"
 msgstr "대체된 소재"
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:256
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -2814,7 +2822,7 @@ msgstr "후보 소재"
 msgid "The preview could not start."
 msgstr "미리보기를 시작할 수 없습니다."
 
-#: web/lib/RenderPanel.svelte:268
+#: web/lib/RenderPanel.svelte:269
 msgid "The previewed track"
 msgstr "미리 들은 트랙"
 
@@ -3021,7 +3029,7 @@ msgstr "업데이트"
 msgid "Upgrading guide"
 msgstr "업그레이드 가이드"
 
-#: web/lib/RenderPanel.svelte:277
+#: web/lib/RenderPanel.svelte:278
 msgid "Upload a track"
 msgstr "트랙 업로드"
 
@@ -3037,7 +3045,7 @@ msgstr "업로드할 수 있는지 확인하지 못했습니다. 영화는 여�
 msgid "Upload film"
 msgstr "영상 업로드"
 
-#: web/lib/RenderPanel.svelte:294
+#: web/lib/RenderPanel.svelte:295
 msgid "Upload the film to Immich"
 msgstr "영상을 Immich에 업로드"
 
@@ -3285,7 +3293,7 @@ msgstr "최신 버전입니다."
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "첫 영상을 만들려면 이 모델 파일이 필요합니다. 버튼을 누르기 전에는 다운로드하지 않습니다."
 
-#: web/lib/RenderPanel.svelte:300
+#: web/lib/RenderPanel.svelte:301
 msgid ""
 "Your latest changes are in no revision yet. Rendering saves them as a new revision first, so "
 "the film has them."

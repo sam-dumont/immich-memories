@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-from immich_memories.config.models.render import normalize_scale_mode
+from immich_memories.config.models.render import normalize_scale_mode, video_fill
 from immich_memories.delivery_timestamp import film_capture_instant
 from immich_memories.generate_music import MusicSource
 from immich_memories.generate_privacy import (
@@ -100,8 +100,11 @@ def build_assembly_settings(
 
     title_screen_settings = build_title_settings(params, config, assembly_clips)
 
-    # Scale mode: CLI/param > config > default
-    effective_scale_mode = normalize_scale_mode(params.scale_mode or config.defaults.scale_mode)
+    # Scale mode: CLI/param > config > default. The assembly fills videos and titles,
+    # which have no crop; photos take the look itself (generate_photos).
+    effective_scale_mode = video_fill(
+        normalize_scale_mode(params.scale_mode or config.defaults.scale_mode)
+    )
 
     capabilities = _film_capabilities(config)
     hdr_mode = _film_hdr_mode(config, capabilities)

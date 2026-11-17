@@ -56,7 +56,8 @@ With hardware encoding off, preparation runs in software.
 Video clips are never cropped. A landscape clip in a portrait film keeps its whole frame and
 [`scale_mode`](config-reference.md) fills the rest: `blur` (default) puts a blurred, zoomed
 copy behind the sharp one, `fit` uses black bars. A photo that does not fill the canvas gets the
-same bands. Face-aware video cropping is not offered: a moving subject needs per-frame tracking,
+same bands, unless `scale_mode` is `crop` or `auto`: then the photo fills the frame, cut around its
+faces (see [the table](config-reference.md#photos)), and videos keep the blur. Face-aware video cropping is not offered: a moving subject needs per-frame tracking,
 not one face position.
 
 ## Live Photos

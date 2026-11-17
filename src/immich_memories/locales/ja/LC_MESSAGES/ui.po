@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-16 20:03+0100\n"
+"POT-Creation-Date: 2026-11-17 09:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -101,7 +101,7 @@ msgstr "追加"
 msgid "Add a relationship"
 msgstr "関係を追加"
 
-#: web/lib/RenderPanel.svelte:251
+#: web/lib/RenderPanel.svelte:252
 msgid "Add date overlay"
 msgstr "日付を表示"
 
@@ -151,7 +151,7 @@ msgstr "期間の後"
 msgid "Album"
 msgstr "アルバム"
 
-#: web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
+#: web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:46 web/lib/settingLabels.ts:144
 msgid "Album name"
 msgstr "アルバム名"
 
@@ -236,7 +236,7 @@ msgstr "誰でも。検出器の警告や私的な場面など、制限のない
 
 #: web/lib/RenderPanel.svelte:191 web/lib/RenderPanel.svelte:197 web/lib/RenderPanel.svelte:206
 #: web/lib/RenderPanel.svelte:229 web/lib/RenderPanel.svelte:235 web/lib/RenderPanel.svelte:241
-#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:296 web/lib/UploadFilm.svelte:47
+#: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:47
 #: web/routes/create/+page.svelte:494
 msgid "As configured"
 msgstr "設定どおり"
@@ -267,7 +267,7 @@ msgstr "自動（雰囲気に合わせる）"
 msgid "Automatic"
 msgstr "自動"
 
-#: web/lib/RenderPanel.svelte:266
+#: web/lib/RenderPanel.svelte:267
 msgid "Automatic (as configured)"
 msgstr "自動（設定どおり）"
 
@@ -375,7 +375,7 @@ msgstr "キャプションのAPIキー"
 msgid "Caption base URL"
 msgstr "キャプションのベースURL"
 
-#: web/lib/RenderPanel.svelte:252
+#: web/lib/RenderPanel.svelte:253
 msgid "Caption clips with their place"
 msgstr "クリップに場所を表示"
 
@@ -620,6 +620,14 @@ msgstr "家系図を描けませんでした。"
 #: web/routes/settings/people/+page.svelte:146
 msgid "Could not load people."
 msgstr "人物を読み込めませんでした。"
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos around faces"
+msgstr "顔を中心に写真をトリミング"
+
+#: web/lib/RenderPanel.svelte:248
+msgid "Crop photos with faces, blur the rest"
+msgstr "顔のある写真はトリミング、他はぼかし"
 
 #: web/lib/RenderPanel.svelte:192
 msgid "Crossfade"
@@ -1334,7 +1342,7 @@ msgstr "別々のままにする"
 msgid "Keep downloaded videos"
 msgstr "ダウンロードした動画を保持"
 
-#: web/lib/RenderPanel.svelte:263
+#: web/lib/RenderPanel.svelte:264
 msgid "Keep original audio"
 msgstr "元の音声を残す"
 
@@ -1615,7 +1623,7 @@ msgstr "遡って処理する月数"
 msgid "Multi-Person"
 msgstr "複数の人物"
 
-#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:262
+#: web/lib/PhaseTimeline.svelte:9 web/lib/RenderPanel.svelte:263
 msgid "Music"
 msgstr "音楽"
 
@@ -1639,7 +1647,7 @@ msgstr "音楽サービスが失敗しました。次のサービスを試して
 msgid "Music upload quota (MB)"
 msgstr "音楽アップロード上限（MB）"
 
-#: web/lib/RenderPanel.svelte:287
+#: web/lib/RenderPanel.svelte:288
 msgid "Music volume:"
 msgstr "音楽の音量："
 
@@ -1701,7 +1709,7 @@ msgstr "このリクエストに合う素材がライブラリに見つからず
 msgid "No model read this cut: the rules chose every picture."
 msgstr "この編集は選別ルールだけで行いました。モデルによる分析はしていません。"
 
-#: web/lib/RenderPanel.svelte:267 web/lib/settingLabels.ts:120
+#: web/lib/RenderPanel.svelte:268 web/lib/settingLabels.ts:120
 msgid "No music"
 msgstr "音楽なし"
 
@@ -2081,7 +2089,7 @@ msgstr "プリセット"
 msgid "Preview"
 msgstr "プレビュー"
 
-#: web/lib/RenderPanel.svelte:274
+#: web/lib/RenderPanel.svelte:275
 msgid "Preview a track"
 msgstr "曲を試聴"
 
@@ -2093,7 +2101,7 @@ msgstr "この選択でプレビュー"
 msgid "Previous stages"
 msgstr "前のステージ"
 
-#: web/lib/RenderPanel.svelte:258
+#: web/lib/RenderPanel.svelte:259
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "プライバシーモード: すべての素材をぼかし、名前を隠します"
 
@@ -2222,7 +2230,7 @@ msgstr "この関係を削除"
 msgid "Removed"
 msgstr "外しました"
 
-#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:163 web/lib/RenderPanel.svelte:303
 msgid "Render"
 msgstr "レンダリングする"
 
@@ -2351,7 +2359,7 @@ msgstr "保存"
 msgid "Save Config"
 msgstr "設定を保存"
 
-#: web/lib/RenderPanel.svelte:302
+#: web/lib/RenderPanel.svelte:303
 msgid "Save and render"
 msgstr "保存してレンダリング"
 
@@ -2554,7 +2562,7 @@ msgstr "該当する素材の一部"
 msgid "Some pictures were edited without descriptions."
 msgstr "一部の素材は説明なしで編集されました。"
 
-#: web/lib/RenderPanel.svelte:264
+#: web/lib/RenderPanel.svelte:265
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr "動画とLive Photosに録音された音声です。オフにすると音楽のみになり、「音楽なし」も選ぶと無音になります。"
 
@@ -2792,7 +2800,7 @@ msgstr "人物レジストリ: 誰が身近か、その役割、互いの関係�
 msgid "The picture it replaced"
 msgstr "置き換えられた素材"
 
-#: web/lib/RenderPanel.svelte:255
+#: web/lib/RenderPanel.svelte:256
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -2808,7 +2816,7 @@ msgstr "候補の素材"
 msgid "The preview could not start."
 msgstr "プレビューを開始できませんでした。"
 
-#: web/lib/RenderPanel.svelte:268
+#: web/lib/RenderPanel.svelte:269
 msgid "The previewed track"
 msgstr "試聴した曲"
 
@@ -3015,7 +3023,7 @@ msgstr "アップデート"
 msgid "Upgrading guide"
 msgstr "アップグレードガイド"
 
-#: web/lib/RenderPanel.svelte:277
+#: web/lib/RenderPanel.svelte:278
 msgid "Upload a track"
 msgstr "曲をアップロード"
 
@@ -3031,7 +3039,7 @@ msgstr "アップロードできるか確認できませんでした。映像の
 msgid "Upload film"
 msgstr "動画をアップロード"
 
-#: web/lib/RenderPanel.svelte:294
+#: web/lib/RenderPanel.svelte:295
 msgid "Upload the film to Immich"
 msgstr "ムービーを Immich にアップロード"
 
@@ -3279,7 +3287,7 @@ msgstr "最新の状態です。"
 msgid "Your first film needs these model files. Nothing downloads until you press the button."
 msgstr "最初のムービーにはこれらのモデルファイルが必要です。ボタンを押すまでダウンロードは始まりません。"
 
-#: web/lib/RenderPanel.svelte:300
+#: web/lib/RenderPanel.svelte:301
 msgid ""
 "Your latest changes are in no revision yet. Rendering saves them as a new revision first, so "
 "the film has them."

@@ -35,6 +35,11 @@ logger = logging.getLogger(__name__)
 # which is what someone asking to keep faces in frame was actually after.
 _LEGACY_SCALE_MODES = {"smart_crop": "blur", "fill": "fit"}
 
+# The looks a film can take where a picture's shape differs from the canvas
+# (`photos.photo_looks`). `crop` and `auto` are new names on purpose: `fill` and
+# `smart_crop` above already mean something else to the configs that carry them.
+ScaleMode = Literal["blur", "fit", "crop", "auto"]
+
 
 def is_loopback_host(hostname: str) -> bool:
     """Whether a worker hostname is this machine, where cleartext stays local."""
@@ -62,12 +67,21 @@ def normalize_scale_mode(value: str) -> str:
     return replacement
 
 
+def video_fill(look: str) -> str:
+    """The fill a video takes under a look: videos have no crop, so `crop` and `auto` keep the blur."""
+    return "fit" if look == "fit" else "blur"
+
+
 class DefaultsConfig(BaseModel):
     """Default settings for video generation."""
 
-    scale_mode: Literal["fit", "blur"] = Field(
+    scale_mode: ScaleMode = Field(
         default="blur",
-        description="How to fill an aspect mismatch: 'blur' background or 'fit' (black bars)",
+        description=(
+            "How a picture of another shape meets the canvas: 'blur' background, 'fit' "
+            "(black bars), 'crop' (a photo fills the frame, cut around its faces) or 'auto' "
+            "(crop a photo with faces, blur the rest). Videos keep the blur under crop and auto"
+        ),
     )
     transition: Literal["cut", "crossfade", "smart", "none"] = "smart"
     transition_duration: float = Field(default=0.5, ge=0, le=2.0)

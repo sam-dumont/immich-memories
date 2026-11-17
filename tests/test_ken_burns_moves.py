@@ -284,7 +284,7 @@ def test_the_rendered_person_film_starts_whole_and_ends_close_on_the_person():
 
 
 def test_the_photo_pipeline_moves_toward_the_film_subject():
-    from immich_memories.photos import photo_pipeline
+    from immich_memories.photos.photo_looks import framed_still
 
     now = datetime(2024, 1, 1, tzinfo=UTC)
     kid = Person(id="kid", name="Kid", faces=[_face("f1", 80, 200, 50)])
@@ -298,7 +298,18 @@ def test_the_photo_pipeline_moves_toward_the_film_subject():
         people=[kid, stranger],
     )
 
-    move = photo_pipeline._ken_burns_params(asset, 10, 1.0, subjects=("Kid", "kid"))
+    subjects = ("Kid", "kid")
+    picture = np.zeros((_H, _W, 3), dtype=np.uint8)
+    move = framed_still(
+        asset.id,
+        picture,
+        picture_faces(asset, subjects),
+        film_subject(subjects),
+        (_W, _H),
+        "blur",
+        fps=10,
+        duration=1.0,
+    ).params
 
     assert move.zoom_start == 1.0
     kid_box = FaceBox(0.08, 0.4, 0.13, 0.5, named=True, person_id="kid")
