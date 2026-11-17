@@ -265,6 +265,51 @@ msgstr "Weinig schijfruimte op het uitvoervolume: {free_gb} GB vrij, onder de wa
 msgid "warning.low_space_cache"
 msgstr "Weinig schijfruimte op het cachevolume: {free_gb} GB vrij, onder de waarschuwingsdrempel van {min_gb} GB. Voer `immich-memories runs delete` uit om ruimte vrij te maken, of schakel uploaden in zodat afgewerkte films automatisch worden verwijderd."
 
+msgid "warning.selection_short"
+msgstr "{selected} s aan foto's en video's gekozen voor een film van {requested} s ({budget} s beschikbaar voor inhoud). Er is misschien nog meer bruikbaar materiaal."
+
+msgid "warning.selection_stopped_early"
+msgstr "Selectie vroegtijdig gestopt. {selected} s aan foto's en video's gekozen voor een film van {requested} s ({budget} s beschikbaar voor inhoud). Er is misschien nog meer bruikbaar materiaal."
+
+msgid "warning.film_over_budget"
+msgstr "De uiteindelijke film duurt {actual} s tegenover een budget van {budget} s ({over} s te veel)"
+
+msgid "warning.worker_length_off"
+msgstr "De film van de renderworker duurt {actual} s tegenover de geplande {expected} s ({delta} s)"
+
+msgid "warning.optional_music_failed"
+msgstr "Optionele muziek mislukt: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Gegenereerde muziek overgeslagen: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "in plaats daarvan een meegeleverd nummer gebruikt"
+
+msgid "warning.music_used_own"
+msgstr "in plaats daarvan een nummer uit je muziekmap gebruikt"
+
+msgid "warning.music_none_bundled"
+msgstr "geen meegeleverd nummer beschikbaar; geen muziek toegevoegd"
+
+msgid "warning.music_none_own"
+msgstr "geen nummer in je muziekmap beschikbaar; geen muziek toegevoegd"
+
+msgid "warning.music_host_unified"
+msgstr "deze machine heeft {gib} GB unified memory; het XL-model heeft 64 GB unified memory of een GPU van 16 GB nodig, dus speelt de meegeleverde bibliotheek"
+
+msgid "warning.music_host_gpu"
+msgstr "deze machine heeft een GPU van {gib} GB; het XL-model heeft 64 GB unified memory of een GPU van 16 GB nodig, dus speelt de meegeleverde bibliotheek"
+
+msgid "warning.music_host_none"
+msgstr "deze machine heeft geen GPU of bruikbaar unified memory; het XL-model heeft 64 GB unified memory of een GPU van 16 GB nodig, dus speelt de meegeleverde bibliotheek"
+
+msgid "warning.music_server_unknown"
+msgstr "kon niet achterhalen welk model de ACE-Step-server draait (onbereikbaar, of geen loaded_model op /health), dus speelt de meegeleverde bibliotheek; zet model_variant op 'xl-turbo' als hij XL draait"
+
+msgid "warning.music_server_not_xl"
+msgstr "de ACE-Step-server draait {model}, geen XL-model; de meegeleverde bibliotheek speelt"
+
 msgid "notify.title.ready"
 msgstr "Film klaar: {name}"
 

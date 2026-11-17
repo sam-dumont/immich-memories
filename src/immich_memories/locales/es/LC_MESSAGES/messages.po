@@ -265,6 +265,51 @@ msgstr "Poco espacio en disco (salida): quedan {free_gb} GB libres, por debajo d
 msgid "warning.low_space_cache"
 msgstr "Poco espacio en disco (caché): quedan {free_gb} GB libres, por debajo del umbral de aviso de {min_gb} GB. Ejecuta `immich-memories runs delete` para liberar espacio, o activa la subida para que las películas terminadas se eliminen solas."
 
+msgid "warning.selection_short"
+msgstr "Se seleccionaron {selected} s de fotos y vídeos para una película de {requested} s ({budget} s disponibles para el contenido). Puede que quede más material aprovechable."
+
+msgid "warning.selection_stopped_early"
+msgstr "La selección se detuvo antes de tiempo. Se seleccionaron {selected} s de fotos y vídeos para una película de {requested} s ({budget} s disponibles para el contenido). Puede que quede más material aprovechable."
+
+msgid "warning.film_over_budget"
+msgstr "La película final dura {actual} s frente a un presupuesto de {budget} s ({over} s de más)"
+
+msgid "warning.worker_length_off"
+msgstr "La película del worker de renderizado dura {actual} s frente a los {expected} s previstos ({delta} s)"
+
+msgid "warning.optional_music_failed"
+msgstr "Falló la música opcional: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Se omitió la música generada: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "se usó una pista incluida en su lugar"
+
+msgid "warning.music_used_own"
+msgstr "se usó una pista de tu carpeta de música en su lugar"
+
+msgid "warning.music_none_bundled"
+msgstr "no hay ninguna pista incluida disponible; no se añadió música"
+
+msgid "warning.music_none_own"
+msgstr "no hay ninguna pista en tu carpeta de música; no se añadió música"
+
+msgid "warning.music_host_unified"
+msgstr "este equipo tiene {gib} GB de memoria unificada; el modelo XL necesita 64 GB de memoria unificada o una GPU de 16 GB, así que suena la biblioteca incluida"
+
+msgid "warning.music_host_gpu"
+msgstr "este equipo tiene una GPU de {gib} GB; el modelo XL necesita 64 GB de memoria unificada o una GPU de 16 GB, así que suena la biblioteca incluida"
+
+msgid "warning.music_host_none"
+msgstr "este equipo no tiene GPU ni memoria unificada que pueda usar; el modelo XL necesita 64 GB de memoria unificada o una GPU de 16 GB, así que suena la biblioteca incluida"
+
+msgid "warning.music_server_unknown"
+msgstr "no se pudo saber qué modelo ejecuta el servidor ACE-Step (inalcanzable, o sin loaded_model en /health), así que suena la biblioteca incluida; pon model_variant en 'xl-turbo' si ejecuta XL"
+
+msgid "warning.music_server_not_xl"
+msgstr "el servidor ACE-Step ejecuta {model}, no un modelo XL; suena la biblioteca incluida"
+
 msgid "notify.title.ready"
 msgstr "Película lista: {name}"
 

@@ -23,6 +23,7 @@ from immich_memories.generate import GenerationParams
 from immich_memories.generate_music import resolve_music
 from immich_memories.generate_music_early import EarlyMusic
 from immich_memories.logging_config import RunIdFilter
+from immich_memories.operational_warnings import render_warning
 from immich_memories.processing.assembly_config import AssemblyClip
 
 FPS = 30.0
@@ -213,7 +214,9 @@ def test_a_failed_early_take_is_made_again_then_falls_back_as_always(tmp_path, g
 
     assert generator.asked[0] == generator.asked[1] == generator.asked[2]
     assert selection.warning == plain.warning
-    assert selection.warning.startswith("Optional music failed: the music backend is down")
+    assert render_warning(selection.warning).startswith(
+        "Optional music failed: the music backend is down"
+    )
 
 
 @pytest.mark.parametrize("generator", [{"fails_once": True}], indirect=True)

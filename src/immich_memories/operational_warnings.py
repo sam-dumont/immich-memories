@@ -82,6 +82,15 @@ def scrub_warning(text: str, scrub: Callable[[str], str]) -> str:
     return JOINER.join(parts)
 
 
+def merged_warnings(stored: list[str], logged: list[str]) -> list[str]:
+    """The run's stored warnings, then each logged warning line they do not already say.
+
+    A coded warning is also logged in English; that line is the same warning, not a second one.
+    """
+    said = {render_warning(piece) for text in stored for piece in (text, *text.split(JOINER))}
+    return list(dict.fromkeys([*stored, *(line for line in logged if line not in said)]))
+
+
 def worded_for(config: Config, text: str) -> str:
     """The warning in the film's language, as the config sets it ("auto" follows the host)."""
     return render_warning(text, resolve_film_locale(config.title_screens.locale))

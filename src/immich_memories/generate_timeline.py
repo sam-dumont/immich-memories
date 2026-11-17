@@ -8,6 +8,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from immich_memories.generate_clips import MIN_CLIP_DURATION
+from immich_memories.operational_warnings import coded
 from immich_memories.processing.output_contract import check_output
 
 if TYPE_CHECKING:
@@ -76,9 +77,11 @@ def validate_final_duration(
             f"Final artifact exceeds duration budget: {actual_duration:.1f}s > {hard_limit:.1f}s"
         )
     if actual_duration > tolerated:
-        return (
-            f"Final artifact ran {actual_duration:.1f}s against a {budget:.1f}s budget "
-            f"({actual_duration - budget:.1f}s over)"
+        return coded(
+            "film_over_budget",
+            actual=f"{actual_duration:.1f}",
+            budget=f"{budget:.1f}",
+            over=f"{actual_duration - budget:.1f}",
         )
     return None
 

@@ -36,6 +36,7 @@ from immich_memories.cli.declined_period import end_run_without_a_film, nothing_
 from immich_memories.cli.film_length import copy_checks, sized_film
 from immich_memories.cli.source_progress import SourceProgressReporter
 from immich_memories.filename_builder import name_after_recipe
+from immich_memories.operational_warnings import worded_for
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.progress_text import stage_text
@@ -535,7 +536,7 @@ def run_pipeline_and_generate(
     print_success(f"Selected {len(selected_clips)} clips for final video")
     duration_realization = pipeline_result.stats.get("editorial_duration_realization")
     if duration_warning := editorial_duration_warning(duration_realization):
-        print_warning(duration_warning)
+        print_warning(worded_for(config, duration_warning))
 
     should_upload = resolved.should_upload
     album_name = album or config.upload.album_name

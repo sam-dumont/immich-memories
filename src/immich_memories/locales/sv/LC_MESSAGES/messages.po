@@ -265,6 +265,51 @@ msgstr "Lite diskutrymme (utdata): {free_gb} GB ledigt, under varningsgränsen p
 msgid "warning.low_space_cache"
 msgstr "Lite diskutrymme (cache): {free_gb} GB ledigt, under varningsgränsen på {min_gb} GB. Kör `immich-memories runs delete` för att frigöra utrymme, eller aktivera uppladdning så att färdiga filmer tas bort automatiskt."
 
+msgid "warning.selection_short"
+msgstr "Valde {selected} s bilder och video till en film på {requested} s ({budget} s tillgängligt för innehåll). Det kan finnas mer användbart material kvar."
+
+msgid "warning.selection_stopped_early"
+msgstr "Urvalet stoppades i förtid. Valde {selected} s bilder och video till en film på {requested} s ({budget} s tillgängligt för innehåll). Det kan finnas mer användbart material kvar."
+
+msgid "warning.film_over_budget"
+msgstr "Den färdiga filmen är {actual} s mot en budget på {budget} s ({over} s över)"
+
+msgid "warning.worker_length_off"
+msgstr "Renderingsarbetarens film är {actual} s mot de planerade {expected} s ({delta} s)"
+
+msgid "warning.optional_music_failed"
+msgstr "Valfri musik misslyckades: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Genererad musik hoppades över: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "använde ett medföljande spår i stället"
+
+msgid "warning.music_used_own"
+msgstr "använde ett spår från din musikmapp i stället"
+
+msgid "warning.music_none_bundled"
+msgstr "inget medföljande spår tillgängligt; ingen musik tillagd"
+
+msgid "warning.music_none_own"
+msgstr "inget spår i din musikmapp tillgängligt; ingen musik tillagd"
+
+msgid "warning.music_host_unified"
+msgstr "den här datorn har {gib} GB enhetligt minne; XL-modellen behöver 64 GB enhetligt minne eller en GPU på 16 GB, så det medföljande biblioteket spelas"
+
+msgid "warning.music_host_gpu"
+msgstr "den här datorn har en GPU på {gib} GB; XL-modellen behöver 64 GB enhetligt minne eller en GPU på 16 GB, så det medföljande biblioteket spelas"
+
+msgid "warning.music_host_none"
+msgstr "den här datorn har varken GPU eller enhetligt minne den kan använda; XL-modellen behöver 64 GB enhetligt minne eller en GPU på 16 GB, så det medföljande biblioteket spelas"
+
+msgid "warning.music_server_unknown"
+msgstr "kunde inte ta reda på vilken modell ACE-Step-servern kör (onåbar, eller ingen loaded_model på /health), så det medföljande biblioteket spelas; sätt model_variant till 'xl-turbo' om den kör XL"
+
+msgid "warning.music_server_not_xl"
+msgstr "ACE-Step-servern kör {model}, inte en XL-modell; det medföljande biblioteket spelas"
+
 msgid "notify.title.ready"
 msgstr "Filmen är klar: {name}"
 

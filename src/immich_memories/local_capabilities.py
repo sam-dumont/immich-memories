@@ -10,6 +10,7 @@ import httpx
 
 from immich_memories.config import Config
 from immich_memories.conformance.local_reader_smoke import verify_reader as _verify_reader
+from immich_memories.operational_warnings import render_warning
 from immich_memories.setup_capabilities import Capability
 
 
@@ -63,7 +64,8 @@ def _music_capability(config: Config) -> Capability:
     from immich_memories.audio.generators.ace_step_music_path import music_path_for
 
     if not (path := music_path_for(config.ace_step)).generate:
-        return Capability("Local music", "disabled", f"Films play a bundled track: {path.reason}")
+        reason = render_warning(path.reason)
+        return Capability("Local music", "disabled", f"Films play a bundled track: {reason}")
     if shortfall := _music_shortfall(config):
         return Capability("Local music", "blocked", str(shortfall))
     return Capability(

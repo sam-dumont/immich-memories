@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories.generate import GenerationError
+from immich_memories.operational_warnings import render_warning
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.remote_render import check_film_length, film_length_bounds
 
@@ -91,8 +92,10 @@ def _received(seconds: float, monkeypatch):
 def test_the_received_film_a_few_percent_short_is_kept_with_its_warning(monkeypatch, caplog):
     warning = _received(589.133, monkeypatch)
 
-    assert warning is not None and "589.1" in warning and "604.0" in warning
-    assert warning in caplog.text
+    assert warning is not None
+    shown = render_warning(warning)
+    assert "589.1" in shown and "604.0" in shown
+    assert shown in caplog.text
 
 
 def test_the_received_film_far_off_its_plan_is_refused(monkeypatch):

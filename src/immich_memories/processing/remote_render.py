@@ -16,7 +16,7 @@ from uuid import UUID
 
 import httpx
 
-from immich_memories import __version__
+from immich_memories import __version__, operational_warnings
 from immich_memories.generate import GenerationError, PreparedGeneration
 from immich_memories.generate_delivery import safe_delivery_message
 from immich_memories.processing.assembly_config import AssemblyClip
@@ -370,9 +370,11 @@ def check_film_length(actual: float, expected: float, clips) -> str | None:
         )
     if math.isclose(actual, expected, abs_tol=_duration_slack(clips)):
         return None
-    return (
-        f"The render worker's film runs {actual:.1f}s against the {expected:.1f}s planned "
-        f"({actual - expected:+.1f}s)"
+    return operational_warnings.coded(
+        "worker_length_off",
+        actual=f"{actual:.1f}",
+        expected=f"{expected:.1f}",
+        delta=f"{actual - expected:+.1f}",
     )
 
 
@@ -385,7 +387,7 @@ def _validate_result(params, request, status, clips, probe, plan) -> str | None:
     expected = _expected_duration(params, request, clips)
     warning = check_film_length(probe.duration_seconds, expected, clips)
     if warning:
-        logger.warning(warning)
+        logger.warning("%s", operational_warnings.render_warning(warning))
     for start, end in status.get("music_mute_windows") or ():
         if not (
             math.isfinite(start)
@@ -396,7 +398,7 @@ def _validate_result(params, request, status, clips, probe, plan) -> str | None:
     budget = validate_final_duration(
         params, probe.duration_seconds, _map_extra(params, request, clips)
     )
-    return "; ".join(note for note in (warning, budget) if note) or None
+    return operational_warnings.JOINER.join(note for note in (warning, budget) if note) or None
 
 
 def _preview_inputs(params, request, clips):

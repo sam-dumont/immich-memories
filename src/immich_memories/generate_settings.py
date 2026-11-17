@@ -474,10 +474,11 @@ def _complete_music_failure(
     if not phase_started:
         run_tracker.start_phase("music", 1)
     warning = optional_music_warning(exc, config)
-    logger.warning(warning)
+    # The run keeps the code; the log and the phase's error list read in English.
+    logger.warning("%s", render_warning(warning))
     run_tracker.complete_phase(
         items_processed=0,
-        errors=[{"error": warning}],
+        errors=[{"error": render_warning(warning)}],
     )
     return MusicPhaseResult(applied=False, warning=warning)
 
@@ -586,7 +587,7 @@ def _complete_music_without_track(
 
     if phase_started:
         run_tracker.complete_phase(
-            items_processed=0, errors=[{"error": warning}] if warning else []
+            items_processed=0, errors=[{"error": render_warning(warning)}] if warning else []
         )
     return MusicPhaseResult(applied=False, warning=warning)
 

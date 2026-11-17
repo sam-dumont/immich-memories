@@ -8,6 +8,7 @@ import pytest
 from immich_memories.audio.generators import ace_step_music_path as path_module
 from immich_memories.audio.generators.ace_step_model_choice import HostMemory
 from immich_memories.audio.generators.ace_step_music_path import decide_music_path, server_model
+from immich_memories.operational_warnings import render_warning
 
 _REQUEST = httpx.Request("GET", "http://ace.invalid/health")
 BIG_MAC = HostMemory(unified_gib=64.0)
@@ -32,7 +33,8 @@ def test_local_auto_generates_only_where_xl_fits(host, generates):
 def test_a_small_host_explains_why_it_uses_the_library():
     result = decide_music_path(mode="lib", configured="auto", host=SMALL_MAC, server_model=None)
 
-    assert "32 GB" in result.reason and "bundled library" in result.reason
+    reason = render_warning(result.reason)
+    assert "32 GB" in reason and "bundled library" in reason
 
 
 @pytest.mark.parametrize("variant", ["xl-turbo", "acestep-v15-xl-turbo", "xl-base"])
@@ -71,7 +73,8 @@ def test_api_generates_only_when_the_server_runs_xl(server, generates):
 def test_an_unknown_server_model_says_how_to_assert_xl():
     result = decide_music_path(mode="api", configured="auto", host=NO_GPU, server_model=None)
 
-    assert "could not learn" in result.reason and "xl-turbo" in result.reason
+    reason = render_warning(result.reason)
+    assert "could not learn" in reason and "xl-turbo" in reason
 
 
 def test_the_owner_can_state_that_the_server_runs_xl():

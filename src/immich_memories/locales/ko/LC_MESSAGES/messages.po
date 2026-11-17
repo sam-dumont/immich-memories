@@ -260,6 +260,51 @@ msgstr "디스크 공간이 부족합니다(출력): {free_gb} GB 남음, 경고
 msgid "warning.low_space_cache"
 msgstr "디스크 공간이 부족합니다(캐시): {free_gb} GB 남음, 경고 기준 {min_gb} GB 미만입니다. `immich-memories runs delete`로 공간을 확보하거나, 업로드를 켜서 완성된 영상이 자동으로 삭제되게 하세요."
 
+msgid "warning.selection_short"
+msgstr "{requested}초 영상에 사진과 동영상 {selected}초를 골랐습니다(내용에 쓸 수 있는 시간 {budget}초). 쓸 만한 자료가 더 남아 있을 수 있습니다."
+
+msgid "warning.selection_stopped_early"
+msgstr "선택이 일찍 끝났습니다. {requested}초 영상에 사진과 동영상 {selected}초를 골랐습니다(내용에 쓸 수 있는 시간 {budget}초). 쓸 만한 자료가 더 남아 있을 수 있습니다."
+
+msgid "warning.film_over_budget"
+msgstr "완성된 영상은 {actual}초로, 예산 {budget}초보다 {over}초 깁니다"
+
+msgid "warning.worker_length_off"
+msgstr "렌더 작업자의 영상은 {actual}초로, 계획한 {expected}초와 {delta}초 차이가 납니다"
+
+msgid "warning.optional_music_failed"
+msgstr "선택 음악 실패: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "생성 음악 건너뜀: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "대신 내장 트랙을 사용했습니다"
+
+msgid "warning.music_used_own"
+msgstr "대신 음악 폴더의 트랙을 사용했습니다"
+
+msgid "warning.music_none_bundled"
+msgstr "사용할 수 있는 내장 트랙이 없습니다. 음악을 추가하지 않았습니다"
+
+msgid "warning.music_none_own"
+msgstr "음악 폴더에 트랙이 없습니다. 음악을 추가하지 않았습니다"
+
+msgid "warning.music_host_unified"
+msgstr "이 호스트의 통합 메모리는 {gib}GB입니다. XL 모델에는 통합 메모리 64GB 또는 16GB GPU가 필요하므로 내장 라이브러리를 재생합니다"
+
+msgid "warning.music_host_gpu"
+msgstr "이 호스트의 GPU는 {gib}GB입니다. XL 모델에는 통합 메모리 64GB 또는 16GB GPU가 필요하므로 내장 라이브러리를 재생합니다"
+
+msgid "warning.music_host_none"
+msgstr "이 호스트에는 쓸 수 있는 GPU도 통합 메모리도 없습니다. XL 모델에는 통합 메모리 64GB 또는 16GB GPU가 필요하므로 내장 라이브러리를 재생합니다"
+
+msgid "warning.music_server_unknown"
+msgstr "ACE-Step 서버가 어떤 모델을 실행하는지 알 수 없어(연결할 수 없거나 /health에 loaded_model이 없음) 내장 라이브러리를 재생합니다. XL을 실행한다면 model_variant를 'xl-turbo'로 설정하세요"
+
+msgid "warning.music_server_not_xl"
+msgstr "ACE-Step 서버는 XL 모델이 아닌 {model}을(를) 실행합니다. 내장 라이브러리를 재생합니다"
+
 msgid "notify.title.ready"
 msgstr "영상 완성: {name}"
 

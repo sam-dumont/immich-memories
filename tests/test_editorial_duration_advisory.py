@@ -8,6 +8,7 @@ import pytest
 from immich_memories import generate_render as generate_render_module
 from immich_memories.analysis.runtime.duration_advisory import editorial_duration_warning
 from immich_memories.analysis.runtime.source_route import EditorialSourcePlan
+from immich_memories.operational_warnings import render_warning, render_warnings
 from immich_memories.operations.editorial_attempt import EditorialAttempt, read_editorial_attempt
 from tests.output_tools_fake import output_tools
 from tests.test_editorial_source_route_surfaces import (
@@ -27,10 +28,14 @@ WARNING = (
     "Selected 32.0s of pictures and video for a 90.0s memory "
     "(82.5s available for content). More usable material may remain."
 )
+FRENCH = (
+    "32.0 s de photos et de vidéos retenues pour un film de 90.0 s "
+    "(82.5 s disponibles pour le contenu). Il reste peut-être d'autres images utilisables."
+)
 
 
 def test_recorded_shortfall_is_reported_without_reclassifying_available_material():
-    assert editorial_duration_warning(SHORTFALL) == WARNING
+    assert render_warning(editorial_duration_warning(SHORTFALL) or "") == WARNING
     # Outcome is the planner's decision; the display must not run a new threshold.
     assert editorial_duration_warning(SHORTFALL | {"status": "near_target"}) is None
     assert editorial_duration_warning(None) is None
@@ -42,7 +47,7 @@ def test_recorded_shortfall_is_reported_without_reclassifying_available_material
 
 def test_search_limit_keeps_its_recorded_cause():
     message = editorial_duration_warning(SHORTFALL | {"status": "search_limited"})
-    assert message == "Selection stopped early. " + WARNING
+    assert render_warning(message or "") == "Selection stopped early. " + WARNING
 
 
 def test_shortfall_attempt_remains_complete_and_retains_original_duration_record(tmp_path):
@@ -58,9 +63,7 @@ def test_shortfall_attempt_remains_complete_and_retains_original_duration_record
     assert EditorialSourcePlan((), EditorialPlan()).duration_realization is None
 
 
-@pytest.mark.parametrize("no_render", [False, True])
-@pytest.mark.parametrize("status", ["editorial_shortfall", "near_target"])
-def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, no_render, status):
+def _cli_run(tmp_path, *, no_render: bool, status: str, locale: str):
     from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
     from immich_memories.timeperiod import DateRange
 
@@ -69,6 +72,8 @@ def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, 
     result.stats["editorial_duration_realization"] = record
     pipeline = _source_pipeline(result)
     output = tmp_path / "people.mp4"
+    config = _config(tmp_path)
+    config.title_screens.locale = locale
     window = DateRange(
         datetime(2024, 1, 1, tzinfo=UTC), datetime(2024, 6, 30, 23, 59, 59, tzinfo=UTC)
     )
@@ -87,7 +92,7 @@ def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, 
             include_photos=True,
             use_live_photos=True,
             client=MagicMock(),
-            config=_config(tmp_path),
+            config=config,
             progress=MagicMock(),
             duration=90.0,
             transition="cut",
@@ -102,6 +107,15 @@ def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, 
             album=None,
             no_render=no_render,
         )
+    return warning, generate, record, result
+
+
+@pytest.mark.parametrize("no_render", [False, True])
+@pytest.mark.parametrize("status", ["editorial_shortfall", "near_target"])
+def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, no_render, status):
+    warning, generate, record, result = _cli_run(
+        tmp_path, no_render=no_render, status=status, locale="en"
+    )
     if status == "editorial_shortfall":
         warning.assert_called_once_with(WARNING)
     else:
@@ -111,6 +125,12 @@ def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, 
     else:
         assert generate.call_args.args[0].editorial_duration_realization == record
         assert generate.call_args.args[0].editorial_selections == result.editorial_selections
+
+
+def test_cli_prints_the_shortfall_in_the_films_language_never_as_a_code(tmp_path):
+    warning, *_ = _cli_run(tmp_path, no_render=True, status="editorial_shortfall", locale="fr")
+
+    warning.assert_called_once_with(FRENCH)
 
 
 @pytest.mark.parametrize("status", ["near_target", "editorial_shortfall"])
@@ -184,5 +204,14 @@ def test_direct_generation_persists_advisory_without_changing_completed_artifact
     assert saved.output_duration_seconds == 41.3
     assert saved.target_duration_seconds == 90
     assert saved.clips_selected == 8
-    assert saved.warnings == ([WARNING] if status == "editorial_shortfall" else [])
+    assert render_warnings(saved.warnings) == ([WARNING] if status == "editorial_shortfall" else [])
+    if status == "editorial_shortfall":
+        from immich_memories.automation.notifications import _build_body
+
+        # The run stores the code; a French completion notice words it in French.
+        assert saved.warnings[0].startswith("warn.selection_short?")
+        body = _build_body(
+            "monthly", "completed", 0, None, None, warnings=saved.warnings, locale="fr"
+        )
+        assert body.splitlines()[-1] == f"Attention : {FRENCH}"
     assert path.read_bytes() == b"validated-memory"

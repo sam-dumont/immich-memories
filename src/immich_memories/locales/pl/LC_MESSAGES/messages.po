@@ -270,6 +270,51 @@ msgstr "Mało miejsca na dysku (wyjście): wolne {free_gb} GB, poniżej progu os
 msgid "warning.low_space_cache"
 msgstr "Mało miejsca na dysku (pamięć podręczna): wolne {free_gb} GB, poniżej progu ostrzeżenia {min_gb} GB. Uruchom `immich-memories runs delete`, aby zwolnić miejsce, albo włącz przesyłanie, by gotowe filmy były usuwane automatycznie."
 
+msgid "warning.selection_short"
+msgstr "Wybrano {selected} s zdjęć i filmów do filmu o długości {requested} s ({budget} s dostępne na treść). Może zostać więcej przydatnego materiału."
+
+msgid "warning.selection_stopped_early"
+msgstr "Wybór zakończył się przedwcześnie. Wybrano {selected} s zdjęć i filmów do filmu o długości {requested} s ({budget} s dostępne na treść). Może zostać więcej przydatnego materiału."
+
+msgid "warning.film_over_budget"
+msgstr "Gotowy film trwa {actual} s przy budżecie {budget} s ({over} s za dużo)"
+
+msgid "warning.worker_length_off"
+msgstr "Film z procesu renderowania trwa {actual} s zamiast planowanych {expected} s ({delta} s)"
+
+msgid "warning.optional_music_failed"
+msgstr "Opcjonalna muzyka nie powiodła się: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Pominięto wygenerowaną muzykę: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "zamiast tego użyto dołączonego utworu"
+
+msgid "warning.music_used_own"
+msgstr "zamiast tego użyto utworu z twojego folderu z muzyką"
+
+msgid "warning.music_none_bundled"
+msgstr "brak dostępnego dołączonego utworu; nie dodano muzyki"
+
+msgid "warning.music_none_own"
+msgstr "brak utworu w twoim folderze z muzyką; nie dodano muzyki"
+
+msgid "warning.music_host_unified"
+msgstr "ten komputer ma {gib} GB pamięci zunifikowanej; model XL potrzebuje 64 GB pamięci zunifikowanej lub GPU z 16 GB, więc gra dołączona biblioteka"
+
+msgid "warning.music_host_gpu"
+msgstr "ten komputer ma GPU z {gib} GB; model XL potrzebuje 64 GB pamięci zunifikowanej lub GPU z 16 GB, więc gra dołączona biblioteka"
+
+msgid "warning.music_host_none"
+msgstr "ten komputer nie ma GPU ani pamięci zunifikowanej, której mógłby użyć; model XL potrzebuje 64 GB pamięci zunifikowanej lub GPU z 16 GB, więc gra dołączona biblioteka"
+
+msgid "warning.music_server_unknown"
+msgstr "nie udało się ustalić, jaki model uruchamia serwer ACE-Step (nieosiągalny albo brak loaded_model w /health), więc gra dołączona biblioteka; ustaw model_variant na 'xl-turbo', jeśli uruchamia XL"
+
+msgid "warning.music_server_not_xl"
+msgstr "serwer ACE-Step uruchamia {model}, a nie model XL; gra dołączona biblioteka"
+
 msgid "notify.title.ready"
 msgstr "Film gotowy: {name}"
 

@@ -269,6 +269,51 @@ msgstr "Espace disque faible sur le volume de sortie : {free_gb} Go libres, sous
 msgid "warning.low_space_cache"
 msgstr "Espace disque faible sur le volume du cache : {free_gb} Go libres, sous le seuil d'alerte de {min_gb} Go. Lancez `immich-memories runs delete` pour libérer de la place, ou activez l'envoi pour que les films terminés soient supprimés automatiquement."
 
+msgid "warning.selection_short"
+msgstr "{selected} s de photos et de vidéos retenues pour un film de {requested} s ({budget} s disponibles pour le contenu). Il reste peut-être d'autres images utilisables."
+
+msgid "warning.selection_stopped_early"
+msgstr "Sélection arrêtée avant la fin. {selected} s de photos et de vidéos retenues pour un film de {requested} s ({budget} s disponibles pour le contenu). Il reste peut-être d'autres images utilisables."
+
+msgid "warning.film_over_budget"
+msgstr "Le film final dure {actual} s pour un budget de {budget} s ({over} s de trop)"
+
+msgid "warning.worker_length_off"
+msgstr "Le film du worker de rendu dure {actual} s pour {expected} s prévues ({delta} s)"
+
+msgid "warning.optional_music_failed"
+msgstr "Échec de la musique facultative : {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Musique générée non utilisée : {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "un morceau intégré a été utilisé à la place"
+
+msgid "warning.music_used_own"
+msgstr "un morceau de votre dossier de musique a été utilisé à la place"
+
+msgid "warning.music_none_bundled"
+msgstr "aucun morceau intégré disponible ; aucune musique ajoutée"
+
+msgid "warning.music_none_own"
+msgstr "aucun morceau dans votre dossier de musique ; aucune musique ajoutée"
+
+msgid "warning.music_host_unified"
+msgstr "cette machine a {gib} Go de mémoire unifiée ; le modèle XL demande 64 Go de mémoire unifiée ou un GPU de 16 Go, donc la bibliothèque intégrée est utilisée"
+
+msgid "warning.music_host_gpu"
+msgstr "cette machine a un GPU de {gib} Go ; le modèle XL demande 64 Go de mémoire unifiée ou un GPU de 16 Go, donc la bibliothèque intégrée est utilisée"
+
+msgid "warning.music_host_none"
+msgstr "cette machine n'a ni GPU ni mémoire unifiée utilisable ; le modèle XL demande 64 Go de mémoire unifiée ou un GPU de 16 Go, donc la bibliothèque intégrée est utilisée"
+
+msgid "warning.music_server_unknown"
+msgstr "impossible de savoir quel modèle tourne sur le serveur ACE-Step (injoignable, ou pas de loaded_model sur /health), donc la bibliothèque intégrée est utilisée ; réglez model_variant sur 'xl-turbo' s'il fait tourner XL"
+
+msgid "warning.music_server_not_xl"
+msgstr "le serveur ACE-Step fait tourner {model}, pas un modèle XL ; la bibliothèque intégrée est utilisée"
+
 msgid "notify.title.ready"
 msgstr "Film prêt : {name}"
 

@@ -260,6 +260,51 @@ msgstr "磁盘空间不足（输出）：剩余 {free_gb} GB，低于 {min_gb} G
 msgid "warning.low_space_cache"
 msgstr "磁盘空间不足（缓存）：剩余 {free_gb} GB，低于 {min_gb} GB 的警告阈值。运行 `immich-memories runs delete` 释放空间，或开启上传，让完成的影片自动删除。"
 
+msgid "warning.selection_short"
+msgstr "已为 {requested} 秒的影片选出 {selected} 秒的照片和视频（可用于内容的时长为 {budget} 秒）。可能还有可用的素材。"
+
+msgid "warning.selection_stopped_early"
+msgstr "选择提前结束。已为 {requested} 秒的影片选出 {selected} 秒的照片和视频（可用于内容的时长为 {budget} 秒）。可能还有可用的素材。"
+
+msgid "warning.film_over_budget"
+msgstr "最终影片时长 {actual} 秒，预算为 {budget} 秒（超出 {over} 秒）"
+
+msgid "warning.worker_length_off"
+msgstr "渲染工作进程生成的影片时长 {actual} 秒，计划为 {expected} 秒（{delta} 秒）"
+
+msgid "warning.optional_music_failed"
+msgstr "可选音乐失败：{detail}"
+
+msgid "warning.music_skipped"
+msgstr "已跳过生成的音乐：{detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "改用了内置曲目"
+
+msgid "warning.music_used_own"
+msgstr "改用了你的音乐文件夹中的曲目"
+
+msgid "warning.music_none_bundled"
+msgstr "没有可用的内置曲目；未添加音乐"
+
+msgid "warning.music_none_own"
+msgstr "你的音乐文件夹中没有曲目；未添加音乐"
+
+msgid "warning.music_host_unified"
+msgstr "此主机有 {gib} GB 统一内存；XL 模型需要 64 GB 统一内存或 16 GB 的 GPU，因此播放内置曲库"
+
+msgid "warning.music_host_gpu"
+msgstr "此主机有 {gib} GB 的 GPU；XL 模型需要 64 GB 统一内存或 16 GB 的 GPU，因此播放内置曲库"
+
+msgid "warning.music_host_none"
+msgstr "此主机没有可用的 GPU 或统一内存；XL 模型需要 64 GB 统一内存或 16 GB 的 GPU，因此播放内置曲库"
+
+msgid "warning.music_server_unknown"
+msgstr "无法得知 ACE-Step 服务器运行的模型（无法连接，或 /health 中没有 loaded_model），因此播放内置曲库；如果它运行的是 XL，请将 model_variant 设为 'xl-turbo'"
+
+msgid "warning.music_server_not_xl"
+msgstr "ACE-Step 服务器运行的是 {model}，不是 XL 模型；播放内置曲库"
+
 msgid "notify.title.ready"
 msgstr "影片已完成：{name}"
 

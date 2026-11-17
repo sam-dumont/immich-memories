@@ -24,6 +24,7 @@ from immich_memories.generate_clips import (
 )
 from immich_memories.generate_music import MusicSelection
 from immich_memories.generate_settings import build_assembly_settings, build_title_settings
+from immich_memories.operational_warnings import render_warning
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.rate_control import quality_args
 from tests.conftest import make_asset, make_clip
@@ -1045,7 +1046,7 @@ class TestRunMusicPhase:
         )
 
         assert result.applied is False
-        assert result.warning == "Optional music failed: backend unavailable"
+        assert render_warning(result.warning) == "Optional music failed: backend unavailable"
         tracker.start_phase.assert_called_once_with("music", 1)
         tracker.complete_phase.assert_called_once_with(
             items_processed=0,

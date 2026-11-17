@@ -54,9 +54,10 @@ def build_acestep_config(quality: str) -> ACEStepConfig:
 def bundled_reason(host: HostMemory) -> str | None:
     """Why films on this host play the bundled library; None when they generate with XL."""
     from immich_memories.audio.generators.ace_step_music_path import local_check_profile
+    from immich_memories.operational_warnings import render_warning
 
     path, _variant = local_check_profile("auto", host)
-    return None if path.generate else path.reason
+    return None if path.generate else render_warning(path.reason)
 
 
 def check_dependencies() -> dict[str, bool]:

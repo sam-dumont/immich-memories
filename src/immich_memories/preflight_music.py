@@ -11,6 +11,7 @@ from immich_memories.audio.generators.ace_step_isolated import install_hint, iso
 from immich_memories.audio.generators.ace_step_music_path import music_path_for
 from immich_memories.audio.generators.ace_step_runtime import is_ace_step_importable
 from immich_memories.config.loader import Config
+from immich_memories.operational_warnings import render_warning
 from immich_memories.preflight import CheckResult, CheckStatus
 
 
@@ -37,7 +38,7 @@ def check_music(config: Config) -> CheckResult:
             "Music (ACE-Step)",
             CheckStatus.WARNING,
             "Films play a bundled track, not generated music",
-            path.reason,
+            render_warning(path.reason),
         )
     if ace_step.mode != "lib":
         return CheckResult(
