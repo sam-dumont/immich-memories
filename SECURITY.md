@@ -195,32 +195,39 @@ dictionary lookups. The supported WordNet and ACE-Step routes do not call the af
 save/load APIs. This is a reviewed reachability finding, not a patched package or a blanket
 scanner exception. Keep the advisory tracked and re-audit any new NLTK training or export integration.
 
-### Docs advisory reviews
+### Client and docs advisory reviews
 
-No docs advisory review is open: `make npm-audit` and CI refuse any high or critical
-advisory in the docs dependencies, as `make npm-audit-strict` does. The client audit is
-strict either way.
+`make npm-audit` and CI run the client audit (`web/`, dev dependencies included) and the docs
+audit (`docs-site/`, runtime dependencies) through `scripts/npm_docs_audit.py`. A high or
+critical advisory fails both unless it matches an open, dated review. `make npm-audit-strict`
+runs the same audits with no review.
 
-braces 3.0.3 ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm))
-was reviewed until November 16, 2026: deeply nested glob patterns could crash a docs build,
-within the code execution a docs build already has. GitHub then withdrew the advisory, so
-npm audit no longer reports it, and the review was retired.
+One review is open, until December 17, 2026: picomatch
+([GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)), a ReDoS through
+single-branch repeated extglobs. It affects every release up to 4.0.7, the newest, and has no
+patched version. It covers picomatch 4.0.7 in the client lock and 2.3.2 and 4.0.7 in the docs
+lock; another version fails. picomatch reaches both trees only through build tools (vite,
+tinyglobby and fdir, the Docusaurus build chain) and only matches glob patterns from our own
+build config, never user input. The shipped client and docs site are static files with no Node at
+runtime. The owner approved this review on November 17, 2026. It is removed as soon as a fixed
+picomatch ships, and on December 17 at the latest; it does not authorize other advisories or an
+extension.
 
-http-cache-semantics was reviewed the same way until 4.3.0 shipped the fix for
-[GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp) on
-October 4, 2026. The docs lockfile now pins 4.3.0 and the review no longer
-accepts the old version.
+The review checks the locked leaf versions and exact advisory URLs, and follows each transitive
+finding to its advisory leaves. A dependent flagged only because it depends on the reviewed
+picomatch passes; a dependent with an advisory of its own fails. New high advisories, critical
+advisories, changed reviewed versions, expired reviews and inconclusive audit output fail.
 
-The review checks the locked leaf versions and exact advisory URLs, including transitive
-findings. New high advisories, available fixes, changed reviewed versions,
-expired reviews and inconclusive audit output fail. The existing high threshold
-is unchanged: the low nested cookie finding remains tracked, not fixed or
-silently removed. The owner approved this temporary exception on October 3, 2026;
-it does not authorize additional advisories or an expiry extension.
+npm marks some dependents `fixAvailable: true` without naming a replacement; that is accepted
+only when every leaf matches the review. When an advisory has no patched release, npm can also
+offer an older major of a direct dependency (for the client: vite 8.3.7 back to 6.2.7,
+svelte-check 4.7.8 back to 3.8.6). That drops the dependent and patches nothing, so the review
+accepts a concrete offer only when it is older than the locked version. Any upgrade offer, and
+`fixAvailable: true` on the advisory leaf itself, is a real fix and fails. Cycles without advisory
+evidence are refused.
 
-npm also labels some transitive Docusaurus findings `fixAvailable: true` without
-naming a replacement. An isolated `npm audit fix --dry-run --ignore-scripts`
-still reported the same 42 findings (36 high, six low). The review follows each
-transitive finding to its advisory leaves; that boolean is accepted only when
-all leaves match the two reviews above. A concrete transitive upgrade or any
-fixable advisory leaf is refused. Cycles without advisory evidence are refused.
+Past reviews: braces 3.0.3
+([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)) was reviewed for the
+docs until November 16, 2026, and retired once GitHub withdrew the advisory. http-cache-semantics
+was reviewed until 4.3.0 shipped the fix for
+[GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp) on October 4, 2026.

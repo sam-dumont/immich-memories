@@ -1,14 +1,16 @@
-"""Exercise the explicit docs-only advisory review, without weakening strict auditing."""
+"""Exercise the explicit, dated advisory review of the client and docs npm audits."""
 
 import json
 import runpy
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/npm_docs_audit.py"
 
 
 BRACES_REVIEW = ("braces", "3.0.3", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm")
+PICOMATCH = "https://github.com/advisories/GHSA-fc5q-39xc-vjpf"
+EXPIRES = runpy.run_path(str(SCRIPT))["EXPIRES"]
 
 
 def with_review(review=BRACES_REVIEW):
@@ -22,8 +24,13 @@ def with_review(review=BRACES_REVIEW):
     return namespace["evaluate"]
 
 
-def test_no_docs_review_is_open_once_the_braces_advisory_is_withdrawn():
-    assert runpy.run_path(str(SCRIPT))["REVIEWED"] == set()
+def test_only_the_build_only_picomatch_advisory_is_reviewed_until_december_17():
+    script = runpy.run_path(str(SCRIPT))
+    assert script["REVIEWED"] == {
+        ("picomatch", "2.3.2", PICOMATCH),
+        ("picomatch", "4.0.7", PICOMATCH),
+    }
+    assert script["EXPIRES"] == date(2026, 12, 17)
 
 
 def with_metadata(report):
@@ -108,8 +115,8 @@ def reviewed_report():
 def test_only_exact_unfixed_graph_is_accepted_until_expiry():
     evaluate = with_review()
     report, lock = reviewed_report()
-    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 15)) == 0
-    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 16)) == 1
+    assert evaluate(with_metadata(report), lock, reviewed=True, today=EXPIRES - timedelta(1)) == 0
+    assert evaluate(with_metadata(report), lock, reviewed=True, today=EXPIRES) == 1
     lock["packages"]["node_modules/braces"]["version"] = "3.0.4"
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 3)) == 1
 
@@ -233,34 +240,143 @@ def test_critical_source_cannot_hide_under_high_parent():
     assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 10, 3)) == 1
 
 
-def test_make_refuses_any_high_docs_advisory_and_passes_a_clean_report(tmp_path):
+def finding(name, via, fix, nodes=None):
+    return {
+        "name": name,
+        "severity": "high",
+        "nodes": nodes or [f"node_modules/{name}"],
+        "fixAvailable": fix,
+        "via": via,
+    }
+
+
+def picomatch_leaf(url=PICOMATCH):
+    return {"name": "picomatch", "severity": "high", "url": url, "range": "<=4.0.7"}
+
+
+def web_picomatch_report():
+    """The client audit as npm prints it: picomatch has no patched release, so each concrete
+    offer is a downgrade of a direct dependency to an older major."""
+    findings = [
+        finding("picomatch", [picomatch_leaf()], {"name": "vite", "version": "6.2.7"}),
+        finding("fdir", ["picomatch"], {"name": "svelte-check", "version": "3.8.6"}),
+        finding("tinyglobby", ["fdir", "picomatch"], True),
+        finding("vite", ["picomatch", "tinyglobby"], {"name": "vite", "version": "6.2.7"}),
+        finding("svelte-check", ["fdir"], {"name": "svelte-check", "version": "3.8.6"}),
+    ]
+    report = {"auditReportVersion": 2, "vulnerabilities": {f["name"]: f for f in findings}}
+    locked = {
+        "picomatch": "4.0.7",
+        "fdir": "6.5.0",
+        "tinyglobby": "0.2.17",
+        "vite": "8.3.7",
+        "svelte-check": "4.7.8",
+    }
+    packages = {f"node_modules/{name}": {"version": v} for name, v in locked.items()}
+    return report, {"packages": packages}
+
+
+def docs_picomatch_report():
+    """The docs audit: picomatch 2.3.2 at top level, 4.0.7 under tinyglobby and vite."""
+    paths = [
+        "node_modules/picomatch",
+        "node_modules/tinyglobby/node_modules/picomatch",
+        "node_modules/vite/node_modules/picomatch",
+    ]
+    findings = [
+        finding("picomatch", [picomatch_leaf()], False, paths),
+        finding("micromatch", ["picomatch"], False),
+        finding("tinyglobby", ["picomatch"], True),
+    ]
+    report = {"auditReportVersion": 2, "vulnerabilities": {f["name"]: f for f in findings}}
+    versions = ["2.3.2", "4.0.7", "4.0.7"]
+    packages = {path: {"version": v} for path, v in zip(paths, versions, strict=True)}
+    packages["node_modules/micromatch"] = {"version": "4.0.8"}
+    packages["node_modules/tinyglobby"] = {"version": "0.2.17"}
+    return report, {"packages": packages}
+
+
+def test_picomatch_and_its_dependents_pass_both_audits_until_the_review_expires():
+    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    for report, lock in [web_picomatch_report(), docs_picomatch_report()]:
+        with_metadata(report)
+        assert evaluate(report, lock, reviewed=True, today=EXPIRES - timedelta(1)) == 0
+        assert evaluate(report, lock, reviewed=True, today=EXPIRES) == 1
+        assert evaluate(report, lock, reviewed=False, today=EXPIRES - timedelta(1)) == 1
+
+
+def test_another_advisory_an_unlisted_version_or_a_real_fix_still_fails():
+    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    other = {"name": "vite", "severity": "high", "url": "https://github.com/advisories/GHSA-x"}
+    upgrade = {"name": "vite", "version": "9.0.0", "isSemVerMajor": True}
+    changes = [
+        ("picomatch", "via", [picomatch_leaf("https://github.com/advisories/GHSA-new")]),
+        ("vite", "via", ["picomatch", "tinyglobby", other]),
+        ("picomatch", "fixAvailable", True),
+        ("picomatch", "fixAvailable", {"name": "picomatch", "version": "4.0.8"}),
+        ("vite", "fixAvailable", upgrade),
+    ]
+    for name, key, value in changes:
+        report, lock = web_picomatch_report()
+        report["vulnerabilities"][name][key] = value
+        assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 17)) == 1
+    report, lock = web_picomatch_report()
+    lock["packages"]["node_modules/picomatch"]["version"] = "4.0.6"
+    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 17)) == 1
+
+
+def test_a_downgrade_offer_with_an_unreadable_version_is_inconclusive():
+    evaluate = runpy.run_path(str(SCRIPT))["evaluate"]
+    report, lock = web_picomatch_report()
+    report["vulnerabilities"]["vite"]["fixAvailable"] = {"name": "vite", "version": "latest"}
+    assert evaluate(with_metadata(report), lock, reviewed=True, today=date(2026, 11, 17)) == 2
+
+
+def test_make_runs_the_client_and_docs_audits_through_the_review(tmp_path):
     import os
     import subprocess
 
     npm = tmp_path / "npm"
     npm.write_text(
         "#!/bin/sh\n"
-        'case "$PWD" in */web) exit 0 ;; esac\n'
-        'case "$*" in *--json*) cat "$AUDIT_FIXTURE" ;; esac\n'
-        'exit "$AUDIT_EXIT"\n'
+        'case "$PWD" in\n'
+        '  */web) side=web fixture="$WEB_FIXTURE" code="$WEB_EXIT" ;;\n'
+        '  *) side=docs fixture="$DOCS_FIXTURE" code="$DOCS_EXIT" ;;\n'
+        "esac\n"
+        'echo "$side $*" >> "$NPM_CALLS"\n'
+        'case "$*" in *--json*) cat "$fixture" ;; esac\n'
+        'exit "$code"\n'
     )
     npm.chmod(0o700)
     root = SCRIPT.parent.parent
+    calls = tmp_path / "calls"
 
-    def audit(report, exit_code, target="npm-audit"):
-        fixture = tmp_path / f"audit-{exit_code}.json"
-        fixture.write_text(json.dumps(with_metadata(report)))
-        env = os.environ | {
-            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
-            "AUDIT_FIXTURE": str(fixture),
-            "AUDIT_EXIT": str(exit_code),
-        }
+    def audit(web, docs, target="npm-audit"):
+        env = os.environ | {"PATH": str(tmp_path) + os.pathsep + os.environ["PATH"]}
+        env["NPM_CALLS"] = str(calls)
+        for side, report in [("WEB", web), ("DOCS", docs)]:
+            fixture = tmp_path / f"{side}.json"
+            fixture.write_text(json.dumps(with_metadata(report)))
+            env[f"{side}_FIXTURE"] = str(fixture)
+            env[f"{side}_EXIT"] = str(int(bool(report["metadata"]["vulnerabilities"]["high"])))
+        calls.write_text("")
         return subprocess.run(["make", target], cwd=root, env=env, capture_output=True)
 
-    high, _ = reviewed_report()
-    high["vulnerabilities"] = {"braces": high["vulnerabilities"]["braces"]}
-    assert audit(high, 1).returncode != 0
-    assert audit(high, 1, "npm-audit-strict").returncode != 0
     clean = {"auditReportVersion": 2, "vulnerabilities": {}}
-    passed = audit(clean, 0)
-    assert passed.returncode == 0, passed.stderr.decode()
+    passed = audit(clean, clean)
+    assert passed.returncode == 0, passed.stdout.decode() + passed.stderr.decode()
+    assert calls.read_text().splitlines() == [
+        "web audit --audit-level=high --json",
+        "docs audit --omit=dev --audit-level=high --json",
+    ]
+
+    web, _ = web_picomatch_report()
+    docs, _ = docs_picomatch_report()
+    reviewed = audit(web, docs)
+    assert (reviewed.returncode == 0) == (date.today() < EXPIRES), reviewed.stdout.decode()
+    assert audit(web, docs, "npm-audit-strict").returncode != 0
+
+    other, _ = web_picomatch_report()
+    other["vulnerabilities"]["picomatch"]["via"] = [picomatch_leaf("https://x.test/GHSA-new")]
+    assert audit(other, clean).returncode != 0
+    assert audit(clean, other).returncode != 0

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed; permit a time-limited docs review, when one is open, only with explicit opt-in."""
+"""Fail closed on high npm advisories; pass a dated, owner-approved review only on opt-in."""
 
 import argparse
 import json
@@ -7,11 +7,18 @@ import sys
 from datetime import date
 from pathlib import Path
 
-# No docs advisory review is open. The last one, braces 3.0.3 (GHSA-vfj7-8cjw-p6xm), ended on
-# this date; GitHub had withdrawn that advisory, so npm audit no longer reports it. A new owner-
-# approved review adds its (package, version, advisory URL) and sets a new date.
-EXPIRES = date(2026, 11, 16)
-REVIEWED: set[tuple[str, str, str]] = set()
+# Owner-approved on 2026-11-17 for the client and docs audits: picomatch ReDoS through repeated
+# extglobs (GHSA-fc5q-39xc-vjpf), with no patched release yet (<= 4.0.7, the newest). picomatch
+# reaches web/ and docs-site/ only through build tools (vite, tinyglobby, the Docusaurus build),
+# matches only glob patterns from our own build config, and neither ships Node at runtime.
+# Each locked version is listed; another version fails. Remove the review as soon as a fixed
+# picomatch ships, and on EXPIRES at the latest.
+PICOMATCH_REDOS = "https://github.com/advisories/GHSA-fc5q-39xc-vjpf"
+EXPIRES = date(2026, 12, 17)
+REVIEWED: set[tuple[str, str, str]] = {
+    ("picomatch", "2.3.2", PICOMATCH_REDOS),
+    ("picomatch", "4.0.7", PICOMATCH_REDOS),
+}
 SEVERITIES = {"info", "low", "moderate", "high", "critical"}
 
 
@@ -29,6 +36,22 @@ def _versions(node: dict, packages: dict) -> set[str]:
     return versions
 
 
+def _release(version: object) -> tuple[int, ...]:
+    if not isinstance(version, str):
+        raise ValueError("invalid version")
+    parts = version.split("-")[0].split(".")
+    if len(parts) != 3 or not all(part.isdigit() for part in parts):
+        raise ValueError("invalid version")
+    return tuple(int(part) for part in parts)
+
+
+def _downgrade(fix: dict, packages: dict) -> bool:
+    """npm's only offer for an advisory with no patched release can be an older major of a direct
+    dependency: that drops the dependent, it patches nothing. Any other concrete offer is a fix."""
+    locked = packages["node_modules/" + fix["name"]]["version"]
+    return _release(fix["version"]) < _release(locked)
+
+
 def _allowed(
     name: str, findings: dict, packages: dict, visiting: set[str], leaves: set[str]
 ) -> bool:
@@ -38,7 +61,8 @@ def _allowed(
     if node["name"] != name or node["severity"] not in SEVERITIES:
         raise ValueError("invalid advisory identity or severity")
     versions = _versions(node, packages)
-    if isinstance(node["fixAvailable"], dict):
+    fix = node["fixAvailable"]
+    if isinstance(fix, dict) and not _downgrade(fix, packages):
         return False
     via = node["via"]
     if not isinstance(via, list) or not via:
@@ -51,7 +75,7 @@ def _allowed(
             allowed = _allowed(source, findings, packages, visiting | {name}, leaves) and allowed
         elif isinstance(source, dict):
             leaves.add(name)
-            if node["fixAvailable"] is not False:
+            if fix is True:
                 return False
             if source["severity"] == "critical":
                 return False
@@ -146,14 +170,15 @@ def main() -> None:
     except (OSError, KeyError, TypeError, ValueError):
         result = 2
     print(
-        {
-            0: "Docs audit accepted at the existing high threshold.",
-            1: "Unreviewed, fixable, changed or expired high advisory: refused.",
-            2: "Inconclusive docs audit: refused.",
+        f"npm audit of {args.lock}: "
+        + {
+            0: "accepted at the existing high threshold.",
+            1: "unreviewed, fixable, changed or expired high advisory: refused.",
+            2: "inconclusive: refused.",
         }[result]
     )
     if result == 0 and args.reviewed and REVIEWED:
-        print(f"Explicit docs-only review expires {EXPIRES}; packages remain unpatched.")
+        print(f"The advisory review expires {EXPIRES}; reviewed packages remain unpatched.")
     sys.exit(result)
 
 

@@ -879,18 +879,20 @@ pip-audit:  ## Audit dev and the all extra shipped in the application image
 	python3 scripts/pip_audit_smart.py --audit-exit "$$AUDIT_EXIT" < "$$OUT"
 
 .PHONY: npm-audit npm-audit-strict
-npm-audit: npm-audit-reviewed-docs  ## Strict client audit plus approved, expiring docs advisory review
+npm-audit: npm-audit-reviewed-docs  ## Client and docs audits; a high advisory passes only under a dated owner review
 
 npm-audit-strict:  ## Unfiltered high-severity client and documentation dependency audit
 	cd web && npm audit --audit-level=high
 	cd docs-site && npm audit --omit=dev --audit-level=high
 
-# Owner-approved docs-only review; CI calls npm-audit as the single policy entry point.
+# Owner-approved, dated advisory review for the client and the docs; CI calls npm-audit as the
+# single policy entry point. The target name predates the client review and stays for callers.
 .PHONY: npm-audit-reviewed-docs
-npm-audit-reviewed-docs:  ## Time-limited docs advisory review; strict client audit
-	cd web && npm audit --audit-level=high
-	@set -eu; out=$$(mktemp "$${TMPDIR:-/tmp}/npm-docs-audit.XXXXXX"); \
+npm-audit-reviewed-docs:  ## Client (with dev deps) and docs audits through the dated advisory review
+	@set -eu; out=$$(mktemp "$${TMPDIR:-/tmp}/npm-audit.XXXXXX"); \
 	trap 'rm -f "$$out"' EXIT; \
+	set +e; (cd web && npm audit --audit-level=high --json) >"$$out"; audit_exit=$$?; set -e; \
+	python3 scripts/npm_docs_audit.py --reviewed --lock web/package-lock.json --audit-exit "$$audit_exit" <"$$out"; \
 	set +e; (cd docs-site && npm audit --omit=dev --audit-level=high --json) >"$$out"; audit_exit=$$?; set -e; \
 	python3 scripts/npm_docs_audit.py --reviewed --lock docs-site/package-lock.json --audit-exit "$$audit_exit" <"$$out"
 
