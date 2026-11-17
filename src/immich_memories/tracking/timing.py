@@ -94,7 +94,11 @@ class _RunLogHandler(logging.Handler):
         if record.levelno >= logging.WARNING and current is not None:
             current.warnings.append(message)
             if len(current.warnings) <= otel.EVENTS_PER_SPAN:
-                trace.get_current_span().add_event("warning", {"message": message})
+                # A log line quotes what it is about, a name included: its words are content.
+                shown = message if otel.capturing_content() else otel.HIDDEN
+                trace.get_current_span().add_event(
+                    "warning", {"message": shown, "log.logger": record.name}
+                )
 
 
 def describe_error(error: BaseException) -> dict[str, Any]:

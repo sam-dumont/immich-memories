@@ -51,6 +51,12 @@ _inherited: object | None = None
 _warned = False
 
 
+# The app's own instrumentation scope; every other scope is an instrumentation's.
+SCOPE = "immich_memories"
+# What stands in for text a trace may not carry: a name, free text, an error's own words.
+HIDDEN = "{redacted}"
+
+
 def capturing_content() -> bool:
     """Whether traces carry content: prompts, replies, and the names in program arguments.
 
@@ -195,7 +201,7 @@ def tracer() -> trace.Tracer:
     """The app's tracer: the SDK's while exporting, the API's no-op otherwise."""
     if _provider is None:
         return trace.NoOpTracer()
-    return _provider.get_tracer("immich_memories", _version())
+    return _provider.get_tracer(SCOPE, _version())
 
 
 def current_trace_id() -> str | None:
@@ -277,21 +283,30 @@ def _nanos(seconds: float) -> int:
 
 
 def record_error(span: Span, error: Mapping[str, Any]) -> None:
-    """Mark `span` failed with the error `timing` kept: redacted, app frames only."""
-    span.add_event(
-        "exception",
-        {
-            "exception.type": error["type"],
-            "exception.message": error["message"],
-            "exception.stacktrace": "\n".join(error["frames"]),
-        },
-    )
-    span.set_status(Status(StatusCode.ERROR, error["type"]))
+    """Mark `span` failed with the error `timing` kept: redacted, app frames only.
+
+    The error's own text is content: a failed store write quotes its bound values (a person's
+    name), so it goes out only with content capture on. The type and the frames always do.
+    """
+    message = error["message"] if capturing_content() else HIDDEN
+    _failed(span, error["type"], message, error["frames"])
 
 
 def mark_failed(span: Span, error_type: str, reason: str) -> None:
     """Fail `span` with a reason the app wrote, for errors whose own text may hold settings."""
-    record_error(span, {"type": error_type, "message": reason, "frames": []})
+    _failed(span, error_type, reason, [])
+
+
+def _failed(span: Span, error_type: str, message: str, frames: Sequence[str]) -> None:
+    span.add_event(
+        "exception",
+        {
+            "exception.type": error_type,
+            "exception.message": message,
+            "exception.stacktrace": "\n".join(frames),
+        },
+    )
+    span.set_status(Status(StatusCode.ERROR, error_type))
 
 
 def finish_run(

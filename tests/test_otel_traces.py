@@ -113,18 +113,34 @@ def test_a_failed_run_marks_its_root_span_failed(collector):
     assert run["events"][0][1]["exception.type"] == "RuntimeError"
 
 
-def test_a_warning_inside_a_stage_is_an_event_on_its_span(collector):
+def test_a_warning_inside_a_stage_is_an_event_on_its_span_without_its_words(collector, monkeypatch):
+    # A log line quotes what it is about, a person's name included: its text is content.
+    monkeypatch.delenv("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", raising=False)
     otel.setup()
 
     def work():
         with timing.span("selection.edit"):
-            logging.getLogger("immich_memories.selection").warning("Only 3 clips left")
+            logging.getLogger("immich_memories.selection").warning("Only 3 clips of Alex left")
 
     _observed(work)
 
     events = collector.named()["selection.edit"]["events"]
     assert [name for name, _ in events] == ["warning"]
-    assert events[0][1]["message"].endswith("Only 3 clips left")
+    assert events[0][1] == {"message": "{redacted}", "log.logger": "immich_memories.selection"}
+
+
+def test_with_content_capture_on_a_warning_event_keeps_its_line(collector, monkeypatch):
+    monkeypatch.setenv("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "true")
+    otel.setup()
+
+    def work():
+        with timing.span("selection.edit"):
+            logging.getLogger("immich_memories.selection").warning("Only 3 clips of Alex left")
+
+    _observed(work)
+
+    (event,) = collector.named()["selection.edit"]["events"]
+    assert event[1]["message"].endswith("Only 3 clips of Alex left")
 
 
 def test_without_an_endpoint_tracing_stays_off(monkeypatch):

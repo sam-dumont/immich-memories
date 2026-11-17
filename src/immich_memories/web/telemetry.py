@@ -46,7 +46,7 @@ async def traces(request: Request) -> Response:
     if not isinstance(batch, dict) or not isinstance(batch.get("resourceSpans"), list):
         raise HTTPException(400, "Not an OTLP/JSON batch")
     try:
-        scrubbed = _scrubbed(batch)
+        scrubbed = _scrubbed(batch, quoted=not otel.capturing_content())
     except RecursionError as error:
         raise HTTPException(400, "Not an OTLP/JSON batch") from error
     if not otel.forward(scrubbed):
@@ -59,15 +59,25 @@ async def traces(request: Request) -> Response:
 _TEXT = ("stringValue", "name")
 
 
-def _scrubbed(value: Any) -> Any:
-    """The batch with its text scrubbed and its structure as it came."""
+def _scrubbed(value: Any, *, quoted: bool) -> Any:
+    """The batch with its text scrubbed and its structure as it came.
+
+    With content capture off, an error's own words (an exception's message, a status message)
+    are replaced: a page's error can quote what the server answered, a person's name included.
+    """
     if isinstance(value, dict):
-        return {
-            key: otel_hops.scrub(item)
-            if key in _TEXT and isinstance(item, str)
-            else _scrubbed(item)
-            for key, item in value.items()
-        }
+        if quoted and value.get("key") == "exception.message":
+            return {**value, "value": {"stringValue": otel.HIDDEN}}
+        return {key: _scrubbed_field(key, item, quoted) for key, item in value.items()}
     if isinstance(value, list):
-        return [_scrubbed(item) for item in value]
+        return [_scrubbed(item, quoted=quoted) for item in value]
     return value
+
+
+def _scrubbed_field(key: str, item: Any, quoted: bool) -> Any:
+    if key == "status" and isinstance(item, dict) and isinstance(item.get("message"), str):
+        message = otel.HIDDEN if quoted and item["message"] else otel_hops.scrub(item["message"])
+        return {**item, "message": message}
+    if key in _TEXT and isinstance(item, str):
+        return otel_hops.scrub(item)
+    return _scrubbed(item, quoted=quoted)
