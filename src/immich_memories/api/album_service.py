@@ -554,22 +554,27 @@ class AlbumService:
             logger.warning("Immich had not read the uploaded film yet; describing it anyway")
         missing = [name for name, needed in wanted.items() if needed]
         for _ in range(_TAG_ATTEMPTS):
-            # One write at a time, each left to settle: Immich rewrites the film's sidecar per
-            # write, and two rewrites that overlap lose one of them.
-            if wanted["tags"]:
-                await self._put_tags(asset_id, label.tags)
-                await self.settled(asset_id, waits.quiet_polls)
-            if wanted["description"]:
-                await self._request(
-                    "PUT", f"/assets/{asset_id}", json={"description": label.description}
-                )
-                await self.settled(asset_id, waits.quiet_polls)
+            await self._write_label(asset_id, label, wanted, waits.quiet_polls)
             missing = await self._label_not_kept(asset_id, label, wanted)
             if not read:
                 return [name for name, needed in wanted.items() if needed]
             if not missing:
                 return []
         return missing
+
+    async def _write_label(
+        self, asset_id: str, label: FilmLabel, wanted: dict[str, bool], quiet_polls: int
+    ) -> None:
+        # One write at a time, each left to settle: Immich rewrites the film's sidecar per
+        # write, and two rewrites that overlap lose one of them.
+        if wanted["tags"]:
+            await self._put_tags(asset_id, label.tags)
+            await self.settled(asset_id, quiet_polls)
+        if wanted["description"]:
+            await self._request(
+                "PUT", f"/assets/{asset_id}", json={"description": label.description}
+            )
+            await self.settled(asset_id, quiet_polls)
 
     async def _put_tags(self, asset_id: str, values: Sequence[str]) -> None:
         tags = await self._request("PUT", "/tags", json={"tags": list(values)})
@@ -690,21 +695,10 @@ class AlbumService:
         album_id = await self._album_delivery(asset_id, album_name, allows, warnings)
         complete = not warnings
         warnings.extend(label_notes)
-        if not allows("asset.delete"):
-            warnings.append(coded("previous_kept_key", permission="asset.delete"))
-        elif not complete:
-            warnings.append(coded("previous_kept_incomplete"))
-        else:
-            try:
-                await supersede_previous_renders(
-                    self,
-                    album_id=album_id,
-                    filename=video_path.name,
-                    keep_asset_id=asset_id,
-                    shown_name=shown_name,
-                )
-            except (OSError, RuntimeError, ValueError, KeyError) as exc:
-                warnings.append(coded("previous_kept_error", detail=exc))
+        if kept := await self._retire_previous_renders(
+            asset_id, album_id, video_path.name, shown_name, allows, complete=complete
+        ):
+            warnings.append(kept)
         for warning in warnings:
             logger.warning("%s", render_warning(warning))
         return {
@@ -714,6 +708,33 @@ class AlbumService:
             "missing_permissions": missing + label_missing,
             "warnings": warnings,
         }
+
+    async def _retire_previous_renders(
+        self,
+        asset_id: str,
+        album_id: str | None,
+        filename: str,
+        shown_name: str | None,
+        allows: Callable[[str], bool],
+        *,
+        complete: bool,
+    ) -> str | None:
+        """Retire the earlier renders this film replaces; the warning when they stay."""
+        if not allows("asset.delete"):
+            return coded("previous_kept_key", permission="asset.delete")
+        if not complete:
+            return coded("previous_kept_incomplete")
+        try:
+            await supersede_previous_renders(
+                self,
+                album_id=album_id,
+                filename=filename,
+                keep_asset_id=asset_id,
+                shown_name=shown_name,
+            )
+        except (OSError, RuntimeError, ValueError, KeyError) as exc:
+            return coded("previous_kept_error", detail=exc)
+        return None
 
     async def _mark_delivery(
         self,
