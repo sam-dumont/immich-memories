@@ -273,3 +273,63 @@ def test_demo_mode_blurs_the_pictures_the_browser_shows(
 
     expect(page.locator("body")).to_have_class(_DEMO)
     assert "blur" in picture.evaluate("image => getComputedStyle(image).filter")
+
+
+_ALBUMS = [
+    {"id": "album-zoo", "name": "Zoo", "asset_count": 90},
+    {"id": "album-beach-10", "name": "Beach 10", "asset_count": 40},
+    {"id": "album-beach-2", "name": "Beach 2", "asset_count": 5},
+]
+
+
+def _brief_for_an_album(page: Page, launch_app_url: str) -> None:
+    # WHY: the fake library holds one album; ordering and search need several.
+    page.route("**/api/v1/albums", lambda route: route.fulfill(json=_ALBUMS))
+    page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
+    page.get_by_text("Album", exact=True).click()
+
+
+def _album_picker(page: Page):
+    return page.get_by_role("combobox", name="Album", exact=True)
+
+
+def _albums_listed(page: Page):
+    return _album_picker(page).locator("option:not([disabled])")
+
+
+@pytest.mark.feature("web.make-a-film")
+def test_albums_list_largest_first_and_sort_by_name_on_request(
+    page: Page, launch_app_url: str
+) -> None:
+    _brief_for_an_album(page, launch_app_url)
+    expect(_albums_listed(page)).to_have_text(["Zoo (90)", "Beach 10 (40)", "Beach 2 (5)"])
+
+    page.get_by_role("combobox", name="Sort albums by", exact=True).select_option("name")
+
+    expect(_albums_listed(page)).to_have_text(["Beach 2 (5)", "Beach 10 (40)", "Zoo (90)"])
+
+
+@pytest.mark.feature("web.make-a-film")
+def test_album_search_narrows_the_list_and_keeps_the_chosen_album(
+    page: Page, launch_app_url: str
+) -> None:
+    _brief_for_an_album(page, launch_app_url)
+    expect(_albums_listed(page)).to_have_count(3)
+    picker = _album_picker(page)
+    picker.select_option("album-zoo")
+
+    page.get_by_label("Find an album", exact=True).fill("beach")
+
+    expect(_albums_listed(page)).to_have_text(["Zoo (90)", "Beach 10 (40)", "Beach 2 (5)"])
+    expect(picker).to_have_value("album-zoo")
+
+
+@pytest.mark.feature("web.make-a-film")
+def test_album_search_says_when_nothing_matches(page: Page, launch_app_url: str) -> None:
+    _brief_for_an_album(page, launch_app_url)
+    expect(_albums_listed(page)).to_have_count(3)
+
+    page.get_by_label("Find an album", exact=True).fill("mountains")
+
+    expect(_albums_listed(page)).to_have_count(0)
+    expect(_album_picker(page)).to_contain_text("No album matches")

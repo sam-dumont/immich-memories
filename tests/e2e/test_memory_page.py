@@ -470,7 +470,7 @@ def test_an_album_is_cut_from_its_own_pictures_only(page: Page, launch_app_url: 
 
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Album", exact=True).click()
-    album = page.get_by_role("combobox", name="Album")
+    album = page.get_by_role("combobox", name="Album", exact=True)
     expect(album.locator("option", has_text="The road north")).to_have_count(1, timeout=30_000)
     album.select_option(ALBUM_ID)
     # The id, not the name: two albums may share one, and --from-album takes either.

@@ -102,6 +102,18 @@
     return [...extra, ...matches];
   });
   let albums = $state<AlbumChoice[]>([]);
+  let albumQuery = $state('');
+  let albumOrder = $state<'pictures' | 'name'>('pictures');
+  // Largest first is the server's order. The chosen album stays listed while a search hides the rest.
+  const visibleAlbums = $derived.by(() => {
+    const query = albumQuery.trim().toLocaleLowerCase();
+    const matches = albums.filter((choice) => choice.name.toLocaleLowerCase().includes(query));
+    const ordered = albumOrder === 'name'
+      ? [...matches].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
+      : matches;
+    const extra = albums.filter((choice) => choice.id === album && !matches.includes(choice));
+    return [...extra, ...ordered];
+  });
   let command = $state('');
   let job = $state<JobView | null>(null);
   let problem = $state('');
@@ -359,10 +371,17 @@
           {#if holidayPick === 'other'}<label class={label}>{t('Day (MM-DD)')}<input class={field} bind:value={holidayOther} placeholder="07-14" pattern="\d\d-\d\d" required /></label>{/if}
         {/if}
         {#if shown.includes('from_album')}
+          <label class={label}>{t('Find an album')}<input class={field} type="search" aria-label={t('Find an album')} bind:value={albumQuery} /></label>
+          <label class={label}>{t('Sort albums by')}
+            <select class={field} aria-label={t('Sort albums by')} bind:value={albumOrder}>
+              <option value="pictures">{t('Most pictures')}</option>
+              <option value="name">{t('Name')}</option>
+            </select>
+          </label>
           <label class={label}>{t('Album')}
-            <select class={field} bind:value={album} required>
-              <option value="" disabled>{t('Choose an album')}</option>
-              {#each albums as choice (choice.id)}<option value={choice.id}>{choice.name} ({choice.asset_count})</option>{/each}
+            <select class={field} aria-label={t('Album')} bind:value={album} required>
+              <option value="" disabled>{visibleAlbums.length ? t('Choose an album') : t('No album matches')}</option>
+              {#each visibleAlbums as choice (choice.id)}<option value={choice.id}>{choice.name} ({choice.asset_count})</option>{/each}
             </select>
           </label>
         {/if}

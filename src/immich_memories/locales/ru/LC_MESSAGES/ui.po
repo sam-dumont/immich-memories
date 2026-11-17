@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-17 09:08+0100\n"
+"POT-Creation-Date: 2026-11-17 11:39+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -84,7 +84,7 @@ msgstr "Всего около {percent}%"
 msgid "Accept all suggestions"
 msgstr "Принять все предложения"
 
-#: web/routes/create/+page.svelte:502
+#: web/routes/create/+page.svelte:521
 msgid "Accept forwarded and downloaded media"
 msgstr "Принимать пересланные и скачанные медиафайлы"
 
@@ -146,11 +146,11 @@ msgstr "Дополнительное время не оценено: {phases}."
 msgid "Advanced: type the expression"
 msgstr "Дополнительно: ввести выражение"
 
-#: web/routes/create/+page.svelte:347
+#: web/routes/create/+page.svelte:359
 msgid "After a period"
 msgstr "После периода"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:362
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:381
 msgid "Album"
 msgstr "Альбом"
 
@@ -211,7 +211,7 @@ msgstr "Анализ"
 msgid "Animated background"
 msgstr "Анимированный фон"
 
-#: web/routes/create/+page.svelte:377
+#: web/routes/create/+page.svelte:396
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
@@ -223,7 +223,7 @@ msgstr ""
 msgid "Annotation database"
 msgstr "База аннотаций"
 
-#: web/routes/create/+page.svelte:356
+#: web/routes/create/+page.svelte:368
 msgid "Another day (MM-DD)"
 msgstr "Другой день (MM-DD)"
 
@@ -242,7 +242,7 @@ msgstr "Все. Только изображения без ограничени�
 #: web/lib/RenderPanel.svelte:191 web/lib/RenderPanel.svelte:197 web/lib/RenderPanel.svelte:206
 #: web/lib/RenderPanel.svelte:229 web/lib/RenderPanel.svelte:235 web/lib/RenderPanel.svelte:241
 #: web/lib/RenderPanel.svelte:247 web/lib/RenderPanel.svelte:297 web/lib/UploadFilm.svelte:47
-#: web/routes/create/+page.svelte:494
+#: web/routes/create/+page.svelte:513
 msgid "As configured"
 msgstr "Как настроено"
 
@@ -326,11 +326,11 @@ msgstr "Минимум запросов в пакете"
 msgid "Batch mode"
 msgstr "Пакетный режим"
 
-#: web/routes/create/+page.svelte:339
+#: web/routes/create/+page.svelte:351
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "День рождения (MM-DD; дата рождения из Immich, если пусто)"
 
-#: web/routes/create/+page.svelte:338
+#: web/routes/create/+page.svelte:350
 msgid "Birthday to birthday"
 msgstr "От дня рождения до дня рождения"
 
@@ -406,7 +406,7 @@ msgstr "Тайм-аут подписей (секунды)"
 msgid "Captions were read; the rules chose this cut."
 msgstr "Описания прочитаны; кадры для этого монтажа выбраны по правилам."
 
-#: web/routes/create/+page.svelte:373 web/routes/create/+page.svelte:378
+#: web/routes/create/+page.svelte:392 web/routes/create/+page.svelte:397
 msgid "Catalogued days"
 msgstr "Каталогизированные дни"
 
@@ -488,7 +488,7 @@ msgstr "Проверка видеокадров для семейного про
 msgid "Checks"
 msgstr "Проверки"
 
-#: web/routes/create/+page.svelte:364
+#: web/routes/create/+page.svelte:383
 msgid "Choose an album"
 msgstr "Выберите альбом"
 
@@ -496,7 +496,7 @@ msgstr "Выберите альбом"
 msgid "Choose the owner"
 msgstr "Выберите владельца"
 
-#: web/routes/create/+page.svelte:299
+#: web/routes/create/+page.svelte:311
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
@@ -545,7 +545,7 @@ msgstr "Кодек"
 msgid "Codec policy"
 msgstr "Политика кодеков"
 
-#: web/routes/create/+page.svelte:507
+#: web/routes/create/+page.svelte:526
 msgid "Command"
 msgstr "Команда"
 
@@ -650,7 +650,7 @@ msgstr "Проверьте записи людей"
 msgid "Custom date range"
 msgstr "Свой период"
 
-#: web/routes/create/+page.svelte:510
+#: web/routes/create/+page.svelte:529
 msgid "Cut"
 msgstr "Смонтировать"
 
@@ -674,11 +674,11 @@ msgstr "URL базы данных"
 msgid "Database file"
 msgstr "Файл базы данных"
 
-#: web/routes/create/+page.svelte:336
+#: web/routes/create/+page.svelte:348
 msgid "Day"
 msgstr "День"
 
-#: web/routes/create/+page.svelte:359
+#: web/routes/create/+page.svelte:371
 msgid "Day (MM-DD)"
 msgstr "День (MM-DD)"
 
@@ -758,7 +758,7 @@ msgstr "Находить поездки"
 msgid "Detect years"
 msgstr "Находить годы"
 
-#: web/routes/create/+page.svelte:406
+#: web/routes/create/+page.svelte:425
 msgid "Detecting trips from GPS data..."
 msgstr "Определение поездок по данным GPS…"
 
@@ -982,7 +982,7 @@ msgstr "Кодирование видео…"
 msgid "End here"
 msgstr "Закончить здесь"
 
-#: web/routes/create/+page.svelte:346
+#: web/routes/create/+page.svelte:358
 msgid "Ends"
 msgstr "Заканчивается"
 
@@ -1017,7 +1017,7 @@ msgstr ""
 "Все настройки и источники их значений. Изменения сохраняются в базе данных. config.yaml и "
 "переменные окружения не меняются и имеют приоритет."
 
-#: web/routes/create/+page.svelte:422
+#: web/routes/create/+page.svelte:441
 msgid "Every trip of the year"
 msgstr "Все поездки за год"
 
@@ -1076,7 +1076,7 @@ msgstr "Ошибка"
 msgid "Fall back to this machine"
 msgstr "Переключаться на этот компьютер"
 
-#: web/routes/create/+page.svelte:495 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/routes/create/+page.svelte:514 web/routes/runs/[run_id]/pool/+page.svelte:127
 #: web/routes/runs/[run_id]/pool/+page.svelte:205
 msgid "Family"
 msgstr "Семья"
@@ -1118,9 +1118,13 @@ msgstr "Теги фильма"
 msgid "Films that may use it"
 msgstr "Фильмы, которые могут его использовать"
 
-#: web/routes/create/+page.svelte:433 web/routes/settings/people/+page.svelte:181
+#: web/routes/create/+page.svelte:452 web/routes/settings/people/+page.svelte:181
 msgid "Find a name"
 msgstr "Найти имя"
+
+#: web/routes/create/+page.svelte:374
+msgid "Find an album"
+msgstr "Найти альбом"
 
 #: web/lib/stages.ts:85
 msgid "Finding faces"
@@ -1150,7 +1154,7 @@ msgstr "Пересланные копии при нехватке"
 msgid "Free text"
 msgstr "Свободный текст"
 
-#: web/routes/create/+page.svelte:344
+#: web/routes/create/+page.svelte:356
 msgid "From"
 msgstr "С"
 
@@ -1187,7 +1191,7 @@ msgstr "Создание карты поездки…"
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "Бабушки, дедушки, братья, сёстры, групповой чат. Личные моменты исключены."
 
-#: web/routes/create/+page.svelte:461
+#: web/routes/create/+page.svelte:480
 msgid "Grouped condition"
 msgstr "Групповое условие"
 
@@ -1212,7 +1216,7 @@ msgstr "Головной пакет"
 msgid "Held: {reasons}."
 msgstr "Ограничено: {reasons}."
 
-#: web/routes/create/+page.svelte:334
+#: web/routes/create/+page.svelte:346
 msgid "Hemisphere"
 msgstr "Полушарие"
 
@@ -1224,7 +1228,7 @@ msgstr "Скрыть семейное древо"
 msgid "High"
 msgstr "Высокое"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:353
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:365
 msgid "Holiday"
 msgstr "Праздник"
 
@@ -1272,7 +1276,7 @@ msgstr "Подключение к Immich"
 msgid "Immich Server URL"
 msgstr "URL сервера Immich"
 
-#: web/routes/create/+page.svelte:475
+#: web/routes/create/+page.svelte:494
 msgid "Immich accounts to read (primary alone when none are picked)"
 msgstr "Аккаунты Immich для чтения (только основной, если ни один не выбран)"
 
@@ -1295,7 +1299,7 @@ msgstr ""
 "несколько людей или никто. Дайте это имя ровно одному человеку в Immich: эта страница найдёт "
 "его, когда вы откроете её в следующий раз."
 
-#: web/routes/create/+page.svelte:303
+#: web/routes/create/+page.svelte:315
 msgid "Immich unreachable"
 msgstr "Immich недоступен"
 
@@ -1315,7 +1319,7 @@ msgstr "В монтаже"
 msgid "In the film"
 msgstr "В фильме"
 
-#: web/lib/settingLabels.ts:66 web/routes/create/+page.svelte:500
+#: web/lib/settingLabels.ts:66 web/routes/create/+page.svelte:519
 msgid "Include Live Photos"
 msgstr "Включить Live Photos"
 
@@ -1323,7 +1327,7 @@ msgstr "Включить Live Photos"
 msgid "Include captions of flagged photos"
 msgstr "Включить описания отмеченных фотографий"
 
-#: web/routes/create/+page.svelte:499
+#: web/routes/create/+page.svelte:518
 msgid "Include photos"
 msgstr "Включить фотографии"
 
@@ -1355,7 +1359,7 @@ msgstr "URL издателя"
 msgid "It did not finish."
 msgstr "Обработка не завершилась."
 
-#: web/routes/create/+page.svelte:494 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/routes/create/+page.svelte:513 web/routes/runs/[run_id]/pool/+page.svelte:127
 #: web/routes/runs/[run_id]/pool/+page.svelte:205
 msgid "Just us"
 msgstr "Только мы"
@@ -1414,11 +1418,11 @@ msgstr "Чекпойнт Laya"
 msgid "Laya checkpoint URL"
 msgstr "URL чекпойнта Laya"
 
-#: web/routes/create/+page.svelte:489
+#: web/routes/create/+page.svelte:508
 msgid "Length and pictures"
 msgstr "Длительность и изображения"
 
-#: web/routes/create/+page.svelte:491
+#: web/routes/create/+page.svelte:510
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "Длительность в минутах (подбирается по изображениям, если не указано)"
 
@@ -1566,7 +1570,7 @@ msgstr "Среднее"
 msgid "Memory"
 msgstr "Воспоминание"
 
-#: web/routes/create/+page.svelte:313
+#: web/routes/create/+page.svelte:325
 msgid "Memory type"
 msgstr "Тип воспоминания"
 
@@ -1630,7 +1634,7 @@ msgstr "Вариант модели"
 msgid "Modern warm"
 msgstr "Современный и тёплый"
 
-#: web/routes/create/+page.svelte:326 web/routes/create/+page.svelte:327
+#: web/routes/create/+page.svelte:338 web/routes/create/+page.svelte:339
 msgid "Month"
 msgstr "Месяц"
 
@@ -1646,6 +1650,10 @@ msgstr "Главное за месяц"
 #: web/lib/settingLabels.ts:190
 msgid "Months to backfill"
 msgstr "Месяцев для обработки назад"
+
+#: web/routes/create/+page.svelte:377
+msgid "Most pictures"
+msgstr "Больше всего фото"
 
 #: web/lib/labels.ts:8
 msgid "Multi-Person"
@@ -1687,6 +1695,10 @@ msgstr "Отключение исходного звука…"
 msgid "Muxing final output..."
 msgstr "Сборка итогового файла…"
 
+#: web/routes/create/+page.svelte:378
+msgid "Name"
+msgstr "Название"
+
 #: web/lib/settingLabels.ts:51
 msgid "Native sharing"
 msgstr "Системный обмен"
@@ -1703,7 +1715,7 @@ msgstr "Сеть"
 msgid "Never use"
 msgstr "Никогда не использовать"
 
-#: web/routes/create/+page.svelte:294 web/routes/create/+page.svelte:298
+#: web/routes/create/+page.svelte:306 web/routes/create/+page.svelte:310
 msgid "New memory"
 msgstr "Новое воспоминание"
 
@@ -1713,7 +1725,11 @@ msgstr ""
 "Далее: выбрать снимки и сохранить монтаж. При выборе могут потребоваться дополнительные "
 "проверки."
 
-#: web/routes/create/+page.svelte:391
+#: web/routes/create/+page.svelte:383
+msgid "No album matches"
+msgstr "Нет подходящих альбомов"
+
+#: web/routes/create/+page.svelte:410
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
@@ -1749,11 +1765,11 @@ msgstr "Этот монтаж создан только по правилам о
 msgid "No music"
 msgstr "Без музыки"
 
-#: web/routes/create/+page.svelte:443
+#: web/routes/create/+page.svelte:462
 msgid "No name matches."
 msgstr "Нет совпадений по имени."
 
-#: web/routes/create/+page.svelte:443
+#: web/routes/create/+page.svelte:462
 msgid "No named people in Immich yet."
 msgstr "В Immich пока нет людей с именами."
 
@@ -1796,7 +1812,7 @@ msgstr "Сохранённых групп пока нет."
 msgid "No suggestions right now."
 msgstr "Сейчас нет предложений."
 
-#: web/routes/create/+page.svelte:424
+#: web/routes/create/+page.svelte:443
 msgid "No trips detected for this year."
 msgstr "За этот год поездок не обнаружено."
 
@@ -1823,7 +1839,7 @@ msgstr ""
 msgid "None"
 msgstr "Нет"
 
-#: web/routes/create/+page.svelte:334
+#: web/routes/create/+page.svelte:346
 msgid "North"
 msgstr "Север"
 
@@ -1879,7 +1895,7 @@ msgstr "Выгружать на CPU"
 msgid "On This Day"
 msgstr "В этот день"
 
-#: web/routes/create/+page.svelte:347
+#: web/routes/create/+page.svelte:359
 msgid "On a date"
 msgstr "В определённую дату"
 
@@ -1891,11 +1907,11 @@ msgstr ""
 "Одно имя указано в двух записях: лица одного человека попали в разные группы. Объедините эти "
 "записи в Immich, чтобы исправить это."
 
-#: web/routes/create/+page.svelte:342
+#: web/routes/create/+page.svelte:354
 msgid "Only the birthdays, this many years back (empty: the whole year)"
 msgstr "Только дни рождения, столько лет назад (пусто: весь год)"
 
-#: web/routes/create/+page.svelte:431
+#: web/routes/create/+page.svelte:450
 msgid "Only with (optional)"
 msgstr "Только с (необязательно)"
 
@@ -1974,17 +1990,17 @@ msgstr "Пароль"
 msgid "Pending"
 msgstr "Ожидание"
 
-#: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:431
+#: web/routes/+layout.svelte:37 web/routes/create/+page.svelte:450
 #: web/routes/settings/+page.svelte:108 web/routes/settings/people/+page.svelte:130
 #: web/routes/settings/people/+page.svelte:136
 msgid "People"
 msgstr "Люди"
 
-#: web/routes/create/+page.svelte:462
+#: web/routes/create/+page.svelte:481
 msgid "People condition"
 msgstr "Фильтр по людям"
 
-#: web/routes/create/+page.svelte:351
+#: web/routes/create/+page.svelte:363
 msgid "Period (6m, 1y, 2w)"
 msgstr "Период (6m, 1y, 2w)"
 
@@ -2005,7 +2021,7 @@ msgstr "Месяц человека"
 msgid "Phases"
 msgstr "Фазы"
 
-#: web/routes/create/+page.svelte:501
+#: web/routes/create/+page.svelte:520
 msgid "Photo duration (seconds)"
 msgstr "Длительность фото (секунды)"
 
@@ -2033,7 +2049,7 @@ msgstr "Недавно проанализированные изображени
 msgid "Pictures left after each step"
 msgstr "Изображения после каждого этапа"
 
-#: web/routes/create/+page.svelte:469
+#: web/routes/create/+page.svelte:488
 msgid "Pictures with"
 msgstr "Изображения с"
 
@@ -2227,7 +2243,7 @@ msgstr "Чтение вашей фразы"
 msgid "Recorded alternative"
 msgstr "Записанная альтернатива"
 
-#: web/routes/create/+page.svelte:402
+#: web/routes/create/+page.svelte:421
 msgid "Refresh"
 msgstr "Обновить"
 
@@ -2235,7 +2251,7 @@ msgstr "Обновить"
 msgid "Refresh suggestions"
 msgstr "Обновить предложения"
 
-#: web/routes/create/+page.svelte:402
+#: web/routes/create/+page.svelte:421
 msgid "Refreshing..."
 msgstr "Обновление..."
 
@@ -2430,7 +2446,7 @@ msgid "Saved as revision {number}."
 msgstr "Сохранено как версия {number}."
 
 #: web/lib/people/GroupsSection.svelte:48 web/lib/people/GroupsSection.svelte:49
-#: web/routes/create/+page.svelte:448
+#: web/routes/create/+page.svelte:467
 msgid "Saved groups"
 msgstr "Сохранённые группы"
 
@@ -2476,7 +2492,7 @@ msgstr "Область"
 msgid "Screen time (seconds)"
 msgstr "Время на экране (секунды)"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:331
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:343
 msgid "Season"
 msgstr "Время года"
 
@@ -2532,7 +2548,7 @@ msgstr "Задано в config.yaml как {key}"
 msgid "Settings"
 msgstr "Настройки"
 
-#: web/routes/create/+page.svelte:495
+#: web/routes/create/+page.svelte:514
 msgid "Shareable"
 msgstr "Для публикации"
 
@@ -2605,6 +2621,10 @@ msgstr "Некоторые из его изображений"
 msgid "Some pictures were edited without descriptions."
 msgstr "Некоторые изображения включены в монтаж без описаний."
 
+#: web/routes/create/+page.svelte:375
+msgid "Sort albums by"
+msgstr "Сортировка альбомов"
+
 #: web/lib/RenderPanel.svelte:265
 msgid "Sound recorded in videos and Live Photos. Turn off for music only, or silence with No music."
 msgstr ""
@@ -2615,7 +2635,7 @@ msgstr ""
 msgid "Source preparation workers"
 msgstr "Потоки подготовки исходников"
 
-#: web/routes/create/+page.svelte:334
+#: web/routes/create/+page.svelte:346
 msgid "South"
 msgstr "Юг"
 
@@ -2774,7 +2794,7 @@ msgstr "Не удалось проверить подключение."
 msgid "The cut as chosen"
 msgstr "Монтаж в выбранном виде"
 
-#: web/routes/create/+page.svelte:274
+#: web/routes/create/+page.svelte:286
 msgid "The cut could not start."
 msgstr "Не удалось запустить монтаж."
 
@@ -2993,7 +3013,7 @@ msgstr "Стиль титров"
 msgid "Titles written by the model"
 msgstr "Заголовки пишет модель"
 
-#: web/routes/create/+page.svelte:350
+#: web/routes/create/+page.svelte:362
 msgid "To"
 msgstr "По"
 
@@ -3029,15 +3049,15 @@ msgstr "Сортировка"
 msgid "Trigger token"
 msgstr "Токен запуска"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:398
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:417
 msgid "Trip"
 msgstr "Поездка"
 
-#: web/routes/create/+page.svelte:190 web/routes/create/+page.svelte:194
+#: web/routes/create/+page.svelte:202 web/routes/create/+page.svelte:206
 msgid "Trip detection failed."
 msgstr "Не удалось определить поездки."
 
-#: web/lib/settingLabels.ts:26 web/routes/create/+page.svelte:410
+#: web/lib/settingLabels.ts:26 web/routes/create/+page.svelte:429
 msgid "Trips"
 msgstr "Поездки"
 
@@ -3115,7 +3135,7 @@ msgstr "Загружено в Immich."
 msgid "Uploading to Immich..."
 msgstr "Загрузка в Immich…"
 
-#: web/routes/create/+page.svelte:465
+#: web/routes/create/+page.svelte:484
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr ""
 "Используйте точные имена из библиотеки; каждое изображение должно совпасть. Заменяет имена "
@@ -3254,7 +3274,7 @@ msgstr "Кто"
 msgid "Who is who, their roles and relationships."
 msgstr "Кто есть кто, их роли и связи."
 
-#: web/routes/create/+page.svelte:492
+#: web/routes/create/+page.svelte:511
 msgid "Who may see it"
 msgstr "Кто может это увидеть"
 
@@ -3306,7 +3326,7 @@ msgstr "URL воркера"
 msgid "Worker token"
 msgstr "Токен воркера"
 
-#: web/routes/create/+page.svelte:324
+#: web/routes/create/+page.svelte:336
 msgid "Year"
 msgstr "Год"
 
@@ -3319,11 +3339,11 @@ msgstr "Разделитель года {index} из {count}"
 msgid "Year in Review"
 msgstr "Обзор года"
 
-#: web/routes/create/+page.svelte:342
+#: web/routes/create/+page.svelte:354
 msgid "Years back (all when empty)"
 msgstr "Лет назад (все, если не указано)"
 
-#: web/routes/create/+page.svelte:342
+#: web/routes/create/+page.svelte:354
 msgid "Years to span"
 msgstr "Сколько лет охватить"
 
@@ -3369,11 +3389,11 @@ msgstr "догадка: самый долгий промежуток и боль
 msgid "about {film} of film"
 msgstr "около {film} фильма"
 
-#: web/routes/create/+page.svelte:470
+#: web/routes/create/+page.svelte:489
 msgid "all of them together"
 msgstr "все вместе"
 
-#: web/routes/create/+page.svelte:470
+#: web/routes/create/+page.svelte:489
 msgid "any of them"
 msgstr "любой из них"
 
@@ -3719,7 +3739,7 @@ msgstr "Подготовлено изображений: {count}"
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} — {date_range_end}"
 
-#: web/routes/create/+page.svelte:417
+#: web/routes/create/+page.svelte:436
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "Дней: {days} · Изображений: {count}"
@@ -3833,7 +3853,7 @@ msgstr "{stage} (кадр {frame}/{frames})"
 msgid "{version} is out"
 msgstr "Вышла версия {version}"
 
-#: web/routes/create/+page.svelte:385
+#: web/routes/create/+page.svelte:404
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} лет назад"

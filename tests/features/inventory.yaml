@@ -1264,6 +1264,9 @@ features:
       - tests/e2e/test_memory_page.py::test_a_reload_mid_cut_joins_the_running_cut_instead_of_starting_another
       - tests/e2e/test_memory_page.py::test_cancel_ends_the_cut_and_offers_to_cut_again
       - tests/e2e/test_web_features.py::test_a_cut_started_on_memory_survives_its_tab_closing
+      - tests/e2e/test_web_features.py::test_albums_list_largest_first_and_sort_by_name_on_request
+      - tests/e2e/test_web_features.py::test_album_search_narrows_the_list_and_keeps_the_chosen_album
+      - tests/e2e/test_web_features.py::test_album_search_says_when_nothing_matches
   - id: web.review-and-revise
     promise: "A cut's run page lets you remove, trim, swap or pull in a shot from the pool and render that revision."
     doc: how-it-chooses/overrule-it.md
