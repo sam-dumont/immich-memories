@@ -10,6 +10,7 @@ from immich_memories.audio.generators import ace_step_music_path
 from immich_memories.audio.generators.ace_step_model_choice import HostMemory
 from immich_memories.config.loader import Config
 from immich_memories.generate_music import resolve_music
+from immich_memories.operational_warnings import render_warning
 
 
 def _library(tmp_path: Path) -> Path:
@@ -57,7 +58,8 @@ def test_a_small_mac_plays_the_bundled_library_and_says_why(tmp_path, monkeypatc
 
     assert generated == []
     assert selection.path is not None and selection.path.suffix == ".mp3"
-    assert "32 GB" in (selection.warning or "") and "bundled" in (selection.warning or "")
+    warning = render_warning(selection.warning or "")
+    assert "32 GB" in warning and "bundled" in warning
 
 
 def test_a_server_running_2b_plays_the_bundled_library(tmp_path, monkeypatch, generated):
@@ -69,7 +71,7 @@ def test_a_server_running_2b_plays_the_bundled_library(tmp_path, monkeypatch, ge
 
     assert generated == []
     assert selection.path is not None
-    assert "acestep-v15-turbo" in (selection.warning or "")
+    assert "acestep-v15-turbo" in render_warning(selection.warning or "")
 
 
 def test_a_server_running_xl_generates(tmp_path, generated):
@@ -78,7 +80,7 @@ def test_a_server_running_xl_generates(tmp_path, generated):
     selection = _film_music(config, tmp_path)
 
     assert generated == ["generated"]
-    assert "Generated music skipped" not in (selection.warning or "")
+    assert "Generated music skipped" not in render_warning(selection.warning or "")
 
 
 def test_a_written_2b_variant_runs_as_written_with_one_warning(tmp_path, monkeypatch, caplog):

@@ -260,6 +260,51 @@ msgstr "Low disk space on output: {free_gb} GB free, below the {min_gb} GB warni
 msgid "warning.low_space_cache"
 msgstr "Low disk space on cache: {free_gb} GB free, below the {min_gb} GB warning threshold. Run `immich-memories runs delete` to reclaim space, or enable upload so finished films are removed automatically."
 
+msgid "warning.selection_short"
+msgstr "Selected {selected}s of pictures and video for a {requested}s memory ({budget}s available for content). More usable material may remain."
+
+msgid "warning.selection_stopped_early"
+msgstr "Selection stopped early. Selected {selected}s of pictures and video for a {requested}s memory ({budget}s available for content). More usable material may remain."
+
+msgid "warning.film_over_budget"
+msgstr "Final artifact ran {actual}s against a {budget}s budget ({over}s over)"
+
+msgid "warning.worker_length_off"
+msgstr "The render worker's film runs {actual}s against the {expected}s planned ({delta}s)"
+
+msgid "warning.optional_music_failed"
+msgstr "Optional music failed: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Generated music skipped: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "used a bundled track instead"
+
+msgid "warning.music_used_own"
+msgstr "used a track from your music folder instead"
+
+msgid "warning.music_none_bundled"
+msgstr "no bundled track available; no music added"
+
+msgid "warning.music_none_own"
+msgstr "no track in your music folder available; no music added"
+
+msgid "warning.music_host_unified"
+msgstr "this host has {gib} GB of unified memory; the XL model needs 64 GB of unified memory or a 16 GB GPU, so the bundled library plays"
+
+msgid "warning.music_host_gpu"
+msgstr "this host has a {gib} GB GPU; the XL model needs 64 GB of unified memory or a 16 GB GPU, so the bundled library plays"
+
+msgid "warning.music_host_none"
+msgstr "this host has no GPU or unified memory it can use; the XL model needs 64 GB of unified memory or a 16 GB GPU, so the bundled library plays"
+
+msgid "warning.music_server_unknown"
+msgstr "could not learn which model the ACE-Step server runs (unreachable, or no loaded_model on /health), so the bundled library plays; set model_variant to 'xl-turbo' if it runs XL"
+
+msgid "warning.music_server_not_xl"
+msgstr "the ACE-Step server runs {model}, not an XL model; the bundled library plays"
+
 msgid "notify.title.ready"
 msgstr "Film ready: {name}"
 

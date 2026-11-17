@@ -8,6 +8,7 @@ from immich_memories.config.loader import Config
 from immich_memories.db import StoreLocation, open_store
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_settings import run_music_phase
+from immich_memories.operational_warnings import render_warning
 from immich_memories.tracking.run_tracker import RunTracker
 from tests.integration.audio_mixing.test_bundled_music_mix import _write_tone
 from tests.test_music_bundled_fallback import _h264_plan
@@ -87,7 +88,7 @@ def test_a_looped_bundled_track_is_mixed_without_leaving_scratch_audio(
 
     if mix_fails:
         assert not result.applied
-        assert "mix failed" in result.warning
+        assert render_warning(result.warning) == "Optional music failed: mix failed"
     else:
         assert result.applied, result.warning
         audio = subprocess.run(

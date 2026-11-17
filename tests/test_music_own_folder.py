@@ -16,6 +16,7 @@ import pytest
 from immich_memories.audio.bundled_music import music_library_for_mood
 from immich_memories.config.loader import Config
 from immich_memories.generate_music import resolve_music
+from immich_memories.operational_warnings import render_warning
 
 
 def _tone(path: Path) -> Path:
@@ -169,6 +170,7 @@ def test_a_failed_generator_names_your_folder_as_the_stand_in(tmp_path, monkeypa
 
     assert selection.path is not None and selection.path.name == "mastered_own-happy.wav"
     assert selection.warning is not None
-    assert "used a track from your music folder instead" in selection.warning
-    assert "bundled" not in selection.warning
-    assert str(own) not in selection.warning
+    shown = render_warning(selection.warning)
+    assert "used a track from your music folder instead" in shown
+    assert "bundled" not in shown
+    assert str(own) not in shown

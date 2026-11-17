@@ -34,6 +34,7 @@ from immich_memories.audio.generators.ace_step_model_choice import (
     measure_host,
     xl_fits,
 )
+from immich_memories.operational_warnings import coded
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,11 @@ _WARNED: set[str] = set()
 
 @dataclass(frozen=True, slots=True)
 class MusicPath:
-    """Which source a film's music takes, and why when it is not generated."""
+    """Which source a film's music takes, and why when it is not generated.
+
+    ``reason`` is a coded warning (`operational_warnings`): a film's run keeps it and words
+    it in the film's language; a check reads it with `render_warning`.
+    """
 
     generate: bool
     reason: str = ""
@@ -82,31 +87,18 @@ def _api_path(configured: str, server_model: str | None) -> MusicPath:
     if is_xl(configured):
         return MusicPath(True)
     if server_model is None:
-        return MusicPath(
-            False,
-            "could not learn which model the ACE-Step server runs (unreachable, or no "
-            "loaded_model on /health), so the bundled library plays; set model_variant to "
-            "'xl-turbo' if it runs XL",
-        )
+        return MusicPath(False, coded("music_server_unknown"))
     if is_xl(server_model):
         return MusicPath(True)
-    return MusicPath(
-        False,
-        f"the ACE-Step server runs {server_model}, not an XL model; the bundled library plays",
-    )
+    return MusicPath(False, coded("music_server_not_xl", model=server_model))
 
 
 def _host_reason(host: HostMemory) -> str:
     if host.unified_gib is not None:
-        have = f"{host.unified_gib:.0f} GB of unified memory"
-    elif host.gpu_gib is not None:
-        have = f"a {host.gpu_gib:.0f} GB GPU"
-    else:
-        have = "no GPU or unified memory it can use"
-    return (
-        f"this host has {have}; the XL model needs 64 GB of unified memory or a 16 GB GPU, "
-        "so the bundled library plays"
-    )
+        return coded("music_host_unified", gib=f"{host.unified_gib:.0f}")
+    if host.gpu_gib is not None:
+        return coded("music_host_gpu", gib=f"{host.gpu_gib:.0f}")
+    return coded("music_host_none")
 
 
 def local_check_profile(configured: str, host: HostMemory) -> tuple[MusicPath, str]:

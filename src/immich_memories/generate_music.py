@@ -17,6 +17,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from immich_memories import operational_warnings
 from immich_memories.delivery_timestamp import CARRY_CONTAINER_METADATA, carry_capture_instant
 from immich_memories.processing.assembly_config import AssemblyClip
 from immich_memories.processing.encoding_plan import EncodingPlan
@@ -129,12 +130,15 @@ def _scene_order(scenes: tuple[tuple[tuple[str, Any], ...], ...]) -> list[dict[s
 
 
 def optional_music_warning(exc: Exception, config: Config | None = None) -> str:
-    """Build one user-safe optional-music warning with configured secrets removed."""
+    """Build one user-safe optional-music warning with configured secrets removed.
+
+    The error stays as the backend said it; the frame is coded and worded where read.
+    """
     safe_message = sanitize_error_message(str(exc))
     if config is not None:
         for secret in configured_secret_values(config):
             safe_message = safe_message.replace(secret, "***")
-    return f"Optional music failed: {safe_message}"
+    return operational_warnings.coded("optional_music_failed", detail=safe_message)
 
 
 class MusicSource(StrEnum):
@@ -218,8 +222,8 @@ def resolve_music(
     warning: str | None = None
     bundled_because = ace_step_bundled_reason(config) if source is MusicSource.AUTO else None
     if bundled_because:
-        warning = f"Generated music skipped: {bundled_because}"
-        logger.info(warning)
+        warning = operational_warnings.coded("music_skipped", detail=bundled_because)
+        logger.info("%s", operational_warnings.render_warning(warning))
     elif source is MusicSource.AUTO and music_config_available(config):
         if report_fn:
             report_fn("music", 0.85, coded(Stage.MUSIC_GENERATING))
@@ -314,24 +318,26 @@ def _resolve_bundled_music(
     """
     from immich_memories.audio.bundled_music import bundled_track_for_mood
 
-    where = "a track from your music folder" if from_your_folder else "a bundled track"
+    folder = "own" if from_your_folder else "bundled"
     cadence = photo_cadence_seconds(assembly_clips, transition_overlap=transition_overlap, fps=fps)
     # The film's music mood (#2471) picks the folder, so a birthday is not served
     # from the calm one.
     track = bundled_track_for_mood(music_mood, library=bundled_library, cadence_seconds=cadence)
     if track is None:
-        if warning:
-            missing = "no track in your music folder" if from_your_folder else "no bundled track"
-            warning = f"{warning}; {missing} available; no music added"
-            logger.warning(warning)
-        return MusicSelection(None, warning)
+        return MusicSelection(None, _music_outcome(warning, f"music_none_{folder}"))
     if video_duration is not None:
         track = _covering(track, video_duration, run_output_dir)
     mastered = _master(track, run_output_dir)
-    if warning:
-        warning = f"{warning}; used {where} instead"
-        logger.warning(warning)
-    return MusicSelection(mastered, warning)
+    return MusicSelection(mastered, _music_outcome(warning, f"music_used_{folder}"))
+
+
+def _music_outcome(warning: str | None, outcome: str) -> str | None:
+    """The warning followed by what the film plays instead, logged in English."""
+    if not warning:
+        return None
+    warning = operational_warnings.JOINER.join((warning, operational_warnings.coded(outcome)))
+    logger.warning("%s", operational_warnings.render_warning(warning))
+    return warning
 
 
 def _covering(track: Path, video_duration: float, run_output_dir: Path) -> Path:

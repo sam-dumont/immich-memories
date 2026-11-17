@@ -23,6 +23,7 @@ from immich_memories.generate_delivery import (
 )
 from immich_memories.generate_music_early import EarlyMusic
 from immich_memories.generate_settings import run_music_phase
+from immich_memories.operational_warnings import render_warning
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.operations.run_index import record_run_attempt
@@ -298,7 +299,7 @@ def check_disk_space(
             warnings.append(warning)
 
     for warning in warnings:
-        logger.warning(warning)
+        logger.warning("%s", render_warning(warning))
     return warnings
 
 
@@ -419,7 +420,12 @@ def _complete_music_phase(
         1.0,
         coded(Stage.RENDER_MUSIC_WARNING if result.warning else Stage.RENDER_MUSIC_READY),
     )
-    operational.emit(OperationalPhase.MUSIC, 1, 1, result.warning or "Music ready")
+    operational.emit(
+        OperationalPhase.MUSIC,
+        1,
+        1,
+        render_warning(result.warning) if result.warning else "Music ready",
+    )
     return result
 
 

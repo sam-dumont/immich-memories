@@ -270,6 +270,51 @@ msgstr "Мало места на диске (вывод): свободно {free
 msgid "warning.low_space_cache"
 msgstr "Мало места на диске (кэш): свободно {free_gb} ГБ, ниже порога предупреждения в {min_gb} ГБ. Выполните `immich-memories runs delete`, чтобы освободить место, или включите загрузку, чтобы готовые фильмы удалялись автоматически."
 
+msgid "warning.selection_short"
+msgstr "Выбрано {selected} с фото и видео для фильма длительностью {requested} с (на содержимое доступно {budget} с). Возможно, осталось ещё подходящее содержимое."
+
+msgid "warning.selection_stopped_early"
+msgstr "Выбор остановлен досрочно. Выбрано {selected} с фото и видео для фильма длительностью {requested} с (на содержимое доступно {budget} с). Возможно, осталось ещё подходящее содержимое."
+
+msgid "warning.film_over_budget"
+msgstr "Готовый фильм длится {actual} с при бюджете {budget} с (на {over} с больше)"
+
+msgid "warning.worker_length_off"
+msgstr "Фильм воркера рендера длится {actual} с вместо запланированных {expected} с ({delta} с)"
+
+msgid "warning.optional_music_failed"
+msgstr "Не удалось создать необязательную музыку: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Генерация музыки пропущена: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "вместо этого использован встроенный трек"
+
+msgid "warning.music_used_own"
+msgstr "вместо этого использован трек из вашей папки с музыкой"
+
+msgid "warning.music_none_bundled"
+msgstr "нет доступного встроенного трека; музыка не добавлена"
+
+msgid "warning.music_none_own"
+msgstr "в вашей папке с музыкой нет трека; музыка не добавлена"
+
+msgid "warning.music_host_unified"
+msgstr "у этого компьютера {gib} ГБ единой памяти; модели XL нужно 64 ГБ единой памяти или GPU на 16 ГБ, поэтому играет встроенная библиотека"
+
+msgid "warning.music_host_gpu"
+msgstr "у этого компьютера GPU на {gib} ГБ; модели XL нужно 64 ГБ единой памяти или GPU на 16 ГБ, поэтому играет встроенная библиотека"
+
+msgid "warning.music_host_none"
+msgstr "у этого компьютера нет ни GPU, ни единой памяти, которую можно использовать; модели XL нужно 64 ГБ единой памяти или GPU на 16 ГБ, поэтому играет встроенная библиотека"
+
+msgid "warning.music_server_unknown"
+msgstr "не удалось узнать, какую модель запускает сервер ACE-Step (недоступен или нет loaded_model в /health), поэтому играет встроенная библиотека; задайте model_variant 'xl-turbo', если он запускает XL"
+
+msgid "warning.music_server_not_xl"
+msgstr "сервер ACE-Step запускает {model}, а не модель XL; играет встроенная библиотека"
+
 msgid "notify.title.ready"
 msgstr "Фильм готов: {name}"
 

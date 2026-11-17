@@ -13,6 +13,7 @@ import pytest
 from immich_memories import generate_render as generate_render_module
 from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
+from immich_memories.operational_warnings import render_warning
 from immich_memories.progress_text import Stage, coded
 from tests.conftest import make_clip
 from tests.output_tools_fake import output_tools
@@ -644,7 +645,7 @@ class TestApplyMusicFileAtomic:
 
         assert caught.value is validation_error
         assert caught.value.__cause__ is validation_cause
-        assert optional_music_warning(caught.value, config) == (
+        assert render_warning(optional_music_warning(caught.value, config)) == (
             "Optional music failed: invalid mix from ***"
         )
         assert video.read_bytes() == b"validated-base"
@@ -683,7 +684,8 @@ def test_music_failure_keeps_valid_base_and_returns_sanitized_warning(tmp_path: 
 
     warning = "Optional music failed: music backend unavailable"
     assert type(result) is generate_music.MusicPhaseResult
-    assert result == generate_music.MusicPhaseResult(applied=False, warning=warning)
+    assert result.applied is False
+    assert render_warning(result.warning) == warning
     assert base_video.read_bytes() == b"validated-base"
     tracker.complete_phase.assert_called_once_with(
         items_processed=0,
@@ -718,7 +720,8 @@ def test_music_resolution_failure_is_optional_and_sanitized(tmp_path: Path) -> N
 
     warning = "Optional music failed: api_key=*** backend unavailable"
     assert type(result) is generate_music.MusicPhaseResult
-    assert result == generate_music.MusicPhaseResult(applied=False, warning=warning)
+    assert result.applied is False
+    assert render_warning(result.warning) == warning
     assert base_video.read_bytes() == b"validated-base"
     tracker.start_phase.assert_called_once_with("music", 1)
     tracker.complete_phase.assert_called_once_with(
@@ -890,7 +893,8 @@ def test_optional_music_failure_preserves_base_and_uploads_valid_artifact(
     tracker.complete_artifact.assert_called_once()
     # Only the music warning is this test's: a host short on disk adds its own low-space line.
     run_warnings = tracker.complete_artifact.call_args.args[2]
-    assert [line for line in run_warnings if not line.startswith("Low disk space")] == [warning]
+    shown = [render_warning(line) for line in run_warnings]
+    assert [line for line in shown if not line.startswith("Low disk space")] == [warning]
     tracker.mark_delivered.assert_called_once_with("asset-1")
     tracker.fail_run.assert_not_called()
 

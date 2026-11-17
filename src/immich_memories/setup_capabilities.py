@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from immich_memories.config import Config
+from immich_memories.operational_warnings import render_warning
 
 
 @dataclass
@@ -43,7 +44,9 @@ def music_capabilities(config: Config, *, test_music: bool = False) -> list[Capa
     elif not path.generate:
         rows.append(
             Capability(
-                name, "bundled", f"Not tested: films here play a bundled track; {path.reason}"
+                name,
+                "bundled",
+                f"Not tested: films here play a bundled track; {render_warning(path.reason)}",
             )
         )
     else:
@@ -89,7 +92,8 @@ def _music_path_row(config: Config) -> Capability | None:
     path = music_path_for(config.ace_step)
     if path.generate:
         return Capability("Music source", "ok", "Films generate their music with the XL model")
-    return Capability("Music source", "bundled", f"Films play a bundled track: {path.reason}")
+    reason = render_warning(path.reason)
+    return Capability("Music source", "bundled", f"Films play a bundled track: {reason}")
 
 
 def _test_music(name: str, variant: str, planner: str | None) -> Capability:

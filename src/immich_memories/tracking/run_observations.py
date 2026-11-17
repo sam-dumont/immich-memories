@@ -17,6 +17,7 @@ from immich_memories import process_start
 from immich_memories.analysis.llm import metrics as llm_metrics
 from immich_memories.db import Store, open_store
 from immich_memories.logging_config import set_current_run_id
+from immich_memories.operational_warnings import merged_warnings
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.storage_errors import storage_failure_message
 from immich_memories.tracking import otel, timing
@@ -194,7 +195,7 @@ def _save_observations(
         return
     warnings = [warning for measured in collected.spans for warning in measured.warnings]
     database.update_run_status(
-        run_id, saved.status, warnings=list(dict.fromkeys([*saved.warnings, *warnings]))
+        run_id, saved.status, warnings=merged_warnings(list(saved.warnings), warnings)
     )
     database.record_llm_metrics(run_id, counters.as_metrics())
     llm = {

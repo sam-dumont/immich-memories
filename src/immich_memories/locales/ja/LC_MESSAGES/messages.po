@@ -260,6 +260,51 @@ msgstr "ディスクの空き容量が少なくなっています（出力先）
 msgid "warning.low_space_cache"
 msgstr "ディスクの空き容量が少なくなっています（キャッシュ）：空き {free_gb} GB、警告のしきい値 {min_gb} GB を下回っています。`immich-memories runs delete` で空きを作るか、アップロードを有効にして完成したフィルムを自動で削除してください。"
 
+msgid "warning.selection_short"
+msgstr "{requested} 秒のフィルムに写真とビデオを {selected} 秒選びました（内容に使えるのは {budget} 秒）。使える素材がまだ残っているかもしれません。"
+
+msgid "warning.selection_stopped_early"
+msgstr "選択を途中で終えました。{requested} 秒のフィルムに写真とビデオを {selected} 秒選びました（内容に使えるのは {budget} 秒）。使える素材がまだ残っているかもしれません。"
+
+msgid "warning.film_over_budget"
+msgstr "完成したフィルムは {actual} 秒で、予定の {budget} 秒を {over} 秒超えています"
+
+msgid "warning.worker_length_off"
+msgstr "レンダーワーカーのフィルムは {actual} 秒で、予定の {expected} 秒との差は {delta} 秒です"
+
+msgid "warning.optional_music_failed"
+msgstr "任意の音楽に失敗しました：{detail}"
+
+msgid "warning.music_skipped"
+msgstr "生成音楽を使いませんでした：{detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "代わりに同梱の曲を使いました"
+
+msgid "warning.music_used_own"
+msgstr "代わりに音楽フォルダーの曲を使いました"
+
+msgid "warning.music_none_bundled"
+msgstr "使える同梱の曲がありません。音楽は追加していません"
+
+msgid "warning.music_none_own"
+msgstr "音楽フォルダーに曲がありません。音楽は追加していません"
+
+msgid "warning.music_host_unified"
+msgstr "このホストのユニファイドメモリは {gib} GB です。XL モデルには 64 GB のユニファイドメモリか 16 GB の GPU が必要なため、同梱のライブラリを使います"
+
+msgid "warning.music_host_gpu"
+msgstr "このホストの GPU は {gib} GB です。XL モデルには 64 GB のユニファイドメモリか 16 GB の GPU が必要なため、同梱のライブラリを使います"
+
+msgid "warning.music_host_none"
+msgstr "このホストには使える GPU もユニファイドメモリもありません。XL モデルには 64 GB のユニファイドメモリか 16 GB の GPU が必要なため、同梱のライブラリを使います"
+
+msgid "warning.music_server_unknown"
+msgstr "ACE-Step サーバーが動かしているモデルがわかりませんでした（接続できないか、/health に loaded_model がありません）。同梱のライブラリを使います。XL を動かしている場合は model_variant を 'xl-turbo' にしてください"
+
+msgid "warning.music_server_not_xl"
+msgstr "ACE-Step サーバーは XL ではなく {model} を動かしています。同梱のライブラリを使います"
+
 msgid "notify.title.ready"
 msgstr "フィルムができました：{name}"
 

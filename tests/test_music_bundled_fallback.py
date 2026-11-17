@@ -20,6 +20,7 @@ import pytest
 from immich_memories.config.loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_music import resolve_music
+from immich_memories.operational_warnings import render_warning
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
 
 
@@ -98,8 +99,9 @@ def test_the_bundled_substitution_is_reported_not_swallowed(
     )
 
     assert result.warning is not None
-    assert "All connection attempts failed" in result.warning
-    assert "bundled" in result.warning
+    assert render_warning(result.warning) == (
+        "Optional music failed: All connection attempts failed; used a bundled track instead"
+    )
 
 
 def test_a_bundled_substitution_still_warns_the_finished_run(
@@ -190,6 +192,6 @@ def test_missing_bundle_does_not_claim_a_track_was_used(
 
     assert result.path is None
     assert result.warning is not None
-    assert "All connection attempts failed" in result.warning
-    assert "no bundled track available" in result.warning
+    assert "All connection attempts failed" in render_warning(result.warning)
+    assert "no bundled track available" in render_warning(result.warning)
     assert "used a bundled track" not in caplog.text

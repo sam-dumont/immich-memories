@@ -95,6 +95,17 @@ def test_no_template_asks_for_a_value_the_code_does_not_give(locale: str) -> Non
         "attempts",
         "free_gb",
         "min_gb",
+        # Duration, length and music warnings (#2665): seconds the planner measured, a host's
+        # memory, the model a music server reports.
+        "selected",
+        "requested",
+        "budget",
+        "actual",
+        "over",
+        "expected",
+        "delta",
+        "gib",
+        "model",
     }
     for prefix in ("", "start_", "end_"):
         given |= {f"{prefix}month", f"{prefix}month_lc", f"{prefix}month_of", f"{prefix}month_num"}

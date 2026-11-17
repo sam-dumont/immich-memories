@@ -3,10 +3,14 @@
 from collections.abc import Mapping
 
 from immich_memories.analysis.judgments.json_numbers import exact_number
+from immich_memories.operational_warnings import coded
 
 
 def editorial_duration_warning(realization: Mapping[str, object] | None) -> str | None:
-    """Report a recorded shortfall without inferring that the library is exhausted."""
+    """Report a recorded shortfall without inferring that the library is exhausted.
+
+    The warning is stored coded and worded where it is read (`operational_warnings`).
+    """
     if not isinstance(realization, Mapping):
         return None
     status = realization.get("status")
@@ -19,8 +23,9 @@ def editorial_duration_warning(realization: Mapping[str, object] | None) -> str 
     if any((number := exact_number(value)) is None or number < 0 for value in values):
         return None
     selected, budget, requested = values
-    prefix = "Selection stopped early. " if status == "search_limited" else ""
-    return (
-        f"{prefix}Selected {selected:.1f}s of pictures and video for a {requested:.1f}s memory "
-        f"({budget:.1f}s available for content). More usable material may remain."
+    return coded(
+        "selection_stopped_early" if status == "search_limited" else "selection_short",
+        selected=f"{selected:.1f}",
+        requested=f"{requested:.1f}",
+        budget=f"{budget:.1f}",
     )

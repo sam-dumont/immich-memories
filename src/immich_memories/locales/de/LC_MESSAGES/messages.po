@@ -265,6 +265,51 @@ msgstr "Wenig Speicherplatz auf dem Datenträger (Ausgabe): {free_gb} GB frei, u
 msgid "warning.low_space_cache"
 msgstr "Wenig Speicherplatz auf dem Datenträger (Cache): {free_gb} GB frei, unter der Warnschwelle von {min_gb} GB. Mit `immich-memories runs delete` schaffst du Platz, oder aktiviere den Upload, damit fertige Filme automatisch entfernt werden."
 
+msgid "warning.selection_short"
+msgstr "{selected} s an Fotos und Videos für einen Film von {requested} s ausgewählt ({budget} s für Inhalte verfügbar). Es könnte noch mehr brauchbares Material geben."
+
+msgid "warning.selection_stopped_early"
+msgstr "Auswahl vorzeitig beendet. {selected} s an Fotos und Videos für einen Film von {requested} s ausgewählt ({budget} s für Inhalte verfügbar). Es könnte noch mehr brauchbares Material geben."
+
+msgid "warning.film_over_budget"
+msgstr "Der fertige Film läuft {actual} s bei einem Budget von {budget} s ({over} s darüber)"
+
+msgid "warning.worker_length_off"
+msgstr "Der Film des Render-Workers läuft {actual} s statt der geplanten {expected} s ({delta} s)"
+
+msgid "warning.optional_music_failed"
+msgstr "Optionale Musik fehlgeschlagen: {detail}"
+
+msgid "warning.music_skipped"
+msgstr "Generierte Musik übersprungen: {detail}"
+
+msgid "warning.music_used_bundled"
+msgstr "stattdessen wurde ein mitgelieferter Titel verwendet"
+
+msgid "warning.music_used_own"
+msgstr "stattdessen wurde ein Titel aus deinem Musikordner verwendet"
+
+msgid "warning.music_none_bundled"
+msgstr "kein mitgelieferter Titel verfügbar; keine Musik hinzugefügt"
+
+msgid "warning.music_none_own"
+msgstr "kein Titel in deinem Musikordner verfügbar; keine Musik hinzugefügt"
+
+msgid "warning.music_host_unified"
+msgstr "dieser Rechner hat {gib} GB Unified Memory; das XL-Modell braucht 64 GB Unified Memory oder eine GPU mit 16 GB, daher läuft die mitgelieferte Bibliothek"
+
+msgid "warning.music_host_gpu"
+msgstr "dieser Rechner hat eine GPU mit {gib} GB; das XL-Modell braucht 64 GB Unified Memory oder eine GPU mit 16 GB, daher läuft die mitgelieferte Bibliothek"
+
+msgid "warning.music_host_none"
+msgstr "dieser Rechner hat weder eine GPU noch nutzbaren Unified Memory; das XL-Modell braucht 64 GB Unified Memory oder eine GPU mit 16 GB, daher läuft die mitgelieferte Bibliothek"
+
+msgid "warning.music_server_unknown"
+msgstr "es ließ sich nicht feststellen, welches Modell der ACE-Step-Server ausführt (nicht erreichbar oder kein loaded_model unter /health), daher läuft die mitgelieferte Bibliothek; setze model_variant auf 'xl-turbo', wenn er XL ausführt"
+
+msgid "warning.music_server_not_xl"
+msgstr "der ACE-Step-Server führt {model} aus, kein XL-Modell; die mitgelieferte Bibliothek läuft"
+
 msgid "notify.title.ready"
 msgstr "Film fertig: {name}"
 
