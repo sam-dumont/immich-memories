@@ -234,6 +234,7 @@ def _tree_view(tree: tree_reading.FamilyTree) -> FamilyTree:
                     TreeChild(person_id=c.person_id, through_sibling=c.through_sibling)
                     for c in f.children
                 ],
+                lane=f.lane,
             )
             for f in tree.families
         ],

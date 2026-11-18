@@ -13,7 +13,9 @@ from typing import Any
 import pytest
 
 from immich_memories.people.family_tree import FamilyTree, family_tree
+from immich_memories.people.family_tree_layout import BAR_GAP
 from immich_memories.people.relationships import reciprocal_kind
+from tests.e2e.family_tree_household import TWO_FAMILIES, TWO_FAMILIES_BORN
 
 
 def _document(
@@ -250,3 +252,95 @@ def test_an_empty_registry_is_an_empty_tree():
     tree = family_tree({"version": 1, "people": []})
 
     assert tree.people == () and tree.families == () and tree.left_out == 0
+
+
+def _row_order(tree: FamilyTree, generation: int) -> list[str]:
+    return [p.name for p in sorted(tree.people, key=lambda p: p.x) if p.generation == generation]
+
+
+def _children(tree: FamilyTree, family) -> list[str]:
+    names = {person.person_id: person.name for person in tree.people}
+    return [names[child.person_id] for child in family.children]
+
+
+def _bars(tree: FamilyTree) -> list[tuple[int, int, float, float, Any]]:
+    """(children's row, lane, left end, right end, family) of every family's line to its children:
+    the line runs from the knot over the parents to the outermost child."""
+    x = {person.person_id: person.x for person in tree.people}
+    row = {person.person_id: person.generation for person in tree.people}
+    bars = []
+    for family in tree.families:
+        xs = [_knot(tree, family), *(x[c.person_id] for c in family.children)]
+        bars.append(
+            (min(row[c.person_id] for c in family.children), family.lane, min(xs), max(xs), family)
+        )
+    return bars
+
+
+def _bars_stay_apart(tree: FamilyTree, *, drops_cross: bool = False) -> None:
+    """No two families' lines meet: on one height they keep a gap. Unless `drops_cross`, a
+    child's drop line also passes no other family's line drawn below its own."""
+    x = {person.person_id: person.x for person in tree.people}
+    bars = _bars(tree)
+    for row, lane, left, right, family in bars:
+        for other_row, other_lane, other_left, other_right, other in bars:
+            if other is family or other_row != row:
+                continue
+            if other_lane == lane:
+                assert other_right < left - BAR_GAP or right < other_left - BAR_GAP, (
+                    _children(tree, family),
+                    _children(tree, other),
+                )
+            if other_lane < lane and not drops_cross:
+                assert not any(
+                    other_left <= x[c.person_id] <= other_right for c in family.children
+                ), (_children(tree, family), _children(tree, other))
+
+
+def test_two_families_joined_by_a_couple_each_keep_their_children_together_facing_each_other():
+    tree = family_tree(_document(TWO_FAMILIES, born=TWO_FAMILIES_BORN, owner="Sam"))
+
+    row = _row_order(tree, 2)
+    p_side, q_side = row[: row.index("Sam") + 1], row[row.index("Kit") :]
+    if row.index("Kit") < row.index("Sam"):
+        p_side, q_side = row[row.index("Sam") :][::-1], row[: row.index("Kit") + 1][::-1]
+    # Sam's family on one side of the couple, Kit's on the other, each with their married-in
+    # partners next to their spouse on the outside.
+    assert p_side == ["Jo", "Robin", "Sasha", "Sam"]
+    assert q_side == ["Kit", "Mia", "Max"]
+    assert set(_row_order(tree, 1)) == {"Pat", "Lou", "Quinn", "Dale", "Ari", "Bo"}
+    _no_overlap(tree)
+
+
+def test_each_family_hangs_its_children_from_its_own_line():
+    tree = family_tree(_document(TWO_FAMILIES, born=TWO_FAMILIES_BORN, owner="Sam"))
+
+    for children in (("Sasha", "Sam", "Robin"), ("Kit", "Mia"), ("Ada", "Ben"), ("Dee", "Gus")):
+        family = _family(tree, *children)
+        row = _row_order(tree, _row(tree)[children[0]])
+        own = [row.index(name) for name in _children(tree, family)]
+        between = row[min(own) : max(own) + 1]
+        assert set(between) <= set(_children(tree, family)) | {"Jo", "Max"}, between
+    _bars_stay_apart(tree)
+
+
+def test_families_married_into_each_other_twice_draw_their_lines_at_different_heights():
+    # Two pairs of siblings married across: no order keeps both families' children apart.
+    tree = family_tree(
+        _document(
+            (
+                ("Pat", "partner-of", "Lou"),
+                ("Quinn", "partner-of", "Dale"),
+                *((c, "child-of", p) for c in ("Ana", "Eli", "Ivy") for p in ("Pat", "Lou")),
+                *((c, "child-of", p) for c in ("Kit", "Zoe", "Uma") for p in ("Quinn", "Dale")),
+                ("Ana", "partner-of", "Kit"),
+                ("Eli", "partner-of", "Zoe"),
+            )
+        )
+    )
+
+    first, second = _family(tree, "Ana", "Eli"), _family(tree, "Kit", "Zoe")
+    assert first.lane != second.lane
+    # Each couple still stands at the seam, so one family's drop lines cross the other's line.
+    _bars_stay_apart(tree, drops_cross=True)
+    _no_overlap(tree)

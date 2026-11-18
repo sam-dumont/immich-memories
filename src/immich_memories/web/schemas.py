@@ -592,6 +592,9 @@ class TreeFamily(BaseModel):
     # Empty for siblings whose parents aren't in the tree.
     parents: list[str]
     children: list[TreeChild]
+    # The height the line to the children runs at, 0 lowest: families whose lines would meet
+    # on one row get different heights.
+    lane: int
 
 
 class TreeSuggestion(BaseModel):

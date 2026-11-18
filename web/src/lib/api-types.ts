@@ -3057,6 +3057,8 @@ export interface components {
         TreeFamily: {
             /** Children */
             children: components["schemas"]["TreeChild"][];
+            /** Lane */
+            lane: number;
             /** Parents */
             parents: string[];
         };

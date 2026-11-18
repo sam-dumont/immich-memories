@@ -1339,7 +1339,9 @@ src/immich_memories/
 │   ├── family_tree.py          # family_tree(): the People page's tree from the confirmed close ties
 │   │                           # (rows, couples, families, parentless sibling groups, dotted suggestions,
 │   │                           # the count left out); pure, deterministic (#2797)
-│   ├── family_tree_layout.py   # place(): x along each row by down/up sweeps and pooled adjacent violators
+│   ├── family_tree_layout.py   # place(): x along each row by down/up sweeps and pooled adjacent violators,
+│   │                           # each family's children together, couples at the seam of two families;
+│   │                           # bar_lanes(): families' lines that would meet go on different heights
 │   └── editor.py               # The companion editor's model: the registry as rows, and back; one row per
 │                               # pair (a detected link hides once the pair has a real relationship), plus
 │                               # kinship's suggestions, computed at read time so the page refreshes them live

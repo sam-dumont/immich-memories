@@ -18,7 +18,7 @@ from typing import Any
 
 from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import people_entries
-from immich_memories.people.family_tree_layout import Household, place
+from immich_memories.people.family_tree_layout import Household, bar_lanes, place
 from immich_memories.people.kinship import (
     Fact,
     Suggestion,
@@ -54,6 +54,9 @@ class TreeFamily:
     # Empty for siblings whose parents aren't in the tree.
     parents: tuple[str, ...]
     children: tuple[TreeChild, ...]
+    # The height the line to the children runs at, 0 lowest: families whose lines would meet
+    # on one row get different heights.
+    lane: int = 0
 
 
 @dataclass(frozen=True)
@@ -128,14 +131,13 @@ def family_tree(document: dict[str, Any]) -> FamilyTree:
     families = _families(ties, born, known)
     generation, components = _rows(ties, drawn, owners)
     couples = tuple(sorted(ties.partners))
-    x = place(
-        Household(
-            generation=generation,
-            partners=couples,
-            families=tuple((f.parents, tuple(c.person_id for c in f.children)) for f in families),
-        ),
-        components,
+    household = Household(
+        generation=generation,
+        partners=couples,
+        families=tuple((f.parents, tuple(c.person_id for c in f.children)) for f in families),
     )
+    x = place(household, components)
+    lanes = bar_lanes(household, x)
     people = tuple(
         sorted(
             (
@@ -155,7 +157,9 @@ def family_tree(document: dict[str, Any]) -> FamilyTree:
     return FamilyTree(
         people=people,
         couples=couples,
-        families=tuple(families),
+        families=tuple(
+            TreeFamily(f.parents, f.children, lane) for f, lane in zip(families, lanes, strict=True)
+        ),
         suggestions=_dotted(suggest_relationships(facts, declined), families),
         left_out=len(known) - len(drawn),
     )
