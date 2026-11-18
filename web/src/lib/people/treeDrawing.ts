@@ -11,6 +11,10 @@ const PAD_TOP = 64;
 export const FACE = 30;
 // Where a family's line to its children runs, above the children's faces.
 const BUS = 54;
+// Lines that would meet on one row run at different heights (the server's lanes), this far
+// apart, all within the room between the parents' labels and the lowest line.
+const LANE = 12;
+const LANE_ROOM = 48;
 
 export type Node = TreePerson & { cx: number; cy: number; initials: string };
 export type Line = { d: string; dashed: boolean; testid: string };
@@ -41,6 +45,10 @@ export function draw(tree: FamilyTree): Drawing {
     if (left && right) lines.push({ d: `M${left.cx + FACE},${left.cy}H${right.cx - FACE}`, dashed: false, testid: 'tree-couple' });
   }
 
+  const childRow = (family: FamilyTree['families'][number]) => Math.min(...family.children.flatMap((c) => at.get(c.person_id)?.cy ?? []));
+  const lanes = new Map<number, number>();
+  for (const family of tree.families) lanes.set(childRow(family), Math.max(lanes.get(childRow(family)) ?? 0, family.lane));
+
   for (const family of tree.families) {
     const parents = family.parents.flatMap((id) => at.get(id) ?? []);
     const children = family.children.flatMap((child) => {
@@ -48,7 +56,8 @@ export function draw(tree: FamilyTree): Drawing {
       return node ? [{ node, dashed: child.through_sibling }] : [];
     });
     if (!children.length) continue;
-    const busY = Math.min(...children.map((c) => c.node.cy)) - BUS;
+    const row = childRow(family);
+    const busY = row - BUS - family.lane * Math.min(LANE, LANE_ROOM / Math.max(1, lanes.get(row) ?? 0));
     const knot: Knot = !parents.length
       ? { x: mean(children.map((c) => c.node.cx)), y: busY - 22, dashed: true }
       : parents.length === 1

@@ -1349,6 +1349,7 @@ features:
       - tests/e2e/test_people_family_tree.py::test_the_household_is_drawn_as_a_tree_with_couples_children_and_a_sibling_group
       - tests/e2e/test_people_family_tree.py::test_a_dotted_suggestion_is_confirmed_from_the_tree
       - tests/e2e/test_people_family_tree.py::test_the_tree_is_saved_as_svg_and_png_made_in_the_browser
+      - tests/e2e/test_people_family_tree.py::test_two_families_joined_by_a_couple_hang_their_children_from_separate_lines
   - id: web.suggestions
     promise: "Suggestions shows the candidates automation would make and why, keeps its last result, and Check eligibility is a dry run."
     doc: make/automate.md#how-it-picks-one-memory

@@ -283,6 +283,8 @@ def test_the_family_tree_is_drawn_from_the_relationships_the_page_confirmed(tmp_
         (tuple(sorted([ids["Ana"], ids["Luc"]])), ids["Eli"]),
         ((ids["Ana"],), ids["Zoe"]),
     }
+    # Each family's line to its children has a height; these two don't meet, so both run lowest.
+    assert [f["lane"] for f in tree["families"]] == [0, 0]
     # Zoe's other parent is only implied: a dotted line to confirm, never part of the tree.
     assert tree["suggestions"] == [
         {"source": ids["Luc"], "kind": "parent-of", "target": ids["Zoe"]}

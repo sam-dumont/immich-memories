@@ -4335,6 +4335,10 @@
             "title": "Children",
             "type": "array"
           },
+          "lane": {
+            "title": "Lane",
+            "type": "integer"
+          },
           "parents": {
             "items": {
               "type": "string"
@@ -4345,7 +4349,8 @@
         },
         "required": [
           "parents",
-          "children"
+          "children",
+          "lane"
         ],
         "title": "TreeFamily",
         "type": "object"

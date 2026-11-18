@@ -8,6 +8,7 @@ PNG are made in the browser, and nothing is asked of any server but the app's ow
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -16,7 +17,7 @@ from playwright.sync_api import Page, expect
 
 from immich_memories.people.companion import load_document
 from immich_memories.people.transfer import import_document
-from tests.e2e.family_tree_household import household, person_id
+from tests.e2e.family_tree_household import household, person_id, two_families
 
 pytestmark = [pytest.mark.e2e, pytest.mark.usefixtures("roster_restored")]
 
@@ -31,13 +32,17 @@ def _centre(page: Page, name: str) -> tuple[float, float]:
     return box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
 
 
-def _open_tree(page: Page, launch_app_url: str, launch_workspace):
-    import_document(launch_workspace.store(), household(), replace=True)
+def _open_tree(page: Page, launch_app_url: str, launch_workspace, document=None, drawn=9):
+    import_document(launch_workspace.store(), document or household(), replace=True)
     page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
     tree = page.get_by_role("region", name="Family tree")
     tree.get_by_role("button", name="Draw the family tree").click()
-    expect(tree.get_by_test_id("tree-person")).to_have_count(9, timeout=30_000)
+    expect(tree.get_by_test_id("tree-person")).to_have_count(drawn, timeout=30_000)
     return tree
+
+
+def _numbers(path: str) -> list[float]:
+    return [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", path)]
 
 
 @pytest.mark.feature("web.people-family-tree")
@@ -131,3 +136,35 @@ def test_the_tree_is_saved_as_svg_and_png_made_in_the_browser(
     assert all(
         line.startswith("GET ") and urlsplit(line[4:]).netloc in {origin, ""} for line in asked
     ), asked
+
+
+@pytest.mark.feature("web.people-family-tree")
+def test_two_families_joined_by_a_couple_hang_their_children_from_separate_lines(
+    page: Page, launch_app_url: str, launch_workspace, tmp_path: Path
+) -> None:
+    page.set_viewport_size({"width": 2000, "height": 1100})
+    tree = _open_tree(page, launch_app_url, launch_workspace, two_families(), drawn=21)
+
+    # A family line is `M knot V bar M left,bar H right`; a child's is `M x,bar V face`.
+    bars = [
+        (y, left, right)
+        for _, _, y, left, _, right in map(
+            _numbers,
+            tree.get_by_test_id("tree-family").evaluate_all(
+                "ps => ps.map(p => p.getAttribute('d'))"
+            ),
+        )
+    ]
+    for index, (y, left, right) in enumerate(bars):
+        for other_y, other_left, other_right in bars[index + 1 :]:
+            assert y != other_y or right < other_left or other_right < left, bars
+    drops = tree.get_by_test_id("tree-child").evaluate_all("ps => ps.map(p => p.getAttribute('d'))")
+    for x, top, _ in map(_numbers, drops):
+        meets = [bar for bar in bars if bar[0] == top and bar[1] <= x <= bar[2]]
+        assert len(meets) == 1, (x, top, meets)
+    expect(tree.locator("[data-testid='tree-knot']")).to_have_count(len(bars))
+    # The saved PNG is the same drawing, whole: the lines stay apart there too.
+    with page.expect_download() as png:
+        tree.get_by_role("button", name="Save as PNG").click()
+    png.value.save_as(tmp_path / "two-families.png")
+    assert (tmp_path / "two-families.png").read_bytes().startswith(b"\x89PNG")
