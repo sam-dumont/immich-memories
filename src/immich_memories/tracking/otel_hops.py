@@ -34,9 +34,14 @@ if TYPE_CHECKING:
 
 # A path segment of digits alone: a map tile's zoom, column and row (`/14/8392/5467.png`), which
 # say where a trip went or where home is.
-_NUMBERS = re.compile(r"(?<=/)\d+(?=[/.@]|$)")
+_NUMBERS = re.compile(r"(?<=/)\d++(?=[/.@]|$)")
 # A request as a browser span names it: `GET /api/v1/...`, a bare path, or a whole URL.
-_REQUEST = re.compile(r"(?P<method>[A-Z]+ )?(?P<target>https?://\S+|/\S*)")
+# Possessive (`++`): what follows each run cannot be part of it, so giving characters back never
+# finds a match, and a browser's text is scanned once.
+_REQUEST = re.compile(r"(?P<method>[A-Z]++ )?(?P<target>https?://\S++|/\S*+)")
+# The longest text from a browser the patterns see: far past any real URL or span name, and a
+# hostile batch's megabyte string costs no more than this.
+_LONGEST = 2_048
 # Health probes, the route the web client sends its own spans through, and static files: the
 # client's bundle is thirty requests a page load that say nothing the page's own spans do not.
 _UNTRACED = "/health,/health/live,/health/ready,/api/v1/telemetry,/app/_app/,/static/,/favicon.ico"
@@ -99,7 +104,11 @@ def _named_route(span: Span, scope: dict[str, Any]) -> None:
 
 
 def scrub(text: str) -> str:
-    """Text from outside the app (a browser span) without query strings, ids, names or paths."""
+    """Text from outside the app (a browser span) without query strings, ids, names or paths.
+
+    Only its first `_LONGEST` characters are kept.
+    """
+    text = text[:_LONGEST]
     if request := _REQUEST.fullmatch(text):
         parts = urlsplit(request["target"])
         path = route_template(parts.path)
@@ -109,6 +118,7 @@ def scrub(text: str) -> str:
 
 def template(path: str) -> str:
     """`path` with every id and tile coordinate replaced by `{id}`: one name per kind of call."""
+    path = path[:_LONGEST]
     return _NUMBERS.sub("{id}", IDS.sub("{id}", path)) or "/"
 
 

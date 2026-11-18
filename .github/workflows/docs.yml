@@ -17,8 +17,15 @@ env:
   DOCS_ANALYTICS_DOMAIN: ${{ vars.DOCS_ANALYTICS_DOMAIN }}
   DOCS_ANALYTICS_ENDPOINT: ${{ vars.DOCS_ANALYTICS_ENDPOINT }}
 
+# release.yml and the nightly publish with the CI app's token, so their release fires
+# `release: published` too, while they call this workflow themselves once the release is
+# complete. That event's run does nothing, in a group of its own: in `docs-deploy` it would
+# cancel the deploy they called.
 concurrency:
-  group: docs-deploy
+  group: >-
+    ${{ github.event_name == 'release'
+    && github.event.sender.login == 'immich-memories-ci-bot[bot]'
+    && format('docs-ci-app-release-{0}', github.run_id) || 'docs-deploy' }}
   cancel-in-progress: true
 
 permissions:
@@ -29,9 +36,12 @@ jobs:
     name: Choose the docs tracks
     runs-on: ubuntu-24.04
     # Model artifact releases (models-v*) are not app releases, and Pages refuses their tags.
+    # A release the CI app published is deployed by the workflow that published it.
     if: >-
       github.repository_id == '1174219883'
       && !(github.event_name == 'release' && startsWith(github.event.release.tag_name, 'models-'))
+      && !(github.event_name == 'release'
+           && github.event.sender.login == 'immich-memories-ci-bot[bot]')
     permissions:
       contents: read
     outputs:

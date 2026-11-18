@@ -1,9 +1,10 @@
-"""Release tags are pushed with RELEASE_TAG_TOKEN, and only by the two steps that write them.
+"""Release tags and releases are written with the CI app's token, and only by the steps that write.
 
 GitHub refuses a ref GITHUB_TOKEN writes when the move brings workflow files main no
-longer has (#2615), so the version tag and the nightly tag go out with a dedicated
-token. These tests run the push script against a local remote and check the token
-stays inside those two steps.
+longer has (#2615), so the version tag and the nightly tag go out with a token the CI
+GitHub App mints; the GitHub Release and the nightly prerelease use it too, so the release
+job's GITHUB_TOKEN only reads. These tests run the push script against a local remote and
+check the token stays inside the steps that write.
 """
 
 import os
@@ -131,30 +132,69 @@ def test_only_the_two_ref_writing_steps_see_the_token():
 
 
 def test_the_release_job_checkout_keeps_no_credentials():
-    release = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
     checkout = next(
-        step
-        for step in release["jobs"]["release"]["steps"]
-        if step.get("uses", "").startswith("actions/checkout@")
+        step for step in _release_steps() if step.get("uses", "").startswith("actions/checkout@")
     )
     assert checkout["with"]["persist-credentials"] is False
 
 
-def test_the_token_is_minted_by_the_ci_app_for_this_repository_only():
-    """No stored token: the release job mints a one-hour app token just before the pushes."""
+def _release_steps():
     workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
-    steps = workflow["jobs"]["release"]["steps"]
+    return workflow["jobs"]["release"]["steps"]
+
+
+_MINTED = "${{ steps.release-token.outputs.token }}"
+# Every step of the release job that writes a ref or a release, in order.
+_WRITERS = [
+    "Push release tag",
+    "Create GitHub Release",
+    "Move the nightly tag to this commit",
+    "Replace the nightly prerelease",
+]
+
+
+def test_the_token_is_minted_by_the_ci_app_for_this_repository_only():
+    """No stored token: the release job mints a one-hour app token before its first write."""
+    steps = _release_steps()
     names = [step.get("name") for step in steps]
-    mint = steps[names.index("Mint the release tag token")]
+    mint = steps[names.index("Mint the release token")]
+    assert mint["id"] == "release-token"
     assert mint["uses"].startswith("actions/create-github-app-token@")
     assert mint["with"]["repositories"] == "immich-memories"
+    assert {key for key in mint["with"] if key.startswith("permission-")} == {
+        "permission-contents",
+        "permission-workflows",
+    }
     assert mint["with"]["permission-contents"] == "write"
     assert mint["with"]["permission-workflows"] == "write"
-    assert names.index("Mint the release tag token") < names.index("Push release tag")
+    assert all(names.index("Mint the release token") < names.index(name) for name in _WRITERS)
     for name in ("Push release tag", "Move the nightly tag to this commit"):
         env = steps[names.index(name)]["env"]
         # The minted token's output, never a stored secret.
-        assert env["RELEASE_TAG_TOKEN"].split() == ["${{", "steps.tag-token.outputs.token", "}}"]
+        assert env["RELEASE_TAG_TOKEN"] == _MINTED
+
+
+def test_only_the_writing_steps_see_the_minted_token():
+    seen = [step.get("name") for step in _release_steps() if "steps.release-token" in str(step)]
+    assert seen == _WRITERS
+
+
+def test_the_releases_are_written_with_the_minted_token():
+    steps = {step.get("name"): step for step in _release_steps()}
+    assert steps["Create GitHub Release"]["with"]["token"] == _MINTED
+    assert steps["Replace the nightly prerelease"]["env"]["GH_TOKEN"] == _MINTED
+
+
+def test_the_release_job_github_token_only_reads():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
+    assert workflow["jobs"]["release"]["permissions"] == {"contents": "read"}
+    # The one step that still hands GITHUB_TOKEN to a tool asks whether a release exists.
+    readers = [
+        step.get("name")
+        for step in workflow["jobs"]["release"]["steps"]
+        if "secrets.GITHUB_TOKEN" in str(step) or "github.token" in str(step)
+    ]
+    assert readers == ["Push release tag"]
 
 
 def test_no_workflow_reads_a_stored_release_token():

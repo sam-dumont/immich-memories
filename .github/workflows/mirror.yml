@@ -36,14 +36,14 @@ on:
         required: false
         type: string
 
-# The push, the dispatch and the mirror's bot-PR cleanup go through a token the
-# CI GitHub App (immich-memories-ci-bot) mints for this run: GITHUB_TOKEN cannot
-# see the private mirror, and an app token lives one hour instead of a stored
-# token that expires. The pending status is on this repository, so
-# GITHUB_TOKEN posts it.
+# Every write goes through a token the CI GitHub App (immich-memories-ci-bot)
+# mints for this run, scoped to one repository: the push, the dispatch and the
+# mirror's bot-PR cleanup through one for the mirror (GITHUB_TOKEN cannot see
+# it), the pending status through one for this repository with Commit statuses
+# write alone. An app token lives one hour instead of a stored token that
+# expires, and GITHUB_TOKEN only reads.
 permissions:
   contents: read
-  statuses: write
 
 jobs:
   mirror:
@@ -121,9 +121,19 @@ jobs:
           # Without this, LFS pointers land but blobs are missing = CI fails.
           git lfs push mirror --all 2>/dev/null || true
 
+      - name: Mint a status token
+        id: status-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: sam-dumont
+          repositories: immich-memories
+          permission-statuses: write
+
       - name: Set pending status
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.status-token.outputs.token }}
           SHA: ${{ steps.target.outputs.sha }}
         run: |
           gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" --method POST \
