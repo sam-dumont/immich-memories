@@ -375,8 +375,10 @@ jobs:
       needs.inference-manifest.result == 'success' &&
       needs.deployment-bundle.result == 'success'
     runs-on: ubuntu-24.04
+    # Every write (the tags, the GitHub Release, the nightly prerelease) goes through the
+    # app token minted below; GITHUB_TOKEN only reads.
     permissions:
-      contents: write
+      contents: read
 
     steps:
       - name: Audit publication egress
@@ -385,7 +387,7 @@ jobs:
           egress-policy: audit
 
       # No stored credentials: the only pushes here are the two ref steps below, and
-      # they authenticate with the app token minted just before them.
+      # they authenticate with the app token minted before them.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -417,9 +419,13 @@ jobs:
       # GITHUB_TOKEN may not write a tag whose commit's workflow files differ from
       # main's at push time (#2615). The CI GitHub App (immich-memories-ci-bot) mints
       # a one-hour token for this repository with Contents and Workflows write,
-      # here, two hours into the run, so it is fresh for both ref steps below.
-      - name: Mint the release tag token
-        id: tag-token
+      # here, two hours into the run, so it is fresh for every write below: the
+      # job takes about a minute. The GitHub Release and the nightly prerelease go
+      # out with it too, so the job's GITHUB_TOKEN only reads. A release this token
+      # publishes fires `release: published`, which docs.yml leaves to the deploy
+      # this workflow calls.
+      - name: Mint the release token
+        id: release-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.CI_APP_CLIENT_ID }}
@@ -432,12 +438,13 @@ jobs:
       # The tag goes out only after every fallible pre-publication step has
       # succeeded (#1010): a stranded tag must stay a resume signal, not the
       # only evidence that a release completed. The push uses the app token
-      # above, in this step and the nightly's only.
+      # above as RELEASE_TAG_TOKEN, in this step and the nightly's only;
+      # GITHUB_TOKEN only asks whether the release exists.
       - name: Push release tag
         if: inputs.channel != 'nightly'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG_TOKEN: ${{ steps.tag-token.outputs.token }}
+          RELEASE_TAG_TOKEN: ${{ steps.release-token.outputs.token }}
           NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
         run: |
           if git rev-parse "v$NEXT_VERSION" >/dev/null 2>&1; then
@@ -470,6 +477,7 @@ jobs:
         if: inputs.channel != 'nightly'
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v2
         with:
+          token: ${{ steps.release-token.outputs.token }}
           tag_name: v${{ needs.analyze.outputs.next_version }}
           name: Release v${{ needs.analyze.outputs.next_version }}
           body_path: release_notes.md
@@ -488,7 +496,7 @@ jobs:
       - name: Move the nightly tag to this commit
         if: inputs.channel == 'nightly'
         env:
-          RELEASE_TAG_TOKEN: ${{ steps.tag-token.outputs.token }}
+          RELEASE_TAG_TOKEN: ${{ steps.release-token.outputs.token }}
         run: |
           git tag -f nightly "$GITHUB_SHA"
           scripts/push_release_ref.sh --force refs/tags/nightly
@@ -499,7 +507,7 @@ jobs:
       - name: Replace the nightly prerelease
         if: inputs.channel == 'nightly'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.release-token.outputs.token }}
           NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
         run: |
           set -euo pipefail

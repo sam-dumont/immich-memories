@@ -66,7 +66,8 @@ jobs:
     # it calls (a called job may not ask for more, even when skipped); each job there
     # still asks for only what it uses.
     permissions:
-      contents: write
+      # Read: the release job writes its tags and releases with the CI app's token.
+      contents: read
       packages: write
       id-token: write
       attestations: write

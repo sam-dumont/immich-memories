@@ -180,3 +180,75 @@ def test_tracing_starts_with_only_the_packages_a_plain_install_ships():
     )
     assert result.returncode == 0, result.stderr[-2000:]
     assert result.stdout.strip() == "True"
+
+
+# Browser text is attacker-shaped: a run of characters that a pattern scans to the end and then
+# gives back must never cost more than one pass over a bounded string (CodeQL #286, #287).
+_ADVERSARIAL = [
+    "A" * 100_000 + "!",
+    "a" * 50_000 + "!",
+    "GET /" + "0" * 100_000 + "g",
+    "/" + "f" * 100_000 + "_",
+    "0123456789abcdef" * 6_250 + "x",
+    "/0" * 50_000,
+]
+
+
+@pytest.mark.parametrize("text", _ADVERSARIAL, ids=lambda text: f"{text[:6]!r}x{len(text)}")
+def test_hostile_browser_text_is_scrubbed_from_a_bounded_head(text):
+    from immich_memories.tracking.otel_hops import scrub, template
+
+    # Only the first 2,048 characters are read; each one becomes at most `{id}`.
+    assert len(scrub(text)) <= 4 * 2_048
+    assert len(template(text)) <= 4 * 2_048
+
+
+def test_browser_text_past_the_bound_is_cut():
+    from immich_memories.tracking.otel_hops import scrub
+
+    assert scrub("x" * 5_000) == "x" * 2_048
+
+
+# The patterns as they were before the possessive rewrite: the rewrite must match the same text.
+_IDS_BEFORE = (
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    r"|\b[0-9a-fA-F]{16,}\b|\b\d{6,}\b"
+)
+_NUMBERS_BEFORE = r"(?<=/)\d+(?=[/.@]|$)"
+
+
+def test_the_same_ids_and_coordinates_are_templated_as_before():
+    import random
+    import re
+
+    from immich_memories.tracking.otel_hops import template
+
+    ids, numbers = re.compile(_IDS_BEFORE), re.compile(_NUMBERS_BEFORE)
+    pieces = ["0", "7", "a", "F", "g", "-", "/", ".", "@", "_", " ", "123456", "deadbeef" * 2]
+    pieces.append(_ASSET)
+    draw = random.Random(2_048)
+    for _ in range(3_000):
+        path = "".join(draw.choice(pieces) for _ in range(draw.randint(1, 14)))
+        assert template(path) == (numbers.sub("{id}", ids.sub("{id}", path)) or "/"), path
+
+
+@pytest.mark.parametrize(
+    ("text", "scrubbed"),
+    [
+        (
+            f"GET /api/v1/assets/{_ASSET}/thumbnail?size=preview",
+            "GET /api/v1/assets/{id}/thumbnail",
+        ),
+        (
+            "https://memories.local/tiles/14/8392/5467@2x.png",
+            "https://memories.local/tiles/{id}/{id}/{id}@2x.png",
+        ),
+        ("/api/v1/runs/0123456789abcdef0/log", "/api/v1/runs/{id}/log"),
+        ("/api/v1/jobs/1234567", "/api/v1/jobs/{id}"),
+        ("load 0123456789abcdefg", "load 0123456789abcdefg"),
+    ],
+)
+def test_browser_requests_keep_their_ids_out(text, scrubbed):
+    from immich_memories.tracking.otel_hops import scrub
+
+    assert scrub(text) == scrubbed

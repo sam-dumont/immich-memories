@@ -57,9 +57,11 @@ PRIVATE_FLAGS = frozenset(
 SECRET_FLAGS = frozenset({"--api-key", "-k"})
 
 # UUIDs, and long hex or digit runs (hashes, numeric ids): what makes one path every path.
+# The runs are possessive (`{16,}+`): inside a word there is no boundary to back off to, so a run
+# matches whole or not at all, and a long one that fails is not rescanned (CodeQL #287).
 IDS = re.compile(
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-    r"|\b[0-9a-fA-F]{16,}\b|\b\d{6,}\b"
+    r"|\b[0-9a-fA-F]{16,}+\b|\b\d{6,}+\b"
 )
 # An absolute path of two or more parts outside a URL: `/home/x/store.db`, not `/api/v1`.
 _PATHS = re.compile(

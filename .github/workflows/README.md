@@ -71,14 +71,14 @@ Runs when dispatched (`stable` or `rc`) and when `nightly.yml` calls it (`nightl
 - `production` - For minor/patch releases
 - `production-major` - For major releases (add approval requirement)
 
-**Credentials:** no stored token. The release job mints a one-hour token from the CI GitHub App (`immich-memories-ci-bot`, Contents and Workflows write on this repository) right before it pushes the version tag or moves `nightly`: GitHub refuses a tag the workflow's own token writes when the tagged commit's workflow files differ from `main`'s (#2615). It reads the variable `CI_APP_CLIENT_ID` and the secret `CI_APP_PRIVATE_KEY`, as `mirror.yml` does.
+**Credentials:** no stored token. The release job mints a one-hour token from the CI GitHub App (`immich-memories-ci-bot`, Contents and Workflows write on this repository) before its first write, and every write goes through it: the version tag or the moved `nightly` tag, the GitHub Release, the rolling `nightly` prerelease. GitHub refuses a tag the workflow's own token writes when the tagged commit's workflow files differ from `main`'s (#2615); the job's `GITHUB_TOKEN` only reads. It reads the variable `CI_APP_CLIENT_ID` and the secret `CI_APP_PRIVATE_KEY`, as `mirror.yml` does; called from `nightly.yml`, it gets both through `secrets: inherit` and the repository's variables. A release that token publishes fires `release: published`, which `docs.yml` skips: the release deploys the docs itself once it is complete.
 
 ### `mirror.yml` and `integration.yml` - GPU tests on the private mirror
 
 `mirror.yml` force-pushes `main` (or the branch given by hand) to the private `sam-dumont/immich-memories-ci`, where `integration.yml` runs the FFmpeg and GPU suites on the self-hosted runner and posts the `Integration (GPU)` commit status back here. It also closes the Dependabot and Renovate PRs the mirror gets from the pushed `dependabot.yml`: merging one there does nothing, since the next push overwrites `main`.
 
 **Credentials:** the GitHub App `immich-memories-ci-bot`, installed on both repositories. Each job mints a one-hour token scoped to the one repository and the permissions it needs (`actions/create-github-app-token`), so no token is stored that can expire:
-- `mirror.yml`: the mirror, with Contents, Workflows and Pull requests write (the push carries workflow files; the dispatch needs Contents).
+- `mirror.yml`: the mirror, with Contents, Workflows and Pull requests write (the push carries workflow files; the dispatch needs Contents), and this repository with Commit statuses write alone, for the pending `Integration (GPU)` status. Its `GITHUB_TOKEN` only reads.
 - `integration.yml`: this repository, with Commit statuses and Actions write (the status and the benchmark dispatch).
 
 Set on both repositories: the variable `CI_APP_CLIENT_ID` and the secret `CI_APP_PRIVATE_KEY` (the app's private key). Rotate the key from the app's settings, then set the secret again on both.
@@ -93,7 +93,7 @@ Runs daily and on demand (`force` builds an unchanged `main`). It builds only wh
 
 ### `docs.yml` - Deploy Docs
 
-Called by the release and the nightly, or run by hand. Every deploy rebuilds all docs tracks, each from its own ref (`scripts/docs_release.py`): stable at the root, the newest newer release candidate at `/next/`, the latest nightly's commit at `/dev/`.
+Called by the release and the nightly, or run by hand. A release published by hand deploys too; one the CI app published (the release and the nightly) is left to the deploy its workflow calls. Every deploy rebuilds all docs tracks, each from its own ref (`scripts/docs_release.py`): stable at the root, the newest newer release candidate at `/next/`, the latest nightly's commit at `/dev/`.
 
 ### `image-maintenance.yml` - Image Maintenance
 
