@@ -36,9 +36,15 @@ def test_reading_a_large_cached_pool_does_not_keep_every_jpeg_in_memory(tmp_path
         pytest.fail(f"Cached preview unexpectedly fetched: {asset_id}")
 
     reader = DemandedPreviewReader(cache, fetch, allowed_ids=ids)
-    # Count only what was allocated with the reader on the stack. On CI this has failed
-    # now and then at a steady 7.7 MB that no local replay reproduces (macOS, Linux, the
-    # same shard and workers, the same Python), so a failure names the stacks holding it.
+    # One untraced pass first. On CI this failed now and then at a steady 7.7 MB in one block:
+    # Python 3.11's pathlib interns every path part (`sys.intern`), and when that global table
+    # grows, its resize is charged to whichever call interned the next new string, here the
+    # reader building a cache path. How full the table is depends on what the worker ran
+    # before, so no local replay reproduced it. With every path string interned before
+    # tracing starts, the traced passes count only what the reader itself keeps.
+    for asset_id in ids:
+        assert reader(asset_id) == payload
+    # Count only what was allocated with the reader on the stack; a failure names the stacks.
     under_the_reader = tracemalloc.Filter(
         True, inspect.getfile(DemandedPreviewReader), all_frames=True
     )
