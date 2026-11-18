@@ -3,6 +3,7 @@
 # The modules other packages may import; `make private-imports` holds every import to it.
 __all__ = [
     "detection",
+    "facts_title",
     "holiday",
     "sequence",
     "title",

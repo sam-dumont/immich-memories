@@ -203,6 +203,7 @@ class HostedMeasurement(PublicData):
         "motion up",
         "music mood",
         "occasion sequence",
+        "occasion title",
         "people title",
         "period story",
         "recorded occasion",

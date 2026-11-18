@@ -808,9 +808,10 @@ src/immich_memories/
 │   │   └── verdicts.py         # Who may see a picture: the audience verdict per candidate, banked by its evidence key.
 │   ├── special_days/           # Which days had something happen on them, and what each one may be called.
 │   │   ├── detection.py        # Every run of activity, and a found day named from its own lines
+│   │   ├── facts_title.py      # A confirmed day's title, written from a short list of its facts
 │   │   ├── holiday.py          # Whether a special day was the holiday it fell on, or something else that happened that day.
 │   │   ├── sequence.py         # Days read a month at a time in order (close family by role on each line); 30 s film floor
-│   │   ├── title.py            # What a day may be called: the grounding guard, the re-ask, the fallback
+│   │   ├── title.py            # What a day may be called: the grounding guard (in the title's language), the re-ask, the fallback
 │   │   └── vocabulary.py       # Days whose own words stand out from their year, proposed to the day check.
 │   ├── reading/                # Banked facts read into text: annotation lines, dated episodes, moments and period accounts.
 │   │   ├── annotation_lines.py # Render one complete, stable text line from live source and stored annotations.

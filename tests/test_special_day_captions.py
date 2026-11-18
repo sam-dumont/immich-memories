@@ -9,6 +9,7 @@ import httpx
 import pytest
 
 from immich_memories.analysis.special_days.detection import PROMPT_VERSION, ask_if_special
+from immich_memories.analysis.special_days.facts_title import TITLE_VERSION
 from immich_memories.automation.special_day_scan import scan_year
 from immich_memories.config.models.llm import LLMConfig
 from tests.annotation_rows import annotation_store
@@ -26,28 +27,34 @@ def test_a_prepared_day_is_answered_once_and_then_from_the_bank(tmp_path):
         for m in (0, 20, 40)
     ]
     captions = {a.id: "A group runs across a finish line" for a in assets}
-    response = httpx.Response(
-        200,
-        request=httpx.Request("POST", "http://localhost"),
-        json={
-            "response": json.dumps(
-                {
-                    "special": True,
-                    "title": "At the finish line",
-                    "subtitle": "",
-                    "what": "A race",
-                    "window": None,
-                }
-            ),
-            "done": True,
-        },
-    )
+
+    def response(*_args, **kwargs) -> httpx.Response:
+        """The day question's verdict, or the title asked from the day's facts."""
+        titled = TITLE_VERSION in kwargs["json"]["prompt"]
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", "http://localhost"),
+            json={
+                "response": json.dumps(
+                    {"title": "Finish line"}
+                    if titled
+                    else {
+                        "special": True,
+                        "title": "At the finish line",
+                        "subtitle": "",
+                        "what": "A race",
+                        "window": None,
+                    }
+                ),
+                "done": True,
+            },
+        )
 
     config = LLMConfig(
         enabled=True, base_url="http://localhost:11434", model="text-reader", provider="ollama"
     )
     # WHY: intercept the external LLM HTTP request; the scan and bank run unchanged.
-    with patch("httpx.AsyncClient.post", return_value=response) as post:
+    with patch("httpx.AsyncClient.post", side_effect=response) as post:
         found = scan_year(
             assets,
             llm_config=config,
@@ -64,8 +71,10 @@ def test_a_prepared_day_is_answered_once_and_then_from_the_bank(tmp_path):
         )
     assert found == repeated
     assert len(found) == 1
-    assert post.call_count == 1
-    payload = post.call_args.kwargs["json"]
+    assert found[0].title == "Finish line"
+    # The day question, then the title from its facts; the repeated scan asks nothing.
+    assert post.call_count == 2
+    payload = post.call_args_list[0].kwargs["json"]
     assert "images" not in payload
     assert "finish line" in payload["prompt"]
     assert "2021-04-13T09:" in payload["prompt"]

@@ -20,9 +20,17 @@ from __future__ import annotations
 import collections
 import logging
 import re
-from collections.abc import Sequence
+import unicodedata
+from collections.abc import Sequence, Set
+from functools import lru_cache
 
-from immich_memories.i18n import LANGUAGE_NAMES, elide_french, film_text, spoken_list
+from immich_memories.i18n import (
+    LANGUAGE_NAMES,
+    babel_locale,
+    elide_french,
+    film_text,
+    spoken_list,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,17 +92,29 @@ _EVERYDAY_CAPITALS = {
     "eve",
 }
 
+# The words of a title, as every check here splits it.
+_WORD = r"[\w\u00c0-\u024f]+"
+# Holiday names barely change; these years hold every one a calendar names.
+_HOLIDAY_YEARS = range(2000, 2031)
 
-def title_the_day_can_keep(written: str, assets: list, *, evidence: str) -> str:
-    """The model's title, or nothing if the day cannot support it."""
+
+def title_the_day_can_keep(written: str, assets: list, *, evidence: str, locale: str = "en") -> str:
+    """The model's title, or nothing if the day cannot support it.
+
+    `locale` is the language the title was asked in: its month, weekday and public holiday
+    names are as plain as their English ones ("Le réveillon de Noël" names no place).
+    """
     if len(written.split()) > 8 or len(written) > 60 or _A_CLOCK.search(written):
         return ""
-    return _only_if_grounded(_a_title_at_all(written, _named_people(assets)), assets, evidence)
+    people = _named_people(assets)
+    return _only_if_grounded(
+        written if _is_a_real_title(written, people, locale) else "", assets, evidence, locale
+    )
 
 
-def line_the_day_can_keep(written: str, assets: list, *, evidence: str) -> str:
+def line_the_day_can_keep(written: str, assets: list, *, evidence: str, locale: str = "en") -> str:
     """The line under the title, held to the same rule as the title."""
-    return _only_if_grounded(written, assets, evidence)
+    return _only_if_grounded(written, assets, evidence, locale)
 
 
 def honest_title(assets: list, *, what: str, evidence: str, locale: str = "en") -> str:
@@ -114,9 +134,9 @@ def honest_title(assets: list, *, what: str, evidence: str, locale: str = "en") 
         return ""
     if found := place_and_kind_from_assets(assets):
         return day_in_place(*found, locale)
-    return (
-        title_the_day_can_keep(what, assets, evidence=evidence) if _reads_as_a_title(what) else ""
-    )
+    if not _reads_as_a_title(what):
+        return ""
+    return title_the_day_can_keep(what, assets, evidence=evidence, locale=locale)
 
 
 def birth_title(born: Sequence[str], locale: str) -> str:
@@ -244,8 +264,66 @@ def _named_people(assets: list) -> set[str]:
     }
 
 
-def _a_title_at_all(text: str, people: set[str]) -> str:
-    return text if _is_a_real_title(text, people) else ""
+def _people_words(assets: list) -> set[str]:
+    """Every word of every name on the day's pictures, folded."""
+    return {word for name in _named_people(assets) for word in re.findall(_WORD, name)}
+
+
+def _fold(word: str) -> str:
+    """A word as the calendar lists compare it: folded, accents away ("Août" is "aout")."""
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", word.casefold()) if not unicodedata.combining(c)
+    )
+
+
+def _english(locale: str) -> bool:
+    return babel_locale(locale).language == "en"
+
+
+@lru_cache(maxsize=16)
+def _everyday_capitals(locale: str) -> frozenset[str]:
+    """The capitalised words a title in `locale`'s language may use without naming anything,
+    folded (`_fold`).
+
+    The English list, and in any other language that language's month and weekday names and
+    its public holidays: on a French catalogue "Le réveillon de Noël" was dropped for a day
+    never in a place called Noël. English keeps its own list alone, because the calendars it
+    would add name people and places ("Washington's Birthday", "Columbus Day").
+    """
+    if _english(locale):
+        return frozenset(_EVERYDAY_CAPITALS)
+    from immich_memories.titles.title_guards import calendar_words_in
+
+    return frozenset(_EVERYDAY_CAPITALS) | calendar_words_in(locale) | _holiday_words(locale)
+
+
+def _is_everyday(word: str, locale: str) -> bool:
+    return _fold(word) in _everyday_capitals(locale)
+
+
+@lru_cache(maxsize=16)
+def _holiday_words(locale: str) -> frozenset[str]:
+    """The words of the public holidays a calendar names in `locale`'s language.
+
+    The calendar is the language's own country's ("fr" is France's, "pt-BR" Brazil's), the
+    way the app's holidays come from the `holidays` package. A country whose calendar does
+    not speak the language adds nothing.
+    """
+    import holidays as calendars
+    from babel.core import get_global
+
+    where = babel_locale(locale)
+    likely = str(get_global("likely_subtags").get(where.language, ""))
+    country = where.territory or (likely.rsplit("_", 1)[-1] if "_" in likely else "")
+    try:
+        supported = calendars.country_holidays(country, years=2020).supported_languages
+    except NotImplementedError:
+        return frozenset()
+    spoken = [code for code in supported if code.split("_")[0] == where.language]
+    if not spoken:
+        return frozenset()
+    names = calendars.country_holidays(country, years=_HOLIDAY_YEARS, language=spoken[0])
+    return frozenset(_fold(word) for name in names.values() for word in re.findall(_WORD, name))
 
 
 def _place_vocabulary(assets: list) -> set[str]:
@@ -283,13 +361,14 @@ def _knows_where_it_was(assets: list) -> bool:
     return False
 
 
-def _is_a_real_title(text: str, people: set[str]) -> bool:
+def _is_a_real_title(text: str, people: set[str], locale: str = "en") -> bool:
     """Reject the two things the model falls back on when it is unsure.
 
     Asked to prefer the plain true thing, it starts answering with the one
     fact it is certain of: "Monday 13 August 2007", or simply a
     person's name. Both are already on the card. Seven of twenty-three titles in a
-    library sweep came back like that.
+    library sweep came back like that. A date in the title's own language
+    ("Lundi 13 août") is the same date.
     """
     if not text:
         return False
@@ -303,6 +382,13 @@ def _is_a_real_title(text: str, people: set[str]) -> bool:
         stripped,
         flags=re.IGNORECASE,
     )
+    if not _english(locale):
+        from immich_memories.titles.title_guards import calendar_words_in
+
+        calendar = calendar_words_in(locale)
+        stripped = " ".join(
+            word for word in re.findall(_WORD, stripped) if _fold(word) not in calendar
+        )
     if not stripped.strip():
         return False
     return text.casefold() not in people
@@ -322,10 +408,12 @@ def _is_a_real_title(text: str, people: set[str]) -> bool:
 # to keep real titles, then, and do not tighten it believing it can do more.
 _SAME_PLACE_RATIO = 0.70
 
-_PLACE_PREPOSITIONS = ("in", "at", "near", "around", "from", "to", "de", "outside")
+# French "de" names a place as often as a person ("Circuit de ...", "Anniversaire de ..."): a
+# candidate made only of the day's people's names is a person (`_place_it_was_never_in`).
+_PLACE_PREPOSITIONS = ("in", "at", "near", "around", "from", "to", "de", "outside", "à", "au", "en")
 
 
-def _named_places(text: str) -> list[str]:
+def _named_places(text: str, locale: str = "en") -> list[str]:
     """Capitalised words used as somewhere, rather than as something.
 
     "to" introduces a destination as readily as it introduces a verb, and in
@@ -343,10 +431,7 @@ def _named_places(text: str) -> list[str]:
     return [
         place
         for place in found
-        if not all(
-            word.casefold() in _EVERYDAY_CAPITALS
-            for word in re.findall(r"[\w\u00c0-\u024f]+", place)
-        )
+        if not all(_is_everyday(word, locale) for word in re.findall(_WORD, place))
     ]
 
 
@@ -390,7 +475,7 @@ def _unsupported_quantity(text: str, evidence: str) -> str | None:
     return next((q for q in _QUANTITY.findall(text) if _same_quantity(q) not in supported), None)
 
 
-def _only_if_grounded(text: str, assets: list, evidence: str) -> str:
+def _only_if_grounded(text: str, assets: list, evidence: str, locale: str = "en") -> str:
     """Drop a line whose specifics the day cannot support.
 
     Asked about a night out with no city and no GPS anywhere in it, the model
@@ -411,7 +496,8 @@ def _only_if_grounded(text: str, assets: list, evidence: str) -> str:
         logger.info("Dropping %r: nothing on this day mentions %r", text, unsupported)
         return ""
 
-    if place := _place_it_was_never_in(text, _place_vocabulary(assets)):
+    places = _place_vocabulary(assets)
+    if place := _place_it_was_never_in(text, places, _people_words(assets), locale):
         logger.info("Dropping %r: the day was never in %r", text, place)
         return ""
 
@@ -431,7 +517,7 @@ def _only_if_grounded(text: str, assets: list, evidence: str) -> str:
         word = found.group()
         if found.start() == 0:
             continue
-        if word.casefold() not in vocabulary and word.casefold() not in _EVERYDAY_CAPITALS:
+        if word.casefold() not in vocabulary and not _is_everyday(word, locale):
             logger.info(
                 "Dropping title %r: the day has no location and nothing mentions %r", text, word
             )
@@ -439,7 +525,9 @@ def _only_if_grounded(text: str, assets: list, evidence: str) -> str:
     return text
 
 
-def _place_it_was_never_in(text: str, places: set[str]) -> str | None:
+def _place_it_was_never_in(
+    text: str, places: set[str], people: Set[str] = frozenset(), locale: str = "en"
+) -> str | None:
     """A place the day never recorded.
 
     Asked about a track day at a place — with three villages all in its EXIF —
@@ -450,10 +538,22 @@ def _place_it_was_never_in(text: str, places: set[str]) -> str | None:
     Only when the day recorded place names at all: with coordinates and no
     city, naming the circuit they sit on is inference this cannot check, and
     rejecting it would throw away the model's best work.
+
+    A candidate made only of the names of people on the day's pictures is one of them, not a
+    place: "Anniversaire de Kit" says whose birthday it was. Read as a place, it was 38 of the
+    39 French titles the guard dropped on a stored catalogue.
     """
     if not places:
         return None
-    return next((p for p in _named_places(text) if not _place_is_real(p, places)), None)
+    return next(
+        (
+            p
+            for p in _named_places(text, locale)
+            if not all(word.casefold() in people for word in re.findall(_WORD, p))
+            and not _place_is_real(p, places)
+        ),
+        None,
+    )
 
 
 def _guessed_name(text: str, vocabulary: set[str]) -> str | None:

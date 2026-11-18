@@ -63,6 +63,10 @@ def _scan(monkeypatch, concurrency, *, barrier=None):
 
     # WHY: the day-level model is the one outside call; the scan, its reader pool and ordering are real.
     monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", ask)
+    # WHY: the title from the day's facts is the second outside call; it writes none here.
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_days.facts_title._ask", lambda *_a, **_k: '{"title": ""}'
+    )
     assets, captions = _camp_days(8)
     found = scan_year(assets, llm_config=_llm(concurrency), home=None, captions=captions)
     return found, most, seen["asked"]

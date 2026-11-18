@@ -37,6 +37,7 @@ from immich_memories.analysis.special_days.detection import (
     the_birth_of,
     window_that_holds_the_day,
 )
+from immich_memories.analysis.special_days.facts_title import FactsTitle
 from immich_memories.analysis.special_days.holiday import was_the_holiday
 from immich_memories.analysis.special_days.sequence import (
     MIN_FILM_SECONDS,
@@ -248,6 +249,7 @@ def scan_year(
     country: str = "US",
     locale: str = "en",
     births: Mapping[date, Sequence[str]] | None = None,
+    activities: Mapping[str, str] | None = None,
 ) -> list[DiscoveredDay]:
     """Find the days in one year's assets that were occasions, and name them in `locale`'s
     language.
@@ -266,7 +268,8 @@ def scan_year(
     no-model tier keeps only the `per_year` strongest (`special_day_facts`); the model tier
     keeps every occasion the day-level reading confirms. `births` are the days close family were
     born on (`close_family_births`): each is proposed on both tiers, never thinned, and is that
-    person's birth (`detection.the_birth_of`).
+    person's birth (`detection.the_birth_of`). With a reader configured, every other confirmed day
+    is titled from its facts (`FactsTitle`), `activities` (asset id -> activity head) among them.
 
     Anything generation would throw away is removed first, so the scan judges
     the same library a memory could actually be cut from. Measured on a real
@@ -353,6 +356,19 @@ def scan_year(
         clip_seconds=clip_seconds,
         locale=locale,
         births=born,
+        facts_title=None
+        if llm_config is None
+        else FactsTitle(
+            llm_config,
+            judgments,
+            locale,
+            home,
+            roles=close_family or {},
+            births=births or {},
+            holidays=holidays,
+            captions=captions,
+            activities=activities or {},
+        ),
     )
     found = _judged_days(judge, occasions, off_trip, limit=limit, llm_config=llm_config)
     return sorted(_thinned(found, words, born), key=lambda entry: entry.day)
@@ -510,6 +526,7 @@ class _Judge:
     clip_seconds: float
     locale: str = "en"
     births: Mapping[date, tuple[str, ...]] = field(default_factory=dict)
+    facts_title: FactsTitle | None = None
 
     def day(self, day: date, items: list, what: str) -> DiscoveredDay | None:
         """The day's row, or None when it cannot be filmed, is not an occasion, or was the
@@ -539,6 +556,8 @@ class _Judge:
         # A birth is named by whose it was, never by the hours its words gather in.
         if verdict.special and whole_day and not born:
             verdict = self._named_by_its_moment(items, verdict, ask)
+        if verdict.special and verdict.title and not born and self.facts_title is not None:
+            verdict = self.facts_title(day, items, verdict)
         return _day_from(day, items, verdict, what, self.locale)
 
     def _named_by_its_moment(self, items: list, verdict: SpecialDay, ask: _Ask) -> SpecialDay:

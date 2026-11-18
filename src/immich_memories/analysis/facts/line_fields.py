@@ -15,6 +15,18 @@ from __future__ import annotations
 import re
 
 STARRED = "STARRED by the photographer"
+
+# What a picture shows people doing, as its activity head reads it, in words a summary or a
+# title can use. Posing and working say nothing about what happened, so they are left out.
+DOING = {
+    "playing": "playing",
+    "eating-drinking": "a meal",
+    "celebration": "a celebration",
+    "sport-active": "being active outdoors",
+    "sightseeing": "sightseeing",
+    "performing": "a performance",
+    "animal-nature": "animals and nature",
+}
 FLAGGED = "FLAGGED "
 PIXEL_WARNINGS = ("SOFT (blurry)", "DARK", "BLOWN OUT", "OBSTRUCTED (edge)", "rotated")
 
