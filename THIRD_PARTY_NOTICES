@@ -401,7 +401,7 @@ asgiref 3.13.0
   License: BSD-3-Clause
   URL: https://github.com/django/asgiref/
 
-authlib 1.9.5
+authlib 1.9.8
   License: BSD
   URL: https://github.com/authlib/authlib
 
@@ -469,7 +469,7 @@ einops 0.8.2
   License: MIT
   URL: https://github.com/arogozhnikov/einops
 
-fastapi 0.162.2
+fastapi 0.163.1
   License: MIT
   URL: https://github.com/fastapi/fastapi
 
@@ -565,7 +565,7 @@ julius 0.2.7
   License: MIT
   URL: https://github.com/adefossez/julius
 
-kaldi-native-fbank 1.23.0
+kaldi-native-fbank 1.23.1
   License: Apache-2.0
   URL: https://github.com/csukuangfj/kaldi-native-fbank
 
@@ -677,7 +677,7 @@ omegaconf 2.3.0
   License: BSD
   URL: https://github.com/omry/omegaconf
 
-onnxruntime 1.31.1
+onnxruntime 1.32.0
   License: MIT
   URL: https://onnxruntime.ai
 
@@ -785,7 +785,7 @@ pydantic-core 2.50.4
   License: MIT
   URL: https://github.com/pydantic
 
-pydantic-settings 2.16.2
+pydantic-settings 2.16.3
   License: MIT
   URL: https://github.com/pydantic/pydantic-settings
 
@@ -813,7 +813,7 @@ python-dotenv 1.2.2
   License: BSD-3-Clause
   URL: https://github.com/theskumar/python-dotenv
 
-python-multipart 0.0.33
+python-multipart 0.0.34
   License: Apache-2.0
   URL: https://github.com/Kludex/python-multipart
 
