@@ -9,7 +9,7 @@
     "api-types": "openapi-typescript ../src/immich_memories/web/openapi.json -o src/lib/api-types.ts"
   },
   "devDependencies": {
-    "@immich/ui": "0.92.0",
+    "@immich/ui": "0.93.0",
     "@mdi/js": "7.4.47",
     "@opentelemetry/api": "1.10.0",
     "@opentelemetry/core": "3.1.1",
@@ -28,7 +28,7 @@
     "svelte-check": "4.7.8",
     "tailwindcss": "4.3.5",
     "typescript": "6.0.3",
-    "vite": "8.3.7"
+    "vite": "8.3.8"
   },
   "overrides": {
     "openapi-typescript": {
