@@ -393,7 +393,7 @@ anyio 4.14.2
   License: MIT
   URL: https://github.com/agronholm/anyio
 
-apprise 2.2.0
+apprise 2.3.0
   License: BSD-2-Clause
   URL: https://appriseit.com
 
@@ -401,7 +401,7 @@ asgiref 3.13.0
   License: BSD-3-Clause
   URL: https://github.com/django/asgiref/
 
-authlib 1.9.5
+authlib 1.9.10
   License: BSD
   URL: https://github.com/authlib/authlib
 
@@ -469,7 +469,7 @@ einops 0.8.2
   License: MIT
   URL: https://github.com/arogozhnikov/einops
 
-fastapi 0.162.2
+fastapi 0.165.0
   License: MIT
   URL: https://github.com/fastapi/fastapi
 
@@ -513,7 +513,7 @@ hf-xet 1.6.0
   License: Apache-2.0
   URL: https://github.com/huggingface/xet-core
 
-holidays 0.108
+holidays 0.109
   License: MIT
   URL: https://github.com/vacanza/holidays/
 
@@ -565,7 +565,7 @@ julius 0.2.7
   License: MIT
   URL: https://github.com/adefossez/julius
 
-kaldi-native-fbank 1.23.0
+kaldi-native-fbank 1.23.3
   License: Apache-2.0
   URL: https://github.com/csukuangfj/kaldi-native-fbank
 
@@ -677,7 +677,7 @@ omegaconf 2.3.0
   License: BSD
   URL: https://github.com/omry/omegaconf
 
-onnxruntime 1.31.1
+onnxruntime 1.32.0
   License: MIT
   URL: https://onnxruntime.ai
 
@@ -685,7 +685,7 @@ onnxruntime-gpu 1.26.0
   License: MIT
   URL: https://onnxruntime.ai
 
-opencv-python 5.0.0.93
+opencv-python 5.1.0.95
   License: Apache-2.0
   URL: https://github.com/opencv/opencv-python
 
@@ -749,7 +749,7 @@ openunmix 1.3.0
   License: MIT
   URL: https://github.com/sigsep/open-unmix-pytorch
 
-packaging 26.3
+packaging 26.4
   License: Apache-2.0 OR BSD-2-Clause
   URL: https://github.com/pypa/packaging
 
@@ -777,15 +777,15 @@ pycparser 3.0
   License: BSD-3-Clause
   URL: https://github.com/eliben/pycparser
 
-pydantic 2.14.3
+pydantic 2.14.4
   License: MIT
   URL: https://github.com/pydantic/pydantic
 
-pydantic-core 2.50.4
+pydantic-core 2.50.5
   License: MIT
   URL: https://github.com/pydantic
 
-pydantic-settings 2.16.2
+pydantic-settings 2.16.3
   License: MIT
   URL: https://github.com/pydantic/pydantic-settings
 
@@ -813,11 +813,11 @@ python-dotenv 1.2.2
   License: BSD-3-Clause
   URL: https://github.com/theskumar/python-dotenv
 
-python-multipart 0.0.33
+python-multipart 0.0.34
   License: Apache-2.0
   URL: https://github.com/Kludex/python-multipart
 
-pyyaml 6.0.3
+pyyaml 6.0.4
   License: MIT
   URL: https://github.com/yaml/pyyaml
 
