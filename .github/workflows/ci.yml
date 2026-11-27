@@ -225,7 +225,7 @@ jobs:
 
       - name: Dependency review
         if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
           comment-summary-in-pr: never
@@ -281,7 +281,7 @@ jobs:
       matrix: ${{ fromJSON(needs.changes.outputs.unit_matrix) }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2
         with:
           egress-policy: audit
 
@@ -597,7 +597,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
       - run: uv python install ${{ env.PYTHON_VERSION }}
       # The wheel carries the built web client, which is not committed (#1580).
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -701,7 +701,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: docs-site/package-lock.json
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
       - run: cd docs-site && npm ci
       - run: make docs-check
 
@@ -840,7 +840,7 @@ jobs:
       PYTHONPATH: services/render-worker
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
       - run: uv python install 3.13
       - run: make dev-ci
       - uses: ./.github/actions/install-ffmpeg
