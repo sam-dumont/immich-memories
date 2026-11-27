@@ -9,7 +9,7 @@
     "api-types": "openapi-typescript ../src/immich_memories/web/openapi.json -o src/lib/api-types.ts"
   },
   "devDependencies": {
-    "@immich/ui": "0.92.0",
+    "@immich/ui": "0.94.0",
     "@mdi/js": "7.4.47",
     "@opentelemetry/api": "1.10.0",
     "@opentelemetry/core": "3.1.1",
@@ -21,14 +21,14 @@
     "@opentelemetry/sdk-trace": "3.1.1",
     "@sveltejs/adapter-static": "4.0.1",
     "@sveltejs/kit": "3.1.1",
-    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.2",
     "@tailwindcss/vite": "4.3.5",
     "openapi-typescript": "7.13.0",
-    "svelte": "5.57.3",
+    "svelte": "5.59.1",
     "svelte-check": "4.7.8",
     "tailwindcss": "4.3.5",
     "typescript": "6.0.3",
-    "vite": "8.3.7"
+    "vite": "8.3.8"
   },
   "overrides": {
     "openapi-typescript": {
